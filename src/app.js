@@ -12,6 +12,7 @@ const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
 const propertyRoutes = require('./routes/property.routes');
 const favoriteRoutes = require('./routes/favorite.routes');
+const messageRoutes = require('./routes/message.routes');
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/propiedades', propertyRoutes);
 app.use('/api/favoritos', favoriteRoutes);
+app.use('/api/mensajes', messageRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
