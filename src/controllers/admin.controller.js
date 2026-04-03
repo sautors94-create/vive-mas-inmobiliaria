@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Property = require('../models/Property');
 
 const getUsuarios = async (req, res) => {
   try {
@@ -21,11 +22,7 @@ const cambiarPlan = async (req, res) => {
     if (!planesValidos.includes(plan)) {
       return res.status(400).json({ error: 'Plan no válido' });
     }
-    const usuario = await User.findByIdAndUpdate(
-      req.params.id,
-      { plan },
-      { new: true }
-    );
+    const usuario = await User.findByIdAndUpdate(req.params.id, { plan }, { new: true });
     if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
     res.json({ ok: true, usuario });
   } catch (error) {
@@ -45,4 +42,61 @@ const suspenderUsuario = async (req, res) => {
   }
 };
 
-module.exports = { getUsuarios, cambiarPlan, suspenderUsuario };
+const getPropiedadesRevision = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const filtro = {};
+    if (status) filtro.status = status;
+    const propiedades = await Property.find(filtro)
+      .populate('propietario', 'nombre email telefono plan')
+      .sort({ createdAt: -1 });
+    res.json({ ok: true, total: propiedades.length, propiedades });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const aprobarPropiedad = async (req, res) => {
+  try {
+    const propiedad = await Property.findByIdAndUpdate(
+      req.params.id,
+      { status: 'aprobada', motivo_rechazo: null },
+      { new: true }
+    );
+    if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
+    res.json({ ok: true, mensaje: 'Propiedad aprobada', propiedad });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const rechazarPropiedad = async (req, res) => {
+  try {
+    const { motivo } = req.body;
+    if (!motivo) return res.status(400).json({ error: 'Debes indicar el motivo de rechazo' });
+    const propiedad = await Property.findByIdAndUpdate(
+      req.params.id,
+      { status: 'rechazada', motivo_rechazo: motivo },
+      { new: true }
+    );
+    if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
+    res.json({ ok: true, mensaje: 'Propiedad rechazada', propiedad });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const dashboard = async (req, res) => {
+  try {
+    const totalUsuarios = await User.countDocuments();
+    const totalPropiedades = await Property.countDocuments();
+    const enRevision = await Property.countDocuments({ status: 'revision' });
+    const aprobadas = await Property.countDocuments({ status: 'aprobada' });
+    const rechazadas = await Property.countDocuments({ status: 'rechazada' });
+    res.json({ ok: true, stats: { totalUsuarios, totalPropiedades, enRevision, aprobadas, rechazadas } });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { getUsuarios, cambiarPlan, suspenderUsuario, getPropiedadesRevision, aprobarPropiedad, rechazarPropiedad, dashboard };
