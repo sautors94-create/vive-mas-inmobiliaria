@@ -99,5 +99,26 @@ const misPropiedades = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-module.exports = { crearPropiedad, listarPropiedades, detallePropiedad, editarPropiedad, eliminarPropiedad, misPropiedades };
+const subirFotos = async (req, res) => {
+  try {
+    const propiedad = await Property.findById(req.params.id);
+    if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
+    if (propiedad.propietario.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes permiso para subir fotos a esta propiedad' });
+    }
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No se subieron imágenes' });
+    }
+    const urls = req.files.map(file => file.path);
+    const totalFotos = propiedad.fotos.length + urls.length;
+    if (totalFotos > 15) {
+      return res.status(400).json({ error: `Solo puedes tener máximo 15 fotos. Ya tienes ${propiedad.fotos.length}` });
+    }
+    propiedad.fotos = [...propiedad.fotos, ...urls];
+    await propiedad.save();
+    res.json({ ok: true, mensaje: `${urls.length} foto(s) subida(s)`, fotos: propiedad.fotos });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+module.exports = { crearPropiedad, listarPropiedades, detallePropiedad, editarPropiedad, eliminarPropiedad, misPropiedades, subirFotos };
