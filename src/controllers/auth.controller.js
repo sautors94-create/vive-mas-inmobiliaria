@@ -58,5 +58,20 @@ const perfil = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const refreshToken = async (req, res) => {
+  try {
+    const token = req.cookies.refreshToken;
+    if (!token) return res.status(401).json({ error: 'Refresh token requerido' });
+    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
+    if (user.status === 'suspendido') return res.status(403).json({ error: 'Cuenta suspendida' });
+    const { accessToken, refreshToken: newRefreshToken } = generarTokens(user);
+    res.cookie('refreshToken', newRefreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.json({ ok: true, accessToken });
+  } catch (error) {
+    res.status(401).json({ error: 'Refresh token inválido o expirado' });
+  }
+};
 
-module.exports = { registro, login, logout, perfil };
+module.exports = { registro, login, logout, perfil, refreshToken };
