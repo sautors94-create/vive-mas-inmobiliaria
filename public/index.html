@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container nav-content">
+      <a href="/" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <span class="logo-sub">Inmobiliaria</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/" class="active">Inicio</a></li>
+        <li><a href="pages/catalogo.html">Catálogo</a></li>
+        <li><a href="pages/servicios.html">Servicios</a></li>
+        <li><a href="pages/nosotros.html">Nosotros</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="pages/login.html" class="btn btn-outline" id="btn-login">Iniciar sesión</a>
+        <a href="pages/registro.html" class="btn btn-primary">Publicar</a>
+      </div>
+      <button class="nav-toggle" id="nav-toggle">&#9776;</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <h1>Encuentra tu hogar <span class="highlight">ideal</span></h1>
+        <p>Renta, compra o administra propiedades en todo México con la plataforma más confiable del mercado.</p>
+
+        <!-- BUSCADOR -->
+        <div class="search-box">
+          <div class="search-filters">
+            <select id="tipo-operacion" class="filter-select">
+              <option value="">Renta o Venta</option>
+              <option value="renta">Renta</option>
+              <option value="venta">Venta</option>
+            </select>
+            <select id="tipo-propiedad" class="filter-select">
+              <option value="">Tipo de propiedad</option>
+              <option value="casa">Casa</option>
+              <option value="departamento">Departamento</option>
+              <option value="terreno">Terreno</option>
+              <option value="local">Local comercial</option>
+            </select>
+            <select id="estado" class="filter-select">
+              <option value="">Estado</option>
+              <option value="Ciudad de Mexico">Ciudad de México</option>
+              <option value="Jalisco">Jalisco</option>
+              <option value="Nuevo Leon">Nuevo León</option>
+              <option value="Puebla">Puebla</option>
+              <option value="Guanajuato">Guanajuato</option>
+              <option value="Queretaro">Querétaro</option>
+            </select>
+            <input type="number" id="precio-max" class="filter-input" placeholder="Precio máximo">
+          </div>
+          <button class="btn btn-search" onclick="buscar()">Buscar propiedades</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROPIEDADES DESTACADAS -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Propiedades destacadas</h2>
+        <a href="pages/catalogo.html" class="ver-mas">Ver todas →</a>
+      </div>
+      <div class="properties-grid" id="propiedades-grid">
+        <div class="loading">Cargando propiedades...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICIOS RESUMEN -->
+  <section class="section section-dark">
+    <div class="container">
+      <h2 class="text-center">¿Qué hacemos por ti?</h2>
+      <div class="services-grid">
+        <div class="service-card">
+          <div class="service-icon">🏠</div>
+          <h3>Renta y Venta</h3>
+          <p>Conectamos propietarios con inquilinos y compradores de forma segura y eficiente.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">⚡</div>
+          <h3>Pago de Servicios</h3>
+          <p>Gestionamos luz, agua, predial y todos los servicios de tu propiedad.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🏢</div>
+          <h3>Administración</h3>
+          <p>Administramos edificios, condominios y residenciales con profesionalismo.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🔧</div>
+          <h3>Mantenimiento</h3>
+          <p>Coordinamos reparaciones y mantenimiento preventivo de todo tipo.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <div class="footer-brand">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <p>La plataforma inmobiliaria más confiable de México.</p>
+      </div>
+      <div class="footer-links">
+        <a href="pages/catalogo.html">Catálogo</a>
+        <a href="pages/servicios.html">Servicios</a>
+        <a href="pages/nosotros.html">Nosotros</a>
+        <a href="pages/terminos.html">Términos y condiciones</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 Vive Más Inmobiliaria. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html> 
