@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión — Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body>
+
+  <div class="auth-layout">
+
+    <!-- PANEL IZQUIERDO -->
+    <div class="auth-brand">
+      <a href="/" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+      </a>
+      <h2>Bienvenido de vuelta</h2>
+      <p>Accede a tu cuenta para gestionar tus propiedades y favoritos.</p>
+      <div class="auth-features">
+        <div class="auth-feature">✓ Publica y gestiona tus propiedades</div>
+        <div class="auth-feature">✓ Guarda tus propiedades favoritas</div>
+        <div class="auth-feature">✓ Contacta directamente a propietarios</div>
+      </div>
+    </div>
+
+    <!-- PANEL DERECHO -->
+    <div class="auth-form-panel">
+      <div class="auth-form-box">
+        <h1>Iniciar sesión</h1>
+        <p class="auth-subtitle">¿No tienes cuenta? <a href="registro.html">Regístrate gratis</a></p>
+
+        <div id="error-msg" class="alert alert-error" style="display:none"></div>
+
+        <div class="form-grupo">
+          <label>Correo electrónico</label>
+          <input type="email" id="email" class="form-input" placeholder="tu@correo.com">
+        </div>
+
+        <div class="form-grupo">
+          <label>Contraseña</label>
+          <input type="password" id="password" class="form-input" placeholder="••••••••">
+        </div>
+
+        <button class="btn btn-primary" style="width:100%;padding:14px;font-size:16px;margin-top:8px" onclick="iniciarSesion()">
+          Iniciar sesión
+        </button>
+
+        <div class="auth-divider">o</div>
+
+        <a href="registro.html" class="btn btn-outline" style="width:100%;padding:14px;font-size:15px;text-align:center">
+          Crear cuenta nueva
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    if (auth.isLoggedIn()) {
+      window.location.href = auth.isAdmin() ? 'admin.html' : 'dashboard.html';
+    }
+
+    const iniciarSesion = async () => {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errorMsg = document.getElementById('error-msg');
+      errorMsg.style.display = 'none';
+
+      if (!email || !password) {
+        errorMsg.textContent = 'Por favor llena todos los campos';
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      const btn = document.querySelector('.btn-primary');
+      btn.textContent = 'Iniciando sesión...';
+      btn.disabled = true;
+
+      const data = await api.post('/auth/login', { email, password });
+
+      if (data.ok) {
+        auth.save(data.accessToken, data.user);
+        window.location.href = data.user.role === 'admin' ? 'admin.html' : 'dashboard.html';
+      } else {
+        errorMsg.textContent = data.error || 'Error al iniciar sesión';
+        errorMsg.style.display = 'block';
+        btn.textContent = 'Iniciar sesión';
+        btn.disabled = false;
+      }
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') iniciarSesion();
+    });
+  </script>
+</body>
+</html>
