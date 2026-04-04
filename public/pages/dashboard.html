@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Panel — Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container nav-content">
+      <a href="/" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <span class="logo-sub">Inmobiliaria</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/">Inicio</a></li>
+        <li><a href="catalogo.html">Catálogo</a></li>
+      </ul>
+      <div class="nav-actions">
+        <span id="user-nombre" style="font-size:14px;color:var(--text-light)"></span>
+        <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- LAYOUT DASHBOARD -->
+  <div class="dashboard-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-user">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-nombre">Cargando...</div>
+          <div class="user-plan" id="sidebar-plan">plan gratuito</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="sidebar-link active" onclick="mostrarSeccion('mis-propiedades')">
+          🏠 Mis propiedades
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('nueva-propiedad')">
+          ➕ Nueva publicación
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('favoritos')">
+          ❤️ Favoritos
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('mensajes')">
+          💬 Mensajes
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('mi-cuenta')">
+          👤 Mi cuenta
+        </a>
+      </nav>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="dashboard-main">
+
+      <!-- MIS PROPIEDADES -->
+      <section id="sec-mis-propiedades" class="dash-section">
+        <div class="dash-section-header">
+          <h2>Mis propiedades</h2>
+          <button class="btn btn-primary" onclick="mostrarSeccion('nueva-propiedad')">+ Nueva publicación</button>
+        </div>
+        <div id="mis-props-grid" class="mis-props-grid">
+          <div class="loading">Cargando tus propiedades...</div>
+        </div>
+      </section>
+
+      <!-- NUEVA PROPIEDAD -->
+      <section id="sec-nueva-propiedad" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Nueva publicación</h2>
+        </div>
+
+        <div class="form-card">
+          <div id="form-error" class="alert alert-error" style="display:none"></div>
+          <div id="form-success" class="alert alert-success" style="display:none"></div>
+
+          <div class="form-grid">
+            <div class="form-grupo">
+              <label>Título de la propiedad *</label>
+              <input type="text" id="p-titulo" class="form-input" placeholder="Ej: Casa en Colonia Polanco">
+            </div>
+            <div class="form-grupo">
+              <label>Precio *</label>
+              <input type="number" id="p-precio" class="form-input" placeholder="0">
+            </div>
+            <div class="form-grupo">
+              <label>Operación *</label>
+              <select id="p-operacion" class="filter-select">
+                <option value="">Selecciona</option>
+                <option value="renta">Renta</option>
+                <option value="venta">Venta</option>
+              </select>
+            </div>
+            <div class="form-grupo">
+              <label>Tipo *</label>
+              <select id="p-tipo" class="filter-select">
+                <option value="">Selecciona</option>
+                <option value="casa">Casa</option>
+                <option value="departamento">Departamento</option>
+                <option value="terreno">Terreno</option>
+                <option value="local">Local comercial</option>
+              </select>
+            </div>
+            <div class="form-grupo" style="grid-column:1/-1">
+              <label>Descripción *</label>
+              <textarea id="p-descripcion" class="form-input" rows="4" placeholder="Describe tu propiedad..."></textarea>
+            </div>
+            <div class="form-grupo">
+              <label>Estado *</label>
+              <select id="p-estado" class="filter-select">
+                <option value="">Selecciona</option>
+                <option value="Ciudad de Mexico">Ciudad de México</option>
+                <option value="Jalisco">Jalisco</option>
+                <option value="Nuevo Leon">Nuevo León</option>
+                <option value="Puebla">Puebla</option>
+                <option value="Guanajuato">Guanajuato</option>
+                <option value="Queretaro">Querétaro</option>
+                <option value="Yucatan">Yucatán</option>
+                <option value="Oaxaca">Oaxaca</option>
+              </select>
+            </div>
+            <div class="form-grupo">
+              <label>Ciudad *</label>
+              <input type="text" id="p-ciudad" class="form-input" placeholder="Ej: Guadalajara">
+            </div>
+            <div class="form-grupo">
+              <label>Colonia</label>
+              <input type="text" id="p-colonia" class="form-input" placeholder="Ej: Polanco">
+            </div>
+            <div class="form-grupo">
+              <label>Dirección</label>
+              <input type="text" id="p-direccion" class="form-input" placeholder="Calle y número">
+            </div>
+            <div class="form-grupo">
+              <label>Recámaras</label>
+              <input type="number" id="p-recamaras" class="form-input" placeholder="0" min="0">
+            </div>
+            <div class="form-grupo">
+              <label>Baños</label>
+              <input type="number" id="p-banos" class="form-input" placeholder="0" min="0">
+            </div>
+            <div class="form-grupo">
+              <label>Estacionamientos</label>
+              <input type="number" id="p-estacionamientos" class="form-input" placeholder="0" min="0">
+            </div>
+            <div class="form-grupo">
+              <label>Metros cuadrados</label>
+              <input type="number" id="p-m2" class="form-input" placeholder="0" min="0">
+            </div>
+            <div class="form-grupo" style="grid-column:1/-1">
+              <label>Fotos (máximo 15, formato JPG/PNG/WEBP, máx 5MB c/u)</label>
+              <input type="file" id="p-fotos" class="form-input" multiple accept="image/*">
+              <small style="color:var(--text-light);font-size:12px">Las fotos se subirán después de crear la propiedad</small>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="padding:14px 32px;font-size:16px;margin-top:8px" onclick="publicarPropiedad()">
+            Enviar a revisión
+          </button>
+        </div>
+      </section>
+
+      <!-- FAVORITOS -->
+      <section id="sec-favoritos" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Mis favoritos</h2>
+        </div>
+        <div id="favoritos-grid" class="properties-grid">
+          <div class="loading">Cargando favoritos...</div>
+        </div>
+      </section>
+
+      <!-- MENSAJES -->
+      <section id="sec-mensajes" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Mis mensajes</h2>
+        </div>
+        <div id="mensajes-lista" class="mensajes-lista">
+          <div class="loading">Cargando mensajes...</div>
+        </div>
+      </section>
+
+      <!-- MI CUENTA -->
+      <section id="sec-mi-cuenta" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Mi cuenta</h2>
+        </div>
+        <div class="form-card">
+          <div id="cuenta-info"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/dashboard.js"></script>
+</body>
+</html>

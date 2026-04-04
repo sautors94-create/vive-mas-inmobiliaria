@@ -31,7 +31,19 @@ const authLimiter = rateLimit({
   message: { error: 'Demasiados intentos de login, intenta de nuevo en 15 minutos' }
 });
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
+      scriptSrcAttr: ["'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "fonts.gstatic.com"],
+      fontSrc: ["'self'", "fonts.googleapis.com", "fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "res.cloudinary.com", "*.cloudinary.com"],
+      connectSrc: ["'self'"]
+    }
+  }
+}));
 app.use(cors({ origin: process.env.CLIENT_URL || '*', credentials: true }));
 app.use(morgan('dev'));
 app.use(express.json());
