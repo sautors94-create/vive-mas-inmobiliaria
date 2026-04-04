@@ -1,0 +1,115 @@
+.catalogo-header {
+  background: linear-gradient(135deg, #0f1923 0%, #1a472a 100%);
+  padding: 120px 0 40px;
+  color: white;
+}
+
+.catalogo-header h1 {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+
+.catalogo-header p {
+  color: rgba(255,255,255,0.7);
+  font-size: 16px;
+}
+
+.catalogo-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 32px;
+  padding-top: 40px;
+  padding-bottom: 80px;
+  align-items: start;
+}
+
+.filtros-sidebar {
+  position: sticky;
+  top: 90px;
+}
+
+.filtros-box {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.filtros-box h3 {
+  font-size: 18px;
+  margin-bottom: 20px;
+  color: var(--text);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.filtro-grupo {
+  margin-bottom: 16px;
+}
+
+.filtro-grupo label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.resultados-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.resultados-header span {
+  font-size: 14px;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.paginacion {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 40px;
+  flex-wrap: wrap;
+}
+
+.paginacion button {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  transition: all 0.2s;
+}
+
+.paginacion button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.paginacion button.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .catalogo-layout {
+    grid-template-columns: 1fr;
+  }
+  .filtros-sidebar {
+    position: static;
+  }
+}
