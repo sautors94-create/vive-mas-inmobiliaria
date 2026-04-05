@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Servicios — Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container nav-content">
+      <a href="/" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <span class="logo-sub">Inmobiliaria</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/">Inicio</a></li>
+        <li><a href="catalogo.html">Catálogo</a></li>
+        <li><a href="servicios.html" class="active">Servicios</a></li>
+        <li><a href="nosotros.html">Nosotros</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="login.html" class="btn btn-outline" id="btn-login">Iniciar sesión</a>
+        <a href="registro.html" class="btn btn-primary">Publicar</a>
+      </div>
+      <button class="nav-toggle" id="nav-toggle">&#9776;</button>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <div style="background:linear-gradient(135deg,#0f1923 0%,#1a472a 100%);padding:120px 0 60px;color:white">
+    <div class="container">
+      <h1 style="font-size:48px;margin-bottom:16px">Nuestros servicios</h1>
+      <p style="color:rgba(255,255,255,0.7);font-size:18px;max-width:600px">Soluciones integrales para la gestión y administración de bienes inmuebles en México.</p>
+    </div>
+  </div>
+
+  <!-- SERVICIOS PRINCIPALES -->
+  <section class="section">
+    <div class="container">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:32px">
+
+        <div style="background:white;border-radius:20px;padding:40px;border:1px solid var(--border);box-shadow:var(--shadow)">
+          <div style="font-size:48px;margin-bottom:20px">🏠</div>
+          <h3 style="font-size:24px;margin-bottom:12px;font-family:'Bricolage Grotesque',sans-serif">Renta de inmuebles</h3>
+          <p style="color:var(--text-light);line-height:1.7;margin-bottom:20px">Conectamos propietarios con inquilinos ideales. Nos encargamos de la búsqueda, selección, contratos y seguimiento del arrendamiento.</p>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:8px">
+            <li style="font-size:14px;color:var(--text-light)">✓ Publicación en plataforma digital</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Selección y verificación de inquilinos</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Elaboración de contratos</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Seguimiento mensual de pagos</li>
+          </ul>
+        </div>
+
+        <div style="background:white;border-radius:20px;padding:40px;border:1px solid var(--border);box-shadow:var(--shadow)">
+          <div style="font-size:48px;margin-bottom:20px">🤝</div>
+          <h3 style="font-size:24px;margin-bottom:12px;font-family:'Bricolage Grotesque',sans-serif">Compra y venta</h3>
+          <p style="color:var(--text-light);line-height:1.7;margin-bottom:20px">Asesoramos en todo el proceso de compraventa de inmuebles, desde la valuación hasta la escrituración.</p>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:8px">
+            <li style="font-size:14px;color:var(--text-light)">✓ Valuación profesional</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Asesoría legal y fiscal</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Gestión de escrituración</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Trámites ante notaría</li>
+          </ul>
+        </div>
+
+        <div style="background:white;border-radius:20px;padding:40px;border:1px solid var(--border);box-shadow:var(--shadow)">
+          <div style="font-size:48px;margin-bottom:20px">⚡</div>
+          <h3 style="font-size:24px;margin-bottom:12px;font-family:'Bricolage Grotesque',sans-serif">Pago de servicios</h3>
+          <p style="color:var(--text-light);line-height:1.7;margin-bottom:20px">Gestionamos el pago puntual de todos los servicios de tu propiedad para que no te preocupes por nada.</p>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:8px">
+            <li style="font-size:14px;color:var(--text-light)">✓ Luz y gas</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Agua y predial</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Internet y televisión</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Reportes mensuales</li>
+          </ul>
+        </div>
+
+        <div style="background:white;border-radius:20px;padding:40px;border:1px solid var(--border);box-shadow:var(--shadow)">
+          <div style="font-size:48px;margin-bottom:20px">🏢</div>
+          <h3 style="font-size:24px;margin-bottom:12px;font-family:'Bricolage Grotesque',sans-serif">Administración de edificios</h3>
+          <p style="color:var(--text-light);line-height:1.7;margin-bottom:20px">Administración integral de edificios, condominios y residenciales con transparencia y profesionalismo.</p>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:8px">
+            <li style="font-size:14px;color:var(--text-light)">✓ Cobro de cuotas de mantenimiento</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Gestión de áreas comunes</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Cuotas de seguridad</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Reportes financieros</li>
+          </ul>
+        </div>
+
+        <div style="background:white;border-radius:20px;padding:40px;border:1px solid var(--border);box-shadow:var(--shadow)">
+          <div style="font-size:48px;margin-bottom:20px">🔧</div>
+          <h3 style="font-size:24px;margin-bottom:12px;font-family:'Bricolage Grotesque',sans-serif">Mantenimiento y reparaciones</h3>
+          <p style="color:var(--text-light);line-height:1.7;margin-bottom:20px">Coordinamos y supervisamos todo tipo de reparaciones y mantenimiento preventivo de tu propiedad.</p>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:8px">
+            <li style="font-size:14px;color:var(--text-light)">✓ Plomería y electricidad</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Pintura y acabados</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Remodelaciones</li>
+            <li style="font-size:14px;color:var(--text-light)">✓ Mantenimiento preventivo</li>
+          </ul>
+        </div>
+
+        <div style="background:linear-gradient(135deg,#1a472a,#2d6a4f);border-radius:20px;padding:40px;color:white">
+          <div style="font-size:48px;margin-bottom:20px">⭐</div>
+          <h3 style="font-size:24px;margin-bottom:12px;font-family:'Bricolage Grotesque',sans-serif">Plan Premium</h3>
+          <p style="color:rgba(255,255,255,0.8);line-height:1.7;margin-bottom:20px">El servicio más completo para propietarios que quieren delegar todo y recibir resultados.</p>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:8px">
+            <li style="font-size:14px;color:rgba(255,255,255,0.8)">✓ Fotografía profesional</li>
+            <li style="font-size:14px;color:rgba(255,255,255,0.8)">✓ Impulso en plataformas</li>
+            <li style="font-size:14px;color:rgba(255,255,255,0.8)">✓ Gestoría completa</li>
+            <li style="font-size:14px;color:rgba(255,255,255,0.8)">✓ Atención prioritaria 24/7</li>
+          </ul>
+          <a href="registro.html" class="btn btn-accent" style="margin-top:24px;display:inline-flex">Contratar ahora</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <div class="footer-brand">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <p>La plataforma inmobiliaria más confiable de México.</p>
+      </div>
+      <div class="footer-links">
+        <a href="catalogo.html">Catálogo</a>
+        <a href="servicios.html">Servicios</a>
+        <a href="nosotros.html">Nosotros</a>
+        <a href="terminos.html">Términos y condiciones</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 Vive Más Inmobiliaria. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+</body>
+</html>
