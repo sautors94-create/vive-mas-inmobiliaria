@@ -62,7 +62,7 @@ const crearCardPropiedad = (p) => {
     : `<div style="height:200px;background:#f0f4f0;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:13px;">Sin fotografías</div>`;
 
   return `
-    <div class="property-card" onclick="window.location='pages/propiedad.html?id=${p._id}'">
+    <div class="property-card" onclick="window.location=window.location.pathname.includes('/pages/') ? 'propiedad.html?id=${p._id}' : 'pages/propiedad.html?id=${p._id}'">
       <div class="property-img">${foto}</div>
       <div class="property-body">
         <div class="property-tags">

@@ -1,4 +1,3 @@
- 
 const auth = {
   getToken: () => localStorage.getItem('accessToken'),
   getUser: () => {
@@ -22,13 +21,19 @@ const auth = {
   }
 };
 
+const getBasePath = () => {
+  return window.location.pathname.includes('/pages/') ? '' : 'pages/';
+};
+
 const actualizarNavbar = () => {
   const btnLogin = document.getElementById('btn-login');
   if (!btnLogin) return;
   const user = auth.getUser();
   if (auth.isLoggedIn() && user) {
     btnLogin.textContent = user.nombre.split(' ')[0];
-    btnLogin.href = auth.isAdmin() ? 'pages/admin.html' : 'pages/dashboard.html';
+    btnLogin.href = auth.isAdmin()
+      ? getBasePath() + 'admin.html'
+      : getBasePath() + 'dashboard.html';
   }
 };
 
