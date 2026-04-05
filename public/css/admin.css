@@ -1,0 +1,101 @@
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.stat-numero {
+  font-size: 48px;
+  font-weight: 700;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.stat-card.verde .stat-numero { color: #2e7d32; }
+.stat-card.naranja .stat-numero { color: #e65100; }
+.stat-card.azul .stat-numero { color: #1565c0; }
+.stat-card.rojo .stat-numero { color: #c62828; }
+.stat-card.morado .stat-numero { color: #6a1b9a; }
+
+.usuarios-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.usuario-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 16px 24px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow);
+}
+
+.usuario-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  flex-shrink: 0;
+}
+
+.usuario-info {
+  flex: 1;
+}
+
+.usuario-nombre {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.usuario-meta {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+.usuario-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.plan-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  text-transform: capitalize;
+}
+
+.plan-gratuito { background: #f3f4f6; color: #6b7280; }
+.plan-basico { background: #dbeafe; color: #1d4ed8; }
+.plan-premium { background: #fef3c7; color: #d97706; }

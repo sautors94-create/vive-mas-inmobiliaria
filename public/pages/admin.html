@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Admin — Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container nav-content">
+      <a href="/" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <span class="logo-sub">Admin</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/">Sitio público</a></li>
+      </ul>
+      <div class="nav-actions">
+        <span style="font-size:14px;color:var(--text-light)">Panel de administración</span>
+        <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-user">
+        <div class="user-avatar" style="background:var(--accent-dark)">A</div>
+        <div class="user-info">
+          <div class="user-name">Admin</div>
+          <div class="user-plan">Panel de control</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="sidebar-link active" onclick="mostrarSeccion('dashboard')">
+          📊 Dashboard
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('revision')">
+          ⏳ En revisión
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('propiedades')">
+          🏠 Propiedades
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('usuarios')">
+          👥 Usuarios
+        </a>
+      </nav>
+    </aside>
+
+    <!-- CONTENIDO -->
+    <main class="dashboard-main">
+
+      <!-- DASHBOARD STATS -->
+      <section id="sec-dashboard" class="dash-section">
+        <div class="dash-section-header">
+          <h2>Dashboard</h2>
+        </div>
+        <div class="stats-grid" id="stats-grid">
+          <div class="loading">Cargando estadísticas...</div>
+        </div>
+      </section>
+
+      <!-- EN REVISIÓN -->
+      <section id="sec-revision" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Propiedades en revisión</h2>
+        </div>
+        <div id="revision-lista" class="mis-props-grid">
+          <div class="loading">Cargando...</div>
+        </div>
+      </section>
+
+      <!-- TODAS LAS PROPIEDADES -->
+      <section id="sec-propiedades" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Todas las propiedades</h2>
+          <select id="filtro-status" class="filter-select" style="width:auto" onchange="cargarTodasPropiedades()">
+            <option value="">Todas</option>
+            <option value="revision">En revisión</option>
+            <option value="aprobada">Aprobadas</option>
+            <option value="rechazada">Rechazadas</option>
+          </select>
+        </div>
+        <div id="todas-props-lista" class="mis-props-grid">
+          <div class="loading">Cargando...</div>
+        </div>
+      </section>
+
+      <!-- USUARIOS -->
+      <section id="sec-usuarios" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Usuarios registrados</h2>
+          <select id="filtro-plan" class="filter-select" style="width:auto" onchange="cargarUsuarios()">
+            <option value="">Todos los planes</option>
+            <option value="gratuito">Gratuito</option>
+            <option value="basico">Básico</option>
+            <option value="premium">Premium</option>
+          </select>
+        </div>
+        <div id="usuarios-lista" class="usuarios-lista">
+          <div class="loading">Cargando...</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL RECHAZO -->
+  <div id="modal-rechazo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:white;border-radius:16px;padding:32px;max-width:480px;width:90%">
+      <h3 style="margin-bottom:16px">Motivo de rechazo</h3>
+      <textarea id="motivo-rechazo" class="form-input" rows="4" placeholder="Explica el motivo del rechazo..."></textarea>
+      <div style="display:flex;gap:12px;margin-top:16px">
+        <button class="btn btn-primary" onclick="confirmarRechazo()" style="flex:1">Confirmar rechazo</button>
+        <button class="btn btn-outline" onclick="cerrarModal()" style="flex:1">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+</body>
+</html>
