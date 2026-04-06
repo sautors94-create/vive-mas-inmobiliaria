@@ -63,6 +63,10 @@ const limpiarFiltros = () => {
   document.getElementById('f-estado').value = '';
   document.getElementById('f-precio-min').value = '';
   document.getElementById('f-precio-max').value = '';
+  document.getElementById('f-precio-min-range').value = 0;
+  document.getElementById('f-precio-max-range').value = 100000000;
+  document.getElementById('label-min').textContent = '$0';
+  document.getElementById('label-max').textContent = '$100,000,000';
   paginaActual = 1;
   cargarPropiedades();
 };
@@ -75,7 +79,43 @@ const cargarFiltrosDesdeURL = () => {
   if (params.get('precioMin')) document.getElementById('f-precio-min').value = params.get('precioMin');
   if (params.get('precioMax')) document.getElementById('f-precio-max').value = params.get('precioMax');
 };
+const formatSlider = (valor) => {
+  if (valor >= 1000000) return `$${(valor/1000000).toFixed(1)}M`;
+  if (valor >= 1000) return `$${(valor/1000).toFixed(0)}K`;
+  return `$${valor}`;
+};
 
+const actualizarSliderMin = (valor) => {
+  const max = parseInt(document.getElementById('f-precio-max-range').value);
+  if (parseInt(valor) > max) {
+    document.getElementById('f-precio-min-range').value = max;
+    valor = max;
+  }
+  document.getElementById('label-min').textContent = formatSlider(valor);
+  document.getElementById('f-precio-min').value = valor;
+  document.getElementById('f-precio-min').placeholder = formatSlider(valor);
+};
+
+const actualizarSliderMax = (valor) => {
+  const min = parseInt(document.getElementById('f-precio-min-range').value);
+  if (parseInt(valor) < min) {
+    document.getElementById('f-precio-max-range').value = min;
+    valor = min;
+  }
+  document.getElementById('label-max').textContent = formatSlider(valor);
+  document.getElementById('f-precio-max').value = valor;
+  document.getElementById('f-precio-max').placeholder = formatSlider(valor);
+};
+
+const actualizarDesdeInput = (tipo, valor) => {
+  if (tipo === 'min') {
+    document.getElementById('f-precio-min-range').value = valor || 0;
+    document.getElementById('label-min').textContent = formatSlider(valor || 0);
+  } else {
+    document.getElementById('f-precio-max-range').value = valor || 100000000;
+    document.getElementById('label-max').textContent = formatSlider(valor || 10000000);
+  }
+};
 document.addEventListener('DOMContentLoaded', () => {
   cargarFiltrosDesdeURL();
   cargarPropiedades();

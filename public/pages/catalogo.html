@@ -83,14 +83,20 @@
           </select>
         </div>
 
-        <div class="filtro-grupo">
-          <label>Precio mínimo</label>
-          <input type="number" id="f-precio-min" class="filter-input" placeholder="$ 0">
-        </div>
-
-        <div class="filtro-grupo">
-          <label>Precio máximo</label>
-          <input type="number" id="f-precio-max" class="filter-input" placeholder="$ Sin límite">
+        <label>Rango de precio</label>
+          <div class="precio-slider-wrap">
+            <div class="precio-slider-valores">
+              <span id="label-min">$0</span>
+              <span id="label-max">$100,000,000</span>
+            </div>
+            <input type="range" class="precio-range" id="f-precio-min-range" min="0" max="100000000" step="50000" value="0" oninput="actualizarSliderMin(this.value)">
+            <input type="range" class="precio-range" id="f-precio-max-range" min="0" max="100000000" step="50000" value="100000000" oninput="actualizarSliderMax(this.value)" style="margin-top:6px">
+            <div class="precio-input-wrap">
+              <input type="text" id="f-precio-min" placeholder="Mín $0" oninput="actualizarDesdeInput('min', this.value)">
+              <span>—</span>
+              <input type="text" id="f-precio-max" placeholder="Máx $100M" oninput="actualizarDesdeInput('max', this.value)">
+            </div>
+          </div>
         </div>
 
         <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="aplicarFiltros()">

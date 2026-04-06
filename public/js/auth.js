@@ -37,4 +37,4 @@ const actualizarNavbar = () => {
   }
 };
 
-document.addEventListener('DOMContentLoaded', actualizarNavbar);
+document.addEventListener('DOMContentLoaded', actualizarNavbar);  
