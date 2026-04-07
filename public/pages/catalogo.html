@@ -11,7 +11,6 @@
 </head>
 <body>
 
-  <!-- NAVBAR -->
   <nav class="navbar">
     <div class="container nav-content">
       <a href="/" class="logo">
@@ -40,15 +39,12 @@
     </div>
   </div>
 
-  <!-- CONTENIDO -->
-  <div class="catalogo-layout container">
-
-    <!-- FILTROS SIDEBAR -->
-    <aside class="filtros-sidebar">
-      <div class="filtros-box">
-        <h3>Filtrar propiedades</h3>
-
-        <div class="filtro-grupo">
+  <!-- FILTROS HORIZONTALES -->
+  <div class="filtros-horizontal">
+    <div class="filtros-toggle">Filtros de búsqueda <span>— pasa el mouse para ver</span></div>
+    <div class="container">
+      <div class="filtros-row">
+        <div class="filtro-item">
           <label>Operación</label>
           <select id="f-operacion" class="filter-select">
             <option value="">Todas</option>
@@ -56,8 +52,7 @@
             <option value="venta">Venta</option>
           </select>
         </div>
-
-        <div class="filtro-grupo">
+        <div class="filtro-item">
           <label>Tipo</label>
           <select id="f-tipo" class="filter-select">
             <option value="">Todos</option>
@@ -67,8 +62,7 @@
             <option value="local">Local comercial</option>
           </select>
         </div>
-
-        <div class="filtro-grupo">
+        <div class="filtro-item">
           <label>Estado</label>
           <select id="f-estado" class="filter-select">
             <option value="">Todos</option>
@@ -82,50 +76,35 @@
             <option value="Oaxaca">Oaxaca</option>
           </select>
         </div>
-
-        <label>Rango de precio</label>
-          <div class="precio-slider-wrap">
-            <div class="precio-slider-valores">
-              <span id="label-min">$0</span>
-              <span id="label-max">$100,000,000</span>
-            </div>
+        <div class="filtro-item filtro-precio">
+          <label>Precio: <span id="label-min">$0</span> — <span id="label-max">$100M</span></label>
+          <div class="precio-doble">
             <input type="range" class="precio-range" id="f-precio-min-range" min="0" max="100000000" step="50000" value="0" oninput="actualizarSliderMin(this.value)">
-            <input type="range" class="precio-range" id="f-precio-max-range" min="0" max="100000000" step="50000" value="100000000" oninput="actualizarSliderMax(this.value)" style="margin-top:6px">
-            <div class="precio-input-wrap">
-              <input type="text" id="f-precio-min" placeholder="Mín $0" oninput="actualizarDesdeInput('min', this.value)">
-              <span>—</span>
-              <input type="text" id="f-precio-max" placeholder="Máx $100M" oninput="actualizarDesdeInput('max', this.value)">
-            </div>
+            <input type="range" class="precio-range" id="f-precio-max-range" min="0" max="100000000" step="50000" value="100000000" oninput="actualizarSliderMax(this.value)">
           </div>
         </div>
-
-        <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="aplicarFiltros()">
-          Aplicar filtros
-        </button>
-        <button class="btn btn-outline" style="width:100%;margin-top:8px" onclick="limpiarFiltros()">
-          Limpiar filtros
-        </button>
+        <div class="filtro-item" style="justify-content:flex-end;gap:8px;display:flex;align-items:flex-end">
+          <button class="btn btn-primary" onclick="aplicarFiltros()">Buscar</button>
+          <button class="btn btn-outline" onclick="limpiarFiltros()">Limpiar</button>
+        </div>
       </div>
-    </aside>
+    </div>
+  </div>
 
-    <!-- RESULTADOS -->
-    <main class="catalogo-resultados">
-      <div class="resultados-header">
-        <span id="total-resultados">Cargando...</span>
-        <select id="f-orden" class="filter-select" style="width:auto" onchange="aplicarFiltros()">
-          <option value="-createdAt">Más recientes</option>
-          <option value="precio">Menor precio</option>
-          <option value="-precio">Mayor precio</option>
-        </select>
-      </div>
-
-      <div class="properties-grid" id="properties-grid">
-        <div class="loading">Cargando propiedades...</div>
-      </div>
-
-      <!-- PAGINACIÓN -->
-      <div class="paginacion" id="paginacion"></div>
-    </main>
+  <!-- RESULTADOS -->
+  <div class="container" style="padding-top:32px;padding-bottom:80px">
+    <div class="resultados-header">
+      <span id="total-resultados">Cargando...</span>
+      <select id="f-orden" class="filter-select" style="width:auto" onchange="aplicarFiltros()">
+        <option value="-createdAt">Más recientes</option>
+        <option value="precio">Menor precio</option>
+        <option value="-precio">Mayor precio</option>
+      </select>
+    </div>
+    <div class="properties-grid" id="properties-grid">
+      <div class="loading">Cargando propiedades...</div>
+    </div>
+    <div class="paginacion" id="paginacion"></div>
   </div>
 
   <!-- FOOTER -->
