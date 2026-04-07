@@ -81,31 +81,43 @@
       </section>
 
       <!-- TODAS LAS PROPIEDADES -->
-      <section id="sec-propiedades" class="dash-section" style="display:none">
-        <div class="dash-section-header">
-          <h2>Todas las propiedades</h2>
-          <select id="filtro-status" class="filter-select" style="width:auto" onchange="cargarTodasPropiedades()">
-            <option value="">Todas</option>
-            <option value="revision">En revisión</option>
-            <option value="aprobada">Aprobadas</option>
-            <option value="rechazada">Rechazadas</option>
-          </select>
-        </div>
-        <div id="todas-props-lista" class="mis-props-grid">
-          <div class="loading">Cargando...</div>
-        </div>
-      </section>
+          <section id="sec-propiedades" class="dash-section" style="display:none">
+            <div class="dash-section-header">
+              <h2>Todas las propiedades</h2>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="text" id="search-props" class="form-input" placeholder="Buscar propiedad..." style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarTodasPropiedades()">
+                <select id="filtro-status" class="filter-select" style="width:auto" onchange="cargarTodasPropiedades()">
+                  <option value="">Todas</option>
+                  <option value="revision">En revisión</option>
+                  <option value="aprobada">Aprobadas</option>
+                  <option value="rechazada">Rechazadas</option>
+                  <option value="bloqueada">Bloqueadas</option>
+                </select>
+              </div>
+            </div>
+            <div id="todas-props-lista" class="mis-props-grid">
+              <div class="loading">Cargando...</div>
+            </div>
+          </section>
 
       <!-- USUARIOS -->
       <section id="sec-usuarios" class="dash-section" style="display:none">
         <div class="dash-section-header">
           <h2>Usuarios registrados</h2>
-          <select id="filtro-plan" class="filter-select" style="width:auto" onchange="cargarUsuarios()">
-            <option value="">Todos los planes</option>
-            <option value="gratuito">Gratuito</option>
-            <option value="basico">Básico</option>
-            <option value="premium">Premium</option>
-          </select>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="search-usuarios" class="form-input" placeholder="Buscar usuario..." style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarUsuarios()">
+            <select id="filtro-plan" class="filter-select" style="width:auto" onchange="cargarUsuarios()">
+              <option value="">Todos los planes</option>
+              <option value="gratuito">Gratuito</option>
+              <option value="basico">Básico</option>
+              <option value="premium">Premium</option>
+            </select>
+            <select id="filtro-status-user" class="filter-select" style="width:auto" onchange="cargarUsuarios()">
+              <option value="">Todos los status</option>
+              <option value="activo">Activos</option>
+              <option value="suspendido">Suspendidos</option>
+            </select>
+          </div>
         </div>
         <div id="usuarios-lista" class="usuarios-lista">
           <div class="loading">Cargando...</div>

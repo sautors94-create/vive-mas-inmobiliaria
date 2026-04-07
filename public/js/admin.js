@@ -13,7 +13,6 @@ const mostrarSeccion = (seccion) => {
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
   document.getElementById(`sec-${seccion}`).style.display = 'block';
   event.target.closest('.sidebar-link')?.classList.add('active');
-
   if (seccion === 'dashboard') cargarDashboard();
   if (seccion === 'revision') cargarRevision();
   if (seccion === 'propiedades') cargarTodasPropiedades();
@@ -26,27 +25,14 @@ const cargarDashboard = async () => {
   if (!data.ok) return;
   const s = data.stats;
   grid.innerHTML = `
-    <div class="stat-card azul">
-      <div class="stat-numero">${s.totalUsuarios}</div>
-      <div class="stat-label">Usuarios registrados</div>
-    </div>
-    <div class="stat-card verde">
-      <div class="stat-numero">${s.totalPropiedades}</div>
-      <div class="stat-label">Total propiedades</div>
-    </div>
-    <div class="stat-card naranja">
-      <div class="stat-numero">${s.enRevision}</div>
-      <div class="stat-label">En revisión</div>
-    </div>
-    <div class="stat-card verde">
-      <div class="stat-numero">${s.aprobadas}</div>
-      <div class="stat-label">Aprobadas</div>
-    </div>
-    <div class="stat-card rojo">
-      <div class="stat-numero">${s.rechazadas}</div>
-      <div class="stat-label">Rechazadas</div>
-    </div>
-  `;
+    <div class="stat-card azul"><div class="stat-numero">${s.totalUsuarios}</div><div class="stat-label">Usuarios registrados</div></div>
+    <div class="stat-card verde"><div class="stat-numero">${s.totalPropiedades}</div><div class="stat-label">Total propiedades</div></div>
+    <div class="stat-card naranja"><div class="stat-numero">${s.enRevision}</div><div class="stat-label">En revisión</div></div>
+    <div class="stat-card verde"><div class="stat-numero">${s.aprobadas}</div><div class="stat-label">Aprobadas</div></div>
+    <div class="stat-card rojo"><div class="stat-numero">${s.rechazadas}</div><div class="stat-label">Rechazadas</div></div>
+    <div class="stat-card morado"><div class="stat-numero">${s.bloqueadas || 0}</div><div class="stat-label">Bloqueadas</div></div>
+    <div class="stat-card azul"><div class="stat-numero">${s.usuariosBasico || 0}</div><div class="stat-label">Plan Básico</div></div>
+    <div class="stat-card naranja"><div class="stat-numero">${s.usuariosPremium || 0}</div><div class="stat-label">Plan Premium</div></div>`;
 };
 
 const cargarRevision = async () => {
@@ -62,12 +48,43 @@ const cargarRevision = async () => {
 const cargarTodasPropiedades = async () => {
   const lista = document.getElementById('todas-props-lista');
   const status = document.getElementById('filtro-status')?.value || '';
-  const data = await api.get(`/admin/propiedades${status ? '?status=' + status : ''}`);
+  const search = document.getElementById('search-props')?.value || '';
+  const url = `/admin/propiedades?${status ? 'status=' + status : ''}${search ? '&search=' + search : ''}`;
+  const data = await api.get(url);
   if (!data.propiedades || data.propiedades.length === 0) {
     lista.innerHTML = '<div class="loading">No hay propiedades.</div>';
     return;
   }
   lista.innerHTML = data.propiedades.map(p => crearCardAdmin(p)).join('');
+};
+
+const cargarUsuarios = async () => {
+  const lista = document.getElementById('usuarios-lista');
+  const plan = document.getElementById('filtro-plan')?.value || '';
+  const search = document.getElementById('search-usuarios')?.value || '';
+  const url = `/admin/usuarios?${plan ? 'plan=' + plan : ''}${search ? '&search=' + search : ''}`;
+  const data = await api.get(url);
+  if (!data.usuarios || data.usuarios.length === 0) {
+    lista.innerHTML = '<div class="loading">No hay usuarios.</div>';
+    return;
+  }
+  lista.innerHTML = data.usuarios.map(u => `
+    <div class="usuario-card">
+      <div class="usuario-avatar">${u.nombre.charAt(0).toUpperCase()}</div>
+      <div class="usuario-info">
+        <div class="usuario-nombre">${u.nombre}</div>
+        <div class="usuario-meta">${u.email} · ${u.telefono || 'Sin teléfono'} · ${new Date(u.createdAt).toLocaleDateString('es-MX')}</div>
+      </div>
+      <div class="usuario-actions">
+        <span class="plan-badge plan-${u.plan}">${u.plan}</span>
+        <span class="status-badge status-${u.status}">${u.status}</span>
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px" onclick="cambiarPlan('${u._id}', '${u.plan}')">Plan</button>
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;border-color:${u.status === 'activo' ? '#e65100' : '#2e7d32'};color:${u.status === 'activo' ? '#e65100' : '#2e7d32'}" onclick="suspenderUsuario('${u._id}')">
+          ${u.status === 'activo' ? 'Suspender' : 'Activar'}
+        </button>
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;border-color:#c62828;color:#c62828" onclick="eliminarUsuario('${u._id}', '${u.nombre}')">Eliminar</button>
+      </div>
+    </div>`).join('');
 };
 
 const crearCardAdmin = (p) => `
@@ -81,32 +98,32 @@ const crearCardAdmin = (p) => `
       <div class="prop-admin-titulo">${p.titulo}</div>
       <div class="prop-admin-meta">
         ${p.ubicacion.ciudad}, ${p.ubicacion.estado} · ${formatPrecio(p.precio)}
-        ${p.propietario ? ` · Propietario: ${p.propietario.nombre}` : ''}
+        ${p.propietario ? ` · ${p.propietario.nombre}` : ''}
       </div>
       ${p.motivo_rechazo ? `<div style="font-size:12px;color:#c62828;margin-top:4px">Motivo: ${p.motivo_rechazo}</div>` : ''}
     </div>
     <div class="prop-admin-actions">
       <span class="status-badge status-${p.status}">${p.status}</span>
       ${p.status === 'revision' ? `
-        <button class="btn btn-primary" style="padding:6px 14px;font-size:13px" onclick="aprobarPropiedad('${p._id}')">Aprobar</button>
-        <button class="btn btn-outline" style="padding:6px 14px;font-size:13px;border-color:#c62828;color:#c62828" onclick="abrirModalRechazo('${p._id}')">Rechazar</button>
+        <button class="btn btn-primary" style="padding:5px 12px;font-size:12px" onclick="aprobarPropiedad('${p._id}')">Aprobar</button>
+        <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;border-color:#e65100;color:#e65100" onclick="abrirModalRechazo('${p._id}')">Rechazar</button>
       ` : ''}
+      <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;border-color:${p.status === 'bloqueada' ? '#2e7d32' : '#6a1b9a'};color:${p.status === 'bloqueada' ? '#2e7d32' : '#6a1b9a'}" onclick="bloquearPropiedad('${p._id}')">
+        ${p.status === 'bloqueada' ? 'Desbloquear' : 'Bloquear'}
+      </button>
+      <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;border-color:#c62828;color:#c62828" onclick="eliminarPropAdmin('${p._id}', '${p.titulo}')">Eliminar</button>
     </div>
   </div>`;
 
 const aprobarPropiedad = async (id) => {
   const data = await api.patch(`/admin/propiedades/${id}/aprobar`);
-  if (data.ok) {
-    cargarRevision();
-    cargarDashboard();
-  }
+  if (data.ok) { cargarRevision(); cargarDashboard(); }
 };
 
 const abrirModalRechazo = (id) => {
   propiedadArechazar = id;
   document.getElementById('motivo-rechazo').value = '';
-  const modal = document.getElementById('modal-rechazo');
-  modal.style.display = 'flex';
+  document.getElementById('modal-rechazo').style.display = 'flex';
 };
 
 const cerrarModal = () => {
@@ -116,54 +133,37 @@ const cerrarModal = () => {
 
 const confirmarRechazo = async () => {
   const motivo = document.getElementById('motivo-rechazo').value.trim();
-  if (!motivo) {
-    alert('Por favor escribe el motivo del rechazo');
-    return;
-  }
+  if (!motivo) { alert('Por favor escribe el motivo del rechazo'); return; }
   const data = await api.patch(`/admin/propiedades/${propiedadArechazar}/rechazar`, { motivo });
-  if (data.ok) {
-    cerrarModal();
-    cargarRevision();
-    cargarDashboard();
-  }
+  if (data.ok) { cerrarModal(); cargarRevision(); cargarDashboard(); }
 };
 
-const cargarUsuarios = async () => {
-  const lista = document.getElementById('usuarios-lista');
-  const plan = document.getElementById('filtro-plan')?.value || '';
-  const data = await api.get(`/admin/usuarios${plan ? '?plan=' + plan : ''}`);
-  if (!data.usuarios || data.usuarios.length === 0) {
-    lista.innerHTML = '<div class="loading">No hay usuarios.</div>';
-    return;
-  }
-  lista.innerHTML = data.usuarios.map(u => `
-    <div class="usuario-card">
-      <div class="usuario-avatar">${u.nombre.charAt(0).toUpperCase()}</div>
-      <div class="usuario-info">
-        <div class="usuario-nombre">${u.nombre}</div>
-        <div class="usuario-meta">${u.email} · ${u.telefono || 'Sin teléfono'} · Registro: ${new Date(u.createdAt).toLocaleDateString('es-MX')}</div>
-      </div>
-      <div class="usuario-actions">
-        <span class="plan-badge plan-${u.plan}">${u.plan}</span>
-        <span class="status-badge status-${u.status}">${u.status}</span>
-        <button class="btn btn-outline" style="padding:6px 14px;font-size:12px" onclick="cambiarPlan('${u._id}', '${u.plan}')">Cambiar plan</button>
-        <button class="btn btn-outline" style="padding:6px 14px;font-size:12px;border-color:#c62828;color:#c62828" onclick="suspenderUsuario('${u._id}')">
-          ${u.status === 'activo' ? 'Suspender' : 'Activar'}
-        </button>
-      </div>
-    </div>`).join('');
+const bloquearPropiedad = async (id) => {
+  const data = await api.patch(`/admin/propiedades/${id}/bloquear`);
+  if (data.ok) { cargarTodasPropiedades(); cargarDashboard(); }
+};
+
+const eliminarPropAdmin = async (id, titulo) => {
+  if (!confirm(`¿Eliminar permanentemente "${titulo}"? Esta acción no se puede deshacer.`)) return;
+  const data = await api.delete(`/admin/propiedades/${id}`);
+  if (data.ok) { cargarTodasPropiedades(); cargarDashboard(); }
 };
 
 const cambiarPlan = async (id, planActual) => {
   const planes = ['gratuito', 'basico', 'premium'];
-  const nuevo = prompt(`Plan actual: ${planActual}\nEscribe el nuevo plan: gratuito, basico o premium`);
-  if (!nuevo || !planes.includes(nuevo)) return;
-  const data = await api.patch(`/admin/usuarios/${id}/plan`, { plan: nuevo });
+  const nuevo = prompt(`Plan actual: ${planActual}\nEscribe el nuevo plan:\ngratuito / basico / premium`);
+  if (!nuevo || !planes.includes(nuevo.trim())) return;
+  const data = await api.patch(`/admin/usuarios/${id}/plan`, { plan: nuevo.trim() });
   if (data.ok) cargarUsuarios();
 };
 
 const suspenderUsuario = async (id) => {
-  if (!confirm('¿Estás seguro?')) return;
   const data = await api.patch(`/admin/usuarios/${id}/suspender`);
   if (data.ok) cargarUsuarios();
+};
+
+const eliminarUsuario = async (id, nombre) => {
+  if (!confirm(`¿Eliminar al usuario "${nombre}"? Sus propiedades serán desactivadas.`)) return;
+  const data = await api.delete(`/admin/usuarios/${id}`);
+  if (data.ok) { cargarUsuarios(); cargarDashboard(); }
 };
