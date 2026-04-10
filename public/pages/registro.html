@@ -254,44 +254,46 @@
     };
 
     const registrarse = async () => {
-      const nombre = document.getElementById('r-nombre').value.trim();
-      const email = document.getElementById('r-email').value.trim();
-      const telefono = document.getElementById('r-telefono').value.trim();
-      const password = document.getElementById('r-password').value;
-      const terminos = document.getElementById('r-terminos').checked;
-      const errorEl = document.getElementById('reg-error');
-      const successEl = document.getElementById('reg-success');
+  const nombre = document.getElementById('r-nombre').value.trim();
+  const email = document.getElementById('r-email').value.trim();
+  const telefono = document.getElementById('r-telefono').value.trim();
+  const password = document.getElementById('r-password').value;
+  const terminos = document.getElementById('r-terminos').checked;
+  const metodoVerificacion = document.querySelector('input[name="verificacion"]:checked')?.value || 'email';
+  const errorEl = document.getElementById('reg-error');
+  const successEl = document.getElementById('reg-success');
 
-      errorEl.style.display = 'none';
-      successEl.style.display = 'none';
+  errorEl.style.display = 'none';
+  successEl.style.display = 'none';
 
-      if (!nombre || !email || !telefono || !password) {
-        errorEl.textContent = 'Por favor llena todos los campos obligatorios';
-        errorEl.style.display = 'block';
-        return;
-      }
-      if (password.length < 6) {
-        errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres';
-        errorEl.style.display = 'block';
-        return;
-      }
-      if (!terminos) {
-        errorEl.textContent = 'Debes aceptar los términos y condiciones';
-        errorEl.style.display = 'block';
-        return;
-      }
+  if (!nombre || !email || !telefono || !password) {
+    errorEl.textContent = 'Por favor llena todos los campos obligatorios';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (password.length < 6) {
+    errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (!terminos) {
+    errorEl.textContent = 'Debes aceptar los términos y condiciones';
+    errorEl.style.display = 'block';
+    return;
+  }
 
       const btn = document.getElementById('btn-registro');
       btn.textContent = 'Creando cuenta...';
       btn.disabled = true;
 
-      const data = await api.post('/auth/registro', { nombre, email, telefono, password, plan: planSeleccionado });
+      const data = await api.post('/auth/registro', { nombre, email, telefono, password, plan: planSeleccionado, metodoVerificacion });
 
       if (data.ok) {
-        auth.save(data.accessToken, data.user);
-        successEl.textContent = '¡Cuenta creada exitosamente! Redirigiendo a tu panel...';
+        successEl.textContent = '¡Cuenta creada! Te enviamos un código de verificación. Redirigiendo...';
         successEl.style.display = 'block';
-        setTimeout(() => window.location.href = 'dashboard.html', 1500);
+        setTimeout(() => {
+          window.location.href = `verificar.html?email=${encodeURIComponent(email)}`;
+        }, 1500);
       } else {
         errorEl.textContent = data.error || 'Error al crear la cuenta';
         errorEl.style.display = 'block';
