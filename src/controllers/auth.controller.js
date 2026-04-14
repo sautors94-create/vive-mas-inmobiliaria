@@ -134,5 +134,17 @@ const refreshToken = async (req, res) => {
     res.status(401).json({ error: 'Refresh token inválido o expirado' });
   }
 };
-
-module.exports = { registro, login, logout, perfil, refreshToken, verificarCodigo, reenviarCodigo };
+const actualizarNotificaciones = async (req, res) => {
+  try {
+    const { notificaciones } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { notificaciones },
+      { new: true }
+    );
+    res.json({ ok: true, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+module.exports = { registro, login, logout, perfil, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones };

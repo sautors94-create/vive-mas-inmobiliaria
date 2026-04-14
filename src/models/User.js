@@ -14,6 +14,12 @@ const userSchema = new mongoose.Schema({
   codigoVerificacion: { type: String, default: null },
   codigoExpira: { type: Date, default: null },
   metodoVerificacion: { type: String, enum: ['email', 'sms'], default: 'email' },
+  notificaciones: {
+    mensajes: { type: Boolean, default: true },
+    propiedadAprobada: { type: Boolean, default: true },
+    propiedadRechazada: { type: Boolean, default: true },
+    novedades: { type: Boolean, default: false },
+  },
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {

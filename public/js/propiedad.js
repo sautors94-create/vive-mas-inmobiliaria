@@ -81,21 +81,33 @@ const cargarPropiedad = async () => {
                 <div class="propietario-avatar">${p.propietario.nombre.charAt(0)}</div>
                 <div>
                   <div class="propietario-nombre">${p.propietario.nombre}</div>
-                  ${p.propietario.telefono ? `<div class="propietario-telefono">📞 ${p.propietario.telefono}</div>` : ''}
+                  <div class="propietario-telefono">Propietario verificado ✓</div>
                 </div>
               </div>
             ` : ''}
 
             <div id="contacto-form">
               ${auth.isLoggedIn() ? `
+                <p style="font-size:13px;color:var(--text-light);margin-bottom:12px">
+                  Envía un mensaje al propietario. Tus datos están protegidos.
+                </p>
                 <textarea class="mensaje-input" id="mensaje-texto" placeholder="Hola, me interesa esta propiedad. ¿Podría darme más información?"></textarea>
-                <button class="btn btn-primary" style="width:100%;padding:14px" onclick="enviarMensaje('${p._id}')">Enviar mensaje</button>
-                <button class="btn btn-outline" style="width:100%;padding:12px;margin-top:8px" onclick="agregarFavorito('${p._id}')">❤️ Guardar en favoritos</button>
+                <button class="btn btn-primary" style="width:100%;padding:14px" onclick="enviarMensaje('${p._id}')">
+                  Enviar mensaje
+                </button>
+                <button class="btn btn-outline" style="width:100%;padding:12px;margin-top:8px" onclick="toggleFavorito('${p._id}')">
+                  ❤️ Guardar en favoritos
+                </button>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:12px;padding:10px;background:var(--bg-secondary);border-radius:8px">
+                  <span style="font-size:16px">🔒</span>
+                  <span style="font-size:11px;color:var(--text-light)">Tus datos y los del propietario están protegidos. La comunicación es a través de Vive Más.</span>
+                </div>
               ` : `
-                <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Inicia sesión para contactar al propietario</p>
+                <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Inicia sesión para contactar al propietario de forma segura</p>
                 <a href="login.html" class="btn btn-primary" style="width:100%;padding:14px;text-align:center;display:block">Iniciar sesión</a>
                 <a href="registro.html" class="btn btn-outline" style="width:100%;padding:12px;margin-top:8px;text-align:center;display:block">Crear cuenta gratis</a>
               `}
+            </div>
             </div>
             <div id="contacto-msg" style="display:none;margin-top:12px"></div>
           </div>
@@ -147,4 +159,19 @@ const agregarFavorito = async (propiedadId) => {
     msgEl.innerHTML = `<div class="alert alert-error">${data.error || 'Error'}</div>`;
   }
   msgEl.style.display = 'block';
+  const toggleFavorito = async (propiedadId) => {
+  const msgEl = document.getElementById('contacto-msg');
+  const btn = document.querySelector('.btn-outline');
+  const data = await api.post(`/favoritos/${propiedadId}`, {});
+  if (data.ok) {
+    msgEl.innerHTML = '<div class="alert alert-success">❤️ Agregado a favoritos</div>';
+    btn.textContent = '❤️ En favoritos';
+    btn.style.borderColor = '#e24b4a';
+    btn.style.color = '#e24b4a';
+  } else {
+    msgEl.innerHTML = `<div class="alert alert-error">${data.error || 'Error'}</div>`;
+  }
+  msgEl.style.display = 'block';
+  setTimeout(() => msgEl.style.display = 'none', 3000);
+};
 };

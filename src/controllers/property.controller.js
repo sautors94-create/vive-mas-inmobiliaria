@@ -30,7 +30,7 @@ const listarPropiedades = async (req, res) => {
     const skip = (Number(pagina) - 1) * Number(limite);
     const total = await Property.countDocuments(filtro);
     const propiedades = await Property.find(filtro)
-      .populate('propietario', 'nombre email telefono')
+      .populate('propietario', 'nombre avatar')
       .sort({ destacada: -1, createdAt: -1 })
       .skip(skip)
       .limit(Number(limite));
@@ -49,7 +49,7 @@ const listarPropiedades = async (req, res) => {
 const detallePropiedad = async (req, res) => {
   try {
     const propiedad = await Property.findById(req.params.id)
-      .populate('propietario', 'nombre email telefono avatar');
+      .populate('propietario', 'nombre avatar');
     if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
     if (propiedad.status !== 'aprobada') return res.status(403).json({ error: 'Propiedad no disponible' });
     res.json({ ok: true, propiedad });

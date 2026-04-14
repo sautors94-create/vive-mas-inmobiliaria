@@ -118,5 +118,73 @@ const enviarBienvenida = async (email, nombre, plan) => {
     html,
   });
 };
+const enviarNotificacionMensaje = async (emailPropietario, nombrePropietario, nombreInteresado, tituloPropiedad, mensaje) => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
+        .container { max-width: 560px; margin: 40px auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .header { background: linear-gradient(135deg, #0f1923, #1a472a); padding: 40px; text-align: center; }
+        .logo { font-size: 28px; font-weight: 700; color: white; }
+        .logo span { color: #f4a261; }
+        .body { padding: 40px; }
+        .greeting { font-size: 18px; color: #1a1a2e; margin-bottom: 16px; font-weight: 600; }
+        .text { font-size: 15px; color: #6b7280; line-height: 1.6; margin-bottom: 24px; }
+        .mensaje-box { background: #f0f7f4; border-left: 4px solid #1a472a; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+        .mensaje-label { font-size: 12px; font-weight: 600; color: #1a472a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .mensaje-texto { font-size: 15px; color: #1a1a2e; line-height: 1.6; }
+        .propiedad-box { background: #f8f9fa; border-radius: 8px; padding: 16px; margin-bottom: 24px; border: 1px solid #e5e7eb; }
+        .propiedad-label { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+        .propiedad-titulo { font-size: 16px; font-weight: 600; color: #1a1a2e; }
+        .btn { display: inline-block; background: #1a472a; color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px; }
+        .aviso { font-size: 12px; color: #9ca3af; background: #f8f9fa; border-radius: 8px; padding: 12px; margin-top: 24px; }
+        .footer { background: #f8f9fa; padding: 24px 40px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">Vive<span>Más</span> Inmobiliaria</div>
+        </div>
+        <div class="body">
+          <div class="greeting">¡Hola, ${nombrePropietario}! 👋</div>
+          <div class="text">Tienes un nuevo mensaje de interés en tu propiedad. <strong>${nombreInteresado}</strong> quiere más información.</div>
+          
+          <div class="propiedad-box">
+            <div class="propiedad-label">Propiedad de interés</div>
+            <div class="propiedad-titulo">🏠 ${tituloPropiedad}</div>
+          </div>
 
-module.exports = { generarCodigo, enviarCodigoVerificacion, enviarBienvenida };
+          <div class="mensaje-box">
+            <div class="mensaje-label">Mensaje recibido</div>
+            <div class="mensaje-texto">"${mensaje}"</div>
+          </div>
+
+          <div style="text-align:center">
+            <a href="http://localhost:3000/pages/dashboard.html" class="btn">Ver mensaje completo</a>
+          </div>
+
+          <div class="aviso">
+            🔒 Los datos de contacto del interesado están protegidos. Responde a través de tu panel en Vive Más Inmobiliaria para mantener la comunicación segura.
+          </div>
+        </div>
+        <div class="footer">
+          © 2024 Vive Más Inmobiliaria · México<br>
+          Puedes configurar tus notificaciones desde tu panel de usuario.
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: emailPropietario,
+    subject: `💬 Nuevo mensaje sobre tu propiedad — ${tituloPropiedad}`,
+    html,
+  });
+};
+module.exports = { generarCodigo, enviarCodigoVerificacion, enviarBienvenida, enviarNotificacionMensaje };

@@ -88,7 +88,7 @@ const cargarCuenta = () => {
   const info = document.getElementById('cuenta-info');
   if (!user) return;
   info.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:32px">
       <div class="form-grupo">
         <label>Nombre completo</label>
         <input type="text" class="form-input" value="${user.nombre}" disabled>
@@ -105,16 +105,69 @@ const cargarCuenta = () => {
         <label>Plan actual</label>
         <input type="text" class="form-input" value="${user.plan}" disabled>
       </div>
-      <div class="form-grupo">
-        <label>Rol</label>
-        <input type="text" class="form-input" value="${user.role}" disabled>
-      </div>
-      <div class="form-grupo">
-        <label>Miembro desde</label>
-        <input type="text" class="form-input" value="${new Date(user.createdAt).toLocaleDateString('es-MX')}" disabled>
-      </div>
     </div>
-    <button class="btn btn-outline" style="margin-top:16px" onclick="auth.logout()">Cerrar sesión</button>`;
+
+    <div style="background:var(--bg-secondary);border-radius:16px;padding:24px;border:1px solid var(--border);margin-bottom:24px">
+      <h3 style="font-size:16px;margin-bottom:16px;font-family:'Bricolage Grotesque',sans-serif">🔔 Preferencias de notificaciones</h3>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <div>
+            <div style="font-size:14px;font-weight:500">Mensajes de interés</div>
+            <div style="font-size:12px;color:var(--text-light)">Cuando alguien envía mensaje sobre tu propiedad</div>
+          </div>
+          <input type="checkbox" id="notif-mensajes" ${user.notificaciones?.mensajes !== false ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <div>
+            <div style="font-size:14px;font-weight:500">Propiedad aprobada</div>
+            <div style="font-size:12px;color:var(--text-light)">Cuando el admin aprueba tu publicación</div>
+          </div>
+          <input type="checkbox" id="notif-aprobada" ${user.notificaciones?.propiedadAprobada !== false ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <div>
+            <div style="font-size:14px;font-weight:500">Propiedad rechazada</div>
+            <div style="font-size:12px;color:var(--text-light)">Cuando el admin rechaza tu publicación</div>
+          </div>
+          <input type="checkbox" id="notif-rechazada" ${user.notificaciones?.propiedadRechazada !== false ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer">
+        </label>
+        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <div>
+            <div style="font-size:14px;font-weight:500">Novedades y promociones</div>
+            <div style="font-size:12px;color:var(--text-light)">Nuevas propiedades y ofertas especiales</div>
+          </div>
+          <input type="checkbox" id="notif-novedades" ${user.notificaciones?.novedades ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer">
+        </label>
+      </div>
+      <button class="btn btn-primary" style="margin-top:20px;padding:10px 24px;font-size:14px" onclick="guardarNotificaciones()">
+        Guardar preferencias
+      </button>
+      <div id="notif-msg" style="display:none;margin-top:12px"></div>
+    </div>
+
+    <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>`;
+};
+
+const guardarNotificaciones = async () => {
+  const notificaciones = {
+    mensajes: document.getElementById('notif-mensajes').checked,
+    propiedadAprobada: document.getElementById('notif-aprobada').checked,
+    propiedadRechazada: document.getElementById('notif-rechazada').checked,
+    novedades: document.getElementById('notif-novedades').checked,
+  };
+  const msgEl = document.getElementById('notif-msg');
+  const data = await api.patch('/auth/notificaciones', { notificaciones });
+  if (data.ok) {
+    msgEl.innerHTML = '<div class="alert alert-success">✓ Preferencias guardadas</div>';
+    msgEl.style.display = 'block';
+    const userActual = auth.getUser();
+    userActual.notificaciones = notificaciones;
+    localStorage.setItem('user', JSON.stringify(userActual));
+    setTimeout(() => msgEl.style.display = 'none', 3000);
+  } else {
+    msgEl.innerHTML = '<div class="alert alert-error">Error al guardar</div>';
+    msgEl.style.display = 'block';
+  }
 };
 
 const publicarPropiedad = async () => {

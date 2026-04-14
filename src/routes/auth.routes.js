@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registro, login, logout, perfil, refreshToken, verificarCodigo, reenviarCodigo } = require('../controllers/auth.controller');
+const { registro, login, logout, perfil, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones } = require('../controllers/auth.controller');
 const authMiddleware = require('../middleware/auth.middleware');
 
 router.post('/registro', registro);
@@ -10,5 +10,6 @@ router.post('/refresh', refreshToken);
 router.post('/verificar', verificarCodigo);
 router.post('/reenviar-codigo', reenviarCodigo);
 router.get('/perfil', authMiddleware, perfil);
+router.patch('/notificaciones', authMiddleware, actualizarNotificaciones);
 
 module.exports = router;
