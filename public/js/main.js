@@ -2,13 +2,15 @@ const buscar = () => {
   const operacion = document.getElementById('tipo-operacion').value;
   const tipo = document.getElementById('tipo-propiedad').value;
   const estado = document.getElementById('estado').value;
-  const precioMax = document.getElementById('precio-max').value;
+  const precioMin = document.getElementById('precio-min-input').value;
+  const precioMax = document.getElementById('precio-max-input').value;
 
   const params = new URLSearchParams();
   if (operacion) params.append('operacion', operacion);
   if (tipo) params.append('tipo', tipo);
   if (estado) params.append('estado', estado);
-  if (precioMax) params.append('precioMax', precioMax);
+  if (precioMin) params.append('precioMin', precioMin);
+  if (precioMax && precioMax < 100000000) params.append('precioMax', precioMax);
 
   window.location.href = `pages/catalogo.html?${params.toString()}`;
 };
@@ -26,6 +28,21 @@ const cargarPropiedadesDestacadas = async () => {
   } catch (error) {
     grid.innerHTML = '<div class="loading">Error cargando propiedades.</div>';
   }
+};
+const formatPrecioSlider = (valor) => {
+  if (valor >= 1000000) return `$${(valor/1000000).toFixed(1)}M`;
+  if (valor >= 1000) return `$${(valor/1000).toFixed(0)}K`;
+  return `$${valor}`;
+};
+
+const actualizarPrecioInicio = (valor) => {
+  document.getElementById('precio-label').textContent = formatPrecioSlider(valor);
+  document.getElementById('precio-max-input').value = valor;
+};
+
+const sincronizarSlider = (valor) => {
+  document.getElementById('precio-max-range').value = valor || 100000000;
+  document.getElementById('precio-label').textContent = formatPrecioSlider(valor || 100000000);
 };
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -61,7 +61,40 @@ const cargarFavoritos = async () => {
     grid.innerHTML = '<div class="loading">No tienes propiedades favoritas aún.</div>';
     return;
   }
-  grid.innerHTML = data.favoritos.map(f => crearCardPropiedad(f.propiedad)).join('');
+  grid.innerHTML = data.favoritos.map(f => `
+    <div class="prop-admin-card" id="fav-${f.propiedad._id}">
+      <div class="prop-admin-img">
+        ${f.propiedad.fotos && f.propiedad.fotos.length > 0
+          ? `<img src="${f.propiedad.fotos[0]}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`
+          : 'Sin foto'}
+      </div>
+      <div class="prop-admin-info">
+        <div class="prop-admin-titulo">${f.propiedad.titulo}</div>
+        <div class="prop-admin-meta">
+          ${f.propiedad.ubicacion.ciudad}, ${f.propiedad.ubicacion.estado} · ${formatPrecio(f.propiedad.precio)}
+        </div>
+        <div class="prop-admin-meta" style="margin-top:4px">
+          <span class="tag tag-${f.propiedad.operacion}">${f.propiedad.operacion}</span>
+          <span class="tag tag-${f.propiedad.tipo}">${f.propiedad.tipo}</span>
+        </div>
+      </div>
+      <div class="prop-admin-actions">
+        <button class="btn btn-primary" style="padding:6px 14px;font-size:13px" onclick="window.location='propiedad.html?id=${f.propiedad._id}'">Ver</button>
+        <button class="btn btn-outline" style="padding:6px 14px;font-size:13px;border-color:#e24b4a;color:#e24b4a" onclick="eliminarFavorito('${f.propiedad._id}')">❤️ Quitar</button>
+      </div>
+    </div>`).join('');
+};
+
+const eliminarFavorito = async (propiedadId) => {
+  if (!confirm('¿Quitar esta propiedad de tus favoritos?')) return;
+  const data = await api.delete(`/favoritos/${propiedadId}`);
+  if (data.ok) {
+    document.getElementById(`fav-${propiedadId}`).remove();
+    const grid = document.getElementById('favoritos-grid');
+    if (!grid.children.length) {
+      grid.innerHTML = '<div class="loading">No tienes propiedades favoritas aún.</div>';
+    }
+  }
 };
 
 const cargarMensajes = async () => {

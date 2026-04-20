@@ -40,32 +40,46 @@
 
         <!-- BUSCADOR -->
         <div class="search-box">
-          <div class="search-filters">
-            <select id="tipo-operacion" class="filter-select">
-              <option value="">Renta o Venta</option>
-              <option value="renta">Renta</option>
-              <option value="venta">Venta</option>
-            </select>
-            <select id="tipo-propiedad" class="filter-select">
-              <option value="">Tipo de propiedad</option>
-              <option value="casa">Casa</option>
-              <option value="departamento">Departamento</option>
-              <option value="terreno">Terreno</option>
-              <option value="local">Local comercial</option>
-            </select>
-            <select id="estado" class="filter-select">
-              <option value="">Estado</option>
-              <option value="Ciudad de Mexico">Ciudad de México</option>
-              <option value="Jalisco">Jalisco</option>
-              <option value="Nuevo Leon">Nuevo León</option>
-              <option value="Puebla">Puebla</option>
-              <option value="Guanajuato">Guanajuato</option>
-              <option value="Queretaro">Querétaro</option>
-            </select>
-            <input type="number" id="precio-max" class="filter-input" placeholder="Precio máximo">
-          </div>
-          <button class="btn btn-search" onclick="buscar()">Buscar propiedades</button>
-        </div>
+  <div class="search-filters">
+    <select id="tipo-operacion" class="filter-select">
+      <option value="">Renta o Venta</option>
+      <option value="renta">Renta</option>
+      <option value="venta">Venta</option>
+    </select>
+    <select id="tipo-propiedad" class="filter-select">
+      <option value="">Tipo de propiedad</option>
+      <option value="casa">Casa</option>
+      <option value="departamento">Departamento</option>
+      <option value="terreno">Terreno</option>
+      <option value="local">Local comercial</option>
+    </select>
+    <select id="estado" class="filter-select">
+      <option value="">Estado</option>
+      <option value="Ciudad de Mexico">Ciudad de México</option>
+      <option value="Jalisco">Jalisco</option>
+      <option value="Nuevo Leon">Nuevo León</option>
+      <option value="Puebla">Puebla</option>
+      <option value="Guanajuato">Guanajuato</option>
+      <option value="Queretaro">Querétaro</option>
+    </select>
+    <div style="grid-column:1/-1">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-bottom:6px">
+        <span>Precio máximo</span>
+        <span id="precio-label" style="color:var(--primary);font-weight:600">$100M</span>
+      </div>
+      <input type="range" id="precio-max-range" min="0" max="100000000" step="50000" value="100000000"
+        style="width:100%;accent-color:var(--primary);height:4px;cursor:pointer"
+        oninput="actualizarPrecioInicio(this.value)">
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input type="number" id="precio-min-input" class="filter-input" placeholder="Precio mínimo $" style="flex:1"
+          oninput="document.getElementById('precio-label').textContent = formatPrecioSlider(document.getElementById('precio-max-input').value || 100000000)">
+        <input type="number" id="precio-max-input" class="filter-input" placeholder="Precio máximo $" style="flex:1"
+          oninput="sincronizarSlider(this.value)">
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-search" onclick="buscar()">Buscar propiedades</button>
+</div>
       </div>
     </div>
   </section>
