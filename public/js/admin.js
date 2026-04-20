@@ -25,14 +25,78 @@ const cargarDashboard = async () => {
   if (!data.ok) return;
   const s = data.stats;
   grid.innerHTML = `
-    <div class="stat-card azul"><div class="stat-numero">${s.totalUsuarios}</div><div class="stat-label">Usuarios registrados</div></div>
-    <div class="stat-card verde"><div class="stat-numero">${s.totalPropiedades}</div><div class="stat-label">Total propiedades</div></div>
-    <div class="stat-card naranja"><div class="stat-numero">${s.enRevision}</div><div class="stat-label">En revisión</div></div>
-    <div class="stat-card verde"><div class="stat-numero">${s.aprobadas}</div><div class="stat-label">Aprobadas</div></div>
-    <div class="stat-card rojo"><div class="stat-numero">${s.rechazadas}</div><div class="stat-label">Rechazadas</div></div>
-    <div class="stat-card morado"><div class="stat-numero">${s.bloqueadas || 0}</div><div class="stat-label">Bloqueadas</div></div>
-    <div class="stat-card azul"><div class="stat-numero">${s.usuariosBasico || 0}</div><div class="stat-label">Plan Básico</div></div>
-    <div class="stat-card naranja"><div class="stat-numero">${s.usuariosPremium || 0}</div><div class="stat-label">Plan Premium</div></div>`;
+    <div class="stat-card azul" onclick="irA('usuarios')" style="cursor:pointer">
+      <div class="stat-numero">${s.totalUsuarios}</div>
+      <div class="stat-label">Usuarios registrados</div>
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:8px">Ver todos →</div>
+    </div>
+    <div class="stat-card verde" onclick="irA('propiedades')" style="cursor:pointer">
+      <div class="stat-numero">${s.totalPropiedades}</div>
+      <div class="stat-label">Total propiedades</div>
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:8px">Ver todas →</div>
+    </div>
+    <div class="stat-card naranja" onclick="irAFiltrado('propiedades', 'revision')" style="cursor:pointer">
+      <div class="stat-numero">${s.enRevision}</div>
+      <div class="stat-label">En revisión</div>
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:8px">Revisar ahora →</div>
+    </div>
+    <div class="stat-card verde" onclick="irAFiltrado('propiedades', 'aprobada')" style="cursor:pointer">
+      <div class="stat-numero">${s.aprobadas}</div>
+      <div class="stat-label">Aprobadas</div>
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:8px">Ver aprobadas →</div>
+    </div>
+    <div class="stat-card rojo" onclick="irAFiltrado('propiedades', 'rechazada')" style="cursor:pointer">
+      <div class="stat-numero">${s.rechazadas}</div>
+      <div class="stat-label">Rechazadas</div>
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:8px">Ver rechazadas →</div>
+    </div>
+    <div class="stat-card morado" onclick="irAFiltrado('propiedades', 'bloqueada')" style="cursor:pointer">
+      <div class="stat-numero">${s.bloqueadas || 0}</div>
+      <div class="stat-label">Bloqueadas</div>
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:8px">Ver bloqueadas →</div>
+    </div>
+    <div class="stat-card azul" onclick="irAFiltradoUsuarios('basico')" style="cursor:pointer">
+      <div class="stat-numero">${s.usuariosBasico || 0}</div>
+      <div class="stat-label">Plan Básico</div>
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:8px">Ver usuarios →</div>
+    </div>
+    <div class="stat-card naranja" onclick="irAFiltradoUsuarios('premium')" style="cursor:pointer">
+      <div class="stat-numero">${s.usuariosPremium || 0}</div>
+      <div class="stat-label">Plan Premium</div>
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:8px">Ver usuarios →</div>
+    </div>`;
+};
+
+const irA = (seccion) => {
+  document.querySelectorAll('.dash-section').forEach(s => s.style.display = 'none');
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  document.getElementById(`sec-${seccion}`).style.display = 'block';
+  const link = document.querySelector(`.sidebar-link[onclick*="${seccion}"]`);
+  if (link) link.classList.add('active');
+  if (seccion === 'usuarios') cargarUsuarios();
+  if (seccion === 'propiedades') cargarTodasPropiedades();
+};
+
+const irAFiltrado = (seccion, status) => {
+  irA(seccion);
+  setTimeout(() => {
+    const filtro = document.getElementById('filtro-status');
+    if (filtro) {
+      filtro.value = status;
+      cargarTodasPropiedades();
+    }
+  }, 100);
+};
+
+const irAFiltradoUsuarios = (plan) => {
+  irA('usuarios');
+  setTimeout(() => {
+    const filtro = document.getElementById('filtro-plan');
+    if (filtro) {
+      filtro.value = plan;
+      cargarUsuarios();
+    }
+  }, 100);
 };
 
 const cargarRevision = async () => {
