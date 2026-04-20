@@ -41,7 +41,7 @@
         </div>
       </div>
 
-      <nav class="sidebar-nav">
+      <nav class="sidebar -nav">
         <a href="#" class="sidebar-link active" onclick="mostrarSeccion('dashboard')">
           📊 Dashboard
         </a>
@@ -53,6 +53,12 @@
         </a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('usuarios')">
           👥 Usuarios
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('temas')">
+         🎨 Temas del sitio
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('destacadas')">
+  ⭐ Propiedades destacadas
         </a>
       </nav>
     </aside>
@@ -123,7 +129,55 @@
           <div class="loading">Cargando...</div>
         </div>
       </section>
+<!-- TEMAS -->
+<section id="sec-temas" class="dash-section" style="display:none">
+  <div class="dash-section-header">
+    <h2>Temas del sitio</h2>
+  </div>
+  <div class="temas-grid" id="temas-grid">
+    <div class="tema-card" onclick="aplicarTema('default')" id="tema-default">
+      <div class="tema-preview" style="background:linear-gradient(135deg,#0f1923,#1a472a)"></div>
+      <div class="tema-nombre">Verde bosque</div>
+      <div class="tema-desc">Tema original</div>
+    </div>
+    <div class="tema-card" onclick="aplicarTema('azul')" id="tema-azul">
+      <div class="tema-preview" style="background:linear-gradient(135deg,#0a1628,#1a3a6e)"></div>
+      <div class="tema-nombre">Azul océano</div>
+      <div class="tema-desc">Profesional y moderno</div>
+    </div>
+    <div class="tema-card" onclick="aplicarTema('dorado')" id="tema-dorado">
+      <div class="tema-preview" style="background:linear-gradient(135deg,#1a1200,#8B6914)"></div>
+      <div class="tema-nombre">Dorado luxury</div>
+      <div class="tema-desc">Elegante y premium</div>
+    </div>
+    <div class="tema-card" onclick="aplicarTema('rojo')" id="tema-rojo">
+      <div class="tema-preview" style="background:linear-gradient(135deg,#1a0000,#8B1414)"></div>
+      <div class="tema-nombre">Rojo pasión</div>
+      <div class="tema-desc">Impactante y dinámico</div>
+    </div>
+    <div class="tema-card" onclick="aplicarTema('navidad')" id="tema-navidad">
+      <div class="tema-preview" style="background:linear-gradient(135deg,#0d1f0d,#8B0000)"></div>
+      <div class="tema-nombre">Navidad</div>
+      <div class="tema-desc">Temporada decembrina</div>
+    </div>
+    <div class="tema-card" onclick="aplicarTema('morado')" id="tema-morado">
+      <div class="tema-preview" style="background:linear-gradient(135deg,#0f0a1a,#3d1a6e)"></div>
+      <div class="tema-nombre">Morado real</div>
+      <div class="tema-desc">Sofisticado y único</div>
+    </div>
+  </div>
+  <div id="tema-msg" style="display:none;margin-top:16px"></div>
+</section>
 
+<!-- DESTACADAS -->
+<section id="sec-destacadas" class="dash-section" style="display:none">
+  <div class="dash-section-header">
+    <h2>Propiedades destacadas en inicio</h2>
+  </div>
+  <div id="destacadas-lista" class="mis-props-grid">
+    <div class="loading">Cargando...</div>
+  </div>
+</section>
     </main>
   </div>
 

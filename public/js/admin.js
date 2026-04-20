@@ -17,6 +17,8 @@ const mostrarSeccion = (seccion) => {
   if (seccion === 'revision') cargarRevision();
   if (seccion === 'propiedades') cargarTodasPropiedades();
   if (seccion === 'usuarios') cargarUsuarios();
+  if (seccion === 'temas') {}
+  if (seccion === 'destacadas') cargarDestacadas();
 };
 
 const cargarDashboard = async () => {
@@ -81,10 +83,7 @@ const irAFiltrado = (seccion, status) => {
   irA(seccion);
   setTimeout(() => {
     const filtro = document.getElementById('filtro-status');
-    if (filtro) {
-      filtro.value = status;
-      cargarTodasPropiedades();
-    }
+    if (filtro) { filtro.value = status; cargarTodasPropiedades(); }
   }, 100);
 };
 
@@ -92,10 +91,7 @@ const irAFiltradoUsuarios = (plan) => {
   irA('usuarios');
   setTimeout(() => {
     const filtro = document.getElementById('filtro-plan');
-    if (filtro) {
-      filtro.value = plan;
-      cargarUsuarios();
-    }
+    if (filtro) { filtro.value = plan; cargarUsuarios(); }
   }, 100);
 };
 
@@ -120,35 +116,6 @@ const cargarTodasPropiedades = async () => {
     return;
   }
   lista.innerHTML = data.propiedades.map(p => crearCardAdmin(p)).join('');
-};
-
-const cargarUsuarios = async () => {
-  const lista = document.getElementById('usuarios-lista');
-  const plan = document.getElementById('filtro-plan')?.value || '';
-  const search = document.getElementById('search-usuarios')?.value || '';
-  const url = `/admin/usuarios?${plan ? 'plan=' + plan : ''}${search ? '&search=' + search : ''}`;
-  const data = await api.get(url);
-  if (!data.usuarios || data.usuarios.length === 0) {
-    lista.innerHTML = '<div class="loading">No hay usuarios.</div>';
-    return;
-  }
-  lista.innerHTML = data.usuarios.map(u => `
-    <div class="usuario-card">
-      <div class="usuario-avatar">${u.nombre.charAt(0).toUpperCase()}</div>
-      <div class="usuario-info">
-        <div class="usuario-nombre">${u.nombre}</div>
-        <div class="usuario-meta">${u.email} · ${u.telefono || 'Sin teléfono'} · ${new Date(u.createdAt).toLocaleDateString('es-MX')}</div>
-      </div>
-      <div class="usuario-actions">
-        <span class="plan-badge plan-${u.plan}">${u.plan}</span>
-        <span class="status-badge status-${u.status}">${u.status}</span>
-        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px" onclick="cambiarPlan('${u._id}', '${u.plan}')">Plan</button>
-        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;border-color:${u.status === 'activo' ? '#e65100' : '#2e7d32'};color:${u.status === 'activo' ? '#e65100' : '#2e7d32'}" onclick="suspenderUsuario('${u._id}')">
-          ${u.status === 'activo' ? 'Suspender' : 'Activar'}
-        </button>
-        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;border-color:#c62828;color:#c62828" onclick="eliminarUsuario('${u._id}', '${u.nombre}')">Eliminar</button>
-      </div>
-    </div>`).join('');
 };
 
 const crearCardAdmin = (p) => `
@@ -213,6 +180,35 @@ const eliminarPropAdmin = async (id, titulo) => {
   if (data.ok) { cargarTodasPropiedades(); cargarDashboard(); }
 };
 
+const cargarUsuarios = async () => {
+  const lista = document.getElementById('usuarios-lista');
+  const plan = document.getElementById('filtro-plan')?.value || '';
+  const search = document.getElementById('search-usuarios')?.value || '';
+  const url = `/admin/usuarios?${plan ? 'plan=' + plan : ''}${search ? '&search=' + search : ''}`;
+  const data = await api.get(url);
+  if (!data.usuarios || data.usuarios.length === 0) {
+    lista.innerHTML = '<div class="loading">No hay usuarios.</div>';
+    return;
+  }
+  lista.innerHTML = data.usuarios.map(u => `
+    <div class="usuario-card">
+      <div class="usuario-avatar">${u.nombre.charAt(0).toUpperCase()}</div>
+      <div class="usuario-info">
+        <div class="usuario-nombre">${u.nombre}</div>
+        <div class="usuario-meta">${u.email} · ${u.telefono || 'Sin teléfono'} · ${new Date(u.createdAt).toLocaleDateString('es-MX')}</div>
+      </div>
+      <div class="usuario-actions">
+        <span class="plan-badge plan-${u.plan}">${u.plan}</span>
+        <span class="status-badge status-${u.status}">${u.status}</span>
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px" onclick="cambiarPlan('${u._id}', '${u.plan}')">Plan</button>
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;border-color:${u.status === 'activo' ? '#e65100' : '#2e7d32'};color:${u.status === 'activo' ? '#e65100' : '#2e7d32'}" onclick="suspenderUsuario('${u._id}')">
+          ${u.status === 'activo' ? 'Suspender' : 'Activar'}
+        </button>
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;border-color:#c62828;color:#c62828" onclick="eliminarUsuario('${u._id}', '${u.nombre}')">Eliminar</button>
+      </div>
+    </div>`).join('');
+};
+
 const cambiarPlan = async (id, planActual) => {
   const planes = ['gratuito', 'basico', 'premium'];
   const nuevo = prompt(`Plan actual: ${planActual}\nEscribe el nuevo plan:\ngratuito / basico / premium`);
@@ -230,4 +226,68 @@ const eliminarUsuario = async (id, nombre) => {
   if (!confirm(`¿Eliminar al usuario "${nombre}"? Sus propiedades serán desactivadas.`)) return;
   const data = await api.delete(`/admin/usuarios/${id}`);
   if (data.ok) { cargarUsuarios(); cargarDashboard(); }
+};
+
+const temas = {
+  default: { nombre: 'Verde bosque', primary: '#1a472a', primaryLight: '#2d6a4f', accent: '#f4a261', accentDark: '#e76f51', bgDark: '#0f1923' },
+  azul: { nombre: 'Azul océano', primary: '#1a3a6e', primaryLight: '#2a5298', accent: '#64b5f6', accentDark: '#1976d2', bgDark: '#0a1628' },
+  dorado: { nombre: 'Dorado luxury', primary: '#8B6914', primaryLight: '#b8860b', accent: '#ffd700', accentDark: '#daa520', bgDark: '#1a1200' },
+  rojo: { nombre: 'Rojo pasión', primary: '#8B1414', primaryLight: '#b71c1c', accent: '#ff8a65', accentDark: '#e64a19', bgDark: '#1a0000' },
+  navidad: { nombre: 'Navidad', primary: '#1b5e20', primaryLight: '#2e7d32', accent: '#ef9a9a', accentDark: '#c62828', bgDark: '#0d1f0d' },
+  morado: { nombre: 'Morado real', primary: '#3d1a6e', primaryLight: '#6a1b9a', accent: '#ce93d8', accentDark: '#8e24aa', bgDark: '#0f0a1a' }
+};
+
+const aplicarTema = async (nombreTema) => {
+  const tema = temas[nombreTema];
+  if (!tema) return;
+  const msgEl = document.getElementById('tema-msg');
+  const data = await api.patch('/site/tema', { tema: { nombre: nombreTema, ...tema } });
+  if (data.ok) {
+    document.querySelectorAll('.tema-card').forEach(c => c.classList.remove('activo'));
+    document.getElementById(`tema-${nombreTema}`)?.classList.add('activo');
+    msgEl.innerHTML = `<div class="alert alert-success">✓ Tema "${tema.nombre}" aplicado al sitio</div>`;
+    msgEl.style.display = 'block';
+    setTimeout(() => msgEl.style.display = 'none', 3000);
+  } else {
+    msgEl.innerHTML = '<div class="alert alert-error">Error al aplicar el tema</div>';
+    msgEl.style.display = 'block';
+  }
+};
+
+const cargarDestacadas = async () => {
+  const lista = document.getElementById('destacadas-lista');
+  const dataProps = await api.get('/admin/propiedades?status=aprobada');
+  const dataConf = await api.get('/site/destacadas');
+  const destacadasIds = (dataConf.destacadas || []).map(d => d._id);
+  if (!dataProps.propiedades || dataProps.propiedades.length === 0) {
+    lista.innerHTML = '<div class="loading">No hay propiedades aprobadas.</div>';
+    return;
+  }
+  lista.innerHTML = dataProps.propiedades.map(p => {
+    const esDestacada = destacadasIds.includes(p._id);
+    return `
+      <div class="prop-admin-card">
+        <div class="prop-admin-img">
+          ${p.fotos && p.fotos.length > 0
+            ? `<img src="${p.fotos[0]}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`
+            : 'Sin foto'}
+        </div>
+        <div class="prop-admin-info">
+          <div class="prop-admin-titulo">${p.titulo}</div>
+          <div class="prop-admin-meta">${p.ubicacion.ciudad}, ${p.ubicacion.estado} · ${formatPrecio(p.precio)}</div>
+        </div>
+        <div class="prop-admin-actions">
+          <span class="status-badge ${esDestacada ? 'status-aprobada' : 'status-revision'}">${esDestacada ? '⭐ Destacada' : 'Normal'}</span>
+          <button class="btn ${esDestacada ? 'btn-outline' : 'btn-primary'}" style="padding:6px 14px;font-size:13px" onclick="toggleDestacada('${p._id}', ${esDestacada})">
+            ${esDestacada ? 'Quitar' : '⭐ Destacar'}
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+};
+
+const toggleDestacada = async (id, esDestacada) => {
+  const accion = esDestacada ? 'quitar' : 'agregar';
+  const data = await api.patch('/site/destacadas', { propiedadId: id, accion });
+  if (data.ok) cargarDestacadas();
 };
