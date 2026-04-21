@@ -17,8 +17,9 @@ const mostrarSeccion = (seccion) => {
   if (seccion === 'revision') cargarRevision();
   if (seccion === 'propiedades') cargarTodasPropiedades();
   if (seccion === 'usuarios') cargarUsuarios();
-  if (seccion === 'temas') {}
+  if (seccion === 'temas') cargarTemasPersonalizados();
   if (seccion === 'destacadas') cargarDestacadas();
+  
 };
 
 const cargarDashboard = async () => {
@@ -245,6 +246,7 @@ const aplicarTema = async (nombreTema) => {
   if (data.ok) {
     document.querySelectorAll('.tema-card').forEach(c => c.classList.remove('activo'));
     document.getElementById(`tema-${nombreTema}`)?.classList.add('activo');
+    aplicarVariablesCSS(tema);
     msgEl.innerHTML = `<div class="alert alert-success">✓ Tema "${tema.nombre}" aplicado al sitio</div>`;
     msgEl.style.display = 'block';
     setTimeout(() => msgEl.style.display = 'none', 3000);
@@ -290,4 +292,144 @@ const toggleDestacada = async (id, esDestacada) => {
   const accion = esDestacada ? 'quitar' : 'agregar';
   const data = await api.patch('/site/destacadas', { propiedadId: id, accion });
   if (data.ok) cargarDestacadas();
+};
+const sincronizarColor = (campo, valor) => {
+  const colorInput = document.getElementById(`cp-${campo}`);
+  if (colorInput && valor.startsWith('#') && valor.length === 7) {
+    colorInput.value = valor;
+    previsualizarPaleta();
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  ['primary', 'primaryLight', 'accent', 'accentDark', 'bgDark'].forEach(campo => {
+    const colorPicker = document.getElementById(`cp-${campo}`);
+    if (colorPicker) {
+      colorPicker.addEventListener('input', (e) => {
+        const hexInput = document.getElementById(`cp-${campo}-hex`);
+        if (hexInput) hexInput.value = e.target.value;
+        previsualizarPaleta();
+      });
+    }
+  });
+});
+
+const getPaletaPersonalizada = () => ({
+  nombre: 'personalizado',
+  primary: document.getElementById('cp-primary')?.value || '#1a472a',
+  primaryLight: document.getElementById('cp-primaryLight')?.value || '#2d6a4f',
+  accent: document.getElementById('cp-accent')?.value || '#f4a261',
+  accentDark: document.getElementById('cp-accentDark')?.value || '#e76f51',
+  bgDark: document.getElementById('cp-bgDark')?.value || '#0f1923',
+});
+
+const previsualizarPaleta = () => {
+  const t = getPaletaPersonalizada();
+  const hero = document.getElementById('prev-hero');
+  const mas = document.getElementById('prev-mas');
+  const btnPrimary = document.getElementById('prev-btn-primary');
+  const btnAccent = document.getElementById('prev-btn-accent');
+  const price = document.getElementById('prev-price');
+  if (hero) hero.style.background = `linear-gradient(135deg,${t.bgDark},${t.primary})`;
+  if (mas) mas.style.color = t.accent;
+  if (btnPrimary) btnPrimary.style.background = t.primary;
+  if (btnAccent) btnAccent.style.background = t.accentDark;
+  if (price) price.style.color = t.primary;
+};
+
+const aplicarPaletaPersonalizada = async () => {
+  const tema = getPaletaPersonalizada();
+  const msgEl = document.getElementById('paleta-msg');
+  const data = await api.patch('/site/tema', { tema });
+  if (data.ok) {
+    aplicarVariablesCSS(tema);
+    document.querySelectorAll('.tema-card').forEach(c => c.classList.remove('activo'));
+    msgEl.innerHTML = '<div class="alert alert-success">✓ Paleta personalizada aplicada al sitio</div>';
+    msgEl.style.display = 'block';
+    setTimeout(() => msgEl.style.display = 'none', 3000);
+  } else {
+    msgEl.innerHTML = '<div class="alert alert-error">Error al aplicar la paleta</div>';
+    msgEl.style.display = 'block';
+  }
+};
+const guardarTemaPersonalizado = async () => {
+  const nombre = document.getElementById('cp-nombre')?.value.trim();
+  const msgEl = document.getElementById('paleta-msg');
+  if (!nombre) {
+    msgEl.innerHTML = '<div class="alert alert-error">Por favor escribe un nombre para el tema</div>';
+    msgEl.style.display = 'block';
+    return;
+  }
+  const tema = getPaletaPersonalizada();
+  tema.nombre = nombre;
+  const data = await api.post('/site/temas-personalizados', tema);
+  if (data.ok) {
+    msgEl.innerHTML = `<div class="alert alert-success">✓ Tema "${nombre}" guardado correctamente</div>`;
+    msgEl.style.display = 'block';
+    setTimeout(() => msgEl.style.display = 'none', 3000);
+    cargarTemasPersonalizados();
+  } else {
+    msgEl.innerHTML = '<div class="alert alert-error">Error al guardar el tema</div>';
+    msgEl.style.display = 'block';
+  }
+};
+
+const cargarTemasPersonalizados = async () => {
+  const lista = document.getElementById('temas-personalizados-lista');
+  if (!lista) return;
+  const data = await api.get('/site/config');
+  if (!data.ok || !data.config.temasPersonalizados?.length) {
+    lista.innerHTML = '<div style="font-size:13px;color:var(--text-light)">No tienes temas guardados aún.</div>';
+    return;
+  }
+  lista.innerHTML = data.config.temasPersonalizados.map(t => `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-secondary);border-radius:12px;border:1px solid var(--border)">
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <div style="width:20px;height:20px;border-radius:4px;background:${t.bgDark}"></div>
+        <div style="width:20px;height:20px;border-radius:4px;background:${t.primary}"></div>
+        <div style="width:20px;height:20px;border-radius:4px;background:${t.accent}"></div>
+        <div style="width:20px;height:20px;border-radius:4px;background:${t.accentDark}"></div>
+      </div>
+      <div style="flex:1;font-size:14px;font-weight:600;color:var(--text)">${t.nombre}</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="padding:5px 12px;font-size:12px" onclick="aplicarTemaPersonalizado('${t._id}', ${JSON.stringify(t).replace(/"/g, "'")})">Aplicar</button>
+        <button class="btn btn-outline" style="padding:5px 12px;font-size:12px" onclick="cargarEnPaleta('${t._id}')">Editar</button>
+        <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;border-color:#c62828;color:#c62828" onclick="eliminarTemaPersonalizado('${t._id}', '${t.nombre}')">Eliminar</button>
+      </div>
+    </div>`).join('');
+};
+
+const aplicarTemaPersonalizado = async (id, tema) => {
+  const data = await api.patch('/site/tema', { tema });
+  if (data.ok) {
+    aplicarVariablesCSS(tema);
+    document.getElementById('tema-msg').innerHTML = `<div class="alert alert-success">✓ Tema "${tema.nombre}" aplicado al sitio</div>`;
+    document.getElementById('tema-msg').style.display = 'block';
+    setTimeout(() => document.getElementById('tema-msg').style.display = 'none', 3000);
+  }
+};
+
+const cargarEnPaleta = async (id) => {
+  const data = await api.get('/site/config');
+  if (!data.ok) return;
+  const tema = data.config.temasPersonalizados.find(t => t._id === id);
+  if (!tema) return;
+  document.getElementById('cp-nombre').value = tema.nombre;
+  document.getElementById('cp-primary').value = tema.primary;
+  document.getElementById('cp-primary-hex').value = tema.primary;
+  document.getElementById('cp-primaryLight').value = tema.primaryLight;
+  document.getElementById('cp-primaryLight-hex').value = tema.primaryLight;
+  document.getElementById('cp-accent').value = tema.accent;
+  document.getElementById('cp-accent-hex').value = tema.accent;
+  document.getElementById('cp-accentDark').value = tema.accentDark;
+  document.getElementById('cp-accentDark-hex').value = tema.accentDark;
+  document.getElementById('cp-bgDark').value = tema.bgDark;
+  document.getElementById('cp-bgDark-hex').value = tema.bgDark;
+  previsualizarPaleta();
+};
+
+const eliminarTemaPersonalizado = async (id, nombre) => {
+  if (!confirm(`¿Eliminar el tema "${nombre}"?`)) return;
+  const data = await api.delete(`/site/temas-personalizados/${id}`);
+  if (data.ok) cargarTemasPersonalizados();
 };

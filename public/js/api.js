@@ -81,4 +81,25 @@ const crearCardPropiedad = (p) => {
         </div>
       </div>
     </div>`;
-}; 
+};
+
+const aplicarVariablesCSS = (t) => {
+  const root = document.documentElement;
+  root.style.setProperty('--primary', t.primary);
+  root.style.setProperty('--primary-light', t.primaryLight);
+  root.style.setProperty('--accent', t.accent);
+  root.style.setProperty('--accent-dark', t.accentDark);
+  root.style.setProperty('--bg-dark', t.bgDark);
+};
+
+const cargarTemaDelSitio = async () => {
+  try {
+    const data = await api.get('/site/config');
+    if (!data.ok || !data.config) return;
+    const t = data.config.tema;
+    if (!t || t.nombre === 'default') return;
+    aplicarVariablesCSS(t);
+  } catch (e) {}
+};
+
+document.addEventListener('DOMContentLoaded', cargarTemaDelSitio);

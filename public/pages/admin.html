@@ -134,6 +134,8 @@
   <div class="dash-section-header">
     <h2>Temas del sitio</h2>
   </div>
+
+  <!-- TEMAS PREDEFINIDOS -->
   <div class="temas-grid" id="temas-grid">
     <div class="tema-card" onclick="aplicarTema('default')" id="tema-default">
       <div class="tema-preview" style="background:linear-gradient(135deg,#0f1923,#1a472a)"></div>
@@ -166,7 +168,100 @@
       <div class="tema-desc">Sofisticado y único</div>
     </div>
   </div>
-  <div id="tema-msg" style="display:none;margin-top:16px"></div>
+  <div id="tema-msg" style="display:none;margin-top:12px;margin-bottom:24px"></div>
+
+  <!-- PALETA PERSONALIZADA -->
+  <div class="form-card" style="margin-top:32px">
+    <h3 style="font-size:18px;margin-bottom:6px;font-family:'Bricolage Grotesque',sans-serif">🎨 Paleta personalizada</h3>
+    <p style="font-size:13px;color:var(--text-light);margin-bottom:24px">Elige tus propios colores y aplícalos al sitio completo</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
+      <!-- CONTROLES -->
+      <div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="form-grupo">
+            <label>Color primario</label>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input type="color" id="cp-primary" value="#1a472a" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
+              <input type="text" id="cp-primary-hex" class="form-input" value="#1a472a" oninput="sincronizarColor('primary', this.value)">
+            </div>
+          </div>
+          <div class="form-grupo">
+            <label>Color secundario</label>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input type="color" id="cp-primaryLight" value="#2d6a4f" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
+              <input type="text" id="cp-primaryLight-hex" class="form-input" value="#2d6a4f" oninput="sincronizarColor('primaryLight', this.value)">
+            </div>
+          </div>
+          <div class="form-grupo">
+            <label>Color acento</label>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input type="color" id="cp-accent" value="#f4a261" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
+              <input type="text" id="cp-accent-hex" class="form-input" value="#f4a261" oninput="sincronizarColor('accent', this.value)">
+            </div>
+          </div>
+          <div class="form-grupo">
+            <label>Acento oscuro</label>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input type="color" id="cp-accentDark" value="#e76f51" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
+              <input type="text" id="cp-accentDark-hex" class="form-input" value="#e76f51" oninput="sincronizarColor('accentDark', this.value)">
+            </div>
+          </div>
+          <div class="form-grupo">
+            <label>Fondo oscuro (hero)</label>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input type="color" id="cp-bgDark" value="#0f1923" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
+              <input type="text" id="cp-bgDark-hex" class="form-input" value="#0f1923" oninput="sincronizarColor('bgDark', this.value)">
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom:16px">
+  <label style="font-size:13px;font-weight:600;color:var(--text);display:block;margin-bottom:6px">Nombre de este tema *</label>
+  <input type="text" id="cp-nombre" class="form-input" placeholder="Ej: Mi tema verano, Corporativo azul...">
+</div>
+<div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
+  <button class="btn btn-primary" onclick="aplicarPaletaPersonalizada()" style="padding:12px 24px;flex:1">Aplicar al sitio</button>
+  <button class="btn btn-outline" onclick="guardarTemaPersonalizado()" style="padding:12px 24px;flex:1">💾 Guardar tema</button>
+  <button class="btn btn-outline" onclick="previsualizarPaleta()" style="padding:12px 20px">👁 Preview</button>
+</div>
+<div id="paleta-msg" style="display:none;margin-top:12px"></div>
+
+<!-- TEMAS GUARDADOS -->
+<div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border)">
+  <h4 style="font-size:15px;margin-bottom:16px;font-family:'Bricolage Grotesque',sans-serif">Mis temas guardados</h4>
+  <div id="temas-personalizados-lista" style="display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:13px;color:var(--text-light)">Cargando...</div>
+  </div>
+</div>
+        <div id="paleta-msg" style="display:none;margin-top:12px"></div>
+      </div>
+
+      <!-- VISTA PREVIA -->
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:12px">Vista previa en tiempo real</label>
+        <div style="border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow)">
+          <div id="prev-hero" style="background:linear-gradient(135deg,#0f1923,#1a472a);padding:28px 24px;color:white">
+            <div style="font-size:22px;font-weight:700;margin-bottom:4px">Vive<span id="prev-mas" style="color:#f4a261">Más</span></div>
+            <div style="font-size:13px;opacity:0.7;margin-bottom:16px">Encuentra tu hogar ideal</div>
+            <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:12px;font-size:12px;color:rgba(255,255,255,0.8)">
+              Barra de búsqueda aquí...
+            </div>
+          </div>
+          <div style="padding:20px;background:white">
+            <div style="display:flex;gap:10px;margin-bottom:16px">
+              <button id="prev-btn-primary" style="background:#1a472a;color:white;border:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;flex:1">Publicar</button>
+              <button id="prev-btn-outline" style="background:transparent;color:#1a472a;border:2px solid #1a472a;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;flex:1">Ver más</button>
+            </div>
+            <div style="background:#f8f9fa;border-radius:10px;padding:14px;border:1px solid #e5e7eb">
+              <div style="font-size:13px;color:#6b7280;margin-bottom:4px">Casa en Polanco</div>
+              <div id="prev-price" style="font-size:22px;font-weight:700;color:#1a472a">$5,500,000</div>
+              <button id="prev-btn-accent" style="background:#e76f51;color:white;border:none;padding:8px 16px;border-radius:8px;font-size:12px;margin-top:10px;cursor:pointer">Contactar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- DESTACADAS -->
