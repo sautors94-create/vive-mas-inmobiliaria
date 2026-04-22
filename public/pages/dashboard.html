@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
+<script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Panel — Vive Más Inmobiliaria</title>
+  <title>Mi Panel â€” Vive MÃ¡s Inmobiliaria</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
@@ -15,16 +16,16 @@
   <nav class="navbar">
     <div class="container nav-content">
       <a href="/" class="logo">
-        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <span class="logo-vive">Vive</span><span class="logo-mas">MÃ¡s</span>
         <span class="logo-sub">Inmobiliaria</span>
       </a>
       <ul class="nav-links">
         <li><a href="/">Inicio</a></li>
-        <li><a href="catalogo.html">Catálogo</a></li>
+        <li><a href="catalogo.html">CatÃ¡logo</a></li>
       </ul>
       <div class="nav-actions">
         <span id="user-nombre" style="font-size:14px;color:var(--text-light)"></span>
-        <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>
+        <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesiÃ³n</button>
       </div>
     </div>
   </nav>
@@ -44,19 +45,19 @@
 
       <nav class="sidebar-nav">
         <a href="#" class="sidebar-link active" onclick="mostrarSeccion('mis-propiedades')">
-          🏠 Mis propiedades
+          ðŸ  Mis propiedades
         </a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('nueva-propiedad')">
-          ➕ Nueva publicación
+          âž• Nueva publicaciÃ³n
         </a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('favoritos')">
-          ❤️ Favoritos
+          â¤ï¸ Favoritos
         </a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('mensajes')">
-          💬 Mensajes
+          ðŸ’¬ Mensajes
         </a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('mi-cuenta')">
-          👤 Mi cuenta
+          ðŸ‘¤ Mi cuenta
         </a>
       </nav>
     </aside>
@@ -68,7 +69,7 @@
       <section id="sec-mis-propiedades" class="dash-section">
         <div class="dash-section-header">
           <h2>Mis propiedades</h2>
-          <button class="btn btn-primary" onclick="mostrarSeccion('nueva-propiedad')">+ Nueva publicación</button>
+          <button class="btn btn-primary" onclick="mostrarSeccion('nueva-propiedad')">+ Nueva publicaciÃ³n</button>
         </div>
         <div id="mis-props-grid" class="mis-props-grid">
           <div class="loading">Cargando tus propiedades...</div>
@@ -78,7 +79,7 @@
       <!-- NUEVA PROPIEDAD -->
       <section id="sec-nueva-propiedad" class="dash-section" style="display:none">
         <div class="dash-section-header">
-          <h2>Nueva publicación</h2>
+          <h2>Nueva publicaciÃ³n</h2>
         </div>
 
         <div class="form-card">
@@ -87,7 +88,7 @@
 
           <div class="form-grid">
             <div class="form-grupo">
-              <label>Título de la propiedad *</label>
+              <label>TÃ­tulo de la propiedad *</label>
               <input type="text" id="p-titulo" class="form-input" placeholder="Ej: Casa en Colonia Polanco">
             </div>
             <div class="form-grupo">
@@ -95,7 +96,7 @@
               <input type="number" id="p-precio" class="form-input" placeholder="0">
             </div>
             <div class="form-grupo">
-              <label>Operación *</label>
+              <label>OperaciÃ³n *</label>
               <select id="p-operacion" class="filter-select">
                 <option value="">Selecciona</option>
                 <option value="renta">Renta</option>
@@ -113,20 +114,20 @@
               </select>
             </div>
             <div class="form-grupo" style="grid-column:1/-1">
-              <label>Descripción *</label>
+              <label>DescripciÃ³n *</label>
               <textarea id="p-descripcion" class="form-input" rows="4" placeholder="Describe tu propiedad..."></textarea>
             </div>
             <div class="form-grupo">
               <label>Estado *</label>
               <select id="p-estado" class="filter-select">
                 <option value="">Selecciona</option>
-                <option value="Ciudad de Mexico">Ciudad de México</option>
+                <option value="Ciudad de Mexico">Ciudad de MÃ©xico</option>
                 <option value="Jalisco">Jalisco</option>
-                <option value="Nuevo Leon">Nuevo León</option>
+                <option value="Nuevo Leon">Nuevo LeÃ³n</option>
                 <option value="Puebla">Puebla</option>
                 <option value="Guanajuato">Guanajuato</option>
-                <option value="Queretaro">Querétaro</option>
-                <option value="Yucatan">Yucatán</option>
+                <option value="Queretaro">QuerÃ©taro</option>
+                <option value="Yucatan">YucatÃ¡n</option>
                 <option value="Oaxaca">Oaxaca</option>
               </select>
             </div>
@@ -139,15 +140,15 @@
               <input type="text" id="p-colonia" class="form-input" placeholder="Ej: Polanco">
             </div>
             <div class="form-grupo">
-              <label>Dirección</label>
-              <input type="text" id="p-direccion" class="form-input" placeholder="Calle y número">
+              <label>DirecciÃ³n</label>
+              <input type="text" id="p-direccion" class="form-input" placeholder="Calle y nÃºmero">
             </div>
             <div class="form-grupo">
-              <label>Recámaras</label>
+              <label>RecÃ¡maras</label>
               <input type="number" id="p-recamaras" class="form-input" placeholder="0" min="0">
             </div>
             <div class="form-grupo">
-              <label>Baños</label>
+              <label>BaÃ±os</label>
               <input type="number" id="p-banos" class="form-input" placeholder="0" min="0">
             </div>
             <div class="form-grupo">
@@ -159,14 +160,14 @@
               <input type="number" id="p-m2" class="form-input" placeholder="0" min="0">
             </div>
             <div class="form-grupo" style="grid-column:1/-1">
-              <label>Fotos (máximo 15, formato JPG/PNG/WEBP, máx 5MB c/u)</label>
+              <label>Fotos (mÃ¡ximo 15, formato JPG/PNG/WEBP, mÃ¡x 5MB c/u)</label>
               <input type="file" id="p-fotos" class="form-input" multiple accept="image/*">
-              <small style="color:var(--text-light);font-size:12px">Las fotos se subirán después de crear la propiedad</small>
+              <small style="color:var(--text-light);font-size:12px">Las fotos se subirÃ¡n despuÃ©s de crear la propiedad</small>
             </div>
           </div>
 
           <button class="btn btn-primary" style="padding:14px 32px;font-size:16px;margin-top:8px" onclick="publicarPropiedad()">
-            Enviar a revisión
+            Enviar a revisiÃ³n
           </button>
         </div>
       </section>

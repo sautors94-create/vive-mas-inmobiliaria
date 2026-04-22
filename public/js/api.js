@@ -1,3 +1,22 @@
+(() => {
+  try {
+    const tema = localStorage.getItem('vm_tema');
+    if (tema) {
+      const t = JSON.parse(tema);
+      if (t.nombre !== 'default') {
+        const style = document.createElement('style');
+        style.textContent = `:root {
+          --primary: ${t.primary} !important;
+          --primary-light: ${t.primaryLight} !important;
+          --accent: ${t.accent} !important;
+          --accent-dark: ${t.accentDark} !important;
+          --bg-dark: ${t.bgDark} !important;
+        }`;
+        document.head.insertBefore(style, document.head.firstChild);
+      }
+    }
+  } catch(e) {}
+})();
 const API_URL = 'http://localhost:3000/api';
 
 const api = {
@@ -90,6 +109,7 @@ const aplicarVariablesCSS = (t) => {
   root.style.setProperty('--accent', t.accent);
   root.style.setProperty('--accent-dark', t.accentDark);
   root.style.setProperty('--bg-dark', t.bgDark);
+  localStorage.setItem('vm_tema', JSON.stringify(t));
 };
 
 const cargarTemaDelSitio = async () => {
