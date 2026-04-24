@@ -3,19 +3,20 @@ class Chatbot {
     this.tipo = tipo;
     this.historial = [];
     this.abierto = false;
+    this.timerInactividad = null;
+    this.TIEMPO_INACTIVIDAD = 1 * 60 * 1000;
     this.nombre = tipo === 'soporte' ? 'Vivi' : 'Max';
     this.emoji = tipo === 'soporte' ? '🎧' : '🏠';
     this.color = tipo === 'soporte' ? '#1a472a' : '#1a3a6e';
     this.bienvenida = tipo === 'soporte'
-      ? '¡Hola! Soy Vivi, tu asistente de soporte 🎧 ¿En qué puedo ayudarte? Puedo resolver dudas sobre tu cuenta, planes, verificación y más.'
-      : '¡Hola! Soy Max, tu asesor inmobiliario 🏠 ¿En qué puedo ayudarte hoy? Cuéntame qué servicio necesitas.';
+      ? '¡Hola! Soy Vivi 🎧 ¿En qué puedo ayudarte? Cuéntame tu problema.'
+      : '¡Hola! Soy Max 🏠 ¿Qué tipo de servicio inmobiliario necesitas?';
     this.render();
   }
 
   render() {
     const id = `chatbot-${this.tipo}`;
     if (document.getElementById(id)) return;
-
     const wrap = document.createElement('div');
     wrap.id = id;
     wrap.innerHTML = `
@@ -24,7 +25,7 @@ class Chatbot {
         width:52px;height:52px;border-radius:50%;background:${this.color};
         color:white;font-size:22px;display:flex;align-items:center;justify-content:center;
         cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2);z-index:9998;
-        transition:transform 0.2s;user-select:none" 
+        transition:transform 0.2s;user-select:none"
         onclick="chatbots['${this.tipo}'].toggle()"
         onmouseover="this.style.transform='scale(1.1)'"
         onmouseout="this.style.transform='scale(1)'">
@@ -66,7 +67,30 @@ class Chatbot {
     this.abierto = !this.abierto;
     const win = document.getElementById(`chatbot-${this.tipo}-window`);
     win.style.display = this.abierto ? 'flex' : 'none';
-    if (this.abierto) document.getElementById(`chatbot-${this.tipo}-input`).focus();
+    if (this.abierto) {
+      document.getElementById(`chatbot-${this.tipo}-input`).focus();
+      this.reiniciarTimer();
+    } else {
+      if (this.timerInactividad) clearTimeout(this.timerInactividad);
+    }
+  }
+
+  reiniciarTimer() {
+    if (this.timerInactividad) clearTimeout(this.timerInactividad);
+    this.timerInactividad = setTimeout(() => {
+      if (this.abierto) {
+        this.agregarMensaje('bot', '⏰ Sesión cerrada por inactividad. ¡Hasta pronto! Estoy aquí cuando me necesites.');
+        setTimeout(() => {
+          this.toggle();
+          this.historial = [];
+          const msgs = document.getElementById(`chatbot-${this.tipo}-msgs`);
+          if (msgs) {
+            msgs.innerHTML = '';
+            this.agregarMensaje('bot', this.bienvenida);
+          }
+        }, 3000);
+      }
+    }, this.TIEMPO_INACTIVIDAD);
   }
 
   agregarMensaje(rol, texto) {
@@ -86,7 +110,9 @@ class Chatbot {
       </div>`;
     msgs.appendChild(div);
     msgs.scrollTop = msgs.scrollHeight;
-    this.historial.push({ role: isBot ? 'model' : 'user', text: texto });
+    if (!isBot || this.historial.length > 0) {
+      this.historial.push({ role: isBot ? 'assistant' : 'user', text: texto });
+    }
   }
 
   agregarTyping() {
@@ -122,12 +148,23 @@ class Chatbot {
       const res = await fetch(`http://localhost:3000/api/chat/${this.tipo}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mensaje, historial: this.historial.slice(-10) })
+        body: JSON.stringify({
+          mensaje,
+          historial: this.historial.slice(-10).map(h => ({
+            role: h.role === 'model' ? 'assistant' : h.role,
+            text: h.text
+          }))
+        })
       });
       const data = await res.json();
       this.quitarTyping();
       if (data.ok) {
-        this.agregarMensaje('bot', data.respuesta);
+         this.agregarMensaje('bot', data.respuesta);
+         if (this.timerSeguimiento) clearTimeout(this.timerSeguimiento);
+         this.timerSeguimiento = setTimeout(() => {
+         if (this.abierto && this.historial.length > 2) {
+          this.agregarMensaje('bot', '¿Hay algo más en que pueda ayudarte? 😊');
+         }  }, 45 * 1000);
         if (data.esLead) {
           const leadForm = document.getElementById(`chatbot-${this.tipo}-lead`);
           if (leadForm) leadForm.style.display = 'block';
@@ -139,6 +176,7 @@ class Chatbot {
       this.quitarTyping();
       this.agregarMensaje('bot', 'Error de conexión. Verifica tu internet.');
     }
+    this.reiniciarTimer();
   }
 
   async enviarLead() {
@@ -159,6 +197,8 @@ const style = document.createElement('style');
 style.textContent = `@keyframes typing { 0%,100%{opacity:0.3;transform:translateY(0)} 50%{opacity:1;transform:translateY(-3px)} }`;
 document.head.appendChild(style);
 
-window.chatbots = {};
-window.chatbots['soporte'] = new Chatbot('soporte');
-window.chatbots['servicios'] = new Chatbot('servicios');
+window.chatbots = window.chatbots || {};
+if (!window.chatbots['soporte']) window.chatbots['soporte'] = new Chatbot('soporte');
+if (!window.SOLO_SOPORTE && !window.chatbots['servicios']) {
+  window.chatbots['servicios'] = new Chatbot('servicios');
+}

@@ -1,61 +1,76 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Groq = require('groq-sdk');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const SISTEMA_SOPORTE = `Eres el asistente virtual de soporte de Vive Más Inmobiliaria, una plataforma inmobiliaria mexicana.
-Tu nombre es "Vivi" y tu rol es ayudar a usuarios con:
-- Problemas de inicio de sesión y contraseñas
-- Tipos de cuenta (Gratuito, Básico $299/mes, Premium $799/mes)
-- Proceso de verificación de cuenta (email o SMS)
-- Publicación de propiedades y proceso de revisión
+const SISTEMA_SOPORTE = `Eres Vivi, asistente de soporte de Vive Más Inmobiliaria.
+
+REGLAS ESTRICTAS:
+- Responde en máximo 2 oraciones cortas
+- Una idea por mensaje
+- Si necesitas más info, haz UNA sola pregunta
+- Sin listas largas ni párrafos
+- Directo al punto
+- En español siempre
+
+TEMAS QUE MANEJAS:
+- Login y contraseñas
+- Planes: Gratuito, Básico $299/mes, Premium $799/mes
+- Verificación de cuenta (email o SMS)
+- Publicar propiedades (van a revisión 24-48hrs)
 - Favoritos y mensajes
-- Problemas técnicos comunes
+- Problemas técnicos
 
-Reglas:
-- Responde siempre en español
-- Sé amable, profesional y conciso
-- Si no puedes resolver el problema, sugiere contactar a soporte@vivemas.mx
-- No inventes información que no esté en tu contexto
-- Máximo 3 párrafos por respuesta
-- Usa emojis ocasionalmente para ser más amigable`;
+Si no puedes ayudar: "Escríbenos a soporte@vivemas.mx 📧"
+Cuando el problema esté resuelto pregunta: "¿Hay algo más en que pueda ayudarte? 😊"
+Si el usuario dice no/gracias/listo, despídete con: "¡Hasta pronto! 👋"`;
 
-const SISTEMA_SERVICIOS = `Eres el asistente virtual de servicios de Vive Más Inmobiliaria, una plataforma inmobiliaria mexicana.
-Tu nombre es "Max" y tu rol es informar y capturar leads sobre:
-- Renta de inmuebles
-- Compra y venta de propiedades
+const SISTEMA_SERVICIOS = `Eres Max, asesor de servicios de Vive Más Inmobiliaria.
+
+REGLAS ESTRICTAS:
+- Responde en máximo 2 oraciones cortas
+- Haz UNA pregunta a la vez para entender la necesidad
+- Sondeo en este orden:
+  1. ¿Qué tipo de servicio necesita? (renta/venta/administración/mantenimiento)
+  2. ¿En qué ciudad o estado?
+  3. ¿Es para uso personal o inversión?
+  4. ¿Cuál es su presupuesto aproximado?
+  5. Pedir nombre y teléfono para contacto
+- Respuestas breves y amigables
+- En español siempre
+- Un emoji máximo por mensaje
+
+SERVICIOS:
+- Renta y venta de propiedades
 - Administración de edificios y condominios
 - Pago de servicios (luz, agua, predial)
 - Mantenimiento y reparaciones
-- Plan Premium con fotografía profesional y gestoría
+- Plan Premium: fotos profesionales + gestoría
 
-Reglas:
-- Responde siempre en español
-- Sé amable, profesional y orientado a ventas
-- Cuando el usuario muestre interés real, pide su nombre y teléfono para que un asesor lo contacte
-- Destaca los beneficios de cada servicio
-- Máximo 3 párrafos por respuesta
-- Usa emojis ocasionalmente`;
+Cuando captures todos los datos di: "¡Listo! Un asesor te contactará pronto. ¿Necesitas algo más? 😊"
+Si el usuario dice no/gracias/listo, despídete con: "¡Hasta pronto! 👋"`;
 
 const chatSoporte = async (req, res) => {
   try {
     const { mensaje, historial = [] } = req.body;
     if (!mensaje) return res.status(400).json({ error: 'Mensaje requerido' });
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      systemInstruction: SISTEMA_SOPORTE
+    const messages = [
+      { role: 'system', content: SISTEMA_SOPORTE },
+      ...historial
+        .filter(h => h.role === 'user' || h.role === 'assistant')
+        .slice(-10)
+        .map(h => ({ role: h.role, content: h.text || h.content })),
+      { role: 'user', content: mensaje }
+    ];
+
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages,
+      max_tokens: 150,
+      temperature: 0.7
     });
 
-    const chat = model.startChat({
-      history: historial.map(h => ({
-        role: h.role,
-        parts: [{ text: h.text }]
-      }))
-    });
-
-    const result = await chat.sendMessage(mensaje);
-    const respuesta = result.response.text();
-
+    const respuesta = completion.choices[0]?.message?.content || 'Lo siento, no pude procesar tu mensaje.';
     res.json({ ok: true, respuesta, tipo: 'soporte' });
   } catch (error) {
     console.error('Error chatbot soporte:', error.message);
@@ -68,21 +83,23 @@ const chatServicios = async (req, res) => {
     const { mensaje, historial = [], datosContacto } = req.body;
     if (!mensaje) return res.status(400).json({ error: 'Mensaje requerido' });
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      systemInstruction: SISTEMA_SERVICIOS
+    const messages = [
+      { role: 'system', content: SISTEMA_SERVICIOS },
+      ...historial
+        .filter(h => h.role === 'user' || h.role === 'assistant')
+        .slice(-10)
+        .map(h => ({ role: h.role, content: h.text || h.content })),
+      { role: 'user', content: mensaje }
+    ];
+
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages,
+      max_tokens: 150,
+      temperature: 0.7
     });
 
-    const chat = model.startChat({
-      history: historial.map(h => ({
-        role: h.role,
-        parts: [{ text: h.text }]
-      }))
-    });
-
-    const result = await chat.sendMessage(mensaje);
-    const respuesta = result.response.text();
-
+    const respuesta = completion.choices[0]?.message?.content || 'Lo siento, no pude procesar tu mensaje.';
     const esLead = respuesta.toLowerCase().includes('asesor') ||
                    respuesta.toLowerCase().includes('contactar') ||
                    datosContacto?.nombre;
@@ -96,7 +113,7 @@ const chatServicios = async (req, res) => {
 
 const guardarLead = async (req, res) => {
   try {
-    const { nombre, telefono, email, servicio, conversacion } = req.body;
+    const { nombre, telefono, email, servicio } = req.body;
     if (!nombre || !telefono) return res.status(400).json({ error: 'Nombre y teléfono requeridos' });
     console.log('LEAD NUEVO:', { nombre, telefono, email, servicio, fecha: new Date() });
     res.json({ ok: true, mensaje: 'Lead guardado. Un asesor te contactará pronto.' });

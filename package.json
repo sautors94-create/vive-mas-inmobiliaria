@@ -20,6 +20,7 @@
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.0.0",
     "express-validator": "^7.0.0",
+    "groq-sdk": "^1.1.2",
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.0",
     "mongodb": "^7.1.1",
