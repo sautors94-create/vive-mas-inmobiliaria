@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Servicios — Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="container nav-content">
+      <a href="/" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <span class="logo-sub">Servicios</span>
+      </a>
+      <div class="nav-actions">
+        <span style="font-size:14px;color:var(--text-light)">Panel de Servicios</span>
+        <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-layout">
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-user">
+        <div class="user-avatar" style="background:#1a3a6e">S</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-nombre">Servicios</div>
+          <div class="user-plan">Encargado de serv  icios</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="sidebar-link active" onclick="mostrarSeccion('leads')">
+          📋 Leads del chatbot
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('stats')">
+          📊 Estadísticas
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-main">
+
+      <!-- LEADS -->
+      <section id="sec-leads" class="dash-section">
+        <div class="dash-section-header">
+          <h2>Leads de servicios</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="search-leads" class="form-input" placeholder="Buscar lead..." 
+              style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarLeads()">
+            <select id="filtro-status-lead" class="filter-select" style="width:auto" onchange="cargarLeads()">
+              <option value="">Todos</option>
+              <option value="nuevo">Nuevos</option>
+              <option value="contactado">Contactados</option>
+              <option value="cerrado">Cerrados</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+  <input type="text" id="search-leads" class="form-input" placeholder="Buscar lead..." 
+    style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarLeads()">
+  <select id="filtro-status-lead" class="filter-select" style="width:auto" onchange="cargarLeads()">
+    <option value="">Todos</option>
+    <option value="nuevo">Nuevos</option>
+    <option value="contactado">Contactados</option>
+    <option value="cerrado">Cerrados</option>
+  </select>
+  <button class="btn btn-outline" onclick="exportarExcel()" style="padding:8px 16px;font-size:13px">📊 Excel</button>
+  <button class="btn btn-outline" onclick="exportarPDF()" style="padding:8px 16px;font-size:13px">📄 PDF</button>
+</div>
+        </div>
+        <div id="leads-lista" style="display:flex;flex-direction:column;gap:12px">
+          <div class="loading">Cargando leads...</div>
+        </div>
+      </section>
+
+      <!-- STATS -->
+      <section id="sec-stats" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Estadísticas de servicios</h2>
+        </div>
+        <div class="stats-grid" id="stats-servicios">
+          <div class="loading">Cargando...</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL LEAD -->
+  <div id="modal-lead" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:white;border-radius:16px;padding:32px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto">
+      <h3 style="margin-bottom:20px;font-family:'Bricolage Grotesque',sans-serif">Detalles del lead</h3>
+      <div id="modal-lead-content"></div>
+      <div style="display:flex;gap:12px;margin-top:20px">
+        <button class="btn btn-primary" onclick="cerrarModalLead()" style="flex:1">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/servicios-admin.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</body>
+</html>

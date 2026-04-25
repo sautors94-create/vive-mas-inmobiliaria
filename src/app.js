@@ -18,6 +18,7 @@ const favoriteRoutes = require('./routes/favorite.routes');
 const messageRoutes = require('./routes/message.routes');
 const siteconfigRoutes = require('./routes/siteconfig.routes');
 const chatbotRoutes = require('./routes/chatbot.routes');
+const servicesRoutes = require('./routes/services.routes');
 
 
 const app = express();
@@ -70,6 +71,7 @@ app.use('/api/favoritos', favoriteRoutes);
 app.use('/api/mensajes', messageRoutes);
 app.use('/api/site', siteconfigRoutes);
 app.use('/api/chat', chatbotRoutes);
+app.use('/api/services', servicesRoutes);
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
 });

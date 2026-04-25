@@ -1,4 +1,5 @@
 const Groq = require('groq-sdk');
+const Lead = require('../models/Lead');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -100,9 +101,12 @@ const chatServicios = async (req, res) => {
     });
 
     const respuesta = completion.choices[0]?.message?.content || 'Lo siento, no pude procesar tu mensaje.';
-    const esLead = respuesta.toLowerCase().includes('asesor') ||
-                   respuesta.toLowerCase().includes('contactar') ||
-                   datosContacto?.nombre;
+
+    const esLead = (
+      respuesta.toLowerCase().includes('asesor') ||
+      respuesta.toLowerCase().includes('contactar') ||
+      (datosContacto && datosContacto.nombre)
+    ) ? true : false;
 
     res.json({ ok: true, respuesta, tipo: 'servicios', esLead });
   } catch (error) {
@@ -113,10 +117,11 @@ const chatServicios = async (req, res) => {
 
 const guardarLead = async (req, res) => {
   try {
-    const { nombre, telefono, email, servicio } = req.body;
+    const { nombre, telefono, email, servicio, conversacion } = req.body;
     if (!nombre || !telefono) return res.status(400).json({ error: 'Nombre y teléfono requeridos' });
-    console.log('LEAD NUEVO:', { nombre, telefono, email, servicio, fecha: new Date() });
-    res.json({ ok: true, mensaje: 'Lead guardado. Un asesor te contactará pronto.' });
+    const lead = await Lead.create({ nombre, telefono, email, servicio, conversacion });
+    console.log('LEAD NUEVO:', { nombre, telefono, fecha: new Date() });
+    res.json({ ok: true, mensaje: 'Lead guardado. Un asesor te contactará pronto.', lead });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
