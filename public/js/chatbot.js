@@ -13,6 +13,13 @@ class Chatbot {
       : '¡Hola! Soy Max 🏠 ¿Qué tipo de servicio inmobiliario necesitas?';
     this.render();
   }
+  const user = typeof auth !== 'undefined' ? auth.getUser() : null;
+if (user && this.tipo === 'servicios') {
+  const leadNombre = document.getElementById(`chatbot-${this.tipo}-lead-nombre`);
+  const leadTel = document.getElementById(`chatbot-${this.tipo}-lead-tel`);
+  if (leadNombre) leadNombre.value = user.nombre || '';
+  if (leadTel) leadTel.value = user.telefono || '';
+}
 
   render() {
     const id = `chatbot-${this.tipo}`;
@@ -179,18 +186,31 @@ class Chatbot {
     this.reiniciarTimer();
   }
 
-  async enviarLead() {
-    const nombre = document.getElementById(`chatbot-${this.tipo}-lead-nombre`)?.value.trim();
-    const tel = document.getElementById(`chatbot-${this.tipo}-lead-tel`)?.value.trim();
-    if (!nombre || !tel) { alert('Por favor llena nombre y teléfono'); return; }
-    await fetch('http://localhost:3000/api/chat/lead', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, telefono: tel, tipo: this.tipo })
-    });
-    document.getElementById(`chatbot-${this.tipo}-lead`).style.display = 'none';
-    this.agregarMensaje('bot', `¡Gracias ${nombre}! Un asesor te contactará al ${tel} muy pronto. 😊`);
-  }
+async enviarLead() {
+  const nombre = document.getElementById(`chatbot-${this.tipo}-lead-nombre`)?.value.trim();
+  const tel = document.getElementById(`chatbot-${this.tipo}-lead-tel`)?.value.trim();
+  if (!nombre || !tel) { alert('Por favor llena nombre y teléfono'); return; }
+  
+  const user = auth.getUser();
+  const token = auth.getToken();
+
+  await fetch('http://localhost:3000/api/chat/lead', {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : ''
+    },
+    body: JSON.stringify({ 
+      nombre, 
+      telefono: tel, 
+      tipo: this.tipo,
+      conversacion: this.historial,
+      usuarioId: user?._id || null,
+      email: user?.email || null
+    })
+  });
+  document.getElementById(`chatbot-${this.tipo}-lead`).style.display = 'none';
+  this.agregarMensaje('bot', `¡Gracias ${nombre}! Un asesor te contactará al ${tel} muy pronto. 😊`);
 }
 
 const style = document.createElement('style');
