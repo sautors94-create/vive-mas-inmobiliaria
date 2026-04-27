@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
   <link rel="stylesheet" href="../css/dashboard.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 </head>
 <body>
 
@@ -139,10 +140,31 @@
               <label>Colonia</label>
               <input type="text" id="p-colonia" class="form-input" placeholder="Ej: Polanco">
             </div>
-            <div class="form-grupo">
-              <label>DirecciÃ³n</label>
-              <input type="text" id="p-direccion" class="form-input" placeholder="Calle y nÃºmero">
-            </div>
+            <div class="form-grupo" style="grid-column:1/-1">
+  <label>Dirección</label>
+  <div style="display:flex;gap:8px">
+    <input type="text" id="p-direccion" class="form-input" placeholder="Calle y número" style="flex:1">
+    <button type="button" class="btn btn-outline" onclick="buscarDireccion()" style="padding:10px 16px;font-size:13px;white-space:nowrap">📍 Buscar</button>
+  </div>
+</div>
+
+<div class="form-grupo" style="grid-column:1/-1">
+  <label>Ubicación en mapa <span style="font-size:11px;color:var(--text-light)">(haz clic para marcar la ubicación exacta)</span></label>
+  <div id="mapa-publicar" style="height:300px;border-radius:12px;border:1px solid var(--border);margin-top:6px"></div>
+  <div style="display:flex;gap:16px;margin-top:8px">
+    <div style="font-size:12px;color:var(--text-light)">
+      Lat: <span id="coord-lat" style="font-weight:600;color:var(--primary)">--</span>
+    </div>
+    <div style="font-size:12px;color:var(--text-light)">
+      Lng: <span id="coord-lng" style="font-weight:600;color:var(--primary)">--</span>
+    </div>
+    <div style="font-size:12px;color:var(--text-light)">
+      <span id="coord-estado-label" style="color:var(--primary)"></span>
+    </div>
+  </div>
+  <input type="hidden" id="p-lat">
+  <input type="hidden" id="p-lng">
+</div>
             <div class="form-grupo">
               <label>RecÃ¡maras</label>
               <input type="number" id="p-recamaras" class="form-input" placeholder="0" min="0">
@@ -209,5 +231,6 @@
   <script src="../js/auth.js"></script>
   <script src="../js/dashboard.js"></script>
   <script src="../js/chatbot.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
