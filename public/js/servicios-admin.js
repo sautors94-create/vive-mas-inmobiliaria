@@ -36,7 +36,7 @@ const cargarLeads = async () => {
         ${l.nombre.charAt(0).toUpperCase()}
       </div>
       <div class="prop-admin-info">
-        <div class="prop-admin-titulo">${l.nombre}</div>
+       <div class="prop-admin-titulo">${l.folio || ''} — ${l.nombre}</div>
         <div class="prop-admin-meta">
           📞 ${l.telefono}
           ${l.email ? ' · 📧 ' + l.email : ''}
@@ -68,7 +68,21 @@ const verLead = async (id) => {
   const l = data.lead;
 
   document.getElementById('modal-lead-content').innerHTML = `
-    <div style="display:grid;gap:12px">
+    <div style="display:grid;gap:16px">
+      
+      <!-- FOLIO Y STATUS -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-secondary);border-radius:12px;border:1px solid var(--border)">
+        <div>
+          <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;font-weight:600">Folio</div>
+          <div style="font-size:20px;font-weight:700;color:var(--primary);font-family:'Bricolage Grotesque',sans-serif">${l.folio || 'VM-0000'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;font-weight:600">Fecha</div>
+          <div style="font-size:13px;font-weight:500">${new Date(l.createdAt).toLocaleDateString('es-MX', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+      </div>
+
+      <!-- DATOS DE CONTACTO -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="form-grupo">
           <label>Nombre</label>
@@ -83,23 +97,56 @@ const verLead = async (id) => {
           <input class="form-input" value="${l.email || 'No proporcionado'}" disabled>
         </div>
         <div class="form-grupo">
-          <label>Servicio</label>
+          <label>Servicio de interés</label>
           <input class="form-input" value="${l.servicio || 'No especificado'}" disabled>
         </div>
-        <div class="form-grupo">
-          <label>Status</label>
-          <input class="form-input" value="${l.status}" disabled>
-        </div>
-        <div class="form-grupo">
-          <label>Fecha</label>
-          <input class="form-input" value="${new Date(l.createdAt).toLocaleDateString('es-MX')}" disabled>
+      </div>
+
+      <!-- UBICACIÓN -->
+      <div style="display:flex;gap:12px;padding:12px 16px;background:#f0f7f4;border-radius:12px;border:1px solid #d1e7dd;align-items:center">
+        <span style="font-size:24px">📍</span>
+        <div>
+          <div style="font-size:12px;color:var(--text-light);font-weight:600">Ubicación aproximada</div>
+          <div style="font-size:14px;font-weight:500">${l.ciudad ? l.ciudad + ', ' + l.pais : 'No disponible'}</div>
+          <div style="font-size:11px;color:var(--text-light)">IP: ${l.ip || 'No disponible'}</div>
         </div>
       </div>
+
+      <!-- USUARIO REGISTRADO -->
+      ${l.usuarioRegistrado ? `
+        <div style="display:flex;gap:12px;padding:12px 16px;background:#e8f5e9;border-radius:12px;border:1px solid #c8e6c9;align-items:center">
+          <div style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0">
+            ${l.usuarioRegistrado.nombre.charAt(0)}
+          </div>
+          <div style="flex:1">
+            <div style="font-size:12px;color:#2e7d32;font-weight:600">✓ Usuario registrado en plataforma</div>
+            <div style="font-size:14px;font-weight:500">${l.usuarioRegistrado.nombre}</div>
+            <div style="font-size:12px;color:var(--text-light)">${l.usuarioRegistrado.email} · Plan ${l.usuarioRegistrado.plan}</div>
+          </div>
+          <a href="dashboard.html" target="_blank" class="btn btn-outline" style="padding:6px 12px;font-size:12px">Ver perfil</a>
+        </div>` : `
+        <div style="padding:10px 16px;background:#fff3e0;border-radius:10px;border:1px solid #ffe0b2;font-size:13px;color:#e65100">
+          👤 Usuario no registrado en la plataforma
+        </div>`}
+
+      <!-- NOTAS -->
       <div class="form-grupo">
         <label>Notas del asesor</label>
         <textarea id="lead-notas-${l._id}" class="form-input" rows="3" placeholder="Agrega tus notas aquí...">${l.notas || ''}</textarea>
       </div>
-      <button class="btn btn-primary" onclick="guardarNotas('${l._id}')" style="padding:10px">Guardar notas</button>
+      <button class="btn btn-primary" onclick="guardarNotas('${l._id}')" style="padding:10px">💾 Guardar notas</button>
+
+      <!-- RESPUESTA INTERNA -->
+      ${l.usuarioRegistrado ? `
+        <div class="form-grupo">
+          <label>Respuesta interna al usuario</label>
+          <textarea id="lead-respuesta-${l._id}" class="form-input" rows="3" placeholder="Escribe un mensaje interno para el usuario...">${l.respuestaInterna || ''}</textarea>
+        </div>
+        <button class="btn btn-outline" onclick="enviarRespuestaInterna('${l._id}')" style="padding:10px;border-color:var(--primary);color:var(--primary)">
+          📨 Enviar mensaje interno
+        </button>` : ''}
+
+      <!-- CONVERSACIÓN -->
       ${l.conversacion?.length ? `
         <div>
           <label style="font-size:12px;font-weight:600;color:var(--text-light);text-transform:uppercase;display:block;margin-bottom:8px">Conversación del chatbot</label>
@@ -210,4 +257,14 @@ const exportarPDF = async () => {
   });
 
   doc.save(`leads-vivemas-${new Date().toLocaleDateString('es-MX').replace(/\//g,'-')}.pdf`);
+};
+const enviarRespuestaInterna = async (id) => {
+  const respuesta = document.getElementById(`lead-respuesta-${id}`)?.value.trim();
+  if (!respuesta) { alert('Escribe un mensaje'); return; }
+  const data = await api.patch(`/services/leads/${id}`, { respuestaInterna: respuesta, status: 'contactado' });
+  if (data.ok) {
+    alert('✓ Mensaje interno enviado al usuario');
+    cerrarModalLead();
+    cargarLeads();
+  }
 };

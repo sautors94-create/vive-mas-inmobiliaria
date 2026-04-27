@@ -117,10 +117,36 @@ const chatServicios = async (req, res) => {
 
 const guardarLead = async (req, res) => {
   try {
-    const { nombre, telefono, email, servicio, conversacion } = req.body;
+    const { nombre, telefono, email, servicio, conversacion, usuarioId } = req.body;
     if (!nombre || !telefono) return res.status(400).json({ error: 'Nombre y teléfono requeridos' });
-    const lead = await Lead.create({ nombre, telefono, email, servicio, conversacion });
-    console.log('LEAD NUEVO:', { nombre, telefono, fecha: new Date() });
+
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
+
+    let ciudad = null;
+    let pais = 'México';
+    try {
+      const geoRes = await fetch(`http://ip-api.com/json/${ip}?lang=es`);
+      const geoData = await geoRes.json();
+      if (geoData.status === 'success') {
+        ciudad = geoData.city;
+        pais = geoData.country;
+      }
+    } catch (e) {}
+
+    const lead = await Lead.create({
+      nombre,
+      telefono,
+      email,
+      servicio,
+      conversacion,
+      ip,
+      ciudad,
+      pais,
+      usuarioRegistrado: usuarioId || null
+    });
+
+    await lead.populate('usuarioRegistrado', 'nombre email plan');
+    console.log('LEAD NUEVO:', { folio: lead.folio, nombre, telefono, ciudad, fecha: new Date() });
     res.json({ ok: true, mensaje: 'Lead guardado. Un asesor te contactará pronto.', lead });
   } catch (error) {
     res.status(500).json({ error: error.message });
