@@ -1,40 +1,36 @@
 ﻿<!DOCTYPE html>
 <html lang="es">
 <head>
-<script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Panel â€” Vive MÃ¡s Inmobiliaria</title>
+  <title>Mi Panel — Vive Más Inmobiliaria</title>
+  <script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="../css/styles.css">
   <link rel="stylesheet" href="../css/dashboard.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 </head>
 <body>
 
-  <!-- NAVBAR -->
   <nav class="navbar">
     <div class="container nav-content">
       <a href="/" class="logo">
-        <span class="logo-vive">Vive</span><span class="logo-mas">MÃ¡s</span>
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
         <span class="logo-sub">Inmobiliaria</span>
       </a>
       <ul class="nav-links">
         <li><a href="/">Inicio</a></li>
-        <li><a href="catalogo.html">CatÃ¡logo</a></li>
+        <li><a href="catalogo.html">Catálogo</a></li>
       </ul>
       <div class="nav-actions">
         <span id="user-nombre" style="font-size:14px;color:var(--text-light)"></span>
-        <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesiÃ³n</button>
+        <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>
       </div>
     </div>
   </nav>
 
-  <!-- LAYOUT DASHBOARD -->
   <div class="dashboard-layout">
-
-    <!-- SIDEBAR -->
     <aside class="dashboard-sidebar">
       <div class="sidebar-user">
         <div class="user-avatar" id="user-avatar">U</div>
@@ -43,34 +39,22 @@
           <div class="user-plan" id="sidebar-plan">plan gratuito</div>
         </div>
       </div>
-
       <nav class="sidebar-nav">
-        <a href="#" class="sidebar-link active" onclick="mostrarSeccion('mis-propiedades')">
-          ðŸ  Mis propiedades
-        </a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('nueva-propiedad')">
-          âž• Nueva publicaciÃ³n
-        </a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('favoritos')">
-          â¤ï¸ Favoritos
-        </a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('mensajes')">
-          ðŸ’¬ Mensajes
-        </a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('mi-cuenta')">
-          ðŸ‘¤ Mi cuenta
-        </a>
+        <a href="#" class="sidebar-link active" onclick="mostrarSeccion('mis-propiedades')">🏠 Mis propiedades</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('nueva-propiedad')">➕ Nueva publicación</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('favoritos')">❤️ Favoritos</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('mensajes')">💬 Mensajes</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('mi-cuenta')">👤 Mi cuenta</a>
       </nav>
     </aside>
 
-    <!-- CONTENIDO PRINCIPAL -->
     <main class="dashboard-main">
 
       <!-- MIS PROPIEDADES -->
       <section id="sec-mis-propiedades" class="dash-section">
         <div class="dash-section-header">
           <h2>Mis propiedades</h2>
-          <button class="btn btn-primary" onclick="mostrarSeccion('nueva-propiedad')">+ Nueva publicaciÃ³n</button>
+          <button class="btn btn-primary" onclick="mostrarSeccion('nueva-propiedad')">+ Nueva publicación</button>
         </div>
         <div id="mis-props-grid" class="mis-props-grid">
           <div class="loading">Cargando tus propiedades...</div>
@@ -80,16 +64,15 @@
       <!-- NUEVA PROPIEDAD -->
       <section id="sec-nueva-propiedad" class="dash-section" style="display:none">
         <div class="dash-section-header">
-          <h2>Nueva publicaciÃ³n</h2>
+          <h2>Nueva publicación</h2>
         </div>
-
         <div class="form-card">
           <div id="form-error" class="alert alert-error" style="display:none"></div>
           <div id="form-success" class="alert alert-success" style="display:none"></div>
 
           <div class="form-grid">
             <div class="form-grupo">
-              <label>TÃ­tulo de la propiedad *</label>
+              <label>Título de la propiedad *</label>
               <input type="text" id="p-titulo" class="form-input" placeholder="Ej: Casa en Colonia Polanco">
             </div>
             <div class="form-grupo">
@@ -97,7 +80,7 @@
               <input type="number" id="p-precio" class="form-input" placeholder="0">
             </div>
             <div class="form-grupo">
-              <label>OperaciÃ³n *</label>
+              <label>Operación *</label>
               <select id="p-operacion" class="filter-select">
                 <option value="">Selecciona</option>
                 <option value="renta">Renta</option>
@@ -115,20 +98,20 @@
               </select>
             </div>
             <div class="form-grupo" style="grid-column:1/-1">
-              <label>DescripciÃ³n *</label>
+              <label>Descripción *</label>
               <textarea id="p-descripcion" class="form-input" rows="4" placeholder="Describe tu propiedad..."></textarea>
             </div>
             <div class="form-grupo">
               <label>Estado *</label>
               <select id="p-estado" class="filter-select">
                 <option value="">Selecciona</option>
-                <option value="Ciudad de Mexico">Ciudad de MÃ©xico</option>
+                <option value="Ciudad de Mexico">Ciudad de México</option>
                 <option value="Jalisco">Jalisco</option>
-                <option value="Nuevo Leon">Nuevo LeÃ³n</option>
+                <option value="Nuevo Leon">Nuevo León</option>
                 <option value="Puebla">Puebla</option>
                 <option value="Guanajuato">Guanajuato</option>
-                <option value="Queretaro">QuerÃ©taro</option>
-                <option value="Yucatan">YucatÃ¡n</option>
+                <option value="Queretaro">Querétaro</option>
+                <option value="Yucatan">Yucatán</option>
                 <option value="Oaxaca">Oaxaca</option>
               </select>
             </div>
@@ -141,36 +124,29 @@
               <input type="text" id="p-colonia" class="form-input" placeholder="Ej: Polanco">
             </div>
             <div class="form-grupo" style="grid-column:1/-1">
-  <label>Dirección</label>
-  <div style="display:flex;gap:8px">
-    <input type="text" id="p-direccion" class="form-input" placeholder="Calle y número" style="flex:1">
-    <button type="button" class="btn btn-outline" onclick="buscarDireccion()" style="padding:10px 16px;font-size:13px;white-space:nowrap">📍 Buscar</button>
-  </div>
-</div>
-
-<div class="form-grupo" style="grid-column:1/-1">
-  <label>Ubicación en mapa <span style="font-size:11px;color:var(--text-light)">(haz clic para marcar la ubicación exacta)</span></label>
-  <div id="mapa-publicar" style="height:300px;border-radius:12px;border:1px solid var(--border);margin-top:6px"></div>
-  <div style="display:flex;gap:16px;margin-top:8px">
-    <div style="font-size:12px;color:var(--text-light)">
-      Lat: <span id="coord-lat" style="font-weight:600;color:var(--primary)">--</span>
-    </div>
-    <div style="font-size:12px;color:var(--text-light)">
-      Lng: <span id="coord-lng" style="font-weight:600;color:var(--primary)">--</span>
-    </div>
-    <div style="font-size:12px;color:var(--text-light)">
-      <span id="coord-estado-label" style="color:var(--primary)"></span>
-    </div>
-  </div>
-  <input type="hidden" id="p-lat">
-  <input type="hidden" id="p-lng">
-</div>
+              <label>Dirección</label>
+              <div style="display:flex;gap:8px">
+                <input type="text" id="p-direccion" class="form-input" placeholder="Calle y número" style="flex:1">
+                <button type="button" class="btn btn-outline" onclick="buscarDireccion()" style="padding:10px 16px;font-size:13px;white-space:nowrap">📍 Buscar</button>
+              </div>
+            </div>
+            <div class="form-grupo" style="grid-column:1/-1">
+              <label>Ubicación en mapa <span style="font-size:11px;color:var(--text-light)">(haz clic para marcar la ubicación exacta)</span></label>
+              <div id="mapa-publicar" style="height:300px;border-radius:12px;border:1px solid var(--border);margin-top:6px"></div>
+              <div style="display:flex;gap:16px;margin-top:8px">
+                <div style="font-size:12px;color:var(--text-light)">Lat: <span id="coord-lat" style="font-weight:600;color:var(--primary)">--</span></div>
+                <div style="font-size:12px;color:var(--text-light)">Lng: <span id="coord-lng" style="font-weight:600;color:var(--primary)">--</span></div>
+                <div style="font-size:12px;color:var(--text-light)"><span id="coord-estado-label" style="color:var(--primary)"></span></div>
+              </div>
+              <input type="hidden" id="p-lat">
+              <input type="hidden" id="p-lng">
+            </div>
             <div class="form-grupo">
-              <label>RecÃ¡maras</label>
+              <label>Recámaras</label>
               <input type="number" id="p-recamaras" class="form-input" placeholder="0" min="0">
             </div>
             <div class="form-grupo">
-              <label>BaÃ±os</label>
+              <label>Baños</label>
               <input type="number" id="p-banos" class="form-input" placeholder="0" min="0">
             </div>
             <div class="form-grupo">
@@ -182,23 +158,21 @@
               <input type="number" id="p-m2" class="form-input" placeholder="0" min="0">
             </div>
             <div class="form-grupo" style="grid-column:1/-1">
-              <label>Fotos (mÃ¡ximo 15, formato JPG/PNG/WEBP, mÃ¡x 5MB c/u)</label>
-              <input type="file" id="p-fotos" class="form-input" multiple accept="image/*">
-              <small style="color:var(--text-light);font-size:12px">Las fotos se subirÃ¡n despuÃ©s de crear la propiedad</small>
+              <label>Fotos (máximo 15, JPG/PNG/WEBP, máx 5MB c/u)</label>
+              <input type="file" id="p-fotos" class="form-input" multiple accept="image/*" onchange="previsualizarFotos(this)">
+              <div id="fotos-preview" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px"></div>
             </div>
           </div>
 
           <button class="btn btn-primary" style="padding:14px 32px;font-size:16px;margin-top:8px" onclick="publicarPropiedad()">
-            Enviar a revisiÃ³n
+            Enviar a revisión
           </button>
         </div>
       </section>
 
       <!-- FAVORITOS -->
       <section id="sec-favoritos" class="dash-section" style="display:none">
-        <div class="dash-section-header">
-          <h2>Mis favoritos</h2>
-        </div>
+        <div class="dash-section-header"><h2>Mis favoritos</h2></div>
         <div id="favoritos-grid" class="properties-grid">
           <div class="loading">Cargando favoritos...</div>
         </div>
@@ -206,9 +180,7 @@
 
       <!-- MENSAJES -->
       <section id="sec-mensajes" class="dash-section" style="display:none">
-        <div class="dash-section-header">
-          <h2>Mis mensajes</h2>
-        </div>
+        <div class="dash-section-header"><h2>Mis mensajes</h2></div>
         <div id="mensajes-lista" class="mensajes-lista">
           <div class="loading">Cargando mensajes...</div>
         </div>
@@ -216,9 +188,7 @@
 
       <!-- MI CUENTA -->
       <section id="sec-mi-cuenta" class="dash-section" style="display:none">
-        <div class="dash-section-header">
-          <h2>Mi cuenta</h2>
-        </div>
+        <div class="dash-section-header"><h2>Mi cuenta</h2></div>
         <div class="form-card">
           <div id="cuenta-info"></div>
         </div>
@@ -227,10 +197,10 @@
     </main>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="../js/api.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/dashboard.js"></script>
   <script src="../js/chatbot.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
