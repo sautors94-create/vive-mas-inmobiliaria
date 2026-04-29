@@ -4,6 +4,7 @@ class Chatbot {
     this.historial = [];
     this.abierto = false;
     this.timerInactividad = null;
+    this.timerSeguimiento = null;
     this.TIEMPO_INACTIVIDAD = 1 * 60 * 1000;
     this.nombre = tipo === 'soporte' ? 'Vivi' : 'Max';
     this.emoji = tipo === 'soporte' ? '🎧' : '🏠';
@@ -12,14 +13,18 @@ class Chatbot {
       ? '¡Hola! Soy Vivi 🎧 ¿En qué puedo ayudarte? Cuéntame tu problema.'
       : '¡Hola! Soy Max 🏠 ¿Qué tipo de servicio inmobiliario necesitas?';
     this.render();
+    try {
+      const userActual = typeof auth !== 'undefined' ? auth.getUser() : null;
+      if (userActual && this.tipo === 'servicios') {
+        setTimeout(() => {
+          const leadNombre = document.getElementById(`chatbot-${this.tipo}-lead-nombre`);
+          const leadTel = document.getElementById(`chatbot-${this.tipo}-lead-tel`);
+          if (leadNombre) leadNombre.value = userActual.nombre || '';
+          if (leadTel) leadTel.value = userActual.telefono || '';
+        }, 500);
+      }
+    } catch(e) {}
   }
-  const user = typeof auth !== 'undefined' ? auth.getUser() : null;
-if (user && this.tipo === 'servicios') {
-  const leadNombre = document.getElementById(`chatbot-${this.tipo}-lead-nombre`);
-  const leadTel = document.getElementById(`chatbot-${this.tipo}-lead-tel`);
-  if (leadNombre) leadNombre.value = user.nombre || '';
-  if (leadTel) leadTel.value = user.telefono || '';
-}
 
   render() {
     const id = `chatbot-${this.tipo}`;
@@ -79,6 +84,7 @@ if (user && this.tipo === 'servicios') {
       this.reiniciarTimer();
     } else {
       if (this.timerInactividad) clearTimeout(this.timerInactividad);
+      if (this.timerSeguimiento) clearTimeout(this.timerSeguimiento);
     }
   }
 
@@ -91,10 +97,7 @@ if (user && this.tipo === 'servicios') {
           this.toggle();
           this.historial = [];
           const msgs = document.getElementById(`chatbot-${this.tipo}-msgs`);
-          if (msgs) {
-            msgs.innerHTML = '';
-            this.agregarMensaje('bot', this.bienvenida);
-          }
+          if (msgs) { msgs.innerHTML = ''; this.agregarMensaje('bot', this.bienvenida); }
         }, 3000);
       }
     }, this.TIEMPO_INACTIVIDAD);
@@ -108,8 +111,7 @@ if (user && this.tipo === 'servicios') {
     div.innerHTML = `
       <div style="
         max-width:80%;padding:10px 14px;border-radius:${isBot ? '4px 16px 16px 16px' : '16px 4px 16px 16px'};
-        background:${isBot ? 'white' : this.color};
-        color:${isBot ? '#1a1a2e' : 'white'};
+        background:${isBot ? 'white' : this.color};color:${isBot ? '#1a1a2e' : 'white'};
         font-size:13px;line-height:1.5;
         box-shadow:${isBot ? '0 1px 4px rgba(0,0,0,0.08)' : 'none'};
         border:${isBot ? '1px solid #e5e7eb' : 'none'}">
@@ -166,12 +168,13 @@ if (user && this.tipo === 'servicios') {
       const data = await res.json();
       this.quitarTyping();
       if (data.ok) {
-         this.agregarMensaje('bot', data.respuesta);
-         if (this.timerSeguimiento) clearTimeout(this.timerSeguimiento);
-         this.timerSeguimiento = setTimeout(() => {
-         if (this.abierto && this.historial.length > 2) {
-          this.agregarMensaje('bot', '¿Hay algo más en que pueda ayudarte? 😊');
-         }  }, 45 * 1000);
+        this.agregarMensaje('bot', data.respuesta);
+        if (this.timerSeguimiento) clearTimeout(this.timerSeguimiento);
+        this.timerSeguimiento = setTimeout(() => {
+          if (this.abierto && this.historial.length > 2) {
+            this.agregarMensaje('bot', '¿Hay algo más en que pueda ayudarte? 😊');
+          }
+        }, 45 * 1000);
         if (data.esLead) {
           const leadForm = document.getElementById(`chatbot-${this.tipo}-lead`);
           if (leadForm) leadForm.style.display = 'block';
@@ -186,31 +189,30 @@ if (user && this.tipo === 'servicios') {
     this.reiniciarTimer();
   }
 
-async enviarLead() {
-  const nombre = document.getElementById(`chatbot-${this.tipo}-lead-nombre`)?.value.trim();
-  const tel = document.getElementById(`chatbot-${this.tipo}-lead-tel`)?.value.trim();
-  if (!nombre || !tel) { alert('Por favor llena nombre y teléfono'); return; }
-  
-  const user = auth.getUser();
-  const token = auth.getToken();
-
-  await fetch('http://localhost:3000/api/chat/lead', {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : ''
-    },
-    body: JSON.stringify({ 
-      nombre, 
-      telefono: tel, 
-      tipo: this.tipo,
-      conversacion: this.historial,
-      usuarioId: user?._id || null,
-      email: user?.email || null
-    })
-  });
-  document.getElementById(`chatbot-${this.tipo}-lead`).style.display = 'none';
-  this.agregarMensaje('bot', `¡Gracias ${nombre}! Un asesor te contactará al ${tel} muy pronto. 😊`);
+  async enviarLead() {
+    const nombre = document.getElementById(`chatbot-${this.tipo}-lead-nombre`)?.value.trim();
+    const tel = document.getElementById(`chatbot-${this.tipo}-lead-tel`)?.value.trim();
+    if (!nombre || !tel) { alert('Por favor llena nombre y teléfono'); return; }
+    try {
+      const userActual = typeof auth !== 'undefined' ? auth.getUser() : null;
+      const token = typeof auth !== 'undefined' ? auth.getToken() : null;
+      await fetch('http://localhost:3000/api/chat/lead', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({
+          nombre, telefono: tel, tipo: this.tipo,
+          conversacion: this.historial,
+          usuarioId: userActual?._id || null,
+          email: userActual?.email || null
+        })
+      });
+    } catch(e) {}
+    document.getElementById(`chatbot-${this.tipo}-lead`).style.display = 'none';
+    this.agregarMensaje('bot', `¡Gracias ${nombre}! Un asesor te contactará al ${tel} muy pronto. 😊`);
+  }
 }
 
 const style = document.createElement('style');

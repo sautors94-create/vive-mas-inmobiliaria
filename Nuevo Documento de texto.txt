@@ -7,6 +7,8 @@ boton cerrar secion mas accesible
 otp por telefono.
 panel visualizacion para aprovar
 usuarios y publicaciones eliminadas llevan un registro, usuario que fue eliminado no puede volver a tener una cuenta, y manda alerta. 
+busqueda comparativa.
+entre maximo 3 propiedades
 
 /model opus plan
 /compact
