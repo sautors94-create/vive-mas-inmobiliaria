@@ -19,7 +19,8 @@ const mostrarSeccion = (seccion) => {
   document.querySelectorAll('.dash-section').forEach(s => s.style.display = 'none');
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
   document.getElementById(`sec-${seccion}`).style.display = 'block';
-  event.target.closest('.sidebar-link')?.classList.add('active');
+  const link = document.querySelector(`.sidebar-link[onclick*="${seccion}"]`);
+  if (link) link.classList.add('active');
   if (seccion === 'mis-propiedades') cargarMisPropiedades();
   if (seccion === 'favoritos') cargarFavoritos();
   if (seccion === 'mensajes') cargarMensajes();

@@ -1,3 +1,4 @@
+const { subirACloudinary } = require('../config/cloudinary');
 const Property = require('../models/Property');
 
 const crearPropiedad = async (req, res) => {
@@ -104,20 +105,19 @@ const subirFotos = async (req, res) => {
     const propiedad = await Property.findById(req.params.id);
     if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
     if (propiedad.propietario.toString() !== req.user.id) {
-      return res.status(403).json({ error: 'No tienes permiso para subir fotos a esta propiedad' });
+      return res.status(403).json({ error: 'No tienes permiso' });
     }
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No se subieron imágenes' });
     }
-    const urls = req.files.map(file => file.path);
-    const totalFotos = propiedad.fotos.length + urls.length;
-    if (totalFotos > 15) {
-      return res.status(400).json({ error: `Solo puedes tener máximo 15 fotos. Ya tienes ${propiedad.fotos.length}` });
-    }
+    const urls = await Promise.all(
+      req.files.map(file => subirACloudinary(file.buffer, file.mimetype))
+    );
     propiedad.fotos = [...propiedad.fotos, ...urls];
     await propiedad.save();
     res.json({ ok: true, mensaje: `${urls.length} foto(s) subida(s)`, fotos: propiedad.fotos });
   } catch (error) {
+    console.error('Error subirFotos:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
