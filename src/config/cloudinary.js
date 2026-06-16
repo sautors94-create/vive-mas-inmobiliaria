@@ -22,10 +22,10 @@ const upload = multer({
   },
 });
 
-const subirACloudinary = (buffer, mimetype) => {
+const subirACloudinary = (buffer, mimetype, folder = 'vive-mas/propiedades') => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: 'vive-mas/propiedades', quality: 'auto', fetch_format: 'auto' },
+      { folder, quality: 'auto', fetch_format: 'auto' },
       (error, result) => {
         if (error) reject(error);
         else resolve(result.secure_url);

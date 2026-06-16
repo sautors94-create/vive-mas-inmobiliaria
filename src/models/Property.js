@@ -6,7 +6,7 @@ const propertySchema = new mongoose.Schema({
   precio: { type: Number, required: true },
   operacion: { type: String, enum: ['renta', 'venta'], required: true },
   tipo: { type: String, enum: ['casa', 'departamento', 'terreno', 'local'], required: true },
-  status: { type: String, enum: ['revision', 'aprobada', 'rechazada', 'bloqueada'], default: 'revision' },
+  status: { type: String, enum: ['revision', 'aprobada', 'rechazada', 'bloqueada', 'pausada'], default: 'revision' },
   motivo_rechazo: { type: String, default: null },
   fotos: [{ type: String }],
   ubicacion: {

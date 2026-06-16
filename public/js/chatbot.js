@@ -1,3 +1,78 @@
+const CHATBOT_I18N = {
+  es: {
+    supportName: 'Vivi',
+    servicesName: 'Max',
+    supportSubtitle: 'Soporte de cuenta',
+    servicesSubtitle: 'Asesor de servicios',
+    supportWelcome: '¡Hola! Soy Vivi 🎧 ¿En qué puedo ayudarte? Cuéntame tu problema.',
+    servicesWelcome: '¡Hola! Soy Max 🏠 ¿Qué tipo de servicio inmobiliario necesitas?',
+    leadTitle: '📋 Déjanos tus datos',
+    leadNamePlaceholder: 'Tu nombre',
+    leadPhonePlaceholder: 'Tu teléfono',
+    leadSendButton: 'Enviar mis datos',
+    inputPlaceholder: 'Escribe tu mensaje...',
+    inactivityClosed: '⏰ Sesión cerrada por inactividad. ¡Hasta pronto! Estoy aquí cuando me necesites.',
+    followup: '¿Hay algo más en que pueda ayudarte? 😊',
+    genericError: 'Lo siento, hubo un error. Intenta de nuevo.',
+    networkError: 'Error de conexión. Verifica tu internet.',
+    leadValidation: 'Por favor llena nombre y teléfono',
+    leadThanks: '¡Gracias {nombre}! Un asesor te contactará al {tel} muy pronto. 😊'
+  },
+  en: {
+    supportName: 'Vivi',
+    servicesName: 'Max',
+    supportSubtitle: 'Account support',
+    servicesSubtitle: 'Services advisor',
+    supportWelcome: 'Hi! I’m Vivi 🎧 How can I help you today? Tell me what happened.',
+    servicesWelcome: 'Hi! I’m Max 🏠 What kind of real estate service do you need?',
+    leadTitle: '📋 Leave us your details',
+    leadNamePlaceholder: 'Your name',
+    leadPhonePlaceholder: 'Your phone',
+    leadSendButton: 'Send my details',
+    inputPlaceholder: 'Type your message...',
+    inactivityClosed: '⏰ Session closed due to inactivity. See you soon! I’ll be here when you need me.',
+    followup: 'Is there anything else I can help you with? 😊',
+    genericError: 'Sorry, there was an error. Please try again.',
+    networkError: 'Connection error. Please check your internet.',
+    leadValidation: 'Please enter name and phone number',
+    leadThanks: 'Thanks {nombre}! An advisor will contact you at {tel} very soon. 😊'
+  },
+  pt: {
+    supportName: 'Vivi',
+    servicesName: 'Max',
+    supportSubtitle: 'Suporte da conta',
+    servicesSubtitle: 'Consultor de serviços',
+    supportWelcome: 'Olá! Sou a Vivi 🎧 Como posso te ajudar? Conte seu problema.',
+    servicesWelcome: 'Olá! Sou o Max 🏠 Que tipo de serviço imobiliário você precisa?',
+    leadTitle: '📋 Deixe seus dados',
+    leadNamePlaceholder: 'Seu nome',
+    leadPhonePlaceholder: 'Seu telefone',
+    leadSendButton: 'Enviar meus dados',
+    inputPlaceholder: 'Digite sua mensagem...',
+    inactivityClosed: '⏰ Sessão encerrada por inatividade. Até logo! Estarei aqui quando precisar.',
+    followup: 'Posso te ajudar com mais alguma coisa? 😊',
+    genericError: 'Desculpe, ocorreu um erro. Tente novamente.',
+    networkError: 'Erro de conexão. Verifique sua internet.',
+    leadValidation: 'Por favor, preencha nome e telefone',
+    leadThanks: 'Obrigado {nombre}! Um consultor entrará em contato no {tel} em breve. 😊'
+  }
+};
+
+const getChatbotLang = () => {
+  try {
+    const fromStorage = (localStorage.getItem('vm_lang') || '').toLowerCase();
+    const normalizedStorage = fromStorage.slice(0, 2);
+    if (CHATBOT_I18N[normalizedStorage]) return normalizedStorage;
+  } catch (e) {}
+  const nav = (navigator.language || 'es').toLowerCase().slice(0, 2);
+  return CHATBOT_I18N[nav] ? nav : 'es';
+};
+
+const tChat = (lang, key) => {
+  const dict = CHATBOT_I18N[lang] || CHATBOT_I18N.es;
+  return dict[key] || CHATBOT_I18N.es[key] || key;
+};
+
 class Chatbot {
   constructor(tipo) {
     this.tipo = tipo;
@@ -6,12 +81,13 @@ class Chatbot {
     this.timerInactividad = null;
     this.timerSeguimiento = null;
     this.TIEMPO_INACTIVIDAD = 1 * 60 * 1000;
-    this.nombre = tipo === 'soporte' ? 'Vivi' : 'Max';
+    this.lang = getChatbotLang();
+    this.nombre = tipo === 'soporte' ? tChat(this.lang, 'supportName') : tChat(this.lang, 'servicesName');
     this.emoji = tipo === 'soporte' ? '🎧' : '🏠';
     this.color = tipo === 'soporte' ? '#1a472a' : '#1a3a6e';
     this.bienvenida = tipo === 'soporte'
-      ? '¡Hola! Soy Vivi 🎧 ¿En qué puedo ayudarte? Cuéntame tu problema.'
-      : '¡Hola! Soy Max 🏠 ¿Qué tipo de servicio inmobiliario necesitas?';
+      ? tChat(this.lang, 'supportWelcome')
+      : tChat(this.lang, 'servicesWelcome');
     this.render();
     try {
       const userActual = typeof auth !== 'undefined' ? auth.getUser() : null;
@@ -53,20 +129,20 @@ class Chatbot {
           <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:18px">${this.emoji}</div>
           <div>
             <div style="color:white;font-weight:600;font-size:15px">${this.nombre}</div>
-            <div style="color:rgba(255,255,255,0.7);font-size:11px">${this.tipo === 'soporte' ? 'Soporte de cuenta' : 'Asesor de servicios'}</div>
+            <div style="color:rgba(255,255,255,0.7);font-size:11px">${this.tipo === 'soporte' ? tChat(this.lang, 'supportSubtitle') : tChat(this.lang, 'servicesSubtitle')}</div>
           </div>
           <div onclick="chatbots['${this.tipo}'].toggle()" style="margin-left:auto;color:rgba(255,255,255,0.7);cursor:pointer;font-size:18px;padding:4px">✕</div>
         </div>
         <div id="${id}-msgs" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#f8f9fa"></div>
         ${this.tipo === 'servicios' ? `
         <div id="${id}-lead" style="display:none;padding:12px 16px;background:#f0f7f4;border-top:1px solid #e5e7eb">
-          <div style="font-size:12px;font-weight:600;color:#1a472a;margin-bottom:8px">📋 Déjanos tus datos</div>
-          <input id="${id}-lead-nombre" placeholder="Tu nombre" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;margin-bottom:6px;outline:none">
-          <input id="${id}-lead-tel" placeholder="Tu teléfono" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;margin-bottom:6px;outline:none">
-          <button onclick="chatbots['${this.tipo}'].enviarLead()" style="width:100%;background:#1a472a;color:white;border:none;padding:8px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">Enviar mis datos</button>
+          <div style="font-size:12px;font-weight:600;color:#1a472a;margin-bottom:8px">${tChat(this.lang, 'leadTitle')}</div>
+          <input id="${id}-lead-nombre" placeholder="${tChat(this.lang, 'leadNamePlaceholder')}" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;margin-bottom:6px;outline:none">
+          <input id="${id}-lead-tel" placeholder="${tChat(this.lang, 'leadPhonePlaceholder')}" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;margin-bottom:6px;outline:none">
+          <button onclick="chatbots['${this.tipo}'].enviarLead()" style="width:100%;background:#1a472a;color:white;border:none;padding:8px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">${tChat(this.lang, 'leadSendButton')}</button>
         </div>` : ''}
         <div style="padding:12px 16px;border-top:1px solid #e5e7eb;display:flex;gap:8px;background:white">
-          <input id="${id}-input" placeholder="Escribe tu mensaje..." style="flex:1;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:20px;font-size:13px;outline:none;font-family:inherit"
+          <input id="${id}-input" placeholder="${tChat(this.lang, 'inputPlaceholder')}" style="flex:1;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:20px;font-size:13px;outline:none;font-family:inherit"
             onkeydown="if(event.key==='Enter') chatbots['${this.tipo}'].enviar()">
           <button onclick="chatbots['${this.tipo}'].enviar()" style="width:38px;height:38px;border-radius:50%;background:${this.color};color:white;border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">➤</button>
         </div>
@@ -92,7 +168,7 @@ class Chatbot {
     if (this.timerInactividad) clearTimeout(this.timerInactividad);
     this.timerInactividad = setTimeout(() => {
       if (this.abierto) {
-        this.agregarMensaje('bot', '⏰ Sesión cerrada por inactividad. ¡Hasta pronto! Estoy aquí cuando me necesites.');
+        this.agregarMensaje('bot', tChat(this.lang, 'inactivityClosed'));
         setTimeout(() => {
           this.toggle();
           this.historial = [];
@@ -154,7 +230,7 @@ class Chatbot {
     this.agregarMensaje('user', mensaje);
     this.agregarTyping();
     try {
-      const res = await fetch(`http://localhost:3000/api/chat/${this.tipo}`, {
+      const res = await fetch(`/api/chat/${this.tipo}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -172,7 +248,7 @@ class Chatbot {
         if (this.timerSeguimiento) clearTimeout(this.timerSeguimiento);
         this.timerSeguimiento = setTimeout(() => {
           if (this.abierto && this.historial.length > 2) {
-            this.agregarMensaje('bot', '¿Hay algo más en que pueda ayudarte? 😊');
+            this.agregarMensaje('bot', tChat(this.lang, 'followup'));
           }
         }, 45 * 1000);
         if (data.esLead) {
@@ -180,11 +256,11 @@ class Chatbot {
           if (leadForm) leadForm.style.display = 'block';
         }
       } else {
-        this.agregarMensaje('bot', 'Lo siento, hubo un error. Intenta de nuevo.');
+        this.agregarMensaje('bot', tChat(this.lang, 'genericError'));
       }
     } catch(e) {
       this.quitarTyping();
-      this.agregarMensaje('bot', 'Error de conexión. Verifica tu internet.');
+      this.agregarMensaje('bot', tChat(this.lang, 'networkError'));
     }
     this.reiniciarTimer();
   }
@@ -192,11 +268,11 @@ class Chatbot {
   async enviarLead() {
     const nombre = document.getElementById(`chatbot-${this.tipo}-lead-nombre`)?.value.trim();
     const tel = document.getElementById(`chatbot-${this.tipo}-lead-tel`)?.value.trim();
-    if (!nombre || !tel) { alert('Por favor llena nombre y teléfono'); return; }
+    if (!nombre || !tel) { alert(tChat(this.lang, 'leadValidation')); return; }
     try {
       const userActual = typeof auth !== 'undefined' ? auth.getUser() : null;
       const token = typeof auth !== 'undefined' ? auth.getToken() : null;
-      await fetch('http://localhost:3000/api/chat/lead', {
+      await fetch('/api/chat/lead', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -211,7 +287,7 @@ class Chatbot {
       });
     } catch(e) {}
     document.getElementById(`chatbot-${this.tipo}-lead`).style.display = 'none';
-    this.agregarMensaje('bot', `¡Gracias ${nombre}! Un asesor te contactará al ${tel} muy pronto. 😊`);
+    this.agregarMensaje('bot', tChat(this.lang, 'leadThanks').replace('{nombre}', nombre).replace('{tel}', tel));
   }
 }
 

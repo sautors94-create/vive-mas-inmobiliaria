@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { subirACloudinary } = require('../config/cloudinary');
 const { generarCodigo, enviarCodigoVerificacion, enviarBienvenida } = require('../utils/email');
 
 const generarTokens = (user) => {
@@ -89,8 +90,14 @@ const reenviarCodigo = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email }).select('+password');
+    const { email, telefono, password } = req.body;
+    const emailLimpio = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const telefonoLimpio = typeof telefono === 'string' ? telefono.replace(/\D/g, '').trim() : '';
+    if (!password || (!emailLimpio && !telefonoLimpio)) {
+      return res.status(400).json({ error: 'Debes enviar correo o teléfono y contraseña' });
+    }
+    const criterio = emailLimpio ? { email: emailLimpio } : { telefono: telefonoLimpio };
+    const user = await User.findOne(criterio).select('+password');
     if (!user) return res.status(401).json({ error: 'Credenciales incorrectas' });
     const passwordOk = await user.compararPassword(password);
     if (!passwordOk) return res.status(401).json({ error: 'Credenciales incorrectas' });
@@ -147,4 +154,52 @@ const actualizarNotificaciones = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-module.exports = { registro, login, logout, perfil, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones };
+
+const subirKyc = async (req, res) => {
+  try {
+    const rfcRaw = req.body.rfc;
+    const rfc = typeof rfcRaw === 'string' ? rfcRaw.trim().toUpperCase() : '';
+
+    if (!rfc) {
+      return res.status(400).json({ error: 'RFC es requerido' });
+    }
+
+    const ineFrente = req.files?.ineFrente?.[0];
+    const ineReverso = req.files?.ineReverso?.[0];
+
+    if (!ineFrente || !ineReverso) {
+      return res.status(400).json({ error: 'Debes subir INE frente e INE reverso' });
+    }
+
+    const [ineFrenteUrl, ineReversoUrl] = await Promise.all([
+      subirACloudinary(ineFrente.buffer, ineFrente.mimetype, 'vive-mas/kyc/ine'),
+      subirACloudinary(ineReverso.buffer, ineReverso.mimetype, 'vive-mas/kyc/ine')
+    ]);
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        rfc,
+        kyc: {
+          ineFrenteUrl,
+          ineReversoUrl,
+          status: 'en_revision',
+          updatedAt: new Date()
+        }
+      },
+      { new: true }
+    );
+
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    res.json({
+      ok: true,
+      mensaje: 'Documentos recibidos. Tu verificación está en revisión.',
+      user
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { registro, login, logout, perfil, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, subirKyc };

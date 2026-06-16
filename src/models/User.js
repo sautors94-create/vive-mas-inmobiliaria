@@ -10,6 +10,13 @@ const userSchema = new mongoose.Schema({
   status: { type: String, enum: ['activo', 'suspendido', 'bloqueado'], default: 'activo' },
   avatar: { type: String, default: null },
   telefono: { type: String, default: null },
+  rfc: { type: String, default: null, trim: true, uppercase: true },
+  kyc: {
+    ineFrenteUrl: { type: String, default: null },
+    ineReversoUrl: { type: String, default: null },
+    status: { type: String, enum: ['pendiente', 'en_revision', 'aprobado', 'rechazado'], default: 'pendiente' },
+    updatedAt: { type: Date, default: null },
+  },
   verificado: { type: Boolean, default: false },
   codigoVerificacion: { type: String, default: null },
   codigoExpira: { type: Date, default: null },

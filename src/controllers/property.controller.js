@@ -53,6 +53,8 @@ const detallePropiedad = async (req, res) => {
       .populate('propietario', 'nombre avatar');
     if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
     if (propiedad.status !== 'aprobada') return res.status(403).json({ error: 'Propiedad no disponible' });
+    // 'pausada' se oculta automáticamente porque solo se consultan propiedades con status 'aprobada'
+
     res.json({ ok: true, propiedad });
   } catch (error) {
     res.status(500).json({ error: error.message });

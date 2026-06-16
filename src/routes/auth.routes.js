@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { registro, login, logout, perfil, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones } = require('../controllers/auth.controller');
+const { registro, login, logout, perfil, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, subirKyc } = require('../controllers/auth.controller');
 const authMiddleware = require('../middleware/auth.middleware');
+const { upload } = require('../config/cloudinary');
 
 router.post('/registro', registro);
 router.post('/login', login);
@@ -11,5 +12,28 @@ router.post('/verificar', verificarCodigo);
 router.post('/reenviar-codigo', reenviarCodigo);
 router.get('/perfil', authMiddleware, perfil);
 router.patch('/notificaciones', authMiddleware, actualizarNotificaciones);
+router.post(
+  '/kyc',
+  authMiddleware,
+  (req, res, next) => {
+    upload.fields([
+      { name: 'ineFrente', maxCount: 1 },
+      { name: 'ineReverso', maxCount: 1 }
+    ])(req, res, (err) => {
+      if (!err) return next();
+
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'Archivo demasiado grande (máximo 5MB)' });
+      }
+
+      if (err.message === 'Solo se permiten imágenes') {
+        return res.status(400).json({ error: 'Solo se permiten imágenes' });
+      }
+
+      return res.status(400).json({ error: err.message || 'Error al subir archivos' });
+    });
+  },
+  subirKyc
+);
 
 module.exports = router;

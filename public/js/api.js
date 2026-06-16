@@ -17,14 +17,42 @@
     }
   } catch(e) {}
 })();
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '';
+
+const buildUrl = (endpoint) => {
+  // endpoint incluye el prefijo /api/... 
+  return endpoint.startsWith('/api') ? endpoint : `${endpoint}`;
+};
+
+const handleAuthResponse = (res) => {
+  // Por ahora hacemos logout con mensaje claro.
+  // (Más adelante puedes cambiar a refresh automático si se desea.)
+  return handleAuthFail();
+};
+
+
+const handleAuthFail = () => {
+  try {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+  } catch (e) {}
+
+  // Mensaje persistente para mostrar luego en login
+  try {
+    localStorage.setItem('vm_session_expired', '1');
+  } catch (e) {}
+
+  window.location.href = 'login.html';
+};
 
 const api = {
   get: async (endpoint) => {
     const token = localStorage.getItem('accessToken');
-    const res = await fetch(`${API_URL}${endpoint}`, {
+    const res = await fetch(`${API_URL}${buildUrl(endpoint)}`, {
       headers: { Authorization: token ? `Bearer ${token}` : '' }
     });
+
+    if (res.status === 401) return handleAuthFail();
     return res.json();
   },
 
