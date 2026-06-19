@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('sidebar-plan').textContent = `Plan ${user.plan}`;
     document.getElementById('user-avatar').textContent = user.nombre.charAt(0).toUpperCase();
     cargarMisPropiedades();
+    cargarResumenUsuario();
     cargarCuenta();
   }
 });
@@ -23,8 +24,21 @@ const mostrarSeccion = (seccion) => {
   if (link) link.classList.add('active');
   if (seccion === 'mis-propiedades') cargarMisPropiedades();
   if (seccion === 'favoritos') cargarFavoritos();
+  if (seccion === 'leads') cargarLeadsUsuario();
   if (seccion === 'mensajes') cargarMensajes();
   if (seccion === 'nueva-propiedad') iniciarMapaPublicar();
+};
+
+const actualizarBadgeMensajes = (total) => {
+  const badge = document.getElementById('mensajes-badge');
+  if (!badge) return;
+  badge.textContent = total;
+  badge.style.display = total > 0 ? 'inline-flex' : 'none';
+};
+
+const cargarResumenUsuario = async () => {
+  const data = await api.get('/auth/leads');
+  if (data?.ok) actualizarBadgeMensajes(data.mensajesNoLeidos || 0);
 };
 
 const iniciarMapaPublicar = () => {
@@ -202,6 +216,7 @@ const eliminarFavorito = async (propiedadId) => {
 const cargarMensajes = async () => {
   const lista = document.getElementById('mensajes-lista');
   const data = await api.get('/mensajes');
+  if (data.ok) actualizarBadgeMensajes(data.mensajes?.filter(m => !m.leido && m.destinatario?._id === user._id).length || 0);
   if (!data.mensajes || data.mensajes.length === 0) {
     lista.innerHTML = '<div class="loading">No tienes mensajes aún.</div>';
     return;
@@ -214,6 +229,25 @@ const cargarMensajes = async () => {
       </div>
       <div class="mensaje-texto">${m.mensaje}</div>
       ${m.propiedad ? `<div class="mensaje-propiedad">📍 ${m.propiedad.titulo || 'Propiedad'}</div>` : ''}
+    </div>`).join('');
+};
+
+const cargarLeadsUsuario = async () => {
+  const lista = document.getElementById('leads-usuario-lista');
+  const data = await api.get('/auth/leads');
+  if (data.ok) actualizarBadgeMensajes(data.mensajesNoLeidos || 0);
+  if (!data.leads || data.leads.length === 0) {
+    lista.innerHTML = '<div class="loading">No tienes leads registrados aún.</div>';
+    return;
+  }
+  lista.innerHTML = data.leads.map(lead => `
+    <div class="mensaje-card">
+      <div class="mensaje-header">
+        <span class="mensaje-de">${lead.folio || 'Lead'} · ${lead.servicio || 'Servicio no especificado'}</span>
+        <span class="status-badge status-${lead.status}">${lead.status}</span>
+      </div>
+      <div class="mensaje-texto">${lead.nombre} · ${lead.telefono}${lead.email ? ' · ' + lead.email : ''}</div>
+      <div class="mensaje-propiedad">${new Date(lead.createdAt).toLocaleDateString('es-MX')}${lead.ciudad ? ' · ' + lead.ciudad : ''}</div>
     </div>`).join('');
 };
 
@@ -287,8 +321,9 @@ const publicarPropiedad = async () => {
   const ciudad = document.getElementById('p-ciudad').value.trim();
   const colonia = document.getElementById('p-colonia').value.trim();
   const direccion = document.getElementById('p-direccion').value.trim();
-  const recamaras = document.getElementById('p-recamaras').value;
+const recamaras = document.getElementById('p-recamaras').value;
   const banos = document.getElementById('p-banos').value;
+  const mediosBanos = document.getElementById('p-medios-banos').value;
   const estacionamientos = document.getElementById('p-estacionamientos').value;
   const m2 = document.getElementById('p-m2').value;
   const lat = document.getElementById('p-lat').value;
@@ -303,7 +338,7 @@ const publicarPropiedad = async () => {
   const body = {
     titulo, precio: Number(precio), operacion, tipo, descripcion,
     ubicacion: { estado, ciudad, colonia, direccion, lat: lat ? parseFloat(lat) : null, lng: lng ? parseFloat(lng) : null },
-    caracteristicas: { recamaras: Number(recamaras)||0, banos: Number(banos)||0, estacionamientos: Number(estacionamientos)||0, m2: Number(m2)||0 }
+caracteristicas: { recamaras: Number(recamaras)||0, banos: Number(banos)||0, mediosBanos: Number(mediosBanos)||0, estacionamientos: Number(estacionamientos)||0, m2: Number(m2)||0 }
   };
 
   const btn = document.querySelector('#sec-nueva-propiedad .btn-primary');

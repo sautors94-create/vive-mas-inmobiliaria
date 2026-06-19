@@ -52,6 +52,9 @@
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('propiedades')">
           🏠 Propiedades
         </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('leads')">
+          📋 Leads
+        </a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('usuarios')">
           👥 Usuarios
         </a>
@@ -106,6 +109,25 @@
               <div class="loading">Cargando...</div>
             </div>
           </section>
+
+      <!-- LEADS -->
+      <section id="sec-leads" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Leads capturados</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="search-leads" class="form-input" placeholder="Buscar lead..." style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarLeads()">
+            <select id="filtro-leads-status" class="filter-select" style="width:auto" onchange="cargarLeads()">
+              <option value="">Todos</option>
+              <option value="nuevo">Nuevos</option>
+              <option value="contactado">Contactados</option>
+              <option value="cerrado">Cerrados</option>
+            </select>
+          </div>
+        </div>
+        <div id="leads-lista" class="leads-lista">
+          <div class="loading">Cargando leads...</div>
+        </div>
+      </section>
 
       <!-- USUARIOS -->
       <section id="sec-usuarios" class="dash-section" style="display:none">

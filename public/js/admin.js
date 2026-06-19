@@ -16,6 +16,7 @@ const mostrarSeccion = (seccion) => {
   if (seccion === 'dashboard') cargarDashboard();
   if (seccion === 'revision') cargarRevision();
   if (seccion === 'propiedades') cargarTodasPropiedades();
+  if (seccion === 'leads') cargarLeads();
   if (seccion === 'usuarios') cargarUsuarios();
   if (seccion === 'temas') cargarTemasPersonalizados();
   if (seccion === 'destacadas') cargarDestacadas();
@@ -37,6 +38,11 @@ const cargarDashboard = async () => {
       <div class="stat-numero">${s.totalPropiedades}</div>
       <div class="stat-label">Total propiedades</div>
       <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:8px">Ver todas →</div>
+    </div>
+    <div class="stat-card azul" onclick="irA('leads')" style="cursor:pointer">
+      <div class="stat-numero">${s.totalLeads || 0}</div>
+      <div class="stat-label">Leads capturados</div>
+      <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:8px">${s.leadsNuevos || 0} nuevos →</div>
     </div>
     <div class="stat-card naranja" onclick="irAFiltrado('propiedades', 'revision')" style="cursor:pointer">
       <div class="stat-numero">${s.enRevision}</div>
@@ -78,6 +84,7 @@ const irA = (seccion) => {
   if (link) link.classList.add('active');
   if (seccion === 'usuarios') cargarUsuarios();
   if (seccion === 'propiedades') cargarTodasPropiedades();
+  if (seccion === 'leads') cargarLeads();
 };
 
 const irAFiltrado = (seccion, status) => {
@@ -117,6 +124,38 @@ const cargarTodasPropiedades = async () => {
     return;
   }
   lista.innerHTML = data.propiedades.map(p => crearCardAdmin(p)).join('');
+};
+
+const cargarLeads = async () => {
+  const lista = document.getElementById('leads-lista');
+  const status = document.getElementById('filtro-leads-status')?.value || '';
+  const search = document.getElementById('search-leads')?.value || '';
+  const params = new URLSearchParams();
+  if (status) params.append('status', status);
+  if (search) params.append('search', search);
+
+  const data = await api.get(`/admin/leads?${params.toString()}`);
+  if (!data.leads || data.leads.length === 0) {
+    lista.innerHTML = '<div class="loading">No hay leads con esos filtros.</div>';
+    return;
+  }
+
+  lista.innerHTML = data.leads.map(lead => `
+    <div class="lead-card">
+      <div class="lead-main">
+        <div class="lead-title">
+          <span>${lead.nombre}</span>
+          <span class="status-badge status-${lead.status}">${lead.status}</span>
+        </div>
+        <div class="lead-meta">
+          ${lead.folio || 'Sin folio'} · ${lead.telefono}${lead.email ? ' · ' + lead.email : ''}${lead.ciudad ? ' · ' + lead.ciudad : ''}
+        </div>
+        <div class="lead-meta">
+          ${lead.servicio || 'Servicio no especificado'}${lead.usuarioRegistrado ? ' · Usuario: ' + lead.usuarioRegistrado.nombre : ''}
+        </div>
+      </div>
+      <div class="lead-date">${new Date(lead.createdAt).toLocaleDateString('es-MX')}</div>
+    </div>`).join('');
 };
 
 const crearCardAdmin = (p) => `

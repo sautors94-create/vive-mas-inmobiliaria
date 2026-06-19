@@ -40,6 +40,51 @@
   gap: 12px;
 }
 
+.leads-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lead-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: var(--shadow);
+}
+
+.lead-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.lead-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.lead-meta {
+  font-size: 12px;
+  color: var(--text-light);
+  line-height: 1.5;
+}
+
+.lead-date {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-light);
+}
+
 .usuario-card {
   background: white;
   border-radius: var(--radius-lg);

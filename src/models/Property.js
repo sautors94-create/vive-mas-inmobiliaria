@@ -17,9 +17,10 @@ const propertySchema = new mongoose.Schema({
     lat: { type: Number },
     lng: { type: Number },
   },
-  caracteristicas: {
+caracteristicas: {
     recamaras: { type: Number, default: 0 },
     banos: { type: Number, default: 0 },
+    mediosBanos: { type: Number, default: 0 },
     estacionamientos: { type: Number, default: 0 },
     m2: { type: Number, default: 0 },
   },

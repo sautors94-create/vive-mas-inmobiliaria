@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const Lead = require('../models/Lead');
+const Message = require('../models/Message');
 const jwt = require('jsonwebtoken');
 const { subirACloudinary } = require('../config/cloudinary');
 const { generarCodigo, enviarCodigoVerificacion, enviarBienvenida } = require('../utils/email');
@@ -126,6 +128,19 @@ const perfil = async (req, res) => {
   }
 };
 
+const misLeads = async (req, res) => {
+  try {
+    const leads = await Lead.find({ usuarioRegistrado: req.user.id }).sort({ createdAt: -1 });
+    const mensajesNoLeidos = await Message.countDocuments({
+      destinatario: req.user.id,
+      leido: false
+    });
+    res.json({ ok: true, total: leads.length, mensajesNoLeidos, leads });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const refreshToken = async (req, res) => {
   try {
     const token = req.cookies.refreshToken;
@@ -202,4 +217,4 @@ const subirKyc = async (req, res) => {
   }
 };
 
-module.exports = { registro, login, logout, perfil, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, subirKyc };
+module.exports = { registro, login, logout, perfil, misLeads, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, subirKyc };

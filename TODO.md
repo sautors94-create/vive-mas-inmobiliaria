@@ -1,66 +1,82 @@
-# vive-mas-inmobiliaria — Checklist lanzamiento (1 julio)
+# Vive Más Inmobiliaria — Requerimientos de Implementación
 
-## Objetivo
-Lanzar la plataforma web nacional sin romper flujos existentes (ya funciona con `npm run dev`).
+## Prioridad Alta (1, 6, 7, 9, 10, 11)
 
-## Regla
-Paso a paso: cada cambio se valida localmente antes de continuar.
+### 1. Filtros múltiples en Inicio y Catálogo
+- [ ] Permitir selección múltiple en filtros de operación (venta + renta)
+- [ ] Permitir selección múltiple en filtros de tipo (casa + departamento + terreno)
+- [ ] Actualizar main.js y catalogo.js para handle arrays
+- [ ] Actualizar API backend para soportar múltiples valores
 
----
+### 6. Mostrar/Ocultar Contraseña ✓ (COMPLETADO)
+- [x] Agregar botón "ojo" en login.html
+- [x] Agregar botón "ojo" en registro.html
+- [x] Función togglePassword en auth.js
 
-## Fase 1 — “Seguro para producción” (prioridad máxima)
-- [x] (1) Corregir `public/js/api.js` para que la API no apunte a `http://localhost:3000` (usar ruta relativa `/api`).
-- [x] (2) Agregar manejo de expiración de sesión en frontend:
-  - [x] Detectar `401`/token inválido al hacer requests
-  - [x] Mostrar mensaje claro: “Tu sesión expiró, inicia sesión nuevamente”
-  - [x] Limpiar estado (localStorage)
-  - [x] Redirigir a `login.html`
-- [x] (3) (Opcional, si no rompe) Intentar refrescar sesión automáticamente antes de reloguear usando `/api/auth/refresh`.
-  - [x] Probar que refresh funciona con cookie `refreshToken` (httpOnly)
+### 7. Modernización de Diseño
+- [ ] Nuevo diseño: Nueva Publicación (dashboard.html)
+- [ ] Nuevo diseño: Panel Administrador (admin.html)
+- [ ] Nuevo diseño: Panel Usuario (dashboard.html)
+- [ ] Aplicar estilos consistentes con página principal
 
----
+### 9. Mejoras en Nueva Publicación
+- [ ] Validación visual de campos obligatorios (resaltar en rojo)
+- [ ] Simplificar ubicación: País, Estado, Dirección completa
+- [ ] Selección en mapa (ya implementado)
+- [ ] Mejorar mensajes de error
 
-## Fase 2 — Seguridad y cuentas (planificado, posterior al lanzamiento)
-- [x] (4) Login con teléfono O email (obligatorio al menos uno). (Backend + Front)
-- [ ] (5) RFC + INE (KYC) — campos + subida de archivos + endpoints.
-  - [x] Plan técnico aprobado
-  - [ ] Implementar modelo User (rfc + kyc)
-  - [ ] Implementar endpoint protegido POST /api/auth/kyc
-  - [ ] Probar 401/400/200
-- [ ] (6) 2FA en 2 pasos (OTP) — endpoints + pantallas + flujo.
-- [ ] (7) Plan “Pro” => mantener “Próximamente” (no tocar reglas de cobro hoy).
+### 10. Baños y Medios Baños ✓ (COMPLETADO)
+- [x] Separar campo "Baños" en "Baños completos" y "Medios baños"
+- [x] Actualizar dashboard.html
+- [x] Actualizar dashboard.js
+- [x] Actualizar Property.js
+- [x] Actualizar visualización en propiedad.js
+- [x] Actualizar visualización en api.js (catálogo)
 
----
-
-## Fase 3 — Chatbots (antes del lanzamiento, para que no rompan)
-- [x] (8) Revisar ambos chatbots existentes (frontend + backend) para:
-  - [x] Que apunten a rutas correctas de API
-  - [x] Que no fallen si la API URL cambia
-  - [x] Manejo de errores UX (mensajes al usuario)
-- [x] (9) Ajustes de calidad:
-  - [x] Internacionalización básica ES/EN/PT
-  - [ ] Mejorar prompts / respuestas
-  - [ ] Limitar rate/consumo (si aplica)
-  - [ ] Asegurar modo internacional en más pantallas
+### 11. Control de Sesión y Expiración
+- [ ] Mostrar ventana de advertencia 60 segundos antes
+- [ ] Agregar temporizador regresivo
+- [ ] Opciones: Mantener/Renovar/Cerrar sesión
+- [ ] Implementar en api.js o auth.js
 
 ---
 
-## Fase 4 — QA lanzamiento (check final)
-- [ ] (10) Probar en local:
-  - [x] `/health`
-  - [x] rutas API principales y protegidas
-  - [x] login por email/teléfono (400/401/200 + normalización)
-  - [ ] UI visual completa (flujo login + expiración de sesión)
-  - [ ] Registro + verificación end-to-end visual
-  - [ ] Dashboard y rutas protegidas (admin/user) visual
-- [ ] (11) Probar en “modo producción” (simulado):
-  - [ ] Confirmar frontend + `/api` en entorno no-localhost.
+## Prioridad Media (2, 3, 8)
+
+### 2. Mejora de los Chatbots
+- [ ] Agregar descripción clara a cada chatbot
+- [ ] Detectar intención incorrecta
+- [ ] Redireccionamiento automático
+
+### 3. Creación Masiva de Usuarios
+- [ ] Herramienta en Panel Administrador
+- [ ] Carga de archivo .xlsx
+- [ ] Validación de duplicados
+- [ ] Reporte de errores
+
+### 8. Plantilla Carga Masiva de Propiedades
+- [ ] Descargar plantilla Excel para cuentas Premium
+- [ ] Instrucciones de llenado
+- [ ] Soporte para imágenes
+- [ ] Relación automática imagen-propiedad
 
 ---
 
-## Evidencia reciente
-- [x] Fase 2 avance: login por teléfono o email implementado y validado (400/401/200).
-- [x] Prueba adicional: teléfonos con espacios/guiones normalizados y login exitoso (200).
+## Prioridad Baja / Fase 2 (4, 5)
 
-## Fecha objetivo
-- [ ] Lanzamiento: 1 de julio
+### 4. Página "Nosotros"
+- [ ] Actualización automática de ciudades
+- [ ] Nueva sección: Testimonios
+- [ ] Administrable desde panel admin
+
+### 5. Implementación futura: OTP por celular
+- [ ] Envío de código SMS
+- [ ] Validación de número celular
+- [ ] Recuperación de cuenta mediante OTP
+
+---
+
+## Referencias
+
+- Usuario test: saul@gmail.com / 123456
+- Admin test: admin@vivemas.com / admin123

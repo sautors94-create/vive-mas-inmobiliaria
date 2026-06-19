@@ -43,7 +43,8 @@
         <a href="#" class="sidebar-link active" onclick="mostrarSeccion('mis-propiedades')">🏠 Mis propiedades</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('nueva-propiedad')">➕ Nueva publicación</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('favoritos')">❤️ Favoritos</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('mensajes')">💬 Mensajes</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('leads')">📋 Mis leads</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('mensajes')">💬 Mensajes <span id="mensajes-badge" class="nav-badge" style="display:none">0</span></a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('mi-cuenta')">👤 Mi cuenta</a>
       </nav>
     </aside>
@@ -145,9 +146,13 @@
               <label>Recámaras</label>
               <input type="number" id="p-recamaras" class="form-input" placeholder="0" min="0">
             </div>
-            <div class="form-grupo">
-              <label>Baños</label>
+<div class="form-grupo">
+              <label>Baños completos</label>
               <input type="number" id="p-banos" class="form-input" placeholder="0" min="0">
+            </div>
+            <div class="form-grupo">
+              <label>Medios baños</label>
+              <input type="number" id="p-medios-banos" class="form-input" placeholder="0" min="0">
             </div>
             <div class="form-grupo">
               <label>Estacionamientos</label>
@@ -183,6 +188,14 @@
         <div class="dash-section-header"><h2>Mis mensajes</h2></div>
         <div id="mensajes-lista" class="mensajes-lista">
           <div class="loading">Cargando mensajes...</div>
+        </div>
+      </section>
+
+      <!-- LEADS -->
+      <section id="sec-leads" class="dash-section" style="display:none">
+        <div class="dash-section-header"><h2>Mis leads</h2></div>
+        <div id="leads-usuario-lista" class="mensajes-lista">
+          <div class="loading">Cargando leads...</div>
         </div>
       </section>
 

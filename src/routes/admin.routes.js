@@ -12,6 +12,7 @@ const {
   rechazarPropiedad,
   eliminarPropiedad,
   bloquearPropiedad,
+  getLeads,
   dashboard
 } = require('../controllers/admin.controller');
 
@@ -19,6 +20,7 @@ router.use(authMiddleware);
 router.use(requireRole('admin'));
 
 router.get('/dashboard', dashboard);
+router.get('/leads', getLeads);
 router.get('/usuarios', getUsuarios);
 router.patch('/usuarios/:id/plan', cambiarPlan);
 router.patch('/usuarios/:id/suspender', suspenderUsuario);

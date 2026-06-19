@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registro, login, logout, perfil, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, subirKyc } = require('../controllers/auth.controller');
+const { registro, login, logout, perfil, misLeads, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, subirKyc } = require('../controllers/auth.controller');
 const authMiddleware = require('../middleware/auth.middleware');
 const { upload } = require('../config/cloudinary');
 
@@ -11,6 +11,7 @@ router.post('/refresh', refreshToken);
 router.post('/verificar', verificarCodigo);
 router.post('/reenviar-codigo', reenviarCodigo);
 router.get('/perfil', authMiddleware, perfil);
+router.get('/leads', authMiddleware, misLeads);
 router.patch('/notificaciones', authMiddleware, actualizarNotificaciones);
 router.post(
   '/kyc',

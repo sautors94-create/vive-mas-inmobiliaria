@@ -21,6 +21,20 @@ const auth = {
   }
 };
 
+// Toggle mostrar/ocultar contraseña
+const togglePassword = (inputId) => {
+  const input = document.getElementById(inputId);
+  const btn = input.nextElementSibling;
+  const icon = btn.querySelector('span');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    icon.textContent = '👁';
+  }
+};
+
 const getBasePath = () => {
   return window.location.pathname.includes('/pages/') ? '' : 'pages/';
 };

@@ -211,6 +211,33 @@
   border-color: var(--primary);
 }
 
+.favorito-login-hint {
+  display: none;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(194, 137, 74, 0.35);
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #7c2d12;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.favorito-login-hint.is-visible {
+  display: block;
+}
+
+.favorito-shake {
+  animation: favorito-shake 0.36s ease;
+}
+
+@keyframes favorito-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+
 @media (max-width: 768px) {
   .propiedad-galeria {
     grid-template-columns: 1fr;

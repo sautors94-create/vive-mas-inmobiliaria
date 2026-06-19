@@ -20,8 +20,10 @@
 const API_URL = '';
 
 const buildUrl = (endpoint) => {
-  // endpoint incluye el prefijo /api/... 
-  return endpoint.startsWith('/api') ? endpoint : `${endpoint}`;
+  const clean = typeof endpoint === 'string' ? endpoint.trim() : '';
+  if (!clean) return '/api';
+  if (clean.startsWith('/api')) return clean;
+  return clean.startsWith('/') ? `/api${clean}` : `/api/${clean}`;
 };
 
 const handleAuthResponse = (res) => {
@@ -42,7 +44,8 @@ const handleAuthFail = () => {
     localStorage.setItem('vm_session_expired', '1');
   } catch (e) {}
 
-  window.location.href = 'login.html';
+  const inPages = window.location.pathname.includes('/pages/');
+  window.location.href = inPages ? 'login.html' : 'pages/login.html';
 };
 
 const api = {
@@ -58,7 +61,7 @@ const api = {
 
   post: async (endpoint, body) => {
     const token = localStorage.getItem('accessToken');
-    const res = await fetch(`${API_URL}${endpoint}`, {
+    const res = await fetch(`${API_URL}${buildUrl(endpoint)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -72,7 +75,7 @@ const api = {
 
   patch: async (endpoint, body) => {
     const token = localStorage.getItem('accessToken');
-    const res = await fetch(`${API_URL}${endpoint}`, {
+    const res = await fetch(`${API_URL}${buildUrl(endpoint)}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -86,7 +89,7 @@ const api = {
 
   delete: async (endpoint) => {
     const token = localStorage.getItem('accessToken');
-    const res = await fetch(`${API_URL}${endpoint}`, {
+    const res = await fetch(`${API_URL}${buildUrl(endpoint)}`, {
       method: 'DELETE',
       headers: { Authorization: token ? `Bearer ${token}` : '' },
       credentials: 'include'
@@ -122,7 +125,8 @@ const crearCardPropiedad = (p) => {
           <div class="property-price">${formatPrecio(p.precio)}</div>
           <div class="property-details">
             ${p.caracteristicas.recamaras ? `🛏 ${p.caracteristicas.recamaras}` : ''}
-            ${p.caracteristicas.banos ? `🚿 ${p.caracteristicas.banos}` : ''}
+${p.caracteristicas.banos ? `🚿 ${p.caracteristicas.banos} baños` : ''}
+            ${p.caracteristicas.mediosBanos ? ` 🚽 ${p.caracteristicas.mediosBanos}½` : ''}
             ${p.caracteristicas.m2 ? `📐 ${p.caracteristicas.m2}m²` : ''}
           </div>
         </div>

@@ -222,6 +222,36 @@ body { overflow: hidden; }
   text-align: left;
 }
 
+/* Password toggle */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper .form-input {
+  padding-right: 44px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-light);
+  transition: color 0.2s;
+}
+
+.password-toggle:hover {
+  color: var(--text);
+}
+
 @media (max-width: 768px) {
   body { overflow: auto; }
   .auth-layout { grid-template-columns: 1fr; }

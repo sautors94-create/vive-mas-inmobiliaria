@@ -1,9 +1,28 @@
 const { subirACloudinary } = require('../config/cloudinary');
 const Property = require('../models/Property');
 
+const LIMITE_POR_PLAN = {
+  gratuito: 3,
+  basico: 15,
+  premium: Infinity
+};
+
 const crearPropiedad = async (req, res) => {
   try {
     const { titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas } = req.body;
+    const plan = req.user.plan || 'gratuito';
+    const limite = LIMITE_POR_PLAN[plan] || 3;
+    // Contar propiedades activas del usuario (no rechazadas/eliminadas)
+    const count = await Property.countDocuments({
+      propietario: req.user.id,
+      status: { $ne: 'rechazada' }
+    });
+    if (count >= limite) {
+      return res.status(403).json({
+        error: `Has alcanzado el límite de ${limite} propiedades para tu plan ${plan}. 
+¡Haz upgrade a premium para publicaciones ilimitadas!`
+      });
+    }
     const propiedad = await Property.create({
       titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas,
       propietario: req.user.id,

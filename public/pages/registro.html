@@ -53,7 +53,7 @@
             <div class="plan-desc">Ideal para empezar a publicar</div>
           </div>
           <div class="plan-features-lista">
-            <div class="feature-item si">✓ 1 propiedad publicada</div>
+            <div class="feature-item si">✓ 3 propiedades publicadas</div>
             <div class="feature-item si">✓ Fotos básicas (hasta 5)</div>
             <div class="feature-item si">✓ Contacto directo</div>
             <div class="feature-item si">✓ Acceso al catálogo</div>
@@ -72,14 +72,14 @@
             <div class="plan-icon">⚡</div>
             <div class="plan-nombre-grande">Básico</div>
             <div class="plan-precio-grande">
-              <span class="precio-monto">$299</span>
+              <span class="precio-monto">$99</span>
               <span class="precio-periodo">/ mes</span>
             </div>
             <div class="plan-desc">Para propietarios activos</div>
           </div>
           <div class="plan-features-lista">
-            <div class="feature-item si">✓ Hasta 5 propiedades</div>
-            <div class="feature-item si">✓ Fotos ilimitadas (15/prop)</div>
+            <div class="feature-item si">✓ Hasta 15 propiedades</div>
+            <div class="feature-item si">✓ Fotos (10/prop)</div>
             <div class="feature-item si">✓ Contacto directo</div>
             <div class="feature-item si">✓ Acceso al catálogo</div>
             <div class="feature-item si">✓ Impulso de publicación</div>
@@ -95,8 +95,9 @@
           <div class="plan-header">
             <div class="plan-icon">👑</div>
             <div class="plan-nombre-grande">Premium</div>
+              <span class="precio-periodo">Proximamente</span>
             <div class="plan-precio-grande">
-              <span class="precio-monto">$799</span>
+              <span class="precio-monto">$</span>
               <span class="precio-periodo">/ mes</span>
             </div>
             <div class="plan-desc">Servicio completo sin límites</div>
@@ -111,7 +112,7 @@
             <div class="feature-item si">✓ Fotografía profesional</div>
             <div class="feature-item si">✓ Gestoría completa</div>
           </div>
-          <button class="btn-plan">Elegir Premium</button>
+          <button class="btn-plan">Proximamente</button>
         </div>
 
       </div>
@@ -130,15 +131,15 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td>Propiedades publicadas</td><td>1</td><td class="col-popular">5</td><td>Ilimitadas</td></tr>
-              <tr><td>Fotos por propiedad</td><td>5</td><td class="col-popular">15</td><td>15</td></tr>
+              <tr><td>Propiedades publicadas</td><td>3</td><td class="col-popular">15</td><td>Ilimitadas</td></tr>
+              <tr><td>Fotos por propiedad</td><td>5</td><td class="col-popular">10</td><td>15</td></tr>
               <tr><td>Contacto directo</td><td>✓</td><td class="col-popular">✓</td><td>✓</td></tr>
               <tr><td>Impulso de publicación</td><td>✗</td><td class="col-popular">✓</td><td>✓✓</td></tr>
               <tr><td>Estadísticas</td><td>✗</td><td class="col-popular">Básicas</td><td>Avanzadas</td></tr>
               <tr><td>Fotografía profesional</td><td>✗</td><td class="col-popular">✗</td><td>✓</td></tr>
               <tr><td>Gestoría completa</td><td>✗</td><td class="col-popular">✗</td><td>✓</td></tr>
               <tr><td>Soporte prioritario</td><td>✗</td><td class="col-popular">Email</td><td>24/7</td></tr>
-              <tr><td>Precio mensual</td><td><strong>Gratis</strong></td><td class="col-popular"><strong>$299</strong></td><td><strong>$799</strong></td></tr>
+              <tr><td>Precio mensual</td><td><strong>Gratis</strong></td><td class="col-popular"><strong>$99</strong></td><td><strong>$</strong></td></tr>
             </tbody>
           </table>
         </div>
@@ -171,9 +172,14 @@
           <label>Teléfono *</label>
           <input type="tel" id="r-telefono" class="form-input" placeholder="55 1234 5678">
         </div>
-        <div class="form-grupo">
+<div class="form-grupo">
           <label>Contraseña *</label>
-          <input type="password" id="r-password" class="form-input" placeholder="Mínimo 6 caracteres">
+          <div class="password-input-wrapper">
+            <input type="password" id="r-password" class="form-input" placeholder="Mínimo 6 caracteres">
+            <button type="button" class="password-toggle" onclick="togglePassword('r-password')" aria-label="Mostrar contraseña">
+              <span id="r-password-toggle-icon">👁</span>
+            </button>
+          </div>
         </div>
       </div>
 

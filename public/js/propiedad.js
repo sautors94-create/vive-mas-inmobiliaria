@@ -3,14 +3,44 @@ const id = params.get('id');
 
 if (!id) window.location.href = 'catalogo.html';
 
+let favoritoActivo = false;
+
 document.addEventListener('DOMContentLoaded', async () => {
   actualizarNavbar();
   await cargarPropiedad();
 });
 
+const mostrarMsg = (html) => {
+  const msgEl = document.getElementById('contacto-msg');
+  if (!msgEl) return;
+  msgEl.innerHTML = html;
+  msgEl.style.display = 'block';
+  setTimeout(() => { msgEl.style.display = 'none'; }, 3500);
+};
+
+const revisarFavorito = async (propiedadId) => {
+  if (!auth.isLoggedIn()) return false;
+  const data = await api.get('/favoritos');
+  if (!data?.ok || !Array.isArray(data.favoritos)) return false;
+  return data.favoritos.some((f) => String(f.propiedad?._id) === String(propiedadId));
+};
+
+const actualizarBotonFavorito = () => {
+  const btn = document.getElementById('btn-favorito');
+  if (!btn) return;
+  if (favoritoActivo) {
+    btn.textContent = '💔 Eliminar de favoritos';
+    btn.classList.remove('btn-outline');
+    btn.classList.add('btn-danger');
+  } else {
+    btn.textContent = '❤️ Guardar en favoritos';
+    btn.classList.remove('btn-danger');
+    btn.classList.add('btn-outline');
+  }
+};
+
 const cargarPropiedad = async () => {
   const contenido = document.getElementById('propiedad-contenido');
-
   const data = await api.get(`/propiedades/${id}`);
 
   if (!data.ok) {
@@ -57,7 +87,8 @@ const cargarPropiedad = async () => {
 
           <div class="caracteristicas-grid">
             ${p.caracteristicas.recamaras ? `<div class="caract-item"><div class="caract-valor">${p.caracteristicas.recamaras}</div><div class="caract-label">Recámaras</div></div>` : ''}
-            ${p.caracteristicas.banos ? `<div class="caract-item"><div class="caract-valor">${p.caracteristicas.banos}</div><div class="caract-label">Baños</div></div>` : ''}
+${p.caracteristicas.banos ? `<div class="caract-item"><div class="caract-valor">${p.caracteristicas.banos}</div><div class="caract-label">Baños completos</div></div>` : ''}
+            ${p.caracteristicas.mediosBanos ? `<div class="caract-item"><div class="caract-valor">${p.caracteristicas.mediosBanos}</div><div class="caract-label">Medios baños</div></div>` : ''}
             ${p.caracteristicas.estacionamientos ? `<div class="caract-item"><div class="caract-valor">${p.caracteristicas.estacionamientos}</div><div class="caract-label">Estacion.</div></div>` : ''}
             ${p.caracteristicas.m2 ? `<div class="caract-item"><div class="caract-valor">${p.caracteristicas.m2}</div><div class="caract-label">m²</div></div>` : ''}
           </div>
@@ -87,27 +118,30 @@ const cargarPropiedad = async () => {
             ` : ''}
 
             <div id="contacto-form">
-              ${auth.isLoggedIn() ? `
-                <p style="font-size:13px;color:var(--text-light);margin-bottom:12px">
-                  Envía un mensaje al propietario. Tus datos están protegidos.
+              <p style="font-size:13px;color:var(--text-light);margin-bottom:12px">
+                Envía un mensaje al propietario. Tus datos están protegidos.
+              </p>
+              <textarea class="mensaje-input" id="mensaje-texto" placeholder="Hola, me interesa esta propiedad. ¿Podría darme más información?"></textarea>
+              <button class="btn btn-primary" style="width:100%;padding:14px" onclick="enviarMensaje('${p._id}')">
+                Enviar mensaje
+              </button>
+              <button id="btn-favorito" class="btn btn-outline" style="width:100%;padding:12px;margin-top:8px" onclick="toggleFavorito('${p._id}')">
+                ❤️ Guardar en favoritos
+              </button>
+              <div id="favorito-login-hint" class="favorito-login-hint" aria-live="polite">
+                Inicia sesión para guardar esta propiedad en favoritos.
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:12px;padding:10px;background:var(--bg-secondary);border-radius:8px">
+                <span style="font-size:16px">🔒</span>
+                <span style="font-size:11px;color:var(--text-light)">Tus datos y los del propietario están protegidos. La comunicación es a través de Vive Más.</span>
+              </div>
+
+              ${!auth.isLoggedIn() ? `
+                <p style="font-size:12px;color:var(--text-light);margin-top:10px">
+                  Para guardar favoritos y contactar propietarios necesitas una cuenta.
                 </p>
-                <textarea class="mensaje-input" id="mensaje-texto" placeholder="Hola, me interesa esta propiedad. ¿Podría darme más información?"></textarea>
-                <button class="btn btn-primary" style="width:100%;padding:14px" onclick="enviarMensaje('${p._id}')">
-                  Enviar mensaje
-                </button>
-                <button class="btn btn-outline" style="width:100%;padding:12px;margin-top:8px" onclick="toggleFavorito('${p._id}')">
-                  ❤️ Guardar en favoritos
-                </button>
-                <div style="display:flex;align-items:center;gap:6px;margin-top:12px;padding:10px;background:var(--bg-secondary);border-radius:8px">
-                  <span style="font-size:16px">🔒</span>
-                  <span style="font-size:11px;color:var(--text-light)">Tus datos y los del propietario están protegidos. La comunicación es a través de Vive Más.</span>
-                </div>
-              ` : `
-                <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Inicia sesión para contactar al propietario de forma segura</p>
-                <a href="login.html" class="btn btn-primary" style="width:100%;padding:14px;text-align:center;display:block">Iniciar sesión</a>
-                <a href="registro.html" class="btn btn-outline" style="width:100%;padding:12px;margin-top:8px;text-align:center;display:block">Crear cuenta gratis</a>
-              `}
-            </div>
+                <a href="login.html" class="btn btn-outline" style="width:100%;padding:10px;margin-top:8px;text-align:center;display:block">Iniciar sesión</a>
+              ` : ''}
             </div>
             <div id="contacto-msg" style="display:none;margin-top:12px"></div>
           </div>
@@ -115,63 +149,87 @@ const cargarPropiedad = async () => {
       </div>
     </div>`;
 
+  if (auth.isLoggedIn()) {
+    favoritoActivo = await revisarFavorito(p._id);
+    actualizarBotonFavorito();
+  }
+
   if (p.ubicacion.lat && p.ubicacion.lng) {
     setTimeout(() => {
       const mapa = L.map('mapa').setView([p.ubicacion.lat, p.ubicacion.lng], 15);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
-      L.marker([p.ubicacion.lat, p.ubicacion.lng])
-        .addTo(mapa)
-        .bindPopup(p.titulo)
-        .openPopup();
+      L.marker([p.ubicacion.lat, p.ubicacion.lng]).addTo(mapa).bindPopup(p.titulo).openPopup();
     }, 100);
   }
 };
 
 const enviarMensaje = async (propiedadId) => {
-  const texto = document.getElementById('mensaje-texto').value.trim();
-  const msgEl = document.getElementById('contacto-msg');
+  if (!auth.isLoggedIn()) {
+    mostrarMsg('<div class="alert alert-error">Necesitas iniciar sesión para enviar mensajes.</div>');
+    return;
+  }
 
+  const texto = document.getElementById('mensaje-texto')?.value?.trim() || '';
   if (!texto) {
-    msgEl.innerHTML = '<div class="alert alert-error">Escribe un mensaje</div>';
-    msgEl.style.display = 'block';
+    mostrarMsg('<div class="alert alert-error">Escribe un mensaje</div>');
     return;
   }
 
   const data = await api.post(`/mensajes/${propiedadId}`, { mensaje: texto });
 
   if (data.ok) {
-    msgEl.innerHTML = '<div class="alert alert-success">¡Mensaje enviado! El propietario te contactará pronto.</div>';
-    msgEl.style.display = 'block';
-    document.getElementById('mensaje-texto').value = '';
+    mostrarMsg('<div class="alert alert-success">¡Mensaje enviado! El propietario te contactará pronto.</div>');
+    const txt = document.getElementById('mensaje-texto');
+    if (txt) txt.value = '';
   } else {
-    msgEl.innerHTML = `<div class="alert alert-error">${data.error || 'Error al enviar'}</div>`;
-    msgEl.style.display = 'block';
+    mostrarMsg(`<div class="alert alert-error">${data.error || 'Error al enviar'}</div>`);
   }
 };
 
-const agregarFavorito = async (propiedadId) => {
-  const msgEl = document.getElementById('contacto-msg');
-  const data = await api.post(`/favoritos/${propiedadId}`, {});
+const toggleFavorito = async (propiedadId) => {
+  if (!auth.isLoggedIn()) {
+    const btn = document.getElementById('btn-favorito');
+    const hint = document.getElementById('favorito-login-hint');
+    if (btn) {
+      btn.title = 'Primero inicia sesión para guardar favoritos';
+      btn.classList.remove('favorito-shake');
+      void btn.offsetWidth;
+      btn.classList.add('favorito-shake');
+    }
+    if (hint) {
+      hint.classList.add('is-visible');
+      clearTimeout(Number(hint.dataset.timeoutId || 0));
+      hint.dataset.timeoutId = String(setTimeout(() => {
+        hint.classList.remove('is-visible');
+      }, 4500));
+    }
+    mostrarMsg('<div class="alert alert-error">💡 Primero inicia sesión para guardar favoritos.</div>');
+    return;
+  }
 
-  if (data.ok) {
-    msgEl.innerHTML = '<div class="alert alert-success">¡Agregado a favoritos!</div>';
-  } else {
-    msgEl.innerHTML = `<div class="alert alert-error">${data.error || 'Error'}</div>`;
+  let data;
+  if (favoritoActivo) {
+    data = await api.delete(`/favoritos/${propiedadId}`);
+    if (data.ok) {
+      favoritoActivo = false;
+      actualizarBotonFavorito();
+      mostrarMsg('<div class="alert alert-success">Eliminado de favoritos.</div>');
+    } else {
+      mostrarMsg(`<div class="alert alert-error">${data.error || 'No se pudo eliminar de favoritos'}</div>`);
+    }
+    return;
   }
-  msgEl.style.display = 'block';
-  const toggleFavorito = async (propiedadId) => {
-  const msgEl = document.getElementById('contacto-msg');
-  const btn = document.querySelector('.btn-outline');
-  const data = await api.post(`/favoritos/${propiedadId}`, {});
+
+  data = await api.post(`/favoritos/${propiedadId}`, {});
   if (data.ok) {
-    msgEl.innerHTML = '<div class="alert alert-success">❤️ Agregado a favoritos</div>';
-    btn.textContent = '❤️ En favoritos';
-    btn.style.borderColor = '#e24b4a';
-    btn.style.color = '#e24b4a';
+    favoritoActivo = true;
+    actualizarBotonFavorito();
+    mostrarMsg('<div class="alert alert-success">❤️ Agregado a favoritos</div>');
+  } else if (data.error === 'Ya está en tus favoritos') {
+    favoritoActivo = true;
+    actualizarBotonFavorito();
+    mostrarMsg('<div class="alert alert-success">Esta propiedad ya estaba en tus favoritos.</div>');
   } else {
-    msgEl.innerHTML = `<div class="alert alert-error">${data.error || 'Error'}</div>`;
+    mostrarMsg(`<div class="alert alert-error">${data.error || 'Error al guardar favorito'}</div>`);
   }
-  msgEl.style.display = 'block';
-  setTimeout(() => msgEl.style.display = 'none', 3000);
-};
 };

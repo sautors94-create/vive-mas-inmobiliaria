@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Property = require('../models/Property');
+const Lead = require('../models/Lead');
 
 const getUsuarios = async (req, res) => {
   try {
@@ -75,6 +76,31 @@ const getPropiedadesRevision = async (req, res) => {
       .populate('propietario', 'nombre email telefono plan')
       .sort({ createdAt: -1 });
     res.json({ ok: true, total: propiedades.length, propiedades });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getLeads = async (req, res) => {
+  try {
+    const { status, search, servicio } = req.query;
+    const filtro = {};
+    if (status) filtro.status = status;
+    if (servicio) filtro.servicio = { $regex: servicio, $options: 'i' };
+    if (search) filtro.$or = [
+      { folio: { $regex: search, $options: 'i' } },
+      { nombre: { $regex: search, $options: 'i' } },
+      { telefono: { $regex: search, $options: 'i' } },
+      { email: { $regex: search, $options: 'i' } },
+      { ciudad: { $regex: search, $options: 'i' } }
+    ];
+
+    const leads = await Lead.find(filtro)
+      .populate('usuarioRegistrado', 'nombre email telefono plan')
+      .populate('atendidoPor', 'nombre email')
+      .sort({ createdAt: -1 });
+
+    res.json({ ok: true, total: leads.length, leads });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -221,6 +247,8 @@ const dashboard = async (req, res) => {
   try {
     const totalUsuarios = await User.countDocuments();
     const totalPropiedades = await Property.countDocuments();
+    const totalLeads = await Lead.countDocuments();
+    const leadsNuevos = await Lead.countDocuments({ status: 'nuevo' });
     const enRevision = await Property.countDocuments({ status: 'revision' });
     const aprobadas = await Property.countDocuments({ status: 'aprobada' });
     const rechazadas = await Property.countDocuments({ status: 'rechazada' });
@@ -228,10 +256,10 @@ const dashboard = async (req, res) => {
     const pausadas = await Property.countDocuments({ status: 'pausada' });
     const usuariosBasico = await User.countDocuments({ plan: 'basico' });
     const usuariosPremium = await User.countDocuments({ plan: 'premium' });
-    res.json({ ok: true, stats: { totalUsuarios, totalPropiedades, enRevision, aprobadas, rechazadas, bloqueadas, pausadas, usuariosBasico, usuariosPremium } });
+    res.json({ ok: true, stats: { totalUsuarios, totalPropiedades, totalLeads, leadsNuevos, enRevision, aprobadas, rechazadas, bloqueadas, pausadas, usuariosBasico, usuariosPremium } });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-module.exports = { getUsuarios, cambiarPlan, suspenderUsuario, eliminarUsuario, getPropiedadesRevision, aprobarPropiedad, rechazarPropiedad, eliminarPropiedad, bloquearPropiedad, dashboard };
+module.exports = { getUsuarios, cambiarPlan, suspenderUsuario, eliminarUsuario, getPropiedadesRevision, getLeads, aprobarPropiedad, rechazarPropiedad, eliminarPropiedad, bloquearPropiedad, dashboard };
