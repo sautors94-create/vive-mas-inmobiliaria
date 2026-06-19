@@ -1,13 +1,15 @@
 const buscar = () => {
-  const operacion = document.getElementById('tipo-operacion').value;
-  const tipo = document.getElementById('tipo-propiedad').value;
+  // Obtener checkboxes marcados de operación
+  const ops = Array.from(document.querySelectorAll('input[name="operacion"]:checked')).map(c => c.value);
+  // Obtener checkboxes marcados de tipo
+  const tipos = Array.from(document.querySelectorAll('input[name="tipo"]:checked')).map(c => c.value);
   const estado = document.getElementById('estado').value;
   const precioMin = document.getElementById('precio-min-input').value;
   const precioMax = document.getElementById('precio-max-input').value;
 
   const params = new URLSearchParams();
-  if (operacion) params.append('operacion', operacion);
-  if (tipo) params.append('tipo', tipo);
+  if (ops.length) params.append('operacion', ops.join(','));
+  if (tipos.length) params.append('tipo', tipos.join(','));
   if (estado) params.append('estado', estado);
   if (precioMin) params.append('precioMin', precioMin);
   if (precioMax && precioMax < 100000000) params.append('precioMax', precioMax);

@@ -77,8 +77,17 @@ const limpiarFiltros = () => {
 
 const cargarFiltrosDesdeURL = () => {
   const params = new URLSearchParams(window.location.search);
-  if (params.get('operacion')) document.getElementById('f-operacion').value = params.get('operacion');
-  if (params.get('tipo')) document.getElementById('f-tipo').value = params.get('tipo');
+  // Marcar checkboxes desde URL (soporta valores separados por coma)
+  const ops = (params.get('operacion') || '').split(',').filter(Boolean);
+  ops.forEach(op => {
+    const cb = document.querySelector(`input[name="f-operacion"][value="${op}"]`);
+    if (cb) cb.checked = true;
+  });
+  const tipos = (params.get('tipo') || '').split(',').filter(Boolean);
+  tipos.forEach(t => {
+    const cb = document.querySelector(`input[name="f-tipo"][value="${t}"]`);
+    if (cb) cb.checked = true;
+  });
   if (params.get('estado')) document.getElementById('f-estado').value = params.get('estado');
   if (params.get('precioMin')) document.getElementById('f-precio-min').value = params.get('precioMin');
   if (params.get('precioMax')) document.getElementById('f-precio-max').value = params.get('precioMax');

@@ -39,22 +39,32 @@
         <h1>Encuentra tu hogar <span class="highlight">ideal</span></h1>
         <p>Renta, compra o administra propiedades en todo México con la plataforma más confiable del mercado.</p>
 
-        <!-- BUSCADOR -->
+<!-- BUSCADOR -->
         <div class="search-box">
   <div class="search-filters">
-    <select id="tipo-operacion" class="filter-select">
-      <option value="">Renta o Venta</option>
-      <option value="renta">Renta</option>
-      <option value="venta">Venta</option>
-    </select>
-    <select id="tipo-propiedad" class="filter-select">
-      <option value="">Tipo de propiedad</option>
-      <option value="casa">Casa</option>
-      <option value="departamento">Departamento</option>
-      <option value="terreno">Terreno</option>
-      <option value="local">Local comercial</option>
-    </select>
-    <select id="estado" class="filter-select">
+    <div class="filter-group" style="display:flex;gap:16px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" name="operacion" value="renta" style="width:18px;height:18px;accent-color:var(--primary)"> Renta
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" name="operacion" value="venta" style="width:18px;height:18px;accent-color:var(--primary)"> Venta
+      </label>
+    </div>
+    <div class="filter-group" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" name="tipo" value="casa" style="width:18px;height:18px;accent-color:var(--primary)"> Casa
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" name="tipo" value="departamento" style="width:18px;height:18px;accent-color:var(--primary)"> Depto
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" name="tipo" value="terreno" style="width:18px;height:18px;accent-color:var(--primary)"> Terreno
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" name="tipo" value="local" style="width:18px;height:18px;accent-color:var(--primary)"> Local
+      </label>
+    </div>
+    <select id="estado" class="filter-select" style="margin-top:8px">
       <option value="">Estado</option>
       <option value="Ciudad de Mexico">Ciudad de México</option>
       <option value="Jalisco">Jalisco</option>
