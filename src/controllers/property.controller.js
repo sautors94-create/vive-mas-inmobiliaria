@@ -38,8 +38,21 @@ const listarPropiedades = async (req, res) => {
   try {
     const { operacion, tipo, estado, ciudad, precioMin, precioMax, pagina = 1, limite = 15 } = req.query;
     const filtro = { status: 'aprobada' };
-    if (operacion) filtro.operacion = operacion;
-    if (tipo) filtro.tipo = tipo;
+    // Filtros múltiples: si viene con coma, usar $in
+    if (operacion) {
+      if (operacion.includes(',')) {
+        filtro.operacion = { $in: operacion.split(',') };
+      } else {
+        filtro.operacion = operacion;
+      }
+    }
+    if (tipo) {
+      if (tipo.includes(',')) {
+        filtro.tipo = { $in: tipo.split(',') };
+      } else {
+        filtro.tipo = tipo;
+      }
+    }
     if (estado) filtro['ubicacion.estado'] = estado;
     if (ciudad) filtro['ubicacion.ciudad'] = ciudad;
     if (precioMin || precioMax) {

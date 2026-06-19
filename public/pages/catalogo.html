@@ -43,25 +43,23 @@
   <!-- FILTROS HORIZONTALES -->
   <div class="filtros-horizontal">
     <div class="filtros-toggle">Filtros de búsqueda <span>— pasa el mouse para ver</span></div>
-    <div class="container">
+<div class="container">
       <div class="filtros-row">
         <div class="filtro-item">
           <label>Operación</label>
-          <select id="f-operacion" class="filter-select">
-            <option value="">Todas</option>
-            <option value="renta">Renta</option>
-            <option value="venta">Venta</option>
-          </select>
+          <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" name="f-operacion" value="renta"> Renta</label>
+            <label class="checkbox-label"><input type="checkbox" name="f-operacion" value="venta"> Venta</label>
+          </div>
         </div>
         <div class="filtro-item">
           <label>Tipo</label>
-          <select id="f-tipo" class="filter-select">
-            <option value="">Todos</option>
-            <option value="casa">Casa</option>
-            <option value="departamento">Departamento</option>
-            <option value="terreno">Terreno</option>
-            <option value="local">Local comercial</option>
-          </select>
+          <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" name="f-tipo" value="casa"> Casa</label>
+            <label class="checkbox-label"><input type="checkbox" name="f-tipo" value="departamento"> Depto.</label>
+            <label class="checkbox-label"><input type="checkbox" name="f-tipo" value="terreno"> Terreno</label>
+            <label class="checkbox-label"><input type="checkbox" name="f-tipo" value="local"> Local</label>
+          </div>
         </div>
         <div class="filtro-item">
           <label>Estado</label>

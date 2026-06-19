@@ -2,9 +2,12 @@ let paginaActual = 1;
 
 const obtenerFiltros = () => {
   const params = new URLSearchParams(window.location.search);
+  // obtenerFiltros múltiples (checkboxes)
+  const operaciones = Array.from(document.querySelectorAll('input[name="f-operacion"]:checked')).map(cb => cb.value);
+  const tipos = Array.from(document.querySelectorAll('input[name="f-tipo"]:checked')).map(cb => cb.value);
   return {
-    operacion: document.getElementById('f-operacion')?.value || params.get('operacion') || '',
-    tipo: document.getElementById('f-tipo')?.value || params.get('tipo') || '',
+    operacion: operaciones.length > 0 ? operaciones.join(',') : (params.get('operacion') || ''),
+    tipo: tipos.length > 0 ? tipos.join(',') : (params.get('tipo') || ''),
     estado: document.getElementById('f-estado')?.value || params.get('estado') || '',
     precioMin: document.getElementById('f-precio-min')?.value || params.get('precioMin') || '',
     precioMax: document.getElementById('f-precio-max')?.value || params.get('precioMax') || '',
@@ -58,8 +61,9 @@ const aplicarFiltros = () => {
 };
 
 const limpiarFiltros = () => {
-  document.getElementById('f-operacion').value = '';
-  document.getElementById('f-tipo').value = '';
+  // Desmarcar checkboxes de filtros múltiples
+  document.querySelectorAll('input[name="f-operacion"]').forEach(cb => cb.checked = false);
+  document.querySelectorAll('input[name="f-tipo"]').forEach(cb => cb.checked = false);
   document.getElementById('f-estado').value = '';
   document.getElementById('f-precio-min').value = '';
   document.getElementById('f-precio-max').value = '';
