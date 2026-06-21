@@ -2,7 +2,11 @@ const auth = {
   getToken: () => localStorage.getItem('accessToken'),
   getUser: () => {
     const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    try {
+      return user ? JSON.parse(user) : null;
+    } catch (e) {
+      return null;
+    }
   },
   isLoggedIn: () => !!localStorage.getItem('accessToken'),
   isAdmin: () => {
@@ -14,10 +18,15 @@ const auth = {
     localStorage.setItem('user', JSON.stringify(user));
   },
   logout: async () => {
-    await api.post('/auth/logout', {});
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
-    window.location.href = '/';
+    try {
+      await api.post('/auth/logout', {});
+    } catch (e) {
+      // Si la petición falla (red, servidor caído, etc.) igual cerramos sesión localmente
+    } finally {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      window.location.href = '/';
+    }
   }
 };
 
@@ -66,4 +75,4 @@ const actualizarNavbar = () => {
   }
 };
 
-document.addEventListener('DOMContentLoaded', actualizarNavbar);  
+document.addEventListener('DOMContentLoaded', actualizarNavbar);
