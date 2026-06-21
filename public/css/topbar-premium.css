@@ -1,0 +1,217 @@
+/* Premium Topbar for dashboard/admin */
+
+.ds-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  height: 70px;
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(229,231,235,0.9);
+}
+
+.ds-topbar-inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ds-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.ds-topbar-title {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.ds-topbar-title .kicker {
+  font-size: 11px;
+  color: var(--text-light);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.ds-topbar-title .main {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.ds-topbar-search {
+  flex: 1;
+  max-width: 520px;
+  position: relative;
+}
+
+.ds-topbar-search input {
+  width: 100%;
+  padding: 12px 14px 12px 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(229,231,235,0.95);
+  background: rgba(255,255,255,0.85);
+  outline: none;
+  font-size: 13px;
+  color: var(--text);
+  transition: border-color 200ms, box-shadow 200ms;
+}
+
+.ds-topbar-search input:focus {
+  border-color: rgba(26,71,42,0.35);
+  box-shadow: 0 0 0 4px rgba(26,71,42,0.10);
+}
+
+.ds-topbar-search .icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px; height: 20px;
+  color: var(--text-light);
+}
+
+.ds-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 240px;
+  justify-content: flex-end;
+}
+
+.ds-icon-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  border: 1px solid rgba(229,231,235,0.95);
+  background: rgba(255,255,255,0.85);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 200ms, box-shadow 200ms, border-color 200ms;
+}
+.ds-icon-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+  border-color: rgba(26,71,42,0.25);
+}
+
+.ds-notif-dot {
+  position: absolute;
+  top: 10px; right: 10px;
+  width: 10px; height: 10px;
+  border-radius: 999px;
+  background: var(--accent-dark);
+  border: 2px solid white;
+  display: inline-block;
+}
+
+.ds-avatar {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ds-avatar .badge {
+  width: 40px; height: 40px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: white;
+  background: linear-gradient(135deg,var(--primary),#123b20);
+}
+
+.ds-avatar .meta {
+  display: none;
+}
+
+@media (min-width: 980px) {
+  .ds-avatar .meta { display: flex; flex-direction: column; line-height: 1.1; }
+}
+
+.ds-avatar .meta .name {
+  font-size: 13px;
+  font-weight: 800;
+}
+.ds-avatar .meta .plan {
+  font-size: 11px;
+  color: var(--text-light);
+  font-weight: 700;
+}
+
+.ds-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: 340px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.95);
+  border: 1px solid rgba(229,231,235,0.95);
+  box-shadow: 0 22px 80px rgba(0,0,0,0.18);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.ds-dropdown.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.ds-dropdown-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(229,231,235,0.9);
+}
+.ds-dropdown-header .title { font-weight: 900; font-size: 13px; }
+.ds-dropdown-header .subtitle { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+
+.ds-dropdown-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ds-dropdown-item {
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(229,231,235,0.0);
+  background: rgba(248,249,250,0.7);
+  cursor: pointer;
+  transition: transform 200ms, border-color 200ms, background 200ms;
+}
+.ds-dropdown-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(26,71,42,0.18);
+  background: rgba(26,71,42,0.05);
+}
+.ds-dropdown-item .t { font-weight: 900; font-size: 13px; }
+.ds-dropdown-item .d { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+
+.ds-dropdown-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid rgba(229,231,235,0.9);
+}
+
+/* Small inline lucide alignment */
+.ds-topbar .ds-lucide {
+  width: 20px; height: 20px;
+}
+

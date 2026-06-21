@@ -74,6 +74,43 @@ const cargarDashboard = async () => {
       <div class="stat-label">Plan Premium</div>
       <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:8px">Ver usuarios →</div>
     </div>`;
+
+  // --- Fase 5.3: Tendencias (backend provee datos) ---
+  try {
+    const trendsWrap = document.getElementById('admin-trends');
+    if (trendsWrap && window.adminCharts?.renderBarTrend) {
+      trendsWrap.style.display = 'block';
+
+      const t = data?.trends || {};
+      const labels = t.labels || ['P1','P2','P3','P4','P5','P6'];
+
+      const rev = t.propiedadesPorStatus?.revision || [];
+      const ap = t.propiedadesPorStatus?.aprobada || [];
+      const re = t.propiedadesPorStatus?.rechazada || [];
+      const bl = t.propiedadesPorStatus?.bloqueada || [];
+
+      const len = Math.max(rev.length, ap.length, re.length, bl.length, labels.length, 1);
+      const safe = (arr) => Array.from({ length: len }, (_, i) => Number(arr[i] || 0));
+      const Vrev = safe(rev);
+      const Vap = safe(ap);
+      const Vre = safe(re);
+      const Vbl = safe(bl);
+
+      const values = Vrev.map((v, i) => v + Vap[i] + Vre[i] + Vbl[i]);
+
+      window.adminCharts.renderBarTrend(document.getElementById('trend-prop-status'), {
+        labels: labels.slice(0, len),
+        series: [{ name: 'Propiedades por status', values: values.slice(0, len), color: '#1a472a' }]
+      });
+
+      const leadsValues = t.leadsCapturados || [];
+      const Vleads = Array.from({ length: len }, (_, i) => Number(leadsValues[i] || 0));
+      window.adminCharts.renderBarTrend(document.getElementById('trend-leads'), {
+        labels: labels.slice(0, len),
+        series: [{ name: 'Leads capturados', values: Vleads.slice(0, len), color: '#e76f51' }]
+      });
+    }
+  } catch (e) {}
 };
 
 const irA = (seccion) => {
@@ -110,7 +147,70 @@ const cargarRevision = async () => {
     lista.innerHTML = '<div class="loading">No hay propiedades en revisión.</div>';
     return;
   }
-  lista.innerHTML = data.propiedades.map(p => crearCardAdmin(p)).join('');
+
+  lista.innerHTML = `
+    <div class="admin-table-wrap">
+      <div class="admin-table">
+        <div class="admin-table-head">
+          <div class="th-avatar">Propiedad</div>
+          <div class="th-location">Ubicación</div>
+          <div class="th-price">Precio</div>
+          <div class="th-owner">Propietario</div>
+          <div class="th-status">Status</div>
+          <div class="th-actions">Acciones</div>
+        </div>
+        <div class="admin-table-body">
+          ${data.propiedades.map(p => {
+            const foto = (p.fotos && p.fotos.length > 0) ? p.fotos[0] : null;
+            const propietario = p.propietario?.nombre || '—';
+            const ciudad = p.ubicacion?.ciudad || '—';
+            const estado = p.ubicacion?.estado || '—';
+            const motivo = p.motivo_rechazo ? `\n              <div class="admin-table-reason">Motivo: ${escapeHtml(p.motivo_rechazo)}</div>` : '';
+
+            return `
+              <div class="tr" role="row">
+                <div class="td th-avatar" data-label="Propiedad">
+                  <div class="prop-avatar">
+                    ${foto ? `<img src="${foto}" alt="${escapeHtml(p.titulo)}" />` : `<div class="prop-avatar-placeholder">${escapeHtml((p.titulo || '?').charAt(0).toUpperCase())}</div>`}
+                  </div>
+                  <div class="prop-title">${escapeHtml(p.titulo || 'Sin título')}</div>
+                  ${motivo}
+                </div>
+
+                <div class="td th-location" data-label="Ubicación">${escapeHtml(ciudad)}, ${escapeHtml(estado)}</div>
+                <div class="td th-price" data-label="Precio">${formatPrecio(p.precio)}</div>
+                <div class="td th-owner" data-label="Propietario">${escapeHtml(propietario)}</div>
+
+                <div class="td th-status" data-label="Status">
+                  <span class="status-badge status-${p.status}">${escapeHtml(p.status)}</span>
+                </div>
+
+                <div class="td th-actions" data-label="Acciones">
+                  <div class="admin-actions-row">
+                    <button class="btn btn-primary admin-mini-btn" onclick="aprobarPropiedad('${p._id}')">Aprobar</button>
+                    <button class="btn btn-outline admin-mini-btn" onclick="abrirModalRechazo('${p._id}')">Rechazar</button>
+                    <button class="btn btn-outline admin-mini-btn" onclick="bloquearPropiedad('${p._id}')">
+                      Bloquear
+                    </button>
+                    <button class="btn btn-outline admin-mini-btn admin-danger" onclick="eliminarPropAdmin('${p._id}', '${escapeHtml(p.titulo || '')}')">Eliminar</button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const escapeHtml = (str) => {
+  return String(str ?? '')
+    .replaceAll('&', '&amp;')
+.replaceAll('<', '<')
+    .replaceAll('>', '>')
+    .replaceAll('"', '"')
+    .replaceAll("'", '&#039;');
 };
 
 const cargarTodasPropiedades = async () => {
@@ -471,4 +571,111 @@ const eliminarTemaPersonalizado = async (id, nombre) => {
   if (!confirm(`¿Eliminar el tema "${nombre}"?`)) return;
   const data = await api.delete(`/site/temas-personalizados/${id}`);
   if (data.ok) cargarTemasPersonalizados();
+};
+
+// ========== IMPORTAR USUARIOS ==========
+let archivoSeleccionado = null;
+
+const mostrarModalImportar = () => {
+  document.getElementById('modal-importar').style.display = 'flex';
+  archivoSeleccionado = null;
+  document.getElementById('archivo-seleccionado').textContent = '📁 Haz clic para seleccionar archivo';
+  document.getElementById('importar-resultado').style.display = 'none';
+  document.getElementById('btn-importar').disabled = true;
+};
+
+const cerrarModalImportar = () => {
+  document.getElementById('modal-importar').style.display = 'none';
+  archivoSeleccionado = null;
+};
+
+const seleccionarArchivo = (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx', 'csv'].includes(ext)) {
+    alert('Solo se aceptan archivos Excel (.xlsx) o CSV');
+    return;
+  }
+  archivoSeleccionado = file;
+  document.getElementById('archivo-seleccionado').textContent = `📄 ${file.name}`;
+  document.getElementById('btn-importar').disabled = false;
+};
+
+const importarUsuarios = async () => {
+  if (!archivoSeleccionado) {
+    alert('Selecciona un archivo primero');
+    return;
+  }
+  
+  const btn = document.getElementById('btn-importar');
+  btn.disabled = true;
+  btn.textContent = 'Importando...';
+  
+  const formData = new FormData();
+  formData.append('archivo', archivoSeleccionado);
+  
+  try {
+    const token = localStorage.getItem('accessToken');
+    const res = await fetch('/api/admin/usuarios/masivo', {
+      method: 'POST',
+      headers: { 'Authorization': token ? `Bearer ${token}` : '' },
+      body: formData
+    });
+    
+    const data = await res.json();
+    const resultadoDiv = document.getElementById('importar-resultado');
+    resultadoDiv.style.display = 'block';
+    
+    if (data.ok) {
+      const r = data.resultado;
+      resultadoDiv.style.background = '#f0fdf4';
+      resultadoDiv.style.color = '#166534';
+      resultadoDiv.innerHTML = `
+        <strong>✓ Importación completada</strong><br>
+        Total procesados: ${r.totalProcesados}<br>
+        Creados exitosamente: ${r.totalCreados}<br>
+        Errores: ${r.totalErrores}
+        ${r.errores && r.errores.length > 0 ? `<br><strong>Errores:</strong><br>${r.errores.map(e => `Fila ${e.fila}: ${e.email} - ${e.error}`).join('<br>')}` : ''}
+      `;
+      // Recargar lista de usuarios
+      cargarUsuarios();
+    } else {
+      resultadoDiv.style.background = '#fef2f2';
+      resultadoDiv.style.color = '#991b1b';
+      resultadoDiv.innerHTML = `<strong>Error:</strong> ${data.error}`;
+    }
+  } catch (error) {
+    const resultadoDiv = document.getElementById('importar-resultado');
+    resultadoDiv.style.display = 'block';
+    resultadoDiv.style.background = '#fef2f2';
+    resultadoDiv.style.color = '#991b1b';
+    resultadoDiv.innerHTML = `<strong>Error de conexión:</strong> ${error.message}`;
+  }
+  
+  btn.disabled = false;
+  btn.textContent = 'Importar usuarios';
+};
+
+const descargarPlantillaUsuarios = async () => {
+  try {
+    const token = localStorage.getItem('accessToken');
+    const res = await fetch('/api/admin/usuarios/plantilla', {
+      headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+    });
+    
+    if (!res.ok) throw new Error('Error al descargar');
+    
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'plantilla_usuarios.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  } catch (error) {
+    alert('Error al descargar plantilla: ' + error.message);
+  }
 };

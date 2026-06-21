@@ -27,11 +27,150 @@ const buildUrl = (endpoint) => {
 };
 
 const handleAuthResponse = (res) => {
-  // Por ahora hacemos logout con mensaje claro.
-  // (Más adelante puedes cambiar a refresh automático si se desea.)
-  return handleAuthFail();
+  // Cuando el token expira, intentamos renewal automático
+  return renewTokenAndRetry();
 };
 
+let isRetrying = false;
+
+const renewTokenAndRetry = async () => {
+  if (isRetrying) return handleAuthFail();
+  
+  isRetrying = true;
+  try {
+    // Intentar refresh token
+    const res = await fetch('/api/auth/refresh', {
+      method: 'POST',
+      credentials: 'include'
+    });
+    const data = await res.json();
+    
+    if (data.ok && data.accessToken) {
+      // Refresh exitoso, actualizar token local
+      localStorage.setItem('accessToken', data.accessToken);
+      isRetrying = false;
+      return { ok: true }; // Indicar que puede reintentar la petición original
+    } else {
+      // Refresh falló, mostrar modal de sesión
+      isRetrying = false;
+      showSessionExpiredModal();
+      return { ok: false, sessionExpired: true };
+    }
+  } catch (error) {
+    isRetrying = false;
+    handleAuthFail();
+    return { ok: false };
+  }
+};
+
+const showSessionExpiredModal = () => {
+  // Si ya hay un modal, no crear otro
+  if (document.getElementById('session-expired-modal')) return;
+  
+  const modal = document.createElement('div');
+  modal.id = 'session-expired-modal';
+  modal.innerHTML = `
+    <div class="session-expired-content">
+      <div class="session-expired-header">
+        <span class="session-icon">🔒</span>
+        <h3>Sesión expirada</h3>
+      </div>
+      <p>Tu sesión ha expirado. ¿Deseas iniciar sesión nuevamente?</p>
+      <div class="session-expired-buttons">
+        <button id="btn-session-login" class="btn-session-expired">Iniciar sesión</button>
+        <button id="btn-session-logout" class="btn-session-logout">Cerrar</button>
+      </div>
+    </div>
+  `;
+  
+  // Estilos inline
+  const style = document.createElement('style');
+  style.textContent = `
+    #session-expired-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10001;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .session-expired-content {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+    .session-expired-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .session-icon {
+      font-size: 40px;
+    }
+    .session-expired-header h3 {
+      margin: 0;
+      color: #dc2626;
+      font-size: 24px;
+    }
+    .session-expired-content p {
+      color: #6b7280;
+      margin: 15px 0;
+    }
+    .session-expired-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .btn-session-expired {
+      padding: 12px 24px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .btn-session-expired:hover {
+      background: #2563eb;
+    }
+    .btn-session-logout {
+      padding: 12px 24px;
+      background: #6b7280;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .btn-session-logout:hover {
+      background: #4b5563;
+    }
+  `;
+  document.head.appendChild(style);
+  document.body.appendChild(modal);
+  
+  document.getElementById('btn-session-login').addEventListener('click', () => {
+    modal.remove();
+    handleAuthFail();
+  });
+  
+  document.getElementById('btn-session-logout').addEventListener('click', () => {
+    modal.remove();
+    handleAuthFail();
+  });
+};
 
 const handleAuthFail = () => {
   try {

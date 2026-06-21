@@ -40,52 +40,237 @@
     </div>
   </div>
 
-  <!-- FILTROS HORIZONTALES -->
-  <div class="filtros-horizontal">
-    <div class="filtros-toggle">Filtros de búsqueda <span>— pasa el mouse para ver</span></div>
-<div class="container">
-      <div class="filtros-row">
-        <div class="filtro-item">
-          <label>Operación</label>
-          <div class="checkbox-group">
-            <label class="checkbox-label"><input type="checkbox" name="f-operacion" value="renta"> Renta</label>
-            <label class="checkbox-label"><input type="checkbox" name="f-operacion" value="venta"> Venta</label>
+<!-- PREMIUM STICKY FILTER BAR -->
+  <div class="sticky-filter-bar">
+    <div class="container">
+      <div class="sticky-filters-row">
+        <!-- Quick Filters as Chips -->
+        <div class="sticky-chip" data-filter="ubicacion" onclick="toggleFilterPopover('ubicacion')">
+          <span id="chip-ubicacion">📍 Ubicación</span>
+        </div>
+        <div class="sticky-chip" data-filter="operacion" onclick="toggleFilterRadio('operacion')">
+          <span id="chip-operacion">🏠 Operación</span>
+        </div>
+        <div class="sticky-chip" data-filter="tipo" onclick="toggleFilterPopover('tipo')">
+          <span id="chip-tipo">🏡 Tipo</span>
+        </div>
+        <div class="sticky-chip" data-filter="precio" onclick="toggleFilterPopover('precio')">
+          <span id="chip-precio">💰 Precio</span>
+        </div>
+        <div class="sticky-chip" data-filter="recamaras" onclick="toggleFilterPopover('recamaras')">
+          <span id="chip-recamaras">🛏 Recámaras</span>
+        </div>
+        <button class="btn-more-filters" onclick="openAdvancedPanel()">
+          + Más filtros
+        </button>
+      </div>
+      <!-- Active Chips -->
+      <div class="active-chips" id="catalogo-chips"></div>
+    </div>
+  </div>
+
+  <!-- Filter Popovers (inside sticky bar) -->
+  <div class="filter-popover-container" id="filter-popover-ubicacion">
+    <div class="filter-popover">
+      <div class="filter-popover-header">
+        <h4>📍 Ubicación</h4>
+        <button class="popover-close" onclick="closeAllFilterPopovers()">×</button>
+      </div>
+      <select id="f-estado" class="filter-select">
+        <option value="">Todos los estados</option>
+        <option value="Ciudad de Mexico">Ciudad de México</option>
+        <option value="Jalisco">Jalisco</option>
+        <option value="Nuevo Leon">Nuevo León</option>
+        <option value="Puebla">Puebla</option>
+        <option value="Guanajuato">Guanajuato</option>
+        <option value="Queretaro">Querétaro</option>
+        <option value="Yucatan">Yucatán</option>
+        <option value="Oaxaca">Oaxaca</option>
+      </select>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="applyQuickFilter('estado')">Aplicar</button>
+    </div>
+  </div>
+
+  <div class="filter-popover-container" id="filter-popover-operacion">
+    <div class="filter-popover">
+      <div class="filter-popover-header">
+        <h4>🏠 Operación</h4>
+        <button class="popover-close" onclick="closeAllFilterPopovers()">×</button>
+      </div>
+      <div class="radio-group">
+        <div class="radio-option" data-value="renta" onclick="selectQuickRadio(this, 'operacion')">Renta</div>
+        <div class="radio-option" data-value="venta" onclick="selectQuickRadio(this, 'operacion')">Venta</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filter-popover-container" id="filter-popover-tipo">
+    <div class="filter-popover">
+      <div class="filter-popover-header">
+        <h4>🏡 Tipo de propiedad</h4>
+        <button class="popover-close" onclick="closeAllFilterPopovers()">×</button>
+      </div>
+      <div class="checkbox-group-custom">
+        <div class="checkbox-option" data-value="casa" onclick="toggleQuickCheckbox(this, 'tipo')">🏠 Casa</div>
+        <div class="checkbox-option" data-value="departamento" onclick="toggleQuickCheckbox(this, 'tipo')">🏢 Depto</div>
+        <div class="checkbox-option" data-value="terreno" onclick="toggleQuickCheckbox(this, 'tipo')">📐 Terreno</div>
+        <div class="checkbox-option" data-value="local" onclick="toggleQuickCheckbox(this, 'tipo')">🏪 Local</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filter-popover-container" id="filter-popover-precio">
+    <div class="filter-popover">
+      <div class="filter-popover-header">
+        <h4>💰 Rango de Precio</h4>
+        <button class="popover-close" onclick="closeAllFilterPopovers()">×</button>
+      </div>
+      <div class="range-slider-container">
+        <div class="range-slider-labels">
+          <span class="range-slider-label" id="label-cat-precio-min">$0</span>
+          <span class="range-slider-label" id="label-cat-precio-max">$100M</span>
+        </div>
+        <div class="dual-range-slider">
+          <div class="dual-range-track"></div>
+          <div class="dual-range-fill" id="precio-fill" style="left:0%;width:100%"></div>
+          <input type="range" class="dual-range-input" id="f-precio-min" min="0" max="100000000" step="50000" value="0" oninput="updateQuickDualRange('precio')">
+          <input type="range" class="dual-range-input" id="f-precio-max" min="0" max="100000000" step="50000" value="100000000" oninput="updateQuickDualRange('precio')">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="applyQuickFilter('precio')">Aplicar</button>
+    </div>
+  </div>
+
+  <div class="filter-popover-container" id="filter-popover-recamaras">
+    <div class="filter-popover">
+      <div class="filter-popover-header">
+        <h4>🛏 Recámaras</h4>
+        <button class="popover-close" onclick="closeAllFilterPopovers()">×</button>
+      </div>
+      <div class="checkbox-group-custom">
+        <div class="checkbox-option" data-value="1" onclick="toggleQuickCheckbox(this, 'recamaras')">1+</div>
+        <div class="checkbox-option" data-value="2" onclick="toggleQuickCheckbox(this, 'recamaras')">2+</div>
+        <div class="checkbox-option" data-value="3" onclick="toggleQuickCheckbox(this, 'recamaras')">3+</div>
+        <div class="checkbox-option" data-value="4" onclick="toggleQuickCheckbox(this, 'recamaras')">4+</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advanced Panel (Modal) -->
+  <div class="advanced-panel-overlay" id="advanced-panel" onclick="closeAdvancedPanel(event)">
+    <div class="advanced-panel" onclick="event.stopPropagation()">
+      <div class="advanced-panel-header">
+        <h3>Filtros avanzados</h3>
+        <button class="popover-close" onclick="closeAdvancedPanel()">×</button>
+      </div>
+      <div class="advanced-panel-content">
+        <!-- Acordeón: Ubicación -->
+        <div class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <span>📍 Ubicación</span>
+            <span class="accordion-icon">▼</span>
+          </div>
+          <div class="accordion-content">
+            <select id="adv-estado" class="filter-select">
+              <option value="">Estado</option>
+              <option value="Ciudad de Mexico">Ciudad de México</option>
+              <option value="Jalisco">Jalisco</option>
+              <option value="Nuevo Leon">Nuevo León</option>
+              <option value="Puebla">Puebla</option>
+            </select>
+            <input type="text" id="adv-ciudad" class="filter-input" placeholder="Ciudad">
+            <input type="text" id="adv-colonia" class="filter-input" placeholder="Colonia">
           </div>
         </div>
-        <div class="filtro-item">
-          <label>Tipo</label>
-          <div class="checkbox-group">
-            <label class="checkbox-label"><input type="checkbox" name="f-tipo" value="casa"> Casa</label>
-            <label class="checkbox-label"><input type="checkbox" name="f-tipo" value="departamento"> Depto.</label>
-            <label class="checkbox-label"><input type="checkbox" name="f-tipo" value="terreno"> Terreno</label>
-            <label class="checkbox-label"><input type="checkbox" name="f-tipo" value="local"> Local</label>
+        <!-- Acordeón: Precio -->
+        <div class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <span>💰 Precio</span>
+            <span class="accordion-icon">▼</span>
+          </div>
+          <div class="accordion-content">
+            <div class="range-slider-labels">
+              <span id="adv-precio-min-label">$0</span>
+              <span id="adv-precio-max-label">$100M</span>
+            </div>
+            <div class="dual-range-slider">
+              <input type="range" class="dual-range-input" id="adv-precio-min" min="0" max="100000000" step="50000" value="0" oninput="updateAdvDualRange('precio')">
+              <input type="range" class="dual-range-input" id="adv-precio-max" min="0" max="100000000" step="50000" value="100000000" oninput="updateAdvDualRange('precio')">
+            </div>
           </div>
         </div>
-        <div class="filtro-item">
-          <label>Estado</label>
-          <select id="f-estado" class="filter-select">
-            <option value="">Todos</option>
-            <option value="Ciudad de Mexico">Ciudad de México</option>
-            <option value="Jalisco">Jalisco</option>
-            <option value="Nuevo Leon">Nuevo León</option>
-            <option value="Puebla">Puebla</option>
-            <option value="Guanajuato">Guanajuato</option>
-            <option value="Queretaro">Querétaro</option>
-            <option value="Yucatan">Yucatán</option>
-            <option value="Oaxaca">Oaxaca</option>
-          </select>
-        </div>
-        <div class="filtro-item filtro-precio">
-          <label>Precio: <span id="label-min">$0</span> — <span id="label-max">$100M</span></label>
-          <div class="precio-doble">
-            <input type="range" class="precio-range" id="f-precio-min-range" min="0" max="100000000" step="50000" value="0" oninput="actualizarSliderMin(this.value)">
-            <input type="range" class="precio-range" id="f-precio-max-range" min="0" max="100000000" step="50000" value="100000000" oninput="actualizarSliderMax(this.value)">
+        <!-- Acordeón: Operación -->
+        <div class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <span>🏠 Operación</span>
+            <span class="accordion-icon">▼</span>
+          </div>
+          <div class="accordion-content">
+            <div class="radio-group" style="flex-direction:column">
+              <div class="radio-option" data-value="" onclick="selectAdvRadio(this, 'operacion')" style="width:100%">Cualquiera</div>
+              <div class="radio-option" data-value="renta" onclick="selectAdvRadio(this, 'operacion')" style="width:100%">Renta</div>
+              <div class="radio-option" data-value="venta" onclick="selectAdvRadio(this, 'operacion')" style="width:100%">Venta</div>
+            </div>
           </div>
         </div>
-        <div class="filtro-item" style="justify-content:flex-end;gap:8px;display:flex;align-items:flex-end">
-          <button class="btn btn-primary" onclick="aplicarFiltros()">Buscar</button>
-          <button class="btn btn-outline" onclick="limpiarFiltros()">Limpiar</button>
+        <!-- Acordeón: Tipo -->
+        <div class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <span>🏡 Tipo</span>
+            <span class="accordion-icon">▼</span>
+          </div>
+          <div class="accordion-content">
+            <div class="checkbox-group-custom">
+              <div class="checkbox-option" data-value="casa" onclick="toggleAdvCheckbox(this, 'tipo')">🏠 Casa</div>
+              <div class="checkbox-option" data-value="departamento" onclick="toggleAdvCheckbox(this, 'tipo')">🏢 Depto</div>
+              <div class="checkbox-option" data-value="terreno" onclick="toggleAdvCheckbox(this, 'tipo')">📐 Terreno</div>
+              <div class="checkbox-option" data-value="local" onclick="toggleAdvCheckbox(this, 'tipo')">🏪 Local</div>
+            </div>
+          </div>
         </div>
+        <!-- Acordeón: Características -->
+        <div class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <span>🛏 Características</span>
+            <span class="accordion-icon">▼</span>
+          </div>
+          <div class="accordion-content">
+            <label>Recámaras</label>
+            <div class="checkbox-group-custom">
+              <div class="checkbox-option" data-value="1" onclick="toggleAdvCheckbox(this, 'recamaras')">1+</div>
+              <div class="checkbox-option" data-value="2" onclick="toggleAdvCheckbox(this, 'recamaras')">2+</div>
+              <div class="checkbox-option" data-value="3" onclick="toggleAdvCheckbox(this, 'recamaras')">3+</div>
+              <div class="checkbox-option" data-value="4" onclick="toggleAdvCheckbox(this, 'recamaras')">4+</div>
+            </div>
+            <label style="margin-top:12px">Baños completos</label>
+            <div class="checkbox-group-custom">
+              <div class="checkbox-option" data-value="1" onclick="toggleAdvCheckbox(this, 'banos')">1+</div>
+              <div class="checkbox-option" data-value="2" onclick="toggleAdvCheckbox(this, 'banos')">2+</div>
+              <div class="checkbox-option" data-value="3" onclick="toggleAdvCheckbox(this, 'banos')">3+</div>
+            </div>
+          </div>
+        </div>
+        <!-- Acordeón: Tamaño -->
+        <div class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <span>📐 Tamaño (m²)</span>
+            <span class="accordion-icon">▼</span>
+          </div>
+          <div class="accordion-content">
+            <div class="range-slider-labels">
+              <span id="adv-m2-min-label">0</span>
+              <span id="adv-m2-max-label">1000m²</span>
+            </div>
+            <div class="dual-range-slider">
+              <input type="range" class="dual-range-input" id="adv-m2-min" min="0" max="1000" step="10" value="0" oninput="updateAdvDualRange('m2')">
+              <input type="range" class="dual-range-input" id="adv-m2-max" min="0" max="1000" step="10" value="1000" oninput="updateAdvDualRange('m2')">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="advanced-panel-footer">
+        <button class="btn btn-outline" onclick="limpiarFiltros()">Limpiar todo</button>
+        <button class="btn btn-primary" onclick="aplicarFiltros()">Ver resultados</button>
       </div>
     </div>
   </div>

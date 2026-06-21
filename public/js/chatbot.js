@@ -222,7 +222,7 @@ class Chatbot {
     if (typing) typing.remove();
   }
 
-  async enviar() {
+async enviar() {
     const input = document.getElementById(`chatbot-${this.tipo}-input`);
     const mensaje = input.value.trim();
     if (!mensaje) return;
@@ -245,6 +245,12 @@ class Chatbot {
       this.quitarTyping();
       if (data.ok) {
         this.agregarMensaje('bot', data.respuesta);
+        
+        // Manejar redireccionamiento si existe
+        if (data.redireccion) {
+          this.manejarRedireccion(data.redireccion);
+        }
+        
         if (this.timerSeguimiento) clearTimeout(this.timerSeguimiento);
         this.timerSeguimiento = setTimeout(() => {
           if (this.abierto && this.historial.length > 2) {
@@ -263,6 +269,53 @@ class Chatbot {
       this.agregarMensaje('bot', tChat(this.lang, 'networkError'));
     }
     this.reiniciarTimer();
+  }
+
+  manejarRedireccion(redireccion) {
+    if (!redireccion.botones || redireccion.botones.length === 0) return;
+    
+    // Añadir botones de accion
+    const msgs = document.getElementById(`chatbot-${this.tipo}-msgs`);
+    const btnContainer = document.createElement('div');
+    btnContainer.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;justify-content:flex-start';
+    
+    redireccion.botones.forEach(btn => {
+      const btnEl = document.createElement('button');
+      btnEl.textContent = btn.texto;
+      btnEl.style.cssText = `
+        padding:8px 12px;
+        background:${this.color};
+        color:white;
+        border:none;
+        border-radius:16px;
+        font-size:12px;
+        cursor:pointer;
+        font-weight:500;
+        transition:all 0.2s;
+      `;
+      btnEl.onmouseover = () => { btnEl.style.opacity = '0.8'; };
+      btnEl.onmouseout = () => { btnEl.style.opacity = '1'; };
+      btnEl.onclick = () => this.ejecutarAccion(btn.accion, redireccion.tipo);
+      btnContainer.appendChild(btnEl);
+    });
+    
+    msgs.appendChild(btnContainer);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  ejecutarAccion(accion, tipoRedireccion) {
+    if (accion === 'whatsapp') {
+      const telefono = '525512345678'; // WhatsApp de Vive Más
+      window.open(`https://wa.me/${telefono}?text=Hola,%20quiero%20atención%20personalizada`, '_blank');
+    } else if (accion === 'email') {
+      window.open('mailto:soporte@vivemas.mx?subject=Quiero atención personalizada', '_blank');
+    } else if (accion === 'catalogo') {
+      const basePath = window.location.pathname.includes('/pages/') ? '' : 'pages/';
+      window.location.href = basePath + 'catalogo.html';
+    } else if (accion === 'continuar') {
+      // Continuar el chat normalmente
+      this.agregarMensaje('bot', '¡Perfecto! ¿En qué más puedo ayudarte? 😊');
+    }
   }
 
   async enviarLead() {

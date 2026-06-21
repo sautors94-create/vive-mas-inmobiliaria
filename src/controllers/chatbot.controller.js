@@ -79,10 +79,102 @@ const chatSoporte = async (req, res) => {
   }
 };
 
+// Detectar intención fuera de tema o que necesita atención humana
+const detectarIntention = (mensaje, tipo) => {
+  const msg = mensaje.toLowerCase();
+  
+  // Palabras que indican querer hablar con persona real
+  const quierePersona = [
+    'hablar con alguien', 'hablar con una persona', 'hablar con asesor',
+    'persona real', 'atencion humana', 'atención humana', 'empleado',
+    'llamar', 'llámenme', 'llámeme', 'contestar', 'responder',
+    'hablar por telefono', 'whatsapp', 'whatsapp',
+    'ya荷', 'ya llamé', 'ya llamo', 'meJOR',
+    'denunciar', 'queja', 'reclamo', 'reclamar',
+    'demanda', 'abogado', 'proceso legal'
+  ];
+  
+  // Palabras fuera del dominio del chatbot
+  const fueraDominio = [
+    'receta', 'comida', 'restaurante', 'hospital', 'doctor', 'medico',
+    'pelicula', 'cine', 'musica', 'musica', 'futbol', 'deporte',
+    'bitcoin', 'criptomoneda', 'invertir en bolsa', 'banco',
+    'impuesto', 'tax', 'visa', 'pasaporte', 'migracion',
+    'empleo', 'trabajo', 'curriculum', 'prestamo personal'
+  ];
+  
+  // Para soporte: temas que no puede manejar
+  const fueraSoporte = [
+    'propiedad', 'casa', 'departamento', 'renta', 'venta',
+    'comprar', 'inmueble', 'inmobiliario', 'precio', 'metro',
+    ' Hipoteca ', 'credito', 'apartamento'
+  ];
+  
+  if (tipo === 'soporte') {
+    // Si pregunta sobre propiedades, redirigir a Max o al catálogo
+    for (const palabra of fueraSoporte) {
+      if (msg.includes(palabra)) {
+        return {
+          fueraDeTema: true,
+          redireccion: {
+            tipo: 'catalogo',
+            mensaje: 'Para consultas sobre propiedades, puedo ayudarte mejor en nuestra sección de catálogo o puedes chatear con Max, nuestro asesor de servicios. 😊'
+          }
+        };
+      }
+    }
+  }
+  
+  // Verificar si quiere atención humana
+  for (const palabra of quierePersona) {
+    if (msg.includes(palabra)) {
+      return {
+        fueraDeTema: true,
+        redireccion: {
+          tipo: ' humano',
+          mensaje: 'Entiendo que prefieres hablar con una persona. 📞 ¿Te gustaría que te conectemos con un asesor? Tenemos WhatsApp disponible.',
+          botones: [
+            { texto: '📱 Chatear en WhatsApp', accion: 'whatsapp' },
+            { texto: '📧 Escribir a soporte@vivemas.mx', accion: 'email' },
+            { texto: 'Continuar aquí', accion: 'continuar' }
+          ]
+        }
+      };
+    }
+  }
+  
+  // Verificar fuera del dominio
+  for (const palabra of fueraDominio) {
+    if (msg.includes(palabra)) {
+      return {
+        fueraDeTema: true,
+        redireccion: {
+          tipo: 'ayuda',
+          mensaje: 'Ese tema no es de inmobiliarios. Pero estoy para ayudarte con: login, planes, publicación de propiedades o verificar tu cuenta. 😊'
+        }
+      };
+    }
+  }
+  
+  return null; // Todo bien
+};
+
 const chatServicios = async (req, res) => {
   try {
     const { mensaje, historial = [], datosContacto } = req.body;
     if (!mensaje) return res.status(400).json({ error: 'Mensaje requerido' });
+
+    // Detectar intención primero
+    const intencion = detectarIntention(mensaje, 'servicios');
+    if (intencion && intencion.fueraDeTema) {
+      return res.json({ 
+        ok: true, 
+        respuesta: intencion.redireccion.mensaje, 
+        tipo: 'servicios', 
+        esLead: false,
+        redireccion: intencion.redireccion
+      });
+    }
 
     const messages = [
       { role: 'system', content: SISTEMA_SERVICIOS },

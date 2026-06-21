@@ -9,26 +9,79 @@
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/design-system.css">
+  <link rel="stylesheet" href="../css/dashboard-premium.css">
   <link rel="stylesheet" href="../css/dashboard.css">
+  <link rel="stylesheet" href="../css/topbar-premium.css">
 </head>
 <body>
 
-  <nav class="navbar">
-    <div class="container nav-content">
-      <a href="/" class="logo">
-        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
-        <span class="logo-sub">Inmobiliaria</span>
-      </a>
-      <ul class="nav-links">
-        <li><a href="/">Inicio</a></li>
-        <li><a href="catalogo.html">Catálogo</a></li>
-      </ul>
-      <div class="nav-actions">
-        <span id="user-nombre" style="font-size:14px;color:var(--text-light)"></span>
-        <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>
+  <div class="ds-topbar">
+    <div class="container ds-topbar-inner">
+      <div class="ds-topbar-left">
+        <a href="/" class="logo" style="text-decoration:none">
+          <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+          <span class="logo-sub">Inmobiliaria</span>
+        </a>
+        <div class="ds-topbar-title">
+          <div class="kicker">Panel de usuario</div>
+          <div class="main">Resumen & publicaciones</div>
+        </div>
+      </div>
+
+      <div class="ds-topbar-search">
+        <span class="icon" aria-hidden="true">
+          <span class="li-icon ds-lucide" data-lucide="list"></span>
+        </span>
+        <input id="ds-global-search" type="text" placeholder="Buscar en tu dashboard..." />
+      </div>
+
+      <div class="ds-topbar-right">
+        <button id="ds-notif-btn" class="ds-icon-btn" type="button" aria-label="Notificaciones">
+          <span class="li-icon" data-lucide="message-square"></span>
+          <span id="ds-notif-dot" class="ds-notif-dot" style="display:none"></span>
+        </button>
+
+        <div id="ds-avatar-wrap" style="position:relative">
+          <div id="ds-avatar-btn" class="ds-avatar">
+            <span id="ds-avatar-bg" class="badge" aria-hidden="true"><span id="ds-user-initials">U</span></span>
+            <div class="meta">
+              <div class="name" id="ds-user-name">Usuario</div>
+              <div class="plan" id="ds-user-plan">Plan</div>
+            </div>
+          </div>
+
+          <div id="ds-avatar-menu" class="ds-dropdown">
+            <div class="ds-dropdown-header">
+              <div class="title">Cuenta</div>
+              <div class="subtitle">Acciones rápidas</div>
+            </div>
+            <div class="ds-dropdown-body">
+              <div class="ds-dropdown-item" onclick="window.location='dashboard.html'">
+                <div class="t">Mi panel</div>
+                <div class="d">Ver propiedades y leads</div>
+              </div>
+              <div class="ds-dropdown-item" onclick="mostrarSeccion('nueva-propiedad')">
+                <div class="t">Nueva publicación</div>
+                <div class="d">Envia tu propiedad en minutos</div>
+              </div>
+              <div class="ds-dropdown-item" onclick="window.location='propiedad.html?id='">
+                <div class="t">Explorar</div>
+                <div class="d">Catálogo de propiedades</div>
+              </div>
+            </div>
+            <div class="ds-dropdown-actions">
+              <button class="btn btn-outline" style="flex:1" onclick="auth.logout()">Cerrar sesión</button>
+              <button class="btn btn-primary" style="flex:1" onclick="dsToast({title:'Premium', message:'¡Acción lista!', type:'info'})">Premium</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-outline" onclick="mostrarSeccion('nueva-propiedad')" style="display:none">+ Publicar</button>
       </div>
     </div>
-  </nav>
+  </div>
+
 
   <div class="dashboard-layout">
     <aside class="dashboard-sidebar">
@@ -40,27 +93,81 @@
         </div>
       </div>
       <nav class="sidebar-nav">
-        <a href="#" class="sidebar-link active" onclick="mostrarSeccion('mis-propiedades')">🏠 Mis propiedades</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('nueva-propiedad')">➕ Nueva publicación</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('favoritos')">❤️ Favoritos</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('leads')">📋 Mis leads</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('mensajes')">💬 Mensajes <span id="mensajes-badge" class="nav-badge" style="display:none">0</span></a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('mi-cuenta')">👤 Mi cuenta</a>
+        <a href="#" class="sidebar-link active" onclick="mostrarSeccion('mis-propiedades')">
+          <span class="li-icon" data-lucide="home"></span>
+          <span>Mis propiedades</span>
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('nueva-propiedad')">
+          <span class="li-icon" data-lucide="plus-circle"></span>
+          <span>Nueva publicación</span>
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('favoritos')">
+          <span class="li-icon" data-lucide="heart"></span>
+          <span>Favoritos</span>
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('leads')">
+          <span class="li-icon" data-lucide="list"></span>
+          <span>Mis leads</span>
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('mensajes')">
+          <span class="li-icon" data-lucide="message-square"></span>
+          <span style="flex:1;min-width:0">Mensajes</span>
+          <span id="mensajes-badge" class="nav-badge" style="display:none">0</span>
+        </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('mi-cuenta')">
+          <span class="li-icon" data-lucide="user"></span>
+          <span>Mi cuenta</span>
+        </a>
       </nav>
     </aside>
 
     <main class="dashboard-main">
 
+      <!-- RESUMEN EJECUTIVO -->
+      <section id="sec-resumen" class="dash-section">
+        <div class="dash-section-header">
+          <h2>Resumen ejecutivo</h2>
+          <span class="badge-premium" id="resume-plan-pill" style="display:none">Plan: —</span>
+        </div>
+
+        <div class="stats-grid" style="margin-bottom:18px" id="resume-stats-grid">
+          <div class="stat-card ds-skeleton" style="height:104px"></div>
+          <div class="stat-card ds-skeleton" style="height:104px"></div>
+          <div class="stat-card ds-skeleton" style="height:104px"></div>
+          <div class="stat-card ds-skeleton" style="height:104px"></div>
+        </div>
+
+        <div class="form-card" style="padding:18px 18px" id="resume-insights-card">
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div class="stat-icon" style="width:44px;height:44px;border-radius:16px">
+              <span class="li-icon" data-lucide="dashboard"></span>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:13px;color:var(--text-light);margin-bottom:6px">Tu actividad reciente</div>
+              <div style="font-weight:800;font-size:16px" id="resume-insights-title">Cargando...</div>
+              <div style="font-size:13px;color:var(--text-light);line-height:1.45;margin-top:6px" id="resume-insights-desc">Estamos preparando tu resumen.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- MIS PROPIEDADES -->
       <section id="sec-mis-propiedades" class="dash-section">
         <div class="dash-section-header">
-          <h2>Mis propiedades</h2>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <h2 style="margin:0">Mis propiedades</h2>
+            <div class="view-toggle" style="display:flex;gap:8px;align-items:center">
+              <button type="button" id="view-grid-btn" class="btn btn-outline" style="padding:8px 14px;font-size:13px">Grid</button>
+              <button type="button" id="view-list-btn" class="btn btn-outline" style="padding:8px 14px;font-size:13px">Lista</button>
+            </div>
+          </div>
           <button class="btn btn-primary" onclick="mostrarSeccion('nueva-propiedad')">+ Nueva publicación</button>
         </div>
-        <div id="mis-props-grid" class="mis-props-grid">
+        <div id="mis-props-container" class="mis-props-grid mis-props-view-grid">
           <div class="loading">Cargando tus propiedades...</div>
         </div>
       </section>
+
 
       <!-- NUEVA PROPIEDAD -->
       <section id="sec-nueva-propiedad" class="dash-section" style="display:none">
@@ -71,107 +178,202 @@
           <div id="form-error" class="alert alert-error" style="display:none"></div>
           <div id="form-success" class="alert alert-success" style="display:none"></div>
 
-          <div class="form-grid">
-            <div class="form-grupo">
-              <label>Título de la propiedad *</label>
-              <input type="text" id="p-titulo" class="form-input" placeholder="Ej: Casa en Colonia Polanco">
+          <div class="ds-stepper" id="publicar-stepper" aria-label="Publicación por pasos">
+            <div class="ds-stepper-progress" id="publicar-progress">
+              <div class="ds-stepper-progress-bar" id="publicar-progress-bar"></div>
             </div>
-            <div class="form-grupo">
-              <label>Precio *</label>
-              <input type="number" id="p-precio" class="form-input" placeholder="0">
-            </div>
-            <div class="form-grupo">
-              <label>Operación *</label>
-              <select id="p-operacion" class="filter-select">
-                <option value="">Selecciona</option>
-                <option value="renta">Renta</option>
-                <option value="venta">Venta</option>
-              </select>
-            </div>
-            <div class="form-grupo">
-              <label>Tipo *</label>
-              <select id="p-tipo" class="filter-select">
-                <option value="">Selecciona</option>
-                <option value="casa">Casa</option>
-                <option value="departamento">Departamento</option>
-                <option value="terreno">Terreno</option>
-                <option value="local">Local comercial</option>
-              </select>
-            </div>
-            <div class="form-grupo" style="grid-column:1/-1">
-              <label>Descripción *</label>
-              <textarea id="p-descripcion" class="form-input" rows="4" placeholder="Describe tu propiedad..."></textarea>
-            </div>
-            <div class="form-grupo">
-              <label>Estado *</label>
-              <select id="p-estado" class="filter-select">
-                <option value="">Selecciona</option>
-                <option value="Ciudad de Mexico">Ciudad de México</option>
-                <option value="Jalisco">Jalisco</option>
-                <option value="Nuevo Leon">Nuevo León</option>
-                <option value="Puebla">Puebla</option>
-                <option value="Guanajuato">Guanajuato</option>
-                <option value="Queretaro">Querétaro</option>
-                <option value="Yucatan">Yucatán</option>
-                <option value="Oaxaca">Oaxaca</option>
-              </select>
-            </div>
-            <div class="form-grupo">
-              <label>Ciudad *</label>
-              <input type="text" id="p-ciudad" class="form-input" placeholder="Ej: Guadalajara">
-            </div>
-            <div class="form-grupo">
-              <label>Colonia</label>
-              <input type="text" id="p-colonia" class="form-input" placeholder="Ej: Polanco">
-            </div>
-            <div class="form-grupo" style="grid-column:1/-1">
-              <label>Dirección</label>
-              <div style="display:flex;gap:8px">
-                <input type="text" id="p-direccion" class="form-input" placeholder="Calle y número" style="flex:1">
-                <button type="button" class="btn btn-outline" onclick="buscarDireccion()" style="padding:10px 16px;font-size:13px;white-space:nowrap">📍 Buscar</button>
-              </div>
-            </div>
-            <div class="form-grupo" style="grid-column:1/-1">
-              <label>Ubicación en mapa <span style="font-size:11px;color:var(--text-light)">(haz clic para marcar la ubicación exacta)</span></label>
-              <div id="mapa-publicar" style="height:300px;border-radius:12px;border:1px solid var(--border);margin-top:6px"></div>
-              <div style="display:flex;gap:16px;margin-top:8px">
-                <div style="font-size:12px;color:var(--text-light)">Lat: <span id="coord-lat" style="font-weight:600;color:var(--primary)">--</span></div>
-                <div style="font-size:12px;color:var(--text-light)">Lng: <span id="coord-lng" style="font-weight:600;color:var(--primary)">--</span></div>
-                <div style="font-size:12px;color:var(--text-light)"><span id="coord-estado-label" style="color:var(--primary)"></span></div>
-              </div>
-              <input type="hidden" id="p-lat">
-              <input type="hidden" id="p-lng">
-            </div>
-            <div class="form-grupo">
-              <label>Recámaras</label>
-              <input type="number" id="p-recamaras" class="form-input" placeholder="0" min="0">
-            </div>
-<div class="form-grupo">
-              <label>Baños completos</label>
-              <input type="number" id="p-banos" class="form-input" placeholder="0" min="0">
-            </div>
-            <div class="form-grupo">
-              <label>Medios baños</label>
-              <input type="number" id="p-medios-banos" class="form-input" placeholder="0" min="0">
-            </div>
-            <div class="form-grupo">
-              <label>Estacionamientos</label>
-              <input type="number" id="p-estacionamientos" class="form-input" placeholder="0" min="0">
-            </div>
-            <div class="form-grupo">
-              <label>Metros cuadrados</label>
-              <input type="number" id="p-m2" class="form-input" placeholder="0" min="0">
-            </div>
-            <div class="form-grupo" style="grid-column:1/-1">
-              <label>Fotos (máximo 15, JPG/PNG/WEBP, máx 5MB c/u)</label>
-              <input type="file" id="p-fotos" class="form-input" multiple accept="image/*" onchange="previsualizarFotos(this)">
-              <div id="fotos-preview" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px"></div>
+            <div class="ds-stepper-steps" id="publicar-steps">
+              <button type="button" class="ds-step" data-step="1" onclick="setPublicarStep(1)">1</button>
+              <button type="button" class="ds-step" data-step="2" onclick="setPublicarStep(2)">2</button>
+              <button type="button" class="ds-step" data-step="3" onclick="setPublicarStep(3)">3</button>
+              <button type="button" class="ds-step" data-step="4" onclick="setPublicarStep(4)">4</button>
+              <button type="button" class="ds-step" data-step="5" onclick="setPublicarStep(5)">5</button>
+              <button type="button" class="ds-step" data-step="6" onclick="setPublicarStep(6)">6</button>
+              <button type="button" class="ds-step" data-step="7" onclick="setPublicarStep(7)">7</button>
             </div>
           </div>
 
-          <button class="btn btn-primary" style="padding:14px 32px;font-size:16px;margin-top:8px" onclick="publicarPropiedad()">
-            Enviar a revisión
-          </button>
+          <div class="publicar-steps-content">
+            <!-- STEP 1 -->
+            <div class="publicar-step-content" data-step-content="1" style="display:block">
+              <div class="form-grid">
+                <div class="form-grupo">
+                  <label>Título de la propiedad *</label>
+                  <input type="text" id="p-titulo" class="form-input" placeholder="Ej: Casa en Colonia Polanco">
+                </div>
+                <div class="form-grupo">
+                  <label>Precio *</label>
+                  <input type="number" id="p-precio" class="form-input" placeholder="0">
+                </div>
+                <div class="form-grupo">
+                  <label>Operación *</label>
+                  <select id="p-operacion" class="filter-select">
+                    <option value="">Selecciona</option>
+                    <option value="renta">Renta</option>
+                    <option value="venta">Venta</option>
+                  </select>
+                </div>
+                <div class="form-grupo">
+                  <label>Tipo *</label>
+                  <select id="p-tipo" class="filter-select">
+                    <option value="">Selecciona</option>
+                    <option value="casa">Casa</option>
+                    <option value="departamento">Departamento</option>
+                    <option value="terreno">Terreno</option>
+                    <option value="local">Local comercial</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 2 -->
+            <div class="publicar-step-content" data-step-content="2" style="display:none">
+              <div class="form-grid">
+                <div class="form-grupo" style="grid-column:1/-1">
+                  <label>Descripción *</label>
+                  <textarea id="p-descripcion" class="form-input" rows="4" placeholder="Describe tu propiedad..."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 3 -->
+            <div class="publicar-step-content" data-step-content="3" style="display:none">
+              <div class="form-grid">
+                <div class="form-grupo">
+                  <label>Estado *</label>
+                  <select id="p-estado" class="filter-select">
+                    <option value="">Selecciona</option>
+                    <option value="Ciudad de Mexico">Ciudad de México</option>
+                    <option value="Jalisco">Jalisco</option>
+                    <option value="Nuevo Leon">Nuevo León</option>
+                    <option value="Puebla">Puebla</option>
+                    <option value="Guanajuato">Guanajuato</option>
+                    <option value="Queretaro">Querétaro</option>
+                    <option value="Yucatan">Yucatán</option>
+                    <option value="Oaxaca">Oaxaca</option>
+                  </select>
+                </div>
+                <div class="form-grupo">
+                  <label>Ciudad *</label>
+                  <input type="text" id="p-ciudad" class="form-input" placeholder="Ej: Guadalajara">
+                </div>
+                <div class="form-grupo">
+                  <label>Colonia</label>
+                  <input type="text" id="p-colonia" class="form-input" placeholder="Ej: Polanco">
+                </div>
+                <div class="form-grupo" style="grid-column:1/-1">
+                  <label>Dirección</label>
+                  <div style="display:flex;gap:8px">
+                    <input type="text" id="p-direccion" class="form-input" placeholder="Calle y número" style="flex:1">
+                    <button type="button" class="btn btn-outline" onclick="buscarDireccion()" style="padding:10px 16px;font-size:13px;white-space:nowrap">📍 Buscar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 4 -->
+            <div class="publicar-step-content" data-step-content="4" style="display:none">
+              <div class="form-grid">
+                <div class="form-grupo" style="grid-column:1/-1">
+                  <label>Ubicación en mapa <span style="font-size:11px;color:var(--text-light)">(haz clic para marcar la ubicación exacta)</span></label>
+                  <div id="mapa-publicar" style="height:300px;border-radius:12px;border:1px solid var(--border);margin-top:6px"></div>
+                  <div style="display:flex;gap:16px;margin-top:8px">
+                    <div style="font-size:12px;color:var(--text-light)">Lat: <span id="coord-lat" style="font-weight:600;color:var(--primary)">--</span></div>
+                    <div style="font-size:12px;color:var(--text-light)">Lng: <span id="coord-lng" style="font-weight:600;color:var(--primary)">--</span></div>
+                    <div style="font-size:12px;color:var(--text-light)"><span id="coord-estado-label" style="color:var(--primary)"></span></div>
+                  </div>
+                  <input type="hidden" id="p-lat">
+                  <input type="hidden" id="p-lng">
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 5 -->
+            <div class="publicar-step-content" data-step-content="5" style="display:none">
+              <div class="form-grid">
+                <div class="form-grupo">
+                  <label>Recámaras</label>
+                  <input type="number" id="p-recamaras" class="form-input" placeholder="0" min="0">
+                </div>
+                <div class="form-grupo">
+                  <label>Baños completos</label>
+                  <input type="number" id="p-banos" class="form-input" placeholder="0" min="0">
+                </div>
+                <div class="form-grupo">
+                  <label>Medios baños</label>
+                  <input type="number" id="p-medios-banos" class="form-input" placeholder="0" min="0">
+                </div>
+                <div class="form-grupo">
+                  <label>Estacionamientos</label>
+                  <input type="number" id="p-estacionamientos" class="form-input" placeholder="0" min="0">
+                </div>
+                <div class="form-grupo">
+                  <label>Metros cuadrados</label>
+                  <input type="number" id="p-m2" class="form-input" placeholder="0" min="0">
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 6 -->
+            <div class="publicar-step-content" data-step-content="6" style="display:none">
+              <div class="form-grid">
+                <div class="form-grupo" style="grid-column:1/-1">
+                  <label>Fotos (máximo 15, JPG/PNG/WEBP, máx 5MB c/u)</label>
+
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+                    <span class="ds-badge ds-badge-primary" id="badge-fotos-count">Fotos: —</span>
+                    <span class="ds-badge ds-badge-soft" id="badge-fotos-min">Mínimo 2: Pendiente</span>
+                    <span class="ds-badge ds-badge-soft" id="badge-fotos-portada">Portada: Pendiente</span>
+                  </div>
+
+                  <div id="p-fotos-drop" class="fotos-drop" style="display:block">
+                    <input type="file" id="p-fotos" class="form-input" multiple accept="image/*" onchange="previsualizarFotos(this)" style="display:none">
+                    <div class="fotos-drop-inner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px 12px;border:1px dashed var(--border);border-radius:12px;background:var(--bg-secondary);">
+                      <div style="font-weight:700">Arrastra tus fotos aquí</div>
+                      <div style="font-size:12px;color:var(--text-light)">o selecciona archivos (mínimo 2)</div>
+                      <button type="button" class="btn btn-outline" onclick="document.getElementById('p-fotos').click()" style="padding:8px 14px;font-size:13px">Seleccionar fotos</button>
+                    </div>
+                  </div>
+
+                  <div id="fotos-preview" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px"></div>
+                  <div id="fotos-portada-hint" style="margin-top:10px;font-size:12px;color:var(--text-light)">
+                    Toca una foto para marcarla como <b>portada</b>.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <!-- STEP 7 -->
+            <div class="publicar-step-content" data-step-content="7" style="display:none">
+              <div class="form-grid">
+                <div class="form-grupo" style="grid-column:1/-1">
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+                    <span class="ds-badge ds-badge-primary" id="badge-envio-status">Estado: —</span>
+                    <span class="ds-badge ds-badge-soft" id="badge-envio-ubic">Ubicación: —</span>
+                    <span class="ds-badge ds-badge-soft" id="badge-envio-fotos">Fotos: —</span>
+                  </div>
+
+                  <div id="publicar-final-summary" class="alert alert-success" style="display:block">
+                    Revisa tus datos y presiona <b>Enviar a revisión</b>.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="publicar-step-actions" style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:18px">
+            <button type="button" class="btn btn-outline" id="publicar-back-btn" style="display:none" onclick="publicarPrevStep()">← Atrás</button>
+            <button type="button" class="btn btn-primary" id="publicar-next-btn" onclick="publicarNextStep()">Siguiente →</button>
+          </div>
+          
+          <div id="publicar-submit-wrap" style="display:none">
+            <button class="btn btn-primary" style="padding:14px 32px;font-size:16px;margin-top:8px" type="button" onclick="publicarPropiedad()">
+              Enviar a revisión
+            </button>
+          </div>
+
         </div>
       </section>
 
@@ -210,10 +412,20 @@
     </main>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="../js/api.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/dashboard.js"></script>
-  <script src="../js/chatbot.js"></script>
+  <script src="../js/session-manager.js"></script>
+  <script src="../js/ui/toasts.js"></script>
+  <script src="../js/ui/lucide.js"></script>
+  <script src="../js/ui/topbar.js"></script>
+      <script src="../js/chatbot.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // init drag&drop and portada interactions (Fase 7)
+    if (window.initFotosPublicar) window.initFotosPublicar();
+  });
+</script>
 </body>
 </html>

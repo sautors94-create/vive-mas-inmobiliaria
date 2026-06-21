@@ -39,58 +39,106 @@
         <h1>Encuentra tu hogar <span class="highlight">ideal</span></h1>
         <p>Renta, compra o administra propiedades en todo México con la plataforma más confiable del mercado.</p>
 
-<!-- BUSCADOR -->
-        <div class="search-box">
-  <div class="search-filters">
-    <div class="filter-group" style="display:flex;gap:16px;flex-wrap:wrap">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" name="operacion" value="renta" style="width:18px;height:18px;accent-color:var(--primary)"> Renta
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" name="operacion" value="venta" style="width:18px;height:18px;accent-color:var(--primary)"> Venta
-      </label>
-    </div>
-    <div class="filter-group" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" name="tipo" value="casa" style="width:18px;height:18px;accent-color:var(--primary)"> Casa
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" name="tipo" value="departamento" style="width:18px;height:18px;accent-color:var(--primary)"> Depto
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" name="tipo" value="terreno" style="width:18px;height:18px;accent-color:var(--primary)"> Terreno
-      </label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input type="checkbox" name="tipo" value="local" style="width:18px;height:18px;accent-color:var(--primary)"> Local
-      </label>
-    </div>
-    <select id="estado" class="filter-select" style="margin-top:8px">
-      <option value="">Estado</option>
-      <option value="Ciudad de Mexico">Ciudad de México</option>
-      <option value="Jalisco">Jalisco</option>
-      <option value="Nuevo Leon">Nuevo León</option>
-      <option value="Puebla">Puebla</option>
-      <option value="Guanajuato">Guanajuato</option>
-      <option value="Queretaro">Querétaro</option>
-    </select>
-    <div style="grid-column:1/-1">
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-light);margin-bottom:6px">
-        <span>Precio máximo</span>
-        <span id="precio-label" style="color:var(--primary);font-weight:600">$100M</span>
-      </div>
-      <input type="range" id="precio-max-range" min="0" max="100000000" step="50000" value="100000000"
-        style="width:100%;accent-color:var(--primary);height:4px;cursor:pointer"
-        oninput="actualizarPrecioInicio(this.value)">
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <input type="number" id="precio-min-input" class="filter-input" placeholder="Precio mínimo $" style="flex:1"
-          oninput="document.getElementById('precio-label').textContent = formatPrecioSlider(document.getElementById('precio-max-input').value || 100000000)">
-        <input type="number" id="precio-max-input" class="filter-input" placeholder="Precio máximo $" style="flex:1"
-          oninput="sincronizarSlider(this.value)">
-      </div>
-    </div>
-  </div>
-  <button class="btn btn-search" onclick="buscar()">Buscar propiedades</button>
-</div>
+<!-- PREMIUM SEARCH BAR - AIRBNB STYLE -->
+        <div class="search-bar" id="search-bar">
+          <!-- Campo Ubicación -->
+          <div class="search-bar-field" data-popover="popover-ubicacion">
+            <label>📍 Ubicación</label>
+            <span id="label-ubicacion">¿Dónde buscas?</span>
+          </div>
+          <!-- Campo Operación -->
+          <div class="search-bar-field" data-popover="popover-operacion">
+            <label>🏠 Operación</label>
+            <span id="label-operacion">Renta o Venta</span>
+          </div>
+          <!-- Campo Tipo -->
+          <div class="search-bar-field" data-popover="popover-tipo">
+            <label>🏡 Tipo</label>
+            <span id="label-tipo">Tipo de propiedad</span>
+          </div>
+          <!-- Campo Precio -->
+          <div class="search-bar-field" data-popover="popover-precio">
+            <label>💰 Precio</label>
+            <span id="label-precio">Cualquier precio</span>
+          </div>
+          <!-- Botón Buscar -->
+          <button class="search-bar-btn" onclick="buscar()">Buscar</button>
+        </div>
+
+        <!-- Chips activos -->
+        <div class="active-chips" id="active-chips"></div>
+
+        <!-- Popover Overlay -->
+        <div class="popover-overlay" id="popover-overlay" onclick="closeAllPopovers()"></div>
+
+        <!-- Popover Ubicación -->
+        <div class="popover" id="popover-ubicacion">
+          <div class="popover-header">
+            <h4>📍 Ubicación</h4>
+            <button class="popover-close" onclick="closeAllPopovers()">×</button>
+          </div>
+          <input type="text" class="popover-search" placeholder="Buscar estado..." id="search-estado" oninput="filterEstados(this.value)">
+          <div class="popover-options" id="opciones-estado">
+            <div class="popover-option" data-value="Ciudad de Mexico" onclick="toggleOption(this, 'estado')">Ciudad de México</div>
+            <div class="popover-option" data-value="Jalisco" onclick="toggleOption(this, 'estado')">Jalisco</div>
+            <div class="popover-option" data-value="Nuevo Leon" onclick="toggleOption(this, 'estado')">Nuevo León</div>
+            <div class="popover-option" data-value="Puebla" onclick="toggleOption(this, 'estado')">Puebla</div>
+            <div class="popover-option" data-value="Guanajuato" onclick="toggleOption(this, 'estado')">Guanajuato</div>
+            <div class="popover-option" data-value="Queretaro" onclick="toggleOption(this, 'estado')">Querétaro</div>
+            <div class="popover-option" data-value="Yucatan" onclick="toggleOption(this, 'estado')">Yucatán</div>
+            <div class="popover-option" data-value="Oaxaca" onclick="toggleOption(this, 'estado')">Oaxaca</div>
+          </div>
+        </div>
+
+        <!-- Popover Operación -->
+        <div class="popover" id="popover-operacion">
+          <div class="popover-header">
+            <h4>🏠 Operación</h4>
+            <button class="popover-close" onclick="closeAllPopovers()">×</button>
+          </div>
+          <div class="radio-group">
+            <div class="radio-option" data-value="renta" onclick="selectRadio(this, 'operacion')">Renta</div>
+            <div class="radio-option" data-value="venta" onclick="selectRadio(this, 'operacion')">Venta</div>
+          </div>
+        </div>
+
+        <!-- Popover Tipo -->
+        <div class="popover" id="popover-tipo">
+          <div class="popover-header">
+            <h4>🏡 Tipo de propiedad</h4>
+            <button class="popover-close" onclick="closeAllPopovers()">×</button>
+          </div>
+          <div class="checkbox-group-custom">
+            <div class="checkbox-option" data-value="casa" onclick="toggleCheckbox(this, 'tipo')">🏠 Casa</div>
+            <div class="checkbox-option" data-value="departamento" onclick="toggleCheckbox(this, 'tipo')">🏢 Departamento</div>
+            <div class="checkbox-option" data-value="terreno" onclick="toggleCheckbox(this, 'tipo')">📐 Terreno</div>
+            <div class="checkbox-option" data-value="local" onclick="toggleCheckbox(this, 'tipo')">🏪 Local</div>
+          </div>
+        </div>
+
+        <!-- Popover Precio -->
+        <div class="popover" id="popover-precio">
+          <div class="popover-header">
+            <h4>💰 Rango de Precio</h4>
+            <button class="popover-close" onclick="closeAllPopovers()">×</button>
+          </div>
+          <div class="range-slider-container">
+            <div class="range-slider-labels">
+              <span class="range-slider-label" id="precio-min-label">$0</span>
+              <span class="range-slider-label" id="precio-max-label">$100M</span>
+            </div>
+            <div class="dual-range-slider">
+              <div class="dual-range-track"></div>
+              <div class="dual-range-fill" id="precio-fill" style="left:0%;width:100%"></div>
+              <input type="range" class="dual-range-input" id="precio-min" min="0" max="100000000" step="50000" value="0" oninput="updateDualRange('precio')">
+              <input type="range" class="dual-range-input" id="precio-max" min="0" max="100000000" step="50000" value="100000000" oninput="updateDualRange('precio')">
+            </div>
+            <div class="range-slider-inputs">
+              <input type="number" class="range-slider-input" id="precio-min-input" placeholder="Mín $" oninput="syncDualRange('min', 'precio')">
+              <input type="number" class="range-slider-input" id="precio-max-input" placeholder="Máx $" oninput="syncDualRange('max', 'precio')">
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>

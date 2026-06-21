@@ -21,18 +21,33 @@ const auth = {
   }
 };
 
-// Toggle mostrar/ocultar contraseña
+// ===========================================
+// PREMIUM PASSWORD TOGGLE - SVG ICONS
+// ===========================================
 const togglePassword = (inputId) => {
   const input = document.getElementById(inputId);
-  const btn = input.nextElementSibling;
-  const icon = btn.querySelector('span');
+  if (!input) return;
+  
+  const wrapper = input.parentElement;
+  const toggleBtn = wrapper.querySelector('.password-toggle');
+  const iconSvg = toggleBtn?.querySelector('.password-icon');
+  const label = toggleBtn?.querySelector('.sr-only');
+  
   if (input.type === 'password') {
     input.type = 'text';
-    icon.textContent = '🙈';
+    if (iconSvg) iconSvg.innerHTML = PREMIUM_ICONS.eyeOff;
+    if (label) label.textContent = 'Ocultar contraseña';
   } else {
     input.type = 'password';
-    icon.textContent = '👁';
+    if (iconSvg) iconSvg.innerHTML = PREMIUM_ICONS.eye;
+    if (label) label.textContent = 'Mostrar contraseña';
   }
+};
+
+// Premium SVG Icons - Lucide style
+const PREMIUM_ICONS = {
+  eye: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  eyeOff: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.13 13.13 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.26 13.26 0 0 0 2 12s3 7 10 7a13.12 13.12 0 0 0 5.24-1.56M21.32 2.68a13.14 13.14 0 0 0-1.66 2.68c0 7 2 9.68 2 9.68s-2.56-2.68-2.56-9.68"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
 };
 
 const getBasePath = () => {

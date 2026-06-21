@@ -8,8 +8,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/design-system.css">
+  <link rel="stylesheet" href="../css/dashboard-premium.css">
   <link rel="stylesheet" href="../css/dashboard.css">
   <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/topbar-premium.css">
 </head>
 <body>
 
@@ -42,7 +45,7 @@
         </div>
       </div>
 
-      <nav class="sidebar -nav">
+<nav class="sidebar-nav">
         <a href="#" class="sidebar-link active" onclick="mostrarSeccion('dashboard')">
           📊 Dashboard
         </a>
@@ -78,7 +81,30 @@
         <div class="stats-grid" id="stats-grid">
           <div class="loading">Cargando estadísticas...</div>
         </div>
+
+        <!-- TENDENCIAS (Fase 5.3) -->
+        <div class="admin-trends" id="admin-trends" style="margin-top:18px;display:none">
+          <div class="dash-section-header" style="margin-bottom:12px">
+            <h2 style="font-size:20px">Tendencias</h2>
+            <div class="trend-subtitle" style="font-size:13px;color:var(--text-light)">Últimos 6 periodos</div>
+          </div>
+          <div class="admin-trends-grid">
+            <div class="admin-trend-card">
+              <div class="admin-trend-title">Propiedades por status</div>
+              <div class="admin-trend-body">
+                <div id="trend-prop-status" class="admin-chart-container"></div>
+              </div>
+            </div>
+            <div class="admin-trend-card">
+              <div class="admin-trend-title">Leads capturados</div>
+              <div class="admin-trend-body">
+                <div id="trend-leads" class="admin-chart-container"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
+
 
       <!-- EN REVISIÓN -->
       <section id="sec-revision" class="dash-section" style="display:none">
@@ -129,24 +155,28 @@
         </div>
       </section>
 
-      <!-- USUARIOS -->
+<!-- USUARIOS -->
       <section id="sec-usuarios" class="dash-section" style="display:none">
         <div class="dash-section-header">
           <h2>Usuarios registrados</h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input type="text" id="search-usuarios" class="form-input" placeholder="Buscar usuario..." style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarUsuarios()">
-            <select id="filtro-plan" class="filter-select" style="width:auto" onchange="cargarUsuarios()">
-              <option value="">Todos los planes</option>
-              <option value="gratuito">Gratuito</option>
-              <option value="basico">Básico</option>
-              <option value="premium">Premium</option>
-            </select>
-            <select id="filtro-status-user" class="filter-select" style="width:auto" onchange="cargarUsuarios()">
-              <option value="">Todos los status</option>
-              <option value="activo">Activos</option>
-              <option value="suspendido">Suspendidos</option>
-            </select>
+            <button class="btn btn-outline" onclick="descargarPlantillaUsuarios()" style="padding:8px 16px;font-size:13px">📥 Descargar plantilla</button>
+            <button class="btn btn-primary" onclick="mostrarModalImportar()" style="padding:8px 16px;font-size:13px">📤 Importar usuarios</button>
           </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+          <input type="text" id="search-usuarios" class="form-input" placeholder="Buscar usuario..." style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarUsuarios()">
+          <select id="filtro-plan" class="filter-select" style="width:auto" onchange="cargarUsuarios()">
+            <option value="">Todos los planes</option>
+            <option value="gratuito">Gratuito</option>
+            <option value="basico">Básico</option>
+            <option value="premium">Premium</option>
+          </select>
+          <select id="filtro-status-user" class="filter-select" style="width:auto" onchange="cargarUsuarios()">
+            <option value="">Todos los status</option>
+            <option value="activo">Activos</option>
+            <option value="suspendido">Suspendidos</option>
+          </select>
         </div>
         <div id="usuarios-lista" class="usuarios-lista">
           <div class="loading">Cargando...</div>
@@ -299,7 +329,7 @@
     </main>
   </div>
 
-  <!-- MODAL RECHAZO -->
+<!-- MODAL RECHAZO -->
   <div id="modal-rechazo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
     <div style="background:white;border-radius:16px;padding:32px;max-width:480px;width:90%">
       <h3 style="margin-bottom:16px">Motivo de rechazo</h3>
@@ -311,10 +341,36 @@
     </div>
   </div>
 
-  <script src="../js/api.js"></script>
+  <!-- MODAL IMPORTAR USUARIOS -->
+  <div id="modal-importar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:white;border-radius:16px;padding:32px;max-width:520px;width:90%">
+      <h3 style="margin-bottom:16px">📤 Importar usuarios</h3>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Sube un archivo Excel (.xlsx) o CSV con las columnas: nombre, email, telefono, plan</p>
+      
+      <div style="border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;margin-bottom:16px;cursor:pointer" onclick="document.getElementById('input-archivo').click()">
+        <input type="file" id="input-archivo" accept=".xlsx,.csv" style="display:none" onchange="seleccionarArchivo(this)">
+        <div id="archivo-seleccionado" style="font-size:13px;color:var(--text)">📁 Haz clic para seleccionar archivo</div>
+      </div>
+      
+      <div id="importar-resultado" style="display:none;margin-top:16px;padding:12px;border-radius:8px;background:#f0fdf4;font-size:13px"></div>
+      
+      <div style="display:flex;gap:12px;margin-top:16px">
+        <button class="btn btn-primary" onclick="importarUsuarios()" style="flex:1" id="btn-importar" disabled>Importar usuarios</button>
+        <button class="btn btn-outline" onclick="cerrarModalImportar()" style="flex:1">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+<script src="../js/api.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/admin.js"></script>
+  <script src="../js/session-manager.js"></script>
 <script>window.SOLO_SOPORTE = true;</script>
+<script src="../js/ui/toasts.js"></script>
+<script src="../js/ui/lucide.js"></script>
+<script src="../js/ui/topbar.js"></script>
 <script src="../js/chatbot.js"></script>
+<script src="../js/ui/admin-charts.js"></script>
 </body>
 </html>
+

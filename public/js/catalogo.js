@@ -1,21 +1,47 @@
 let paginaActual = 1;
 
+// Current filter state - premium filters
+const filtrosActuales = {
+  estado: '',
+  ciudad: '',
+  colonia: '',
+  operacion: '',
+  tipo: '',
+  precioMin: 0,
+  precioMax: 100000000,
+  recamaras: '',
+  banos: '',
+  m2Min: 0,
+  m2Max: 1000
+};
+
+// Format price value
+const formatPrecio = (valor) => {
+  if (valor >= 1000000) return `$${(valor/1000000).toFixed(1)}M`;
+  if (valor >= 1000) return `$${(valor/1000).toFixed(0)}K`;
+  return `$${valor}`;
+};
+
+// Get filters from state
 const obtenerFiltros = () => {
   const params = new URLSearchParams(window.location.search);
-  // obtenerFiltros múltiples (checkboxes)
-  const operaciones = Array.from(document.querySelectorAll('input[name="f-operacion"]:checked')).map(cb => cb.value);
-  const tipos = Array.from(document.querySelectorAll('input[name="f-tipo"]:checked')).map(cb => cb.value);
   return {
-    operacion: operaciones.length > 0 ? operaciones.join(',') : (params.get('operacion') || ''),
-    tipo: tipos.length > 0 ? tipos.join(',') : (params.get('tipo') || ''),
-    estado: document.getElementById('f-estado')?.value || params.get('estado') || '',
-    precioMin: document.getElementById('f-precio-min')?.value || params.get('precioMin') || '',
-    precioMax: document.getElementById('f-precio-max')?.value || params.get('precioMax') || '',
+    operacion: filtrosActuales.operacion || (params.get('operacion') || ''),
+    tipo: filtrosActuales.tipo || (params.get('tipo') || ''),
+    estado: filtrosActuales.estado || (params.get('estado') || ''),
+    ciudad: filtrosActuales.ciudad || (params.get('ciudad') || ''),
+    precioMin: filtrosActuales.precioMin || (params.get('precioMin') || ''),
+    precioMax: filtrosActuales.precioMax || (params.get('precioMax') || ''),
+    recamaras: filtrosActuales.recamaras || (params.get('recamaras') || ''),
+    banos: filtrosActuales.banos || (params.get('banos') || ''),
+    m2Min: filtrosActuales.m2Min || (params.get('m2Min') || ''),
+    m2Max: filtrosActuales.m2Max || (params.get('m2Max') || ''),
     pagina: paginaActual,
     limite: 15
   };
 };
 
+// Load properties from API
 const cargarPropiedades = async () => {
   const grid = document.getElementById('properties-grid');
   const totalEl = document.getElementById('total-resultados');
@@ -39,6 +65,7 @@ const cargarPropiedades = async () => {
   renderPaginacion(data.paginas);
 };
 
+// Render pagination
 const renderPaginacion = (totalPaginas) => {
   const paginacion = document.getElementById('paginacion');
   if (totalPaginas <= 1) { paginacion.innerHTML = ''; return; }
@@ -49,86 +76,245 @@ const renderPaginacion = (totalPaginas) => {
   paginacion.innerHTML = html;
 };
 
+// Go to page
 const irPagina = (pagina) => {
   paginaActual = pagina;
   cargarPropiedades();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
+// Apply filters and reload
 const aplicarFiltros = () => {
   paginaActual = 1;
   cargarPropiedades();
 };
 
-const limpiarFiltros = () => {
-  // Desmarcar checkboxes de filtros múltiples
-  document.querySelectorAll('input[name="f-operacion"]').forEach(cb => cb.checked = false);
-  document.querySelectorAll('input[name="f-tipo"]').forEach(cb => cb.checked = false);
-  document.getElementById('f-estado').value = '';
-  document.getElementById('f-precio-min').value = '';
-  document.getElementById('f-precio-max').value = '';
-  document.getElementById('f-precio-min-range').value = 0;
-  document.getElementById('f-precio-max-range').value = 100000000;
-  document.getElementById('label-min').textContent = '$0';
-  document.getElementById('label-max').textContent = '$100,000,000';
-  paginaActual = 1;
-  cargarPropiedades();
+// ===========================================
+// PREMIUM FILTER FUNCTIONS
+// ===========================================
+
+// Toggle filter popover
+const toggleFilterPopover = (filterType) => {
+  const popover = document.getElementById(`filter-popover-${filterType}`);
+  const chip = document.querySelector(`.sticky-chip[data-filter="${filterType}"]`);
+  
+  document.querySelectorAll('.filter-popover-container').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sticky-chip').forEach(c => c.classList.remove('active'));
+  
+  if (popover) {
+    popover.classList.toggle('active');
+    if (popover.classList.contains('active') && chip) {
+      chip.classList.add('active');
+    }
+  }
 };
 
+// Close all filter popovers
+const closeAllFilterPopovers = () => {
+  document.querySelectorAll('.filter-popover-container').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sticky-chip').forEach(c => c.classList.remove('active'));
+};
+
+// Toggle filter radio (single select)
+const toggleFilterRadio = (filterType) => {
+  toggleFilterPopover(filterType);
+};
+
+// Select quick radio option
+const selectQuickRadio = (element, type) => {
+  const container = element.parentElement;
+  container.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
+  element.classList.add('selected');
+  
+  filtrosActuales[type] = element.dataset.value;
+  actualizarChipLabel(type);
+  closeAllFilterPopovers();
+  aplicarFiltros();
+};
+
+// Toggle quick checkbox option
+const toggleQuickCheckbox = (element, type) => {
+  element.classList.toggle('selected');
+  
+  const selected = Array.from(document.querySelectorAll(`.checkbox-option.selected[data-value]`))
+    .map(el => el.dataset.value);
+  
+  filtrosActuales[type] = selected.join(',');
+  actualizarChipLabel(type);
+};
+
+// Update quick dual range slider
+const updateQuickDualRange = (type) => {
+  const minInput = document.getElementById(`f-${type}-min`);
+  const maxInput = document.getElementById(`f-${type}-max`);
+  const minLabel = document.getElementById(`label-cat-${type}-min`);
+  const maxLabel = document.getElementById(`label-cat-${type}-max`);
+  const fill = document.getElementById(`${type}-fill`);
+  
+  if (minInput && maxInput && minLabel && maxLabel) {
+    const min = parseInt(minInput.value);
+    const max = parseInt(maxInput.value);
+    const maxRange = parseInt(maxInput.max);
+    
+    filtrosActuales[type === 'precio' ? 'precioMin' : 'm2Min'] = min;
+    filtrosActuales[type === 'precio' ? 'precioMax' : 'm2Max'] = max;
+    
+    if (type === 'precio') {
+      minLabel.textContent = formatPrecio(min);
+      maxLabel.textContent = formatPrecio(max);
+      
+      const left = (min / maxRange) * 100;
+      const right = (max / maxRange) * 100;
+      if (fill) fill.style.left = left + '%';
+      if (fill) fill.style.width = (right - left) + '%';
+    }
+  }
+};
+
+// Apply quick filter
+const applyQuickFilter = (type) => {
+  if (type === 'estado') {
+    filtrosActuales.estado = document.getElementById('f-estado')?.value || '';
+    actualizarChipLabel('ubicacion');
+  } else if (type === 'precio') {
+    filtrosActuales.precioMin = parseInt(document.getElementById('f-precio-min')?.value || 0);
+    filtrosActuales.precioMax = parseInt(document.getElementById('f-precio-max')?.value || 100000000);
+    actualizarChipLabel('precio');
+  }
+  closeAllFilterPopovers();
+  aplicarFiltros();
+};
+
+// Update chip label display
+const actualizarChipLabel = (type) => {
+  let label = '';
+  let chipId = '';
+  
+  switch(type) {
+    case 'ubicacion':
+      chipId = 'chip-ubicacion';
+      label = filtrosActuales.estado ? `📍 ${filtrosActuales.estado}` : '📍 Ubicación';
+      break;
+    case 'operacion':
+      chipId = 'chip-operacion';
+      label = filtrosActuales.operacion ? `🏠 ${filtrosActuales.operacion === 'renta' ? 'Renta' : 'Venta'}` : '🏠 Operación';
+      break;
+    case 'tipo':
+      chipId = 'chip-tipo';
+      label = filtrosActuales.tipo ? `🏡 ${filtrosActuales.tipo}` : '🏡 Tipo';
+      break;
+    case 'precio':
+      chipId = 'chip-precio';
+      label = `${formatPrecio(filtrosActuales.precioMin)} - ${formatPrecio(filtrosActuales.precioMax)}`;
+      break;
+    case 'recamaras':
+      chipId = 'chip-recamaras';
+      label = filtrosActuales.recamaras ? `🛏 ${filtrosActuales.recamaras}+` : '🛏 Recámaras';
+      break;
+  }
+  
+  const chip = document.getElementById(chipId);
+  if (chip) chip.textContent = label;
+};
+
+// ===========================================
+// ADVANCED PANEL FUNCTIONS
+// ===========================================
+
+// Open advanced panel
+const openAdvancedPanel = () => {
+  document.getElementById('advanced-panel')?.classList.add('active');
+  document.body.style.overflow = 'hidden';
+};
+
+// Close advanced panel
+const closeAdvancedPanel = (event) => {
+  if (!event || event.target === document.getElementById('advanced-panel')) {
+    document.getElementById('advanced-panel')?.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+};
+
+// Toggle accordion
+const toggleAccordion = (header) => {
+  header.parentElement.classList.toggle('open');
+};
+
+// Update advanced dual range
+const updateAdvDualRange = (type) => {
+  if (type === 'precio') {
+    const min = parseInt(document.getElementById('adv-precio-min')?.value || 0);
+    const max = parseInt(document.getElementById('adv-precio-max')?.value || 100000000);
+    document.getElementById('adv-precio-min-label').textContent = formatPrecio(min);
+    document.getElementById('adv-precio-max-label').textContent = formatPrecio(max);
+  } else if (type === 'm2') {
+    const min = document.getElementById('adv-m2-min')?.value || 0;
+    const max = document.getElementById('adv-m2-max')?.value || 1000;
+    document.getElementById('adv-m2-min-label').textContent = min + 'm²';
+    document.getElementById('adv-m2-max-label').textContent = max + 'm²';
+  }
+};
+
+// Advanced radio selection
+const selectAdvRadio = (element, type) => {
+  const container = element.parentElement;
+  container.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
+  element.classList.add('selected');
+  filtrosActuales[type] = element.dataset.value;
+};
+
+// Advanced checkbox toggle
+const toggleAdvCheckbox = (element, type) => {
+  element.classList.toggle('selected');
+  
+  const selected = Array.from(document.querySelectorAll(`.accordion-content .checkbox-option.selected[data-value]`))
+    .map(el => el.dataset.value);
+  
+  filtrosActuales[type] = selected.join(',');
+};
+
+// ===========================================
+// FILTER STATE MANAGEMENT
+// ===========================================
+
+// Clean all filters
+const limpiarFiltros = () => {
+  Object.keys(filtrosActuales).forEach(key => {
+    if (key === 'precioMax') filtrosActuales[key] = 100000000;
+    else if (key === 'm2Max') filtrosActuales[key] = 1000;
+    else filtrosActuales[key] = '';
+  });
+  
+  // Close panel
+  closeAdvancedPanel();
+  
+  // Update chip labels
+  ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras'].forEach(actualizarChipLabel);
+  
+  aplicarFiltros();
+};
+
+// Load filters from URL
 const cargarFiltrosDesdeURL = () => {
   const params = new URLSearchParams(window.location.search);
-  // Marcar checkboxes desde URL (soporta valores separados por coma)
-  const ops = (params.get('operacion') || '').split(',').filter(Boolean);
-  ops.forEach(op => {
-    const cb = document.querySelector(`input[name="f-operacion"][value="${op}"]`);
-    if (cb) cb.checked = true;
-  });
-  const tipos = (params.get('tipo') || '').split(',').filter(Boolean);
-  tipos.forEach(t => {
-    const cb = document.querySelector(`input[name="f-tipo"][value="${t}"]`);
-    if (cb) cb.checked = true;
-  });
-  if (params.get('estado')) document.getElementById('f-estado').value = params.get('estado');
-  if (params.get('precioMin')) document.getElementById('f-precio-min').value = params.get('precioMin');
-  if (params.get('precioMax')) document.getElementById('f-precio-max').value = params.get('precioMax');
-};
-const formatSlider = (valor) => {
-  if (valor >= 1000000) return `$${(valor/1000000).toFixed(1)}M`;
-  if (valor >= 1000) return `$${(valor/1000).toFixed(0)}K`;
-  return `$${valor}`;
+  
+  filtrosActuales.operacion = params.get('operacion') || '';
+  filtrosActuales.tipo = params.get('tipo') || '';
+  filtrosActuales.estado = params.get('estado') || '';
+  filtrosActuales.ciudad = params.get('ciudad') || '';
+  filtrosActuales.precioMin = parseInt(params.get('precioMin') || 0);
+  filtrosActuales.precioMax = parseInt(params.get('precioMax') || 100000000);
+  filtrosActuales.recamaras = params.get('recamaras') || '';
+  filtrosActuales.banos = params.get('banos') || '';
+  
+  // Update chip labels
+  ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras'].forEach(actualizarChipLabel);
 };
 
-const actualizarSliderMin = (valor) => {
-  const max = parseInt(document.getElementById('f-precio-max-range').value);
-  if (parseInt(valor) > max) {
-    document.getElementById('f-precio-min-range').value = max;
-    valor = max;
-  }
-  document.getElementById('label-min').textContent = formatSlider(valor);
-  document.getElementById('f-precio-min').value = valor;
-  document.getElementById('f-precio-min').placeholder = formatSlider(valor);
-};
+// ===========================================
+// DOM READY
+// ===========================================
 
-const actualizarSliderMax = (valor) => {
-  const min = parseInt(document.getElementById('f-precio-min-range').value);
-  if (parseInt(valor) < min) {
-    document.getElementById('f-precio-max-range').value = min;
-    valor = min;
-  }
-  document.getElementById('label-max').textContent = formatSlider(valor);
-  document.getElementById('f-precio-max').value = valor;
-  document.getElementById('f-precio-max').placeholder = formatSlider(valor);
-};
-
-const actualizarDesdeInput = (tipo, valor) => {
-  if (tipo === 'min') {
-    document.getElementById('f-precio-min-range').value = valor || 0;
-    document.getElementById('label-min').textContent = formatSlider(valor || 0);
-  } else {
-    document.getElementById('f-precio-max-range').value = valor || 100000000;
-    document.getElementById('label-max').textContent = formatSlider(valor || 10000000);
-  }
-};
 document.addEventListener('DOMContentLoaded', () => {
   cargarFiltrosDesdeURL();
   cargarPropiedades();
@@ -143,4 +329,11 @@ document.addEventListener('DOMContentLoaded', () => {
       navActions.style.display = navActions.style.display === 'flex' ? 'none' : 'flex';
     });
   }
+  
+  // Close popovers when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.sticky-chip') && !e.target.closest('.filter-popover-container')) {
+      closeAllFilterPopovers();
+    }
+  });
 });
