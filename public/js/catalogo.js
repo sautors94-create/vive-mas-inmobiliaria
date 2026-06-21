@@ -16,7 +16,7 @@ const filtrosActuales = {
 };
 
 // Format price value
-const formatPrecio = (valor) => {
+const formatPrecioCorto = (valor) => {
   if (valor >= 1000000) return `$${(valor/1000000).toFixed(1)}M`;
   if (valor >= 1000) return `$${(valor/1000).toFixed(0)}K`;
   return `$${valor}`;
@@ -160,8 +160,8 @@ const updateQuickDualRange = (type) => {
     filtrosActuales[type === 'precio' ? 'precioMax' : 'm2Max'] = max;
     
     if (type === 'precio') {
-      minLabel.textContent = formatPrecio(min);
-      maxLabel.textContent = formatPrecio(max);
+      minLabel.textContent = formatPrecioCorto(min);
+      maxLabel.textContent = formatPrecioCorto(max);
       
       const left = (min / maxRange) * 100;
       const right = (max / maxRange) * 100;
@@ -205,7 +205,7 @@ const actualizarChipLabel = (type) => {
       break;
     case 'precio':
       chipId = 'chip-precio';
-      label = `${formatPrecio(filtrosActuales.precioMin)} - ${formatPrecio(filtrosActuales.precioMax)}`;
+      label = `${formatPrecioCorto(filtrosActuales.precioMin)} - ${formatPrecioCorto(filtrosActuales.precioMax)}`;
       break;
     case 'recamaras':
       chipId = 'chip-recamaras';
@@ -245,8 +245,8 @@ const updateAdvDualRange = (type) => {
   if (type === 'precio') {
     const min = parseInt(document.getElementById('adv-precio-min')?.value || 0);
     const max = parseInt(document.getElementById('adv-precio-max')?.value || 100000000);
-    document.getElementById('adv-precio-min-label').textContent = formatPrecio(min);
-    document.getElementById('adv-precio-max-label').textContent = formatPrecio(max);
+    document.getElementById('adv-precio-min-label').textContent = formatPrecioCorto(min);
+    document.getElementById('adv-precio-max-label').textContent = formatPrecioCorto(max);
   } else if (type === 'm2') {
     const min = document.getElementById('adv-m2-min')?.value || 0;
     const max = document.getElementById('adv-m2-max')?.value || 1000;

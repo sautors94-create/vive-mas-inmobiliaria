@@ -135,8 +135,8 @@ const updateDualRange = (type) => {
   }
   
   // Update labels
-  if (minLabel) minLabel.textContent = formatPrecio(min);
-  if (maxLabel) maxLabel.textContent = formatPrecio(max);
+  if (minLabel) minLabel.textContent = formatPrecioCortoCorto(min);
+  if (maxLabel) maxLabel.textContent = formatPrecioCortoCorto(max);
   
   // Update fill bar
   if (fill) {
@@ -165,12 +165,12 @@ const syncDualRange = (position, type) => {
   if (position === 'max') value = parseInt(input.value) || 100000000;
   
   if (slider) slider.value = value;
-  if (label) label.textContent = formatPrecio(value);
+  if (label) label.textContent = formatPrecioCortoCorto(value);
   
   updateDualRange(type);
 };
 
-const formatPrecio = (valor) => {
+const formatPrecioCortoCorto = (valor) => {
   if (valor >= 1000000) return `$${(valor/1000000).toFixed(1)}M`;
   if (valor >= 1000) return `$${(valor/1000).toFixed(0)}K`;
   return `$${valor}`;
@@ -212,7 +212,7 @@ const updateLabels = () => {
   const labelPrecio = document.getElementById('label-precio');
   if (labelPrecio) {
     if (filtrosActivos.precioMin > 0 || filtrosActivos.precioMax < 100000000) {
-      labelPrecio.textContent = `${formatPrecio(filtrosActivos.precioMin)} - ${formatPrecio(filtrosActivos.precioMax)}`;
+      labelPrecio.textContent = `${formatPrecioCortoCorto(filtrosActivos.precioMin)} - ${formatPrecioCortoCorto(filtrosActivos.precioMax)}`;
     } else {
       labelPrecio.textContent = 'Cualquier precio';
     }
@@ -244,7 +244,7 @@ const renderChips = () => {
   
   // Precio chip
   if (filtrosActivos.precioMin > 0 || filtrosActivos.precioMax < 100000000) {
-    chips.push(`<div class="chip">💰 ${formatPrecio(filtrosActivos.precioMin)} - ${formatPrecio(filtrosActivos.precioMax)} <button class="chip-remove" onclick="removeChip('precio')">×</button></div>`);
+    chips.push(`<div class="chip">💰 ${formatPrecioCortoCorto(filtrosActivos.precioMin)} - ${formatPrecioCortoCorto(filtrosActivos.precioMax)} <button class="chip-remove" onclick="removeChip('precio')">×</button></div>`);
   }
   
   // Clear all button
