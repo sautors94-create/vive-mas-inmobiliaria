@@ -848,12 +848,7 @@ caracteristicas: {
         ordered.unshift(portada);
       }
       ordered.forEach(x => formData.append('fotos', x.file));
-      const token = auth.getToken();
-      await fetch(`http://localhost:3000/api/propiedades/${data.propiedad._id}/fotos`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData
-      });
+      await api.postForm(`/propiedades/${data.propiedad._id}/fotos`, formData);
     }
 
     successEl.textContent = '¡Propiedad enviada a revisión exitosamente!';
