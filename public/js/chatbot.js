@@ -230,7 +230,7 @@ async enviar() {
     this.agregarMensaje('user', mensaje);
     this.agregarTyping();
     try {
-      const res = await fetch(`/api/chat/${this.tipo}`, {
+      const res = await fetch(`${API_URL}/api/chat/${this.tipo}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -325,7 +325,7 @@ async enviar() {
     try {
       const userActual = typeof auth !== 'undefined' ? auth.getUser() : null;
       const token = typeof auth !== 'undefined' ? auth.getToken() : null;
-      await fetch('/api/chat/lead', {
+      await fetch(`${API_URL}/api/chat/lead`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
