@@ -101,7 +101,7 @@ const enviarBienvenida = async (email, nombre, plan) => {
           <div class="emoji">🎉</div>
           <div class="titulo">¡Bienvenido, ${nombre}!</div>
           <div class="text">Tu cuenta ha sido verificada exitosamente. Estás en el plan <strong>${plan}</strong> y ya puedes empezar a publicar tus propiedades.</div>
-          <a href="http://localhost:3000/pages/dashboard.html" class="btn">Ir a mi panel</a>
+          <a href="${process.env.APP_URL || 'http://localhost:3000'}/pages/dashboard.html" class="btn">Ir a mi panel</a>
         </div>
         <div class="footer">
           © 2024 Vive Más Inmobiliaria · México
@@ -164,7 +164,7 @@ const enviarNotificacionMensaje = async (emailPropietario, nombrePropietario, no
           </div>
 
           <div style="text-align:center">
-            <a href="http://localhost:3000/pages/dashboard.html" class="btn">Ver mensaje completo</a>
+          <a href="${process.env.APP_URL || 'http://localhost:3000'}/pages/dashboard.html" class="btn">Ver mensaje completo</a>
           </div>
 
           <div class="aviso">
