@@ -97,10 +97,11 @@
         <h4>🏠 Operación</h4>
         <button class="popover-close" onclick="closeAllFilterPopovers()">×</button>
       </div>
-      <div class="radio-group">
-        <div class="radio-option" data-value="renta" onclick="selectQuickRadio(this, 'operacion')">Renta</div>
-        <div class="radio-option" data-value="venta" onclick="selectQuickRadio(this, 'operacion')">Venta</div>
+      <div class="checkbox-group-custom">
+        <div class="checkbox-option" data-value="renta" onclick="toggleQuickCheckbox(this, 'operacion')">Renta</div>
+        <div class="checkbox-option" data-value="venta" onclick="toggleQuickCheckbox(this, 'operacion')">Venta</div>
       </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="closeAllFilterPopovers()">Aplicar</button>
     </div>
   </div>
 
@@ -210,10 +211,9 @@
             <span class="accordion-icon">▼</span>
           </div>
           <div class="accordion-content">
-            <div class="radio-group" style="flex-direction:column">
-              <div class="radio-option" data-value="" onclick="selectAdvRadio(this, 'operacion')" style="width:100%">Cualquiera</div>
-              <div class="radio-option" data-value="renta" onclick="selectAdvRadio(this, 'operacion')" style="width:100%">Renta</div>
-              <div class="radio-option" data-value="venta" onclick="selectAdvRadio(this, 'operacion')" style="width:100%">Venta</div>
+            <div class="checkbox-group-custom">
+              <div class="checkbox-option" data-value="renta" onclick="toggleAdvCheckbox(this, 'operacion')">Renta</div>
+              <div class="checkbox-option" data-value="venta" onclick="toggleAdvCheckbox(this, 'operacion')">Venta</div>
             </div>
           </div>
         </div>

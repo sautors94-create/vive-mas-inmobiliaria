@@ -208,10 +208,16 @@ const actualizarChipLabel = (type) => {
       chipId = 'chip-ubicacion';
       label = filtrosActuales.estado ? `📍 ${filtrosActuales.estado}` : '📍 Ubicación';
       break;
-    case 'operacion':
+    case 'operacion': {
       chipId = 'chip-operacion';
-      label = filtrosActuales.operacion ? `🏠 ${filtrosActuales.operacion === 'renta' ? 'Renta' : 'Venta'}` : '🏠 Operación';
+      if (!filtrosActuales.operacion) {
+        label = '🏠 Operación';
+      } else {
+        const nombres = filtrosActuales.operacion.split(',').map(v => v === 'renta' ? 'Renta' : 'Venta');
+        label = `🏠 ${nombres.join(' y ')}`;
+      }
       break;
+    }
     case 'tipo':
       chipId = 'chip-tipo';
       label = filtrosActuales.tipo ? `🏡 ${filtrosActuales.tipo.split(',').length} seleccionado(s)` : '🏡 Tipo';
@@ -300,6 +306,7 @@ const toggleAdvCheckbox = (element, type) => {
   filtrosActuales[type] = selected.join(',');
   if (type === 'tipo') actualizarChipLabel('tipo');
   if (type === 'recamaras') actualizarChipLabel('recamaras');
+  if (type === 'operacion') actualizarChipLabel('operacion');
 };
 
 // ===========================================
