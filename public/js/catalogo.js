@@ -99,15 +99,24 @@ const aplicarFiltros = () => {
 const toggleFilterPopover = (filterType) => {
   const popover = document.getElementById(`filter-popover-${filterType}`);
   const chip = document.querySelector(`.sticky-chip[data-filter="${filterType}"]`);
+  if (!popover || !chip) return;
+
+  const yaEstabaActivo = popover.classList.contains('active');
 
   document.querySelectorAll('.filter-popover-container').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sticky-chip').forEach(c => c.classList.remove('active'));
 
-  if (popover) {
-    popover.classList.toggle('active');
-    if (popover.classList.contains('active') && chip) {
-      chip.classList.add('active');
-    }
+  if (!yaEstabaActivo) {
+    // Posiciona el popover justo debajo del chip que se clickeó,
+    // usando coordenadas reales en lugar de depender de un ancestro con position relative
+    const rect = chip.getBoundingClientRect();
+    popover.style.position = 'fixed';
+    popover.style.top = (rect.bottom + 8) + 'px';
+    popover.style.left = rect.left + 'px';
+    popover.style.margin = '0';
+
+    popover.classList.add('active');
+    chip.classList.add('active');
   }
 };
 
