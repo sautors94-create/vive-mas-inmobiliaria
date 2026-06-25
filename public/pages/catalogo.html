@@ -116,6 +116,7 @@
         <div class="checkbox-option" data-value="terreno" onclick="toggleQuickCheckbox(this, 'tipo')">📐 Terreno</div>
         <div class="checkbox-option" data-value="local" onclick="toggleQuickCheckbox(this, 'tipo')">🏪 Local</div>
       </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="closeAllFilterPopovers()">Aplicar</button>
     </div>
   </div>
 
@@ -153,8 +154,11 @@
         <div class="checkbox-option" data-value="3" onclick="toggleQuickCheckbox(this, 'recamaras')">3+</div>
         <div class="checkbox-option" data-value="4" onclick="toggleQuickCheckbox(this, 'recamaras')">4+</div>
       </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="closeAllFilterPopovers()">Aplicar</button>
     </div>
   </div>
+
+  <!-- Advanced Panel (Modal) -->
 
   <!-- Advanced Panel (Modal) -->
   <div class="advanced-panel-overlay" id="advanced-panel" onclick="closeAdvancedPanel(event)">
