@@ -36,37 +36,60 @@ const crearPropiedad = async (req, res) => {
 
 const listarPropiedades = async (req, res) => {
   try {
-    const { operacion, tipo, estado, ciudad, precioMin, precioMax, pagina = 1, limite = 15 } = req.query;
+    const {
+      operacion, tipo, estado, ciudad,
+      precioMin, precioMax, recamaras, banos,
+      m2Min, m2Max, orden,
+      pagina = 1, limite = 15
+    } = req.query;
+
     const filtro = { status: 'aprobada' };
-    // Filtros múltiples: si viene con coma, usar $in
+
+    // Convierte "a,b,c" en ['a','b','c'], o un solo valor en [valor]
+    const aArray = (valor) => valor.includes(',')
+      ? valor.split(',').map(v => v.trim()).filter(Boolean)
+      : [valor];
+
     if (operacion) {
-      if (operacion.includes(',')) {
-        filtro.operacion = { $in: operacion.split(',') };
-      } else {
-        filtro.operacion = operacion;
-      }
+      const valores = aArray(operacion);
+      filtro.operacion = valores.length > 1 ? { $in: valores } : valores[0];
     }
     if (tipo) {
-      if (tipo.includes(',')) {
-        filtro.tipo = { $in: tipo.split(',') };
-      } else {
-        filtro.tipo = tipo;
-      }
+      const valores = aArray(tipo);
+      filtro.tipo = valores.length > 1 ? { $in: valores } : valores[0];
     }
-    if (estado) filtro['ubicacion.estado'] = estado;
-    if (ciudad) filtro['ubicacion.ciudad'] = ciudad;
+    if (estado) {
+      const valores = aArray(estado);
+      filtro['ubicacion.estado'] = valores.length > 1 ? { $in: valores } : valores[0];
+    }
+    if (ciudad) {
+      const valores = aArray(ciudad);
+      filtro['ubicacion.ciudad'] = valores.length > 1 ? { $in: valores } : valores[0];
+    }
     if (precioMin || precioMax) {
       filtro.precio = {};
       if (precioMin) filtro.precio.$gte = Number(precioMin);
       if (precioMax) filtro.precio.$lte = Number(precioMax);
     }
+    if (recamaras) filtro['caracteristicas.recamaras'] = { $gte: Number(recamaras) };
+    if (banos) filtro['caracteristicas.banos'] = { $gte: Number(banos) };
+    if (m2Min || m2Max) {
+      filtro['caracteristicas.m2'] = {};
+      if (m2Min) filtro['caracteristicas.m2'].$gte = Number(m2Min);
+      if (m2Max) filtro['caracteristicas.m2'].$lte = Number(m2Max);
+    }
+
+    const ordenesPermitidos = { precio: { precio: 1 }, '-precio': { precio: -1 }, '-createdAt': { createdAt: -1 } };
+    const ordenFinal = ordenesPermitidos[orden] || { createdAt: -1 };
+
     const skip = (Number(pagina) - 1) * Number(limite);
     const total = await Property.countDocuments(filtro);
     const propiedades = await Property.find(filtro)
       .populate('propietario', 'nombre avatar')
-      .sort({ destacada: -1, createdAt: -1 })
+      .sort({ destacada: -1, ...ordenFinal })
       .skip(skip)
       .limit(Number(limite));
+
     res.json({
       ok: true,
       total,
