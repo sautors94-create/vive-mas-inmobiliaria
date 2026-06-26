@@ -3,7 +3,7 @@
 // Estado de filtros
 const filtrosActivos = {
   estado: [],
-  operacion: '',
+  operacion: [],
   tipo: [],
   precioMin: 0,
   precioMax: 100000000
@@ -187,11 +187,9 @@ const updateLabels = () => {
   }
   
   // Operación label
-  const labelOperacion = document.getElementById('label-operacion');
-  if (labelOperacion) {
-    labelOperacion.textContent = filtrosActivos.operacion 
-      ? (filtrosActivos.operacion === 'renta' ? 'Renta' : 'Venta')
-      : 'Renta o Venta';
+  const labelOperacion = document.getElementById('label-operacion').textContent = filtrosActivos.operacion.length > 0
+    ? filtrosActivos.operacion.map(v => v === 'renta' ? 'Renta' : 'Venta').join(' y ')
+    : 'Renta o Venta';
   }
   
   // Tipo label
@@ -231,9 +229,9 @@ const renderChips = () => {
   });
   
   // Operación chip
-  if (filtrosActivos.operacion) {
-    const op = filtrosActivos.operacion === 'renta' ? 'Renta' : 'Venta';
-    chips.push(`<div class="chip">🏠 ${op} <button class="chip-remove" onclick="removeChip('operacion')">×</button></div>`);
+  if (filtrosActivos.operacion.length > 0) {
+    const nombres = filtrosActivos.operacion.map(v => v === 'renta' ? 'Renta' : 'Venta').join(' y ');
+    chips.push(`<div class="chip">🏠 ${nombres} <span onclick="quitarChip('operacion')">×</span></div>`);
   }
   
   // Tipo chips
@@ -310,9 +308,7 @@ const buscar = () => {
   }
   
   // Operación
-  if (filtrosActivos.operacion) {
-    params.append('operacion', filtrosActivos.operacion);
-  }
+  if (filtrosActivos.operacion.length > 0) params.append('operacion', filtrosActivos.operacion.join(','));
   
   // Tipo
   if (filtrosActivos.tipo.length > 0) {

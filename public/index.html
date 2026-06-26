@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+Popover Operación <!DOCTYPE html>
 <html lang="es">
 <head>
 <script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
@@ -96,9 +96,9 @@
             <h4>🏠 Operación</h4>
             <button class="popover-close" onclick="closeAllPopovers()">×</button>
           </div>
-          <div class="radio-group">
-            <div class="radio-option" data-value="renta" onclick="selectRadio(this, 'operacion')">Renta</div>
-            <div class="radio-option" data-value="venta" onclick="selectRadio(this, 'operacion')">Venta</div>
+          <div class="checkbox-group-custom">
+            <div class="checkbox-option" data-value="renta" onclick="toggleCheckbox(this, 'operacion')">Renta</div>
+            <div class="checkbox-option" data-value="venta" onclick="toggleCheckbox(this, 'operacion')">Venta</div>
           </div>
         </div>
 
