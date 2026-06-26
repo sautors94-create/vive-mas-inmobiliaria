@@ -144,6 +144,24 @@ const selectQuickRadio = (element, type) => {
   closeAllFilterPopovers();
   aplicarFiltros();
 };
+// Selección múltiple de estado en el popover de ubicación del catálogo (igual que en inicio)
+const toggleEstadoCatalogo = (element) => {
+  element.classList.toggle('selected');
+  const seleccionados = Array.from(document.querySelectorAll('#opciones-estado-catalogo .popover-option.selected'))
+    .map(el => el.dataset.value);
+  filtrosActuales.estado = seleccionados.join(',');
+  actualizarChipLabel('ubicacion');
+  aplicarFiltros();
+};
+
+// Buscador dentro de la lista de estados
+const filterEstadosCatalogo = (query) => {
+  const opciones = document.querySelectorAll('#opciones-estado-catalogo .popover-option');
+  const q = query.toLowerCase();
+  opciones.forEach(opt => {
+    opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+};
 
 // Toggle quick checkbox option (multi-select) — SOLO dentro de su propio popover
 const toggleQuickCheckbox = (element, type) => {
@@ -188,10 +206,7 @@ const updateQuickDualRange = (type) => {
 
 // Apply quick filter
 const applyQuickFilter = (type) => {
-  if (type === 'estado') {
-    filtrosActuales.estado = document.getElementById('f-estado')?.value || '';
-    actualizarChipLabel('ubicacion');
-  } else if (type === 'precio') {
+  if (type === 'precio') {
     filtrosActuales.precioMin = parseInt(document.getElementById('f-precio-min')?.value || 0);
     filtrosActuales.precioMax = parseInt(document.getElementById('f-precio-max')?.value || 100000000);
     actualizarChipLabel('precio');
@@ -292,9 +307,8 @@ const quitarValorFiltro = (tipo, valor) => {
     });
 
     if (tipo === 'estado') {
-      const fEstado = document.getElementById('f-estado');
+      document.querySelectorAll(`#opciones-estado-catalogo .popover-option[data-value="${valor}"]`).forEach(el => el.classList.remove('selected'));
       const advEstado = document.getElementById('adv-estado');
-      if (fEstado && fEstado.value === valor) fEstado.value = '';
       if (advEstado && advEstado.value === valor) advEstado.value = '';
     }
   } else if (tipo === 'precio') {

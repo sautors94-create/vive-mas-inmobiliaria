@@ -76,18 +76,18 @@
         <h4>📍 Ubicación</h4>
         <button class="popover-close" onclick="closeAllFilterPopovers()">×</button>
       </div>
-      <select id="f-estado" class="filter-select">
-        <option value="">Todos los estados</option>
-        <option value="Ciudad de Mexico">Ciudad de México</option>
-        <option value="Jalisco">Jalisco</option>
-        <option value="Nuevo Leon">Nuevo León</option>
-        <option value="Puebla">Puebla</option>
-        <option value="Guanajuato">Guanajuato</option>
-        <option value="Queretaro">Querétaro</option>
-        <option value="Yucatan">Yucatán</option>
-        <option value="Oaxaca">Oaxaca</option>
-      </select>
-      <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="applyQuickFilter('estado')">Aplicar</button>
+      <input type="text" class="popover-search" placeholder="Buscar estado..." oninput="filterEstadosCatalogo(this.value)">
+      <div class="popover-options" id="opciones-estado-catalogo">
+        <div class="popover-option" data-value="Ciudad de Mexico" onclick="toggleEstadoCatalogo(this)">Ciudad de México</div>
+        <div class="popover-option" data-value="Jalisco" onclick="toggleEstadoCatalogo(this)">Jalisco</div>
+        <div class="popover-option" data-value="Nuevo Leon" onclick="toggleEstadoCatalogo(this)">Nuevo León</div>
+        <div class="popover-option" data-value="Puebla" onclick="toggleEstadoCatalogo(this)">Puebla</div>
+        <div class="popover-option" data-value="Guanajuato" onclick="toggleEstadoCatalogo(this)">Guanajuato</div>
+        <div class="popover-option" data-value="Queretaro" onclick="toggleEstadoCatalogo(this)">Querétaro</div>
+        <div class="popover-option" data-value="Yucatan" onclick="toggleEstadoCatalogo(this)">Yucatán</div>
+        <div class="popover-option" data-value="Oaxaca" onclick="toggleEstadoCatalogo(this)">Oaxaca</div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="closeAllFilterPopovers()">Aplicar</button>
     </div>
   </div>
 
