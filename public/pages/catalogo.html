@@ -150,14 +150,16 @@
         <button class="popover-close" onclick="closeAllFilterPopovers()">×</button>
       </div>
       <div class="checkbox-group-custom">
-        <div class="checkbox-option" data-value="1" onclick="toggleQuickCheckbox(this, 'recamaras')">1+</div>
-        <div class="checkbox-option" data-value="2" onclick="toggleQuickCheckbox(this, 'recamaras')">2+</div>
-        <div class="checkbox-option" data-value="3" onclick="toggleQuickCheckbox(this, 'recamaras')">3+</div>
-        <div class="checkbox-option" data-value="4" onclick="toggleQuickCheckbox(this, 'recamaras')">4+</div>
+        <div class="checkbox-option" data-value="1" onclick="selectQuickRecamaras(this)">1+</div>
+        <div class="checkbox-option" data-value="2" onclick="selectQuickRecamaras(this)">2+</div>
+        <div class="checkbox-option" data-value="3" onclick="selectQuickRecamaras(this)">3+</div>
+        <div class="checkbox-option" data-value="4" onclick="selectQuickRecamaras(this)">4+</div>
       </div>
       <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="closeAllFilterPopovers()">Aplicar</button>
     </div>
   </div>
+
+  <!-- Advanced Panel (Modal) -->
 
   <!-- Advanced Panel (Modal) -->
 
@@ -241,10 +243,10 @@
           <div class="accordion-content">
             <label>Recámaras</label>
             <div class="checkbox-group-custom">
-              <div class="checkbox-option" data-value="1" onclick="toggleAdvCheckbox(this, 'recamaras')">1+</div>
-              <div class="checkbox-option" data-value="2" onclick="toggleAdvCheckbox(this, 'recamaras')">2+</div>
-              <div class="checkbox-option" data-value="3" onclick="toggleAdvCheckbox(this, 'recamaras')">3+</div>
-              <div class="checkbox-option" data-value="4" onclick="toggleAdvCheckbox(this, 'recamaras')">4+</div>
+              <div class="checkbox-option" data-value="1" onclick="selectAdvRecamaras(this)">1+</div>
+              <div class="checkbox-option" data-value="2" onclick="selectAdvRecamaras(this)">2+</div>
+              <div class="checkbox-option" data-value="3" onclick="selectAdvRecamaras(this)">3+</div>
+              <div class="checkbox-option" data-value="4" onclick="selectAdvRecamaras(this)">4+</div>
             </div>
             <label style="margin-top:12px">Baños completos</label>
             <div class="checkbox-group-custom">

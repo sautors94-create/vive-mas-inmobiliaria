@@ -162,6 +162,30 @@ const filterEstadosCatalogo = (query) => {
     opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
 };
+// Recámaras: selección única (1+, 2+, 3+ o 4+), no acumulable. Click de nuevo para quitar.
+const selectQuickRecamaras = (element) => {
+  const yaSeleccionado = element.classList.contains('selected');
+  const popover = element.closest('.filter-popover-container');
+  popover.querySelectorAll('.checkbox-option').forEach(el => el.classList.remove('selected'));
+
+  filtrosActuales.recamaras = yaSeleccionado ? '' : element.dataset.value;
+  if (!yaSeleccionado) element.classList.add('selected');
+
+  actualizarChipLabel('recamaras');
+  aplicarFiltros();
+};
+
+// Misma lógica para el panel avanzado (sin auto-aplicar; espera al botón "Ver resultados")
+const selectAdvRecamaras = (element) => {
+  const yaSeleccionado = element.classList.contains('selected');
+  const contenedor = element.closest('.accordion-content');
+  contenedor.querySelectorAll('.checkbox-option').forEach(el => el.classList.remove('selected'));
+
+  filtrosActuales.recamaras = yaSeleccionado ? '' : element.dataset.value;
+  if (!yaSeleccionado) element.classList.add('selected');
+
+  actualizarChipLabel('recamaras');
+};
 
 // Toggle quick checkbox option (multi-select) — SOLO dentro de su propio popover
 const toggleQuickCheckbox = (element, type) => {
@@ -322,11 +346,11 @@ const quitarValorFiltro = (tipo, valor) => {
     if (fMax) fMax.value = 100000000;
     if (advMin) advMin.value = 0;
     if (advMax) advMax.value = 100000000;
-  } else if (tipo === 'recamaras') {
+    } else if (tipo === 'recamaras') {
     filtrosActuales.recamaras = '';
-    document.querySelectorAll(`.checkbox-option.selected[data-value]`).forEach(el => {
+    document.querySelectorAll(`.checkbox-option.selected`).forEach(el => {
       const onclickAttr = el.getAttribute('onclick') || '';
-      if (onclickAttr.includes(`'recamaras'`)) el.classList.remove('selected');
+      if (onclickAttr.includes('Recamaras(')) el.classList.remove('selected');
     });
   } else if (tipo === 'ciudad') {
     filtrosActuales.ciudad = '';
