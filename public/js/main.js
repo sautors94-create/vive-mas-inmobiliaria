@@ -75,7 +75,7 @@ const toggleOption = (element, filterType) => {
   renderChips();
 };
 
-// Select radio (single select for operacion)
+// Select radio (single select - ya no se usa para operación, queda por compatibilidad)
 const selectRadio = (element, filterType) => {
   const parent = element.parentElement;
   parent.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
@@ -87,7 +87,7 @@ const selectRadio = (element, filterType) => {
   closeAllPopovers();
 };
 
-// Toggle checkbox (multi-select for tipo)
+// Toggle checkbox (multi-select for tipo y operacion)
 const toggleCheckbox = (element, filterType) => {
   const value = element.getAttribute('data-value');
   element.classList.toggle('selected');
@@ -187,9 +187,11 @@ const updateLabels = () => {
   }
   
   // Operación label
-  const labelOperacion = document.getElementById('label-operacion').textContent = filtrosActivos.operacion.length > 0
-    ? filtrosActivos.operacion.map(v => v === 'renta' ? 'Renta' : 'Venta').join(' y ')
-    : 'Renta o Venta';
+  const labelOperacion = document.getElementById('label-operacion');
+  if (labelOperacion) {
+    labelOperacion.textContent = filtrosActivos.operacion.length > 0
+      ? filtrosActivos.operacion.map(v => v === 'renta' ? 'Renta' : 'Venta').join(' y ')
+      : 'Renta o Venta';
   }
   
   // Tipo label
@@ -228,11 +230,11 @@ const renderChips = () => {
     chips.push(`<div class="chip">📍 ${e} <button class="chip-remove" onclick="removeChip('estado', '${e}')">×</button></div>`);
   });
   
-  // Operación chip
-  if (filtrosActivos.operacion.length > 0) {
-    const nombres = filtrosActivos.operacion.map(v => v === 'renta' ? 'Renta' : 'Venta').join(' y ');
-    chips.push(`<div class="chip">🏠 ${nombres} <span onclick="quitarChip('operacion')">×</span></div>`);
-  }
+  // Operación chips
+  filtrosActivos.operacion.forEach(o => {
+    const nombre = o === 'renta' ? 'Renta' : 'Venta';
+    chips.push(`<div class="chip">🏠 ${nombre} <button class="chip-remove" onclick="removeChip('operacion', '${o}')">×</button></div>`);
+  });
   
   // Tipo chips
   filtrosActivos.tipo.forEach(t => {
@@ -259,8 +261,9 @@ const removeChip = (filterType, value) => {
     const opt = document.querySelector(`.popover-option[data-value="${value}"]`);
     opt?.classList.remove('selected');
   } else if (filterType === 'operacion') {
-    filtrosActivos.operacion = '';
-    document.querySelectorAll('#popover-operacion .radio-option').forEach(opt => opt.classList.remove('selected'));
+    filtrosActivos.operacion = filtrosActivos.operacion.filter(v => v !== value);
+    const opt = document.querySelector(`#popover-operacion .checkbox-option[data-value="${value}"]`);
+    opt?.classList.remove('selected');
   } else if (filterType === 'tipo') {
     filtrosActivos.tipo = filtrosActivos.tipo.filter(v => v !== value);
     const opt = document.querySelector(`.checkbox-option[data-value="${value}"]`);
@@ -279,7 +282,7 @@ const removeChip = (filterType, value) => {
 
 const clearAllChips = () => {
   filtrosActivos.estado = [];
-  filtrosActivos.operacion = '';
+  filtrosActivos.operacion = [];
   filtrosActivos.tipo = [];
   filtrosActivos.precioMin = 0;
   filtrosActivos.precioMax = 100000000;
@@ -308,7 +311,9 @@ const buscar = () => {
   }
   
   // Operación
-  if (filtrosActivos.operacion.length > 0) params.append('operacion', filtrosActivos.operacion.join(','));
+  if (filtrosActivos.operacion.length > 0) {
+    params.append('operacion', filtrosActivos.operacion.join(','));
+  }
   
   // Tipo
   if (filtrosActivos.tipo.length > 0) {
