@@ -49,6 +49,8 @@ const cargarPropiedades = async () => {
   const totalEl = document.getElementById('total-resultados');
   grid.innerHTML = '<div class="loading">Cargando propiedades...</div>';
 
+  renderChipsActivos();
+
   const filtros = obtenerFiltros();
   const params = new URLSearchParams();
   Object.entries(filtros).forEach(([k, v]) => { if (v) params.append(k, v); });
@@ -234,6 +236,92 @@ const actualizarChipLabel = (type) => {
 
   const chip = document.getElementById(chipId);
   if (chip) chip.textContent = label;
+};
+// ===========================================
+// CHIPS ACTIVOS (con botón para quitar individual)
+// ===========================================
+const renderChipsActivos = () => {
+  const container = document.getElementById('catalogo-chips');
+  if (!container) return;
+
+  let chips = [];
+  const tipoLabels = { casa: 'Casa', departamento: 'Depto', terreno: 'Terreno', local: 'Local' };
+
+  (filtrosActuales.estado || '').split(',').filter(Boolean).forEach(e => {
+    chips.push(`<div class="chip">📍 ${e} <button class="chip-remove" onclick="quitarValorFiltro('estado','${e}')">×</button></div>`);
+  });
+
+  (filtrosActuales.operacion || '').split(',').filter(Boolean).forEach(o => {
+    const nombre = o === 'renta' ? 'Renta' : 'Venta';
+    chips.push(`<div class="chip">🏠 ${nombre} <button class="chip-remove" onclick="quitarValorFiltro('operacion','${o}')">×</button></div>`);
+  });
+
+  (filtrosActuales.tipo || '').split(',').filter(Boolean).forEach(t => {
+    chips.push(`<div class="chip">🏡 ${tipoLabels[t] || t} <button class="chip-remove" onclick="quitarValorFiltro('tipo','${t}')">×</button></div>`);
+  });
+
+  if (filtrosActuales.precioMin > 0 || filtrosActuales.precioMax < 100000000) {
+    chips.push(`<div class="chip">💰 ${formatPrecioCorto(filtrosActuales.precioMin)} - ${formatPrecioCorto(filtrosActuales.precioMax)} <button class="chip-remove" onclick="quitarValorFiltro('precio')">×</button></div>`);
+  }
+
+  if (filtrosActuales.recamaras) {
+    chips.push(`<div class="chip">🛏 ${filtrosActuales.recamaras}+ <button class="chip-remove" onclick="quitarValorFiltro('recamaras')">×</button></div>`);
+  }
+
+  if (filtrosActuales.ciudad) {
+    chips.push(`<div class="chip">🏙 ${filtrosActuales.ciudad} <button class="chip-remove" onclick="quitarValorFiltro('ciudad')">×</button></div>`);
+  }
+
+  if (chips.length > 0) {
+    chips.push(`<span class="chip-clear" onclick="limpiarFiltros()">Limpiar todo</span>`);
+  }
+
+  container.innerHTML = chips.join('');
+};
+
+// Quita un valor específico de un filtro (multi-select) o el filtro completo (single)
+const quitarValorFiltro = (tipo, valor) => {
+  if (tipo === 'estado' || tipo === 'operacion' || tipo === 'tipo') {
+    filtrosActuales[tipo] = (filtrosActuales[tipo] || '')
+      .split(',').filter(Boolean).filter(v => v !== valor).join(',');
+
+    // Desmarca visualmente solo las casillas que pertenecen a este filtro específico
+    document.querySelectorAll(`.checkbox-option[data-value="${valor}"]`).forEach(el => {
+      const onclickAttr = el.getAttribute('onclick') || '';
+      if (onclickAttr.includes(`'${tipo}'`)) el.classList.remove('selected');
+    });
+
+    if (tipo === 'estado') {
+      const fEstado = document.getElementById('f-estado');
+      const advEstado = document.getElementById('adv-estado');
+      if (fEstado && fEstado.value === valor) fEstado.value = '';
+      if (advEstado && advEstado.value === valor) advEstado.value = '';
+    }
+  } else if (tipo === 'precio') {
+    filtrosActuales.precioMin = 0;
+    filtrosActuales.precioMax = 100000000;
+    const fMin = document.getElementById('f-precio-min');
+    const fMax = document.getElementById('f-precio-max');
+    const advMin = document.getElementById('adv-precio-min');
+    const advMax = document.getElementById('adv-precio-max');
+    if (fMin) fMin.value = 0;
+    if (fMax) fMax.value = 100000000;
+    if (advMin) advMin.value = 0;
+    if (advMax) advMax.value = 100000000;
+  } else if (tipo === 'recamaras') {
+    filtrosActuales.recamaras = '';
+    document.querySelectorAll(`.checkbox-option.selected[data-value]`).forEach(el => {
+      const onclickAttr = el.getAttribute('onclick') || '';
+      if (onclickAttr.includes(`'recamaras'`)) el.classList.remove('selected');
+    });
+  } else if (tipo === 'ciudad') {
+    filtrosActuales.ciudad = '';
+    const advCiudad = document.getElementById('adv-ciudad');
+    if (advCiudad) advCiudad.value = '';
+  }
+
+  ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras'].forEach(actualizarChipLabel);
+  aplicarFiltros();
 };
 
 // ===========================================
