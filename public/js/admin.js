@@ -288,7 +288,12 @@ const crearCardAdmin = (p) => `
 
 const aprobarPropiedad = async (id) => {
   const data = await api.patch(`/admin/propiedades/${id}/aprobar`);
-  if (data.ok) { cargarRevision(); cargarDashboard(); }
+  if (data.ok) {
+    dsToast({ title: 'Propiedad aprobada', message: 'Ya es visible en el catálogo público.', type: 'success' });
+    cargarRevision(); cargarDashboard();
+  } else {
+    dsToast({ title: 'No se pudo aprobar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
 };
 
 const abrirModalRechazo = (id) => {
@@ -304,20 +309,41 @@ const cerrarModal = () => {
 
 const confirmarRechazo = async () => {
   const motivo = document.getElementById('motivo-rechazo').value.trim();
-  if (!motivo) { alert('Por favor escribe el motivo del rechazo'); return; }
+  if (!motivo) { dsToast({ title: 'Falta el motivo', message: 'Escribe el motivo del rechazo antes de continuar.', type: 'error' }); return; }
   const data = await api.patch(`/admin/propiedades/${propiedadArechazar}/rechazar`, { motivo });
-  if (data.ok) { cerrarModal(); cargarRevision(); cargarDashboard(); }
+  if (data.ok) {
+    dsToast({ title: 'Propiedad rechazada', message: 'Se notificó el motivo al propietario.', type: 'info' });
+    cerrarModal(); cargarRevision(); cargarDashboard();
+  } else {
+    dsToast({ title: 'No se pudo rechazar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
 };
 
 const bloquearPropiedad = async (id) => {
   const data = await api.patch(`/admin/propiedades/${id}/bloquear`);
-  if (data.ok) { cargarTodasPropiedades(); cargarDashboard(); }
+  if (data.ok) {
+    dsToast({ title: 'Estado actualizado', message: 'El bloqueo de la propiedad se actualizó.', type: 'success' });
+    cargarTodasPropiedades(); cargarDashboard();
+  } else {
+    dsToast({ title: 'No se pudo actualizar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
 };
 
 const eliminarPropAdmin = async (id, titulo) => {
-  if (!confirm(`¿Eliminar permanentemente "${titulo}"? Esta acción no se puede deshacer.`)) return;
+  const ok = await dsConfirm({
+    title: '¿Eliminar propiedad?',
+    message: `"${titulo}" se eliminará permanentemente. Esta acción no se puede deshacer.`,
+    confirmText: 'Eliminar',
+    danger: true
+  });
+  if (!ok) return;
   const data = await api.delete(`/admin/propiedades/${id}`);
-  if (data.ok) { cargarTodasPropiedades(); cargarDashboard(); }
+  if (data.ok) {
+    dsToast({ title: 'Propiedad eliminada', message: `"${titulo}" fue eliminada.`, type: 'success' });
+    cargarTodasPropiedades(); cargarDashboard();
+  } else {
+    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
 };
 
 const cargarUsuarios = async () => {
@@ -340,7 +366,7 @@ const cargarUsuarios = async () => {
       <div class="usuario-actions">
         <span class="plan-badge plan-${u.plan}">${u.plan}</span>
         <span class="status-badge status-${u.status}">${u.status}</span>
-        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px" onclick="cambiarPlan('${u._id}', '${u.plan}')">Plan</button>
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px" onclick="seleccionarPlan('${u._id}', '${u.plan}')">Plan</button>
         <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;border-color:${u.status === 'activo' ? '#e65100' : '#2e7d32'};color:${u.status === 'activo' ? '#e65100' : '#2e7d32'}" onclick="suspenderUsuario('${u._id}')">
           ${u.status === 'activo' ? 'Suspender' : 'Activar'}
         </button>
@@ -349,23 +375,102 @@ const cargarUsuarios = async () => {
     </div>`).join('');
 };
 
-const cambiarPlan = async (id, planActual) => {
-  const planes = ['gratuito', 'basico', 'premium'];
-  const nuevo = prompt(`Plan actual: ${planActual}\nEscribe el nuevo plan:\ngratuito / basico / premium`);
-  if (!nuevo || !planes.includes(nuevo.trim())) return;
-  const data = await api.patch(`/admin/usuarios/${id}/plan`, { plan: nuevo.trim() });
-  if (data.ok) cargarUsuarios();
+let estilosPlanInyectados = false;
+const inyectarEstilosPlan = () => {
+  if (estilosPlanInyectados) return;
+  estilosPlanInyectados = true;
+  const style = document.createElement('style');
+  style.textContent = `
+    .ds-plan-overlay {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(2px); display: flex; align-items: center;
+      justify-content: center; z-index: 10500; opacity: 0;
+      transition: opacity 160ms ease; font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
+    .ds-plan-overlay.active { opacity: 1; }
+    .ds-plan-box { background: white; border-radius: 16px; padding: 28px; max-width: 380px; width: 90%; box-shadow: 0 24px 60px rgba(0,0,0,0.28); }
+    .ds-plan-title { font-size: 17px; font-weight: 700; color: #0f172a; margin-bottom: 16px; }
+    .ds-plan-option {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-radius: 10px; border: 2px solid #e5e7eb;
+      margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; font-size: 14px; font-weight: 600;
+    }
+    .ds-plan-option:hover { border-color: var(--primary, #1a472a); }
+    .ds-plan-option.actual { border-color: var(--primary, #1a472a); background: #f0fdf4; }
+    .ds-plan-cancel { width: 100%; margin-top: 6px; padding: 10px; border: none; border-radius: 10px; background: #f1f5f9; color: #475569; font-weight: 600; cursor: pointer; }
+  `;
+  document.head.appendChild(style);
+};
+
+const seleccionarPlan = (id, planActual) => {
+  inyectarEstilosPlan();
+  const planes = [
+    { valor: 'gratuito', etiqueta: 'Gratuito' },
+    { valor: 'basico', etiqueta: 'Básico' },
+    { valor: 'premium', etiqueta: 'Premium' }
+  ];
+
+  const overlay = document.createElement('div');
+  overlay.className = 'ds-plan-overlay';
+  overlay.innerHTML = `
+    <div class="ds-plan-box">
+      <div class="ds-plan-title">Cambiar plan del usuario</div>
+      ${planes.map(p => `<div class="ds-plan-option ${p.valor === planActual ? 'actual' : ''}" data-plan="${p.valor}">${p.etiqueta} ${p.valor === planActual ? '· Actual' : ''}</div>`).join('')}
+      <button class="ds-plan-cancel">Cancelar</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('active'));
+
+  const cerrar = () => {
+    overlay.classList.remove('active');
+    setTimeout(() => overlay.remove(), 160);
+  };
+
+  overlay.querySelectorAll('.ds-plan-option').forEach(opt => {
+    opt.addEventListener('click', async () => {
+      const nuevoPlan = opt.dataset.plan;
+      cerrar();
+      if (nuevoPlan === planActual) return;
+      const data = await api.patch(`/admin/usuarios/${id}/plan`, { plan: nuevoPlan });
+      if (data.ok) {
+        dsToast({ title: 'Plan actualizado', message: `El usuario ahora tiene el plan ${nuevoPlan}.`, type: 'success' });
+        cargarUsuarios();
+      } else {
+        dsToast({ title: 'No se pudo cambiar el plan', message: data.error || 'Intenta de nuevo.', type: 'error' });
+      }
+    });
+  });
+
+  overlay.querySelector('.ds-plan-cancel').addEventListener('click', cerrar);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrar(); });
 };
 
 const suspenderUsuario = async (id) => {
   const data = await api.patch(`/admin/usuarios/${id}/suspender`);
-  if (data.ok) cargarUsuarios();
+  if (data.ok) {
+    dsToast({ title: 'Estado actualizado', message: 'El estado del usuario se actualizó.', type: 'success' });
+    cargarUsuarios();
+  } else {
+    dsToast({ title: 'No se pudo actualizar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
 };
 
 const eliminarUsuario = async (id, nombre) => {
-  if (!confirm(`¿Eliminar al usuario "${nombre}"? Sus propiedades serán desactivadas.`)) return;
+  const ok = await dsConfirm({
+    title: '¿Eliminar usuario?',
+    message: `"${nombre}" será eliminado y sus propiedades se desactivarán.`,
+    confirmText: 'Eliminar',
+    danger: true
+  });
+  if (!ok) return;
   const data = await api.delete(`/admin/usuarios/${id}`);
-  if (data.ok) { cargarUsuarios(); cargarDashboard(); }
+  if (data.ok) {
+    dsToast({ title: 'Usuario eliminado', message: `"${nombre}" fue eliminado.`, type: 'success' });
+    cargarUsuarios(); cargarDashboard();
+  } else {
+    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
 };
 
 const temas = {
@@ -568,9 +673,20 @@ const cargarEnPaleta = async (id) => {
 };
 
 const eliminarTemaPersonalizado = async (id, nombre) => {
-  if (!confirm(`¿Eliminar el tema "${nombre}"?`)) return;
+  const ok = await dsConfirm({
+    title: '¿Eliminar tema?',
+    message: `El tema "${nombre}" se eliminará de tus temas guardados.`,
+    confirmText: 'Eliminar',
+    danger: true
+  });
+  if (!ok) return;
   const data = await api.delete(`/site/temas-personalizados/${id}`);
-  if (data.ok) cargarTemasPersonalizados();
+  if (data.ok) {
+    dsToast({ title: 'Tema eliminado', message: `"${nombre}" fue eliminado.`, type: 'success' });
+    cargarTemasPersonalizados();
+  } else {
+    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
 };
 
 // ========== IMPORTAR USUARIOS ==========
@@ -594,7 +710,7 @@ const seleccionarArchivo = (input) => {
   if (!file) return;
   const ext = file.name.split('.').pop().toLowerCase();
   if (!['xlsx', 'csv'].includes(ext)) {
-    alert('Solo se aceptan archivos Excel (.xlsx) o CSV');
+    dsToast({ title: 'Formato no válido', message: 'Solo se aceptan archivos Excel (.xlsx) o CSV.', type: 'error' });
     return;
   }
   archivoSeleccionado = file;
@@ -604,7 +720,7 @@ const seleccionarArchivo = (input) => {
 
 const importarUsuarios = async () => {
   if (!archivoSeleccionado) {
-    alert('Selecciona un archivo primero');
+    dsToast({ title: 'Falta el archivo', message: 'Selecciona un archivo primero.', type: 'error' });
     return;
   }
   
@@ -617,7 +733,7 @@ const importarUsuarios = async () => {
   
   try {
     const token = localStorage.getItem('accessToken');
-    const res = await fetch('/api/admin/usuarios/masivo', {
+    const res = await fetch(`${API_URL}/api/admin/usuarios/masivo`, {
       method: 'POST',
       headers: { 'Authorization': token ? `Bearer ${token}` : '' },
       body: formData
@@ -660,7 +776,7 @@ const importarUsuarios = async () => {
 const descargarPlantillaUsuarios = async () => {
   try {
     const token = localStorage.getItem('accessToken');
-    const res = await fetch('/api/admin/usuarios/plantilla', {
+    const res = await fetch(`${API_URL}/api/admin/usuarios/plantilla`, {
       headers: { 'Authorization': token ? `Bearer ${token}` : '' }
     });
     
@@ -676,6 +792,6 @@ const descargarPlantillaUsuarios = async () => {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
   } catch (error) {
-    alert('Error al descargar plantilla: ' + error.message);
+    dsToast({ title: 'No se pudo descargar', message: error.message, type: 'error' });
   }
 };
