@@ -72,7 +72,16 @@ const chatSoporte = async (req, res) => {
     });
 
     const respuesta = completion.choices[0]?.message?.content || 'Lo siento, no pude procesar tu mensaje.';
-    res.json({ ok: true, respuesta, tipo: 'soporte' });
+
+    const esLead = (
+      respuesta.toLowerCase().includes('soporte@vivemas.mx') ||
+      mensaje.toLowerCase().includes('hablar con alguien') ||
+      mensaje.toLowerCase().includes('hablar con una persona') ||
+      mensaje.toLowerCase().includes('atencion humana') ||
+      mensaje.toLowerCase().includes('atención humana')
+    ) ? true : false;
+
+    res.json({ ok: true, respuesta, tipo: 'soporte', esLead });
   } catch (error) {
     console.error('Error chatbot soporte:', error.message);
     res.status(500).json({ error: 'Error al procesar el mensaje' });

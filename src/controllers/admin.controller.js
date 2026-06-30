@@ -83,9 +83,10 @@ const getPropiedadesRevision = async (req, res) => {
 
 const getLeads = async (req, res) => {
   try {
-    const { status, search, servicio } = req.query;
+    const { status, search, servicio, tipo } = req.query;
     const filtro = {};
     if (status) filtro.status = status;
+    if (tipo) filtro.tipo = tipo;
     if (servicio) filtro.servicio = { $regex: servicio, $options: 'i' };
     if (search) filtro.$or = [
       { folio: { $regex: search, $options: 'i' } },
