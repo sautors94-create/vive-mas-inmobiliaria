@@ -1,5 +1,5 @@
 .catalogo-header {
-  background: linear-gradient(135deg, #0f1923 0%, #1a472a 100%);
+  background: linear-gradient(135deg, var(--bg-dark) 0%, var(--primary) 100%);
   padding: 120px 0 40px;
   color: white;
 }
