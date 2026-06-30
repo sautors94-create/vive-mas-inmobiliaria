@@ -6,6 +6,7 @@ const leadSchema = new mongoose.Schema({
   telefono: { type: String, required: true },
   email: { type: String, default: null },
   servicio: { type: String, default: null },
+  tipo: { type: String, enum: ['servicio', 'soporte'], default: 'servicio' },
   conversacion: { type: Array, default: [] },
   status: { type: String, enum: ['nuevo', 'contactado', 'cerrado'], default: 'nuevo' },
   notas: { type: String, default: null },

@@ -209,9 +209,9 @@ const chatServicios = async (req, res) => {
 
 const guardarLead = async (req, res) => {
   try {
-    const { nombre, telefono, email, servicio, conversacion, usuarioId } = req.body;
+    const { nombre, telefono, email, servicio, conversacion, usuarioId, tipo } = req.body;
     if (!nombre || !telefono) return res.status(400).json({ error: 'Nombre y teléfono requeridos' });
-
+    const tipoLead = tipo === 'soporte' ? 'soporte' : 'servicio';
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
 
     let ciudad = null;
@@ -230,6 +230,7 @@ const guardarLead = async (req, res) => {
       telefono,
       email,
       servicio,
+      tipo: tipoLead,
       conversacion,
       ip,
       ciudad,
