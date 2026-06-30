@@ -264,7 +264,7 @@ const enviarRespuestaInterna = async (id) => {
   if (!respuesta) { dsToast({ title: 'Falta el mensaje', message: 'Escribe un mensaje antes de enviar.', type: 'error' }); return; }
   const data = await api.patch(`/services/leads/${id}`, { respuestaInterna: respuesta, status: 'contactado' });
   if (data.ok) {
-    alert('✓ Mensaje interno enviado al usuario');
+    dsToast({ title: 'Mensaje enviado', message: 'El mensaje interno fue enviado al usuario.', type: 'success' });
     cerrarModalLead();
     cargarLeads();
   }

@@ -211,8 +211,7 @@ const buscarDireccion = async () => {
   const estado = document.getElementById('p-estado').value;
   const ciudad = document.getElementById('p-ciudad').value.trim();
   if (!direccion && !ciudad) {
-    if (typeof window.dsToast === 'function') window.dsToast({ title: 'Búsqueda', message: 'Escribe una dirección o ciudad para buscar', type: 'error' });
-    else dsToast({ title: 'Falta la dirección', message: 'Escribe una dirección o ciudad para buscar.', type: 'error' });
+    dsToast({ title: 'Falta la dirección', message: 'Escribe una dirección o ciudad para buscar.', type: 'error' });
     return;
   }
 
@@ -227,19 +226,11 @@ const buscarDireccion = async () => {
       colocarMarker(lat, lng);
       geocodificarCoordenadas(lat, lng);
     } else {
-    if (typeof window.dsToast === 'function') window.dsToast({ title: 'Búsqueda', message: 'No se encontró la dirección. Haz clic en el mapa.', type: 'error' });
-    else dsToast({ title: 'Sin resultados', message: 'No se encontró la dirección. Haz clic directamente en el mapa.', type: 'error' });
-
+      dsToast({ title: 'Sin resultados', message: 'No se encontró la dirección. Haz clic directamente en el mapa.', type: 'error' });
     }
   } catch (e) {
-    if (typeof window.dsToast === 'function') {
-      window.dsToast({ title: 'Búsqueda', message: 'Error al buscar. Haz clic directamente en el mapa.', type: 'error' });
-    } 
     dsToast({ title: 'Error al buscar', message: 'No se pudo geocodificar. Haz clic directamente en el mapa.', type: 'error' });
-      
-    }
   }
-
 };
 
 let fotosOrden = []; // array de objetos: { file, dataUrl }
@@ -641,7 +632,7 @@ const validarPaso = (paso) => {
       errorEl.textContent = msg;
       errorEl.style.display = 'block';
     } else {
-      alert(msg);
+      dsToast({ title: data.ok ? 'Propiedad guardada' : 'Error', message: msg, type: data.ok ? 'success' : 'error' });
     }
   };
 
