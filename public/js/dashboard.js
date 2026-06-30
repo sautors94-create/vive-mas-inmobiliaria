@@ -499,7 +499,6 @@ const cargarMensajes = async () => {
       ${m.propiedad ? `<div class="mensaje-propiedad">📍 ${m.propiedad.titulo || 'Propiedad'}</div>` : ''}
     </div>`).join('');
 };
-
 const cargarLeadsUsuario = async () => {
   const lista = document.getElementById('leads-usuario-lista');
   const data = await api.get('/auth/leads');
@@ -508,15 +507,24 @@ const cargarLeadsUsuario = async () => {
     lista.innerHTML = '<div class="loading">No tienes leads registrados aún.</div>';
     return;
   }
-  lista.innerHTML = data.leads.map(lead => `
+  lista.innerHTML = data.leads.map(lead => {
+    const esSoporte = lead.tipo === 'soporte';
+    const badgeTipo = esSoporte
+      ? `<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">🎧 Soporte</span>`
+      : `<span class="status-badge" style="background:#f0fdf4;color:#166534">🏠 Servicio</span>`;
+    return `
     <div class="mensaje-card">
       <div class="mensaje-header">
         <span class="mensaje-de">${lead.folio || 'Lead'} · ${lead.servicio || 'Servicio no especificado'}</span>
-        <span class="status-badge status-${lead.status}">${lead.status}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${badgeTipo}
+          <span class="status-badge status-${lead.status}">${lead.status}</span>
+        </div>
       </div>
       <div class="mensaje-texto">${lead.nombre} · ${lead.telefono}${lead.email ? ' · ' + lead.email : ''}</div>
       <div class="mensaje-propiedad">${new Date(lead.createdAt).toLocaleDateString('es-MX')}${lead.ciudad ? ' · ' + lead.ciudad : ''}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 };
 
 const cargarCuenta = () => {
