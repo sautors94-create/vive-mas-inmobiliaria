@@ -212,7 +212,7 @@ const buscarDireccion = async () => {
   const ciudad = document.getElementById('p-ciudad').value.trim();
   if (!direccion && !ciudad) {
     if (typeof window.dsToast === 'function') window.dsToast({ title: 'Búsqueda', message: 'Escribe una dirección o ciudad para buscar', type: 'error' });
-    else alert('Escribe una dirección o ciudad para buscar');
+    else dsToast({ title: 'Falta la dirección', message: 'Escribe una dirección o ciudad para buscar.', type: 'error' });
     return;
   }
 
@@ -228,14 +228,15 @@ const buscarDireccion = async () => {
       geocodificarCoordenadas(lat, lng);
     } else {
     if (typeof window.dsToast === 'function') window.dsToast({ title: 'Búsqueda', message: 'No se encontró la dirección. Haz clic en el mapa.', type: 'error' });
-    else alert('No se encontró la dirección. Haz clic en el mapa.');
+    else dsToast({ title: 'Sin resultados', message: 'No se encontró la dirección. Haz clic directamente en el mapa.', type: 'error' });
 
     }
   } catch (e) {
     if (typeof window.dsToast === 'function') {
       window.dsToast({ title: 'Búsqueda', message: 'Error al buscar. Haz clic directamente en el mapa.', type: 'error' });
-    } else {
-      alert('Error al buscar. Haz clic directamente en el mapa.');
+    } 
+    dsToast({ title: 'Error al buscar', message: 'No se pudo geocodificar. Haz clic directamente en el mapa.', type: 'error' });
+      
     }
   }
 
@@ -472,7 +473,8 @@ const cargarFavoritos = async () => {
 };
 
 const eliminarFavorito = async (propiedadId) => {
-  if (!confirm('¿Quitar esta propiedad de tus favoritos?')) return;
+  const ok = await dsConfirm({ title: '¿Quitar favorito?', message: 'Esta propiedad se eliminará de tu lista de favoritos.', confirmText: 'Quitar', danger: true });
+  if (!ok) return;
   const data = await api.delete(`/favoritos/${propiedadId}`);
   if (data.ok) {
     document.getElementById(`fav-${propiedadId}`).remove();

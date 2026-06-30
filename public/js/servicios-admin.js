@@ -184,7 +184,8 @@ const cambiarStatus = async (id, status) => {
 };
 
 const eliminarLead = async (id) => {
-  if (!confirm('¿Eliminar este lead?')) return;
+  const ok = await dsConfirm({ title: '¿Eliminar lead?', message: 'El lead se eliminará permanentemente.', confirmText: 'Eliminar', danger: true });
+  if (!ok) return;
   const data = await api.delete(`/services/leads/${id}`);
   if (data.ok) cargarLeads();
 };
@@ -205,8 +206,8 @@ const cargarStats = async () => {
 };
 const exportarExcel = async () => {
   const data = await api.get('/services/leads');
-  if (!data.leads || !data.leads.length) return alert('No hay leads para exportar');
-  
+  if (!data.leads || !data.leads.length) { dsToast({ title: 'Sin leads', message: 'No hay leads para exportar.', type: 'error' }); return; }
+
   const rows = data.leads.map(l => ({
     Nombre: l.nombre,
     Teléfono: l.telefono,
@@ -226,7 +227,7 @@ const exportarExcel = async () => {
 
 const exportarPDF = async () => {
   const data = await api.get('/services/leads');
-  if (!data.leads || !data.leads.length) return alert('No hay leads para exportar');
+  if (!data.leads || !data.leads.length) { dsToast({ title: 'Sin leads', message: 'No hay leads para exportar.', type: 'error' }); return; }
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -260,7 +261,7 @@ const exportarPDF = async () => {
 };
 const enviarRespuestaInterna = async (id) => {
   const respuesta = document.getElementById(`lead-respuesta-${id}`)?.value.trim();
-  if (!respuesta) { alert('Escribe un mensaje'); return; }
+  if (!respuesta) { dsToast({ title: 'Falta el mensaje', message: 'Escribe un mensaje antes de enviar.', type: 'error' }); return; }
   const data = await api.patch(`/services/leads/${id}`, { respuestaInterna: respuesta, status: 'contactado' });
   if (data.ok) {
     alert('✓ Mensaje interno enviado al usuario');
