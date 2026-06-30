@@ -5,6 +5,16 @@ let mapaPublicar = null;
 let markerPublicar = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Si llega con ?seccion=X en la URL (ej. desde el panel admin), abre esa sección directamente
+  const seccionURL = new URLSearchParams(window.location.search).get('seccion');
+  if (seccionURL && document.getElementById(`sec-${seccionURL}`)) {
+    document.querySelectorAll('.dash-section').forEach(s => s.style.display = 'none');
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    document.getElementById(`sec-${seccionURL}`).style.display = 'block';
+    document.querySelector(`.sidebar-link[onclick*="${seccionURL}"]`)?.classList.add('active');
+    if (seccionURL === 'nueva-propiedad') setTimeout(() => iniciarMapaPublicar(), 200);
+  }
+
   if (user) {
     document.getElementById('user-nombre').textContent = user.nombre;
     document.getElementById('sidebar-nombre').textContent = user.nombre;
