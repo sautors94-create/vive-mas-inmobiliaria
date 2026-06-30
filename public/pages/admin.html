@@ -17,22 +17,65 @@
 <body>
 
   <!-- NAVBAR -->
-  <nav class="navbar">
-    <div class="container nav-content">
-      <a href="/" class="logo">
-        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
-        <span class="logo-sub">Admin</span>
-      </a>
-      <ul class="nav-links">
-        <li><a href="/">Sitio público</a></li>
-      </ul>
-      <div class="nav-actions">
-        <a href="dashboard.html?seccion=nueva-propiedad" class="btn btn-primary" style="text-decoration:none">+ Publicar</a>
-        <span style="font-size:14px;color:var(--text-light)">Panel de administración</span>
-        <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>
+  <div class="ds-topbar">
+    <div class="container ds-topbar-inner">
+      <div class="ds-topbar-left">
+        <a href="/" class="logo" style="text-decoration:none">
+          <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+          <span class="logo-sub">Admin</span>
+        </a>
+        <div class="ds-topbar-title">
+          <div class="kicker">Panel de administración</div>
+          <div class="main">Control total del sitio</div>
+        </div>
+      </div>
+
+      <div class="ds-topbar-search">
+        <span class="icon" aria-hidden="true">
+          <span class="li-icon ds-lucide" data-lucide="list"></span>
+        </span>
+        <input id="ds-global-search" type="text" placeholder="Buscar en el panel admin..." />
+      </div>
+
+      <div class="ds-topbar-right">
+        <a href="dashboard.html?seccion=nueva-propiedad" class="btn btn-primary" style="text-decoration:none;font-size:13px;padding:9px 16px">+ Publicar</a>
+
+        <div id="ds-avatar-wrap" style="position:relative">
+          <div id="ds-avatar-btn" class="ds-avatar">
+            <span id="ds-avatar-bg" class="badge" aria-hidden="true"><span id="ds-user-initials">A</span></span>
+            <div class="meta">
+              <div class="name" id="ds-user-name">Admin</div>
+              <div class="plan" id="ds-user-plan">Administrador</div>
+            </div>
+          </div>
+
+          <div id="ds-avatar-menu" class="ds-dropdown">
+            <div class="ds-dropdown-header">
+              <div class="title">Administración</div>
+              <div class="subtitle">Acciones rápidas</div>
+            </div>
+            <div class="ds-dropdown-body">
+              <div class="ds-dropdown-item" onclick="mostrarSeccion('dashboard')">
+                <div class="t">📊 Dashboard</div>
+                <div class="d">Ver estadísticas generales</div>
+              </div>
+              <div class="ds-dropdown-item" onclick="mostrarSeccion('revision')">
+                <div class="t">⏳ Propiedades en revisión</div>
+                <div class="d">Aprobar o rechazar publicaciones</div>
+              </div>
+              <div class="ds-dropdown-item" onclick="window.location.href='/'">
+                <div class="t">🌐 Ver sitio público</div>
+                <div class="d">Ir al inicio del sitio</div>
+              </div>
+            </div>
+            <div class="ds-dropdown-actions">
+              <button class="btn btn-outline" style="flex:1" onclick="auth.logout()">Cerrar sesión</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </nav>
+  </div>
 
   <div class="dashboard-layout">
 
@@ -374,7 +417,7 @@
 <script>window.SOLO_SOPORTE = true;</script>
 <script src="../js/ui/toasts.js"></script>
 <script src="../js/ui/confirm.js"></script>
-<script src="../js/ui/lucide.js"></script>
+<script src="../js/ui/lucide.js"></script>  
 <script src="../js/ui/topbar.js"></script>
 <script src="../js/chatbot.js"></script>
 <script src="../js/ui/admin-charts.js"></script>
