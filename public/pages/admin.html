@@ -144,10 +144,15 @@
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input type="text" id="search-leads" class="form-input" placeholder="Buscar lead..." style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarLeads()">
             <select id="filtro-leads-status" class="filter-select" style="width:auto" onchange="cargarLeads()">
-              <option value="">Todos</option>
+              <option value="">Todos los status</option>
               <option value="nuevo">Nuevos</option>
               <option value="contactado">Contactados</option>
               <option value="cerrado">Cerrados</option>
+            </select>
+            <select id="filtro-leads-tipo" class="filter-select" style="width:auto" onchange="cargarLeads()">
+              <option value="">Todos los tipos</option>
+              <option value="soporte">🎧 Soporte</option>
+              <option value="servicio">🏠 Servicio</option>
             </select>
           </div>
         </div>

@@ -226,12 +226,15 @@ const cargarTodasPropiedades = async () => {
   lista.innerHTML = data.propiedades.map(p => crearCardAdmin(p)).join('');
 };
 
+
 const cargarLeads = async () => {
   const lista = document.getElementById('leads-lista');
   const status = document.getElementById('filtro-leads-status')?.value || '';
+  const tipo = document.getElementById('filtro-leads-tipo')?.value || '';
   const search = document.getElementById('search-leads')?.value || '';
   const params = new URLSearchParams();
   if (status) params.append('status', status);
+  if (tipo) params.append('tipo', tipo);
   if (search) params.append('search', search);
 
   const data = await api.get(`/admin/leads?${params.toString()}`);
@@ -240,11 +243,17 @@ const cargarLeads = async () => {
     return;
   }
 
-  lista.innerHTML = data.leads.map(lead => `
+  lista.innerHTML = data.leads.map(lead => {
+    const esSoporte = lead.tipo === 'soporte';
+    const badgeTipo = esSoporte
+      ? `<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">🎧 Soporte</span>`
+      : `<span class="status-badge" style="background:#f0fdf4;color:#166534">🏠 Servicio</span>`;
+    return `
     <div class="lead-card">
       <div class="lead-main">
         <div class="lead-title">
           <span>${lead.nombre}</span>
+          ${badgeTipo}
           <span class="status-badge status-${lead.status}">${lead.status}</span>
         </div>
         <div class="lead-meta">
@@ -255,7 +264,8 @@ const cargarLeads = async () => {
         </div>
       </div>
       <div class="lead-date">${new Date(lead.createdAt).toLocaleDateString('es-MX')}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 };
 
 const crearCardAdmin = (p) => `
