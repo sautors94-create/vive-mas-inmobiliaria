@@ -134,13 +134,12 @@ class Chatbot {
           <div onclick="chatbots['${this.tipo}'].toggle()" style="margin-left:auto;color:rgba(255,255,255,0.7);cursor:pointer;font-size:18px;padding:4px">✕</div>
         </div>
         <div id="${id}-msgs" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#f8f9fa"></div>
-        ${this.tipo === 'servicios' ? `
         <div id="${id}-lead" style="display:none;padding:12px 16px;background:#f0f7f4;border-top:1px solid #e5e7eb">
           <div style="font-size:12px;font-weight:600;color:#1a472a;margin-bottom:8px">${tChat(this.lang, 'leadTitle')}</div>
           <input id="${id}-lead-nombre" placeholder="${tChat(this.lang, 'leadNamePlaceholder')}" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;margin-bottom:6px;outline:none">
           <input id="${id}-lead-tel" placeholder="${tChat(this.lang, 'leadPhonePlaceholder')}" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;margin-bottom:6px;outline:none">
           <button onclick="chatbots['${this.tipo}'].enviarLead()" style="width:100%;background:#1a472a;color:white;border:none;padding:8px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">${tChat(this.lang, 'leadSendButton')}</button>
-        </div>` : ''}
+        </div>
         <div style="padding:12px 16px;border-top:1px solid #e5e7eb;display:flex;gap:8px;background:white">
           <input id="${id}-input" placeholder="${tChat(this.lang, 'inputPlaceholder')}" style="flex:1;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:20px;font-size:13px;outline:none;font-family:inherit"
             onkeydown="if(event.key==='Enter') chatbots['${this.tipo}'].enviar()">
@@ -321,7 +320,11 @@ async enviar() {
   async enviarLead() {
     const nombre = document.getElementById(`chatbot-${this.tipo}-lead-nombre`)?.value.trim();
     const tel = document.getElementById(`chatbot-${this.tipo}-lead-tel`)?.value.trim();
-    if (!nombre || !tel) { alert(tChat(this.lang, 'leadValidation')); return; }
+   if (!nombre || !tel) {
+      if (typeof dsToast === 'function') dsToast({ title: 'Faltan datos', message: tChat(this.lang, 'leadValidation'), type: 'error' });
+      else alert(tChat(this.lang, 'leadValidation'));
+      return;
+    }
     try {
       const userActual = typeof auth !== 'undefined' ? auth.getUser() : null;
       const token = typeof auth !== 'undefined' ? auth.getToken() : null;
