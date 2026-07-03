@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registro, login, logout, perfil, misLeads, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, subirKyc } = require('../controllers/auth.controller');
+const { registro, login, logout, perfil, misLeads, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, actualizarPerfil, subirKyc } = require('../controllers/auth.controller');
 const authMiddleware = require('../middleware/auth.middleware');
 const { upload } = require('../config/cloudinary');
 
