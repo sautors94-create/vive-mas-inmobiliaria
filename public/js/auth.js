@@ -75,4 +75,28 @@ const actualizarNavbar = () => {
   }
 };
 
-document.addEventListener('DOMContentLoaded', actualizarNavbar);
+document.addEventListener('DOMContentLoaded', async () => {
+  // Si hay token guardado, verificar que sigue siendo válido contra el backend.
+  // Si no lo es (expiró, fue revocado, etc.), limpiar sesión automáticamente.
+  if (auth.isLoggedIn()) {
+    const esPaginaProtegida = window.location.pathname.includes('dashboard') ||
+                               window.location.pathname.includes('admin');
+    try {
+      const data = await api.get('/auth/perfil');
+      if (!data || data.error) {
+        // Token inválido: limpiar sesión silenciosamente
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+        // Solo redirigir si estamos en una página que requiere auth
+        if (esPaginaProtegida) window.location.href = '/';
+      } else {
+        // Token válido: actualizar datos del usuario en localStorage por si cambiaron
+        if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+      }
+    } catch (e) {
+      // Error de red — no limpiar sesión para no afectar usuarios offline
+    }
+  }
+
+  actualizarNavbar();
+});
