@@ -216,5 +216,16 @@ const subirKyc = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-module.exports = { registro, login, logout, perfil, misLeads, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, subirKyc };
+const actualizarPerfil = async (req, res) => {
+  try {
+    const { telefono } = req.body;
+    const campos = {};
+    if (telefono) campos.telefono = telefono.trim();
+    if (!Object.keys(campos).length) return res.status(400).json({ error: 'Nada que actualizar' });
+    const user = await User.findByIdAndUpdate(req.user.id, campos, { new: true }).select('-password');
+    res.json({ ok: true, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+module.exports = { registro, login, logout, perfil, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, actualizarPerfil };

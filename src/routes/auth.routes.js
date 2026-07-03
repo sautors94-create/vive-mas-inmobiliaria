@@ -13,6 +13,7 @@ router.post('/reenviar-codigo', reenviarCodigo);
 router.get('/perfil', authMiddleware, perfil);
 router.get('/leads', authMiddleware, misLeads);
 router.patch('/notificaciones', authMiddleware, actualizarNotificaciones);
+router.patch('/perfil', authMiddleware, actualizarPerfil);
 router.post(
   '/kyc',
   authMiddleware,

@@ -549,7 +549,13 @@ const cargarCuenta = () => {
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:32px">
       <div class="form-grupo"><label>Nombre completo</label><input type="text" class="form-input" value="${user.nombre}" disabled></div>
       <div class="form-grupo"><label>Correo electrónico</label><input type="text" class="form-input" value="${user.email}" disabled></div>
-      <div class="form-grupo"><label>Teléfono</label><input type="text" class="form-input" value="${user.telefono || 'No registrado'}" disabled></div>
+      <div class="form-grupo">
+        <label>Teléfono</label>
+        <div style="display:flex;gap:8px">
+          <input type="tel" id="cuenta-telefono" class="form-input" value="${user.telefono || ''}" placeholder="10 dígitos" style="flex:1">
+          <button class="btn btn-primary" style="padding:10px 18px;font-size:13px;white-space:nowrap" onclick="guardarTelefono()">Guardar</button>
+        </div>
+      </div>
       <div class="form-grupo"><label>Plan actual</label><input type="text" class="form-input" value="${user.plan}" disabled></div>
     </div>
     <div style="background:var(--bg-secondary);border-radius:16px;padding:24px;border:1px solid var(--border);margin-bottom:24px">
@@ -576,6 +582,21 @@ const cargarCuenta = () => {
       <div id="notif-msg" style="display:none;margin-top:12px"></div>
     </div>
     <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>`;
+};
+const guardarTelefono = async () => {
+  const telefono = document.getElementById('cuenta-telefono')?.value.trim();
+  if (!telefono || telefono.length < 10) {
+    dsToast({ title: 'Teléfono inválido', message: 'Ingresa un número de al menos 10 dígitos.', type: 'error' });
+    return;
+  }
+  const data = await api.patch('/auth/perfil', { telefono });
+  if (data.ok) {
+    const userActualizado = { ...user, telefono };
+    localStorage.setItem('user', JSON.stringify(userActualizado));
+    dsToast({ title: 'Teléfono actualizado', message: 'Tu número fue guardado correctamente.', type: 'success' });
+  } else {
+    dsToast({ title: 'No se pudo guardar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
 };
 
 const guardarNotificaciones = async () => {
