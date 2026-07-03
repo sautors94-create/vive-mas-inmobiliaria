@@ -228,4 +228,4 @@ const actualizarPerfil = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-module.exports = { registro, login, logout, perfil, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, actualizarPerfil };
+module.exports = { registro, login, logout, perfil, misLeads, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, actualizarPerfil, subirKyc };
