@@ -429,10 +429,32 @@ const cargarMisPropiedades = async () => {
       <div class="prop-admin-actions">
         <span class="status-badge status-${p.status}">${p.status}</span>
         <button class="btn btn-outline" style="padding:6px 14px;font-size:13px" onclick="window.location='propiedad.html?id=${p._id}'">Ver</button>
+        ${p.status !== 'aprobada' ? `<button class="btn btn-outline" style="padding:6px 14px;font-size:13px" onclick="editarPropiedad('${p._id}')">✏️ Editar</button>` : ''}
+        <button class="btn btn-outline" style="padding:6px 14px;font-size:13px;border-color:#e24b4a;color:#e24b4a" onclick="eliminarMiPropiedad('${p._id}','${p.titulo.replace(/'/g,"\\'")}')">🗑️</button>
       </div>
     </div>`).join('');
 };
+const editarPropiedad = (id) => {
+  window.location.href = `propiedad.html?id=${id}&editar=1`;
+};
 
+const eliminarMiPropiedad = async (id, titulo) => {
+  const ok = await dsConfirm({
+    title: '¿Eliminar propiedad?',
+    message: `"${titulo}" se eliminará permanentemente. Esta acción no se puede deshacer.`,
+    confirmText: 'Eliminar',
+    danger: true
+  });
+  if (!ok) return;
+  const data = await api.delete(`/propiedades/${id}`);
+  if (data.ok) {
+    dsToast({ title: 'Propiedad eliminada', message: `"${titulo}" fue eliminada.`, type: 'success' });
+    cargarMisPropiedades();
+    cargarResumenUsuario();
+  } else {
+    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
+};
 
 const cargarFavoritos = async () => {
   const grid = document.getElementById('favoritos-grid');
@@ -476,7 +498,7 @@ const eliminarFavorito = async (propiedadId) => {
 
 const cargarMensajes = async () => {
   const lista = document.getElementById('mensajes-lista');
-  const data = await api.get('/mensajes');
+  const data = await api.get('/auth/mensajes');
   if (data.ok) actualizarBadgeMensajes(data.mensajes?.filter(m => !m.leido && m.destinatario?._id === user._id).length || 0);
   if (!data.mensajes || data.mensajes.length === 0) {
     lista.innerHTML = '<div class="loading">No tienes mensajes aún.</div>';
