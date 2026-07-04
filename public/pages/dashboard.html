@@ -201,9 +201,17 @@
                   <label>Título de la propiedad *</label>
                   <input type="text" id="p-titulo" class="form-input" placeholder="Ej: Casa en Colonia Polanco">
                 </div>
-                <div class="form-grupo">
+                <div class="form-grupo" style="grid-column:1/-1">
                   <label>Precio *</label>
-                  <input type="number" id="p-precio" class="form-input" placeholder="0">
+                  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+                    <span style="font-size:13px;color:var(--text-light)">$0</span>
+                    <input type="range" id="p-precio-slider" min="0" max="50000000" step="50000" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncPrecio('slider')">
+                    <span style="font-size:13px;color:var(--text-light)">$50M</span>
+                  </div>
+                  <div style="display:flex;gap:10px;align-items:center">
+                    <input type="number" id="p-precio" class="form-input" placeholder="Ingresa el precio" min="0" style="flex:1" oninput="syncPrecio('input')">
+                    <span id="p-precio-label" style="font-size:15px;font-weight:700;color:var(--primary);white-space:nowrap;min-width:100px">$0 MXN</span>
+                  </div>
                 </div>
                 <div class="form-grupo">
                   <label>Operación *</label>
@@ -231,26 +239,61 @@
               <div class="form-grid">
                 <div class="form-grupo" style="grid-column:1/-1">
                   <label>Descripción *</label>
-                  <textarea id="p-descripcion" class="form-input" rows="4" placeholder="Describe tu propiedad..."></textarea>
+                  <textarea id="p-descripcion" class="form-input" rows="10" placeholder="Describe tu propiedad: características especiales, amenidades, entorno, puntos de interés cercanos..." style="resize:vertical;min-height:200px"></textarea>
                 </div>
               </div>
             </div>
 
-            <!-- STEP 3 -->
+           <!-- STEP 3 -->
             <div class="publicar-step-content" data-step-content="3" style="display:none">
               <div class="form-grid">
+                <div class="form-grupo" style="grid-column:1/-1">
+                  <label>País</label>
+                  <input type="text" class="form-input" value="México" disabled style="background:var(--bg-secondary)">
+                </div>
+                <div class="form-grupo" style="grid-column:1/-1">
+                  <label>Código Postal — autocompleta estado, ciudad y colonia</label>
+                  <div style="display:flex;gap:8px">
+                    <input type="text" id="p-cp" class="form-input" placeholder="Ej: 06600" maxlength="5" style="flex:1" oninput="buscarPorCP(this.value)">
+                    <span id="p-cp-estado" style="display:flex;align-items:center;font-size:13px;color:var(--primary);font-weight:600;white-space:nowrap"></span>
+                  </div>
+                </div>
                 <div class="form-grupo">
                   <label>Estado *</label>
                   <select id="p-estado" class="filter-select">
                     <option value="">Selecciona</option>
+                    <option value="Aguascalientes">Aguascalientes</option>
+                    <option value="Baja California">Baja California</option>
+                    <option value="Baja California Sur">Baja California Sur</option>
+                    <option value="Campeche">Campeche</option>
+                    <option value="Chiapas">Chiapas</option>
+                    <option value="Chihuahua">Chihuahua</option>
                     <option value="Ciudad de Mexico">Ciudad de México</option>
-                    <option value="Jalisco">Jalisco</option>
-                    <option value="Nuevo Leon">Nuevo León</option>
-                    <option value="Puebla">Puebla</option>
+                    <option value="Coahuila">Coahuila</option>
+                    <option value="Colima">Colima</option>
+                    <option value="Durango">Durango</option>
                     <option value="Guanajuato">Guanajuato</option>
-                    <option value="Queretaro">Querétaro</option>
-                    <option value="Yucatan">Yucatán</option>
+                    <option value="Guerrero">Guerrero</option>
+                    <option value="Hidalgo">Hidalgo</option>
+                    <option value="Jalisco">Jalisco</option>
+                    <option value="Mexico">Estado de México</option>
+                    <option value="Michoacan">Michoacán</option>
+                    <option value="Morelos">Morelos</option>
+                    <option value="Nayarit">Nayarit</option>
+                    <option value="Nuevo Leon">Nuevo León</option>
                     <option value="Oaxaca">Oaxaca</option>
+                    <option value="Puebla">Puebla</option>
+                    <option value="Queretaro">Querétaro</option>
+                    <option value="Quintana Roo">Quintana Roo</option>
+                    <option value="San Luis Potosi">San Luis Potosí</option>
+                    <option value="Sinaloa">Sinaloa</option>
+                    <option value="Sonora">Sonora</option>
+                    <option value="Tabasco">Tabasco</option>
+                    <option value="Tamaulipas">Tamaulipas</option>
+                    <option value="Tlaxcala">Tlaxcala</option>
+                    <option value="Veracruz">Veracruz</option>
+                    <option value="Yucatan">Yucatán</option>
+                    <option value="Zacatecas">Zacatecas</option>
                   </select>
                 </div>
                 <div class="form-grupo">
@@ -262,14 +305,18 @@
                   <input type="text" id="p-colonia" class="form-input" placeholder="Ej: Polanco">
                 </div>
                 <div class="form-grupo" style="grid-column:1/-1">
-                  <label>Dirección</label>
+                  <label>Dirección (calle y número)</label>
                   <div style="display:flex;gap:8px">
-                    <input type="text" id="p-direccion" class="form-input" placeholder="Calle y número" style="flex:1">
+                    <input type="text" id="p-direccion" class="form-input" placeholder="Ej: Av. Insurgentes 123" style="flex:1">
                     <button type="button" class="btn btn-outline" onclick="buscarDireccion()" style="padding:10px 16px;font-size:13px;white-space:nowrap">📍 Buscar</button>
+                  </div>
+                  <div style="margin-top:8px;padding:10px 14px;background:#fffbeb;border-radius:8px;border-left:3px solid #f59e0b;font-size:12px;color:#92400e">
+                    🔒 <strong>Tu dirección exacta no será visible al público</strong> — solo se mostrará una ubicación aproximada en el mapa para proteger tu privacidad.
                   </div>
                 </div>
               </div>
             </div>
+           
 
             <!-- STEP 4 -->
             <div class="publicar-step-content" data-step-content="4" style="display:none">

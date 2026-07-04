@@ -3,6 +3,62 @@ if (!auth.isLoggedIn()) window.location.href = 'login.html';
 const user = auth.getUser();
 let mapaPublicar = null;
 let markerPublicar = null;
+// ==================== SINCRONIZACIÓN SLIDERS ====================
+const syncPrecio = (origen) => {
+  const slider = document.getElementById('p-precio-slider');
+  const input = document.getElementById('p-precio');
+  const label = document.getElementById('p-precio-label');
+  if (!slider || !input) return;
+  if (origen === 'slider') {
+    input.value = slider.value;
+  } else {
+    slider.value = Math.min(input.value || 0, 50000000);
+  }
+  const valor = parseInt(input.value) || 0;
+  if (label) label.textContent = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(valor);
+};
+
+const syncCaracteristica = (campo, origen = 'slider') => {
+  const slider = document.getElementById(`p-${campo}-slider`);
+  const input = document.getElementById(`p-${campo}`);
+  const label = document.getElementById(`label-${campo}`);
+  if (!slider || !input) return;
+  if (origen === 'slider') {
+    input.value = slider.value;
+  } else {
+    slider.value = Math.min(parseInt(input.value) || 0, parseInt(slider.max));
+  }
+  if (label) label.textContent = input.value || '0';
+};
+
+// ==================== AUTOCOMPLETE CP ====================
+const buscarPorCP = async (cp) => {
+  if (!cp || cp.length < 5) return;
+  try {
+    const res = await fetch(`https://api.zippopotam.us/MX/${cp}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.places || !data.places.length) return;
+    const lugar = data.places[0];
+    const estado = document.getElementById('p-estado');
+    const ciudad = document.getElementById('p-ciudad');
+    const colonia = document.getElementById('p-colonia');
+    const estadoLabel = document.getElementById('p-cp-estado');
+    if (ciudad) ciudad.value = lugar['place name'] || '';
+    if (colonia) colonia.value = lugar['place name'] || '';
+    if (estadoLabel) estadoLabel.textContent = `✓ ${lugar['state']}`;
+    // Intentar seleccionar el estado en el select
+    if (estado) {
+      const opciones = Array.from(estado.options);
+      const match = opciones.find(o =>
+        o.value.toLowerCase().replace(/[áéíóú]/g, c => ({á:'a',é:'e',í:'i',ó:'o',ú:'u'}[c]))
+        === lugar['state abbreviation']?.toLowerCase() ||
+        o.text.toLowerCase().includes(lugar['state'].toLowerCase().substring(0, 6))
+      );
+      if (match) estado.value = match.value;
+    }
+  } catch (e) {}
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   // Si llega con ?seccion=X en la URL (ej. desde el panel admin), abre esa sección directamente
@@ -154,17 +210,17 @@ const iniciarMapaPublicar = () => {
   if (mapaPublicar) { mapaPublicar.invalidateSize(); return; }
   setTimeout(() => {
     const centro = [19.4326, -99.1332];
-    mapaPublicar = L.map('mapa-publicar').setView(centro, 12);
+    mapaPublicar.invalidateSize('mapa-publicar').setView(centro, 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
-    }).addTo(mapaPublicar);
-    mapaPublicar.on('click', (e) => {
-      const { lat, lng } = e.latlng;
-      colocarMarker(lat, lng);
-      geocodificarCoordenadas(lat, lng);
-    });
-  }, 300);
-};
+    if (publicarPaso === 4) {
+    if (mapaPublicar) {
+      setTimeout(() => mapaPublicar.invalidateSize(), 100);
+    } else {
+      iniciarMapaPublicar();
+    }
+  }
+}
 
 const colocarMarker = (lat, lng) => {
   if (markerPublicar) mapaPublicar.removeLayer(markerPublicar);

@@ -257,3 +257,8 @@ body { overflow: hidden; }
   }
   .form-grid { grid-template-columns: 1fr; }
 }
+/* Vista grid / lista en Mis propiedades */
+.mis-props-view-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 20px; }
+.mis-props-view-list { display: flex; flex-direction: column; gap: 14px; }
+.mis-props-view-list .prop-admin-card { display: flex; gap: 16px; align-items: center; }
+.mis-props-view-list .prop-admin-card img { width: 120px; height: 80px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
