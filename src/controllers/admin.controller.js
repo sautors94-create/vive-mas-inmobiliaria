@@ -156,6 +156,14 @@ const aprobarPropiedad = async (req, res) => {
     const propiedad = await Property.findById(req.params.id).populate('propietario', 'nombre notificaciones');
     if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
 
+    // Un admin no puede aprobar sus propias propiedades
+    if (propiedad.propietario._id.toString() === req.user.id) {
+      return res.status(403).json({ 
+        error: 'No puedes aprobar tus propias propiedades. Otro administrador debe revisarla.',
+        esPropiaPropiedad: true
+      });
+    }
+
     // Validación inicial de fotos: rechazar si fotos < 2
     const minFotos = 2;
     const fotosOK = validarFotosParaAprobacion({ propiedad, minFotos });

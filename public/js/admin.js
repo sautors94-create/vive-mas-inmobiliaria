@@ -301,6 +301,12 @@ const aprobarPropiedad = async (id) => {
   if (data.ok) {
     dsToast({ title: 'Propiedad aprobada', message: 'Ya es visible en el catálogo público.', type: 'success' });
     cargarRevision(); cargarDashboard();
+  } else if (data.esPropiaPropiedad) {
+    dsToast({
+      title: 'No permitido',
+      message: 'No puedes aprobar tus propias propiedades. Otro administrador debe revisarla.',
+      type: 'error'
+    });
   } else {
     dsToast({ title: 'No se pudo aprobar', message: data.error || 'Intenta de nuevo.', type: 'error' });
   }
