@@ -73,6 +73,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (user) {
     document.getElementById('user-nombre').textContent = user.nombre;
+    // Actualizar límite de fotos según plan
+    const limiteLabel = document.getElementById('texto-limite-fotos');
+    if (limiteLabel) {
+      const limite = getLimiteFotos();
+      const plan = (user.plan || 'gratuito');
+      limiteLabel.textContent = `Plan ${plan}: hasta ${limite} fotos`;
+      limiteLabel.style.color = plan === 'premium' ? '#7c3aed' : plan === 'basico' ? '#0369a1' : '#6b7280';
+    }
     document.getElementById('sidebar-nombre').textContent = user.nombre;
     document.getElementById('sidebar-plan').textContent = `Plan ${user.plan}`;
     document.getElementById('user-avatar').textContent = user.nombre.charAt(0).toUpperCase();
@@ -292,15 +300,33 @@ const buscarDireccion = async () => {
 let fotosOrden = []; // array de objetos: { file, dataUrl }
 let fotoPortadaIdx = 0; // índice dentro de fotosOrden
 
+const getLimiteFotos = () => {
+  const plan = (auth.getUser()?.plan || 'gratuito').toLowerCase();
+  if (plan === 'premium') return 15;
+  if (plan === 'basico') return 10;
+  return 5; // gratuito
+};
+
 const previsualizarFotos = (input) => {
   const preview = document.getElementById('fotos-preview');
   if (!preview) return;
+
+  const limite = getLimiteFotos();
+  const todas = Array.from(input.files || []);
+
+  if (todas.length > limite) {
+    dsToast({
+      title: `Límite de fotos: ${limite}`,
+      message: `Tu plan ${auth.getUser()?.plan || 'Gratuito'} permite hasta ${limite} fotos. Se tomarán las primeras ${limite}.`,
+      type: 'error'
+    });
+  }
 
   preview.innerHTML = '';
   fotosOrden = [];
   fotoPortadaIdx = 0;
 
-  const files = Array.from(input.files || []).slice(0, 15);
+  const files = todas.slice(0, limite);
   files.forEach((file) => {
     const reader = new FileReader();
     reader.onload = (e) => {

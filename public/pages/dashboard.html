@@ -338,34 +338,49 @@
             <!-- STEP 5 -->
             <div class="publicar-step-content" data-step-content="5" style="display:none">
               <div class="form-grid">
-                <div class="form-grupo">
-                  <label>Recámaras</label>
-                  <input type="number" id="p-recamaras" class="form-input" placeholder="0" min="0">
+                <div class="form-grupo" style="grid-column:1/-1">
+                  <label>Recámaras <span id="label-recamaras" style="color:var(--primary);font-weight:700">0</span></label>
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <input type="range" id="p-recamaras-slider" min="0" max="20" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('recamaras')">
+                    <input type="number" id="p-recamaras" class="form-input" value="0" min="0" max="20" style="width:80px;text-align:center" oninput="syncCaracteristica('recamaras','input')">
+                  </div>
                 </div>
-                <div class="form-grupo">
-                  <label>Baños completos</label>
-                  <input type="number" id="p-banos" class="form-input" placeholder="0" min="0">
+                <div class="form-grupo" style="grid-column:1/-1">
+                  <label>Baños completos <span id="label-banos" style="color:var(--primary);font-weight:700">0</span></label>
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <input type="range" id="p-banos-slider" min="0" max="10" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('banos')">
+                    <input type="number" id="p-banos" class="form-input" value="0" min="0" max="10" style="width:80px;text-align:center" oninput="syncCaracteristica('banos','input')">
+                  </div>
                 </div>
-                <div class="form-grupo">
-                  <label>Medios baños</label>
-                  <input type="number" id="p-medios-banos" class="form-input" placeholder="0" min="0">
+                <div class="form-grupo" style="grid-column:1/-1">
+                  <label>Medios baños <span id="label-medios-banos" style="color:var(--primary);font-weight:700">0</span></label>
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <input type="range" id="p-medios-banos-slider" min="0" max="5" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('medios-banos')">
+                    <input type="number" id="p-medios-banos" class="form-input" value="0" min="0" max="5" style="width:80px;text-align:center" oninput="syncCaracteristica('medios-banos','input')">
+                  </div>
                 </div>
-                <div class="form-grupo">
-                  <label>Estacionamientos</label>
-                  <input type="number" id="p-estacionamientos" class="form-input" placeholder="0" min="0">
+                <div class="form-grupo" style="grid-column:1/-1">
+                  <label>Estacionamientos <span id="label-estacionamientos" style="color:var(--primary);font-weight:700">0</span></label>
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <input type="range" id="p-estacionamientos-slider" min="0" max="10" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('estacionamientos')">
+                    <input type="number" id="p-estacionamientos" class="form-input" value="0" min="0" max="10" style="width:80px;text-align:center" oninput="syncCaracteristica('estacionamientos','input')">
+                  </div>
                 </div>
-                <div class="form-grupo">
-                  <label>Metros cuadrados</label>
-                  <input type="number" id="p-m2" class="form-input" placeholder="0" min="0">
+                <div class="form-grupo" style="grid-column:1/-1">
+                  <label>Metros cuadrados <span id="label-m2" style="color:var(--primary);font-weight:700">0</span> m²</label>
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <input type="range" id="p-m2-slider" min="0" max="2000" step="5" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('m2')">
+                    <input type="number" id="p-m2" class="form-input" value="0" min="0" style="width:80px;text-align:center" oninput="syncCaracteristica('m2','input')">
+                    <span style="font-size:13px;color:var(--text-light)">m²</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
             <!-- STEP 6 -->
             <div class="publicar-step-content" data-step-content="6" style="display:none">
               <div class="form-grid">
                 <div class="form-grupo" style="grid-column:1/-1">
-                  <label>Fotos (máximo 15, JPG/PNG/WEBP, máx 5MB c/u)</label>
+                  <label id="label-fotos-limite">Fotos (JPG/PNG/WEBP, máx 5MB c/u) — <span id="texto-limite-fotos">cargando límite...</span></label>
 
                   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
                     <span class="ds-badge ds-badge-primary" id="badge-fotos-count">Fotos: —</span>
