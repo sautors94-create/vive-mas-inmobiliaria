@@ -125,6 +125,7 @@ const mostrarSeccion = (seccion) => {
   if (seccion === 'leads') cargarLeadsUsuario();
   if (seccion === 'mensajes') cargarMensajes();
   if (seccion === 'nueva-propiedad') iniciarMapaPublicar();
+  if (seccion === 'mi-cuenta') cargarCuenta();
 };
 
 const actualizarBadgeMensajes = (total) => {
@@ -141,6 +142,20 @@ const cargarResumenUsuario = async () => {
   const gridEl = document.getElementById('resume-stats-grid');
 
   if (!gridEl || !titleEl || !descEl) return;
+
+  // Solo mostrar resumen a planes básico y premium
+  const planUser = (user?.plan || 'gratuito').toLowerCase();
+  const seccionResumen = document.getElementById('resume-section');
+  if (planUser === 'gratuito') {
+    if (seccionResumen) seccionResumen.innerHTML = `
+      <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));border-radius:16px;padding:32px;text-align:center;color:white">
+        <div style="font-size:32px;margin-bottom:12px">📊</div>
+        <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">Estadísticas avanzadas</h3>
+        <p style="font-size:14px;opacity:0.85;margin-bottom:20px">Accede a estadísticas detalladas de tus propiedades, interacciones y leads con el plan Básico o Premium.</p>
+        <button class="btn" style="background:white;color:var(--primary);font-weight:700;padding:12px 28px" onclick="mostrarSeccion('mi-cuenta')">Mejorar mi plan →</button>
+      </div>`;
+    return;
+  }
 
   try {
     // Fuentes actuales disponibles en el proyecto:
@@ -580,21 +595,45 @@ const eliminarFavorito = async (propiedadId) => {
 
 const cargarMensajes = async () => {
   const lista = document.getElementById('mensajes-lista');
-  const data = await api.get('/auth/mensajes');
-  if (data.ok) actualizarBadgeMensajes(data.mensajes?.filter(m => !m.leido && m.destinatario?._id === user._id).length || 0);
-  if (!data.mensajes || data.mensajes.length === 0) {
-    lista.innerHTML = '<div class="loading">No tienes mensajes aún.</div>';
+  lista.innerHTML = '<div class="loading">Cargando mensajes...</div>';
+
+  // Cargamos leads del usuario como actividad de mensajes
+  // (el sistema de mensajería directa entre usuarios se implementará en una fase futura)
+  const data = await api.get('/auth/leads');
+
+  if (!data.ok || !data.leads || data.leads.length === 0) {
+    lista.innerHTML = `
+      <div style="text-align:center;padding:40px 20px;color:var(--text-light)">
+        <div style="font-size:40px;margin-bottom:12px">💬</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px">No tienes mensajes aún</div>
+        <div style="font-size:13px">Cuando alguien contacte a través de Vivi o el formulario de servicios, aparecerá aquí.</div>
+      </div>`;
+    actualizarBadgeMensajes(0);
     return;
   }
-  lista.innerHTML = data.mensajes.map(m => `
+
+  const noLeidos = data.leads.filter(l => l.status === 'nuevo').length;
+  actualizarBadgeMensajes(noLeidos);
+
+  lista.innerHTML = data.leads.map(lead => {
+    const esSoporte = lead.tipo === 'soporte';
+    const badgeTipo = esSoporte
+      ? `<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">🎧 Soporte</span>`
+      : `<span class="status-badge" style="background:#f0fdf4;color:#166534">🏠 Servicio</span>`;
+    return `
     <div class="mensaje-card">
       <div class="mensaje-header">
-        <span class="mensaje-de">${m.remitente._id === user._id ? 'Tú → ' + m.destinatario.nombre : m.remitente.nombre}</span>
-        <span class="mensaje-fecha">${new Date(m.createdAt).toLocaleDateString('es-MX')}</span>
+        <span class="mensaje-de">${lead.folio || 'Lead'} · ${lead.servicio || 'Consulta general'}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${badgeTipo}
+          <span class="status-badge status-${lead.status}">${lead.status}</span>
+        </div>
       </div>
-      <div class="mensaje-texto">${m.mensaje}</div>
-      ${m.propiedad ? `<div class="mensaje-propiedad">📍 ${m.propiedad.titulo || 'Propiedad'}</div>` : ''}
-    </div>`).join('');
+      <div class="mensaje-texto">${lead.nombre} · ${lead.telefono}${lead.email ? ' · ' + lead.email : ''}</div>
+      <div class="mensaje-propiedad">${new Date(lead.createdAt).toLocaleDateString('es-MX')}${lead.ciudad ? ' · ' + lead.ciudad : ''}</div>
+      ${lead.conversacion?.length ? `<div style="margin-top:8px;font-size:12px;color:var(--text-light)">💬 ${lead.conversacion.length} mensaje(s) en la conversación</div>` : ''}
+    </div>`;
+  }).join('');
 };
 const cargarLeadsUsuario = async () => {
   const lista = document.getElementById('leads-usuario-lista');
