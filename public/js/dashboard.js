@@ -795,82 +795,123 @@ window.setPublicarStep = (n) => {
   }
 };
 
-const validarPaso = (paso) => {
+const marcarError = (id, mensaje) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.borderColor = '#dc2626';
+  el.style.boxShadow = '0 0 0 3px rgba(220,38,38,0.12)';
+  // Buscar o crear el mensaje de error debajo del campo
+  const parent = el.closest('.form-grupo') || el.parentElement;
+  let errMsg = parent.querySelector('.field-error-msg');
+  if (!errMsg) {
+    errMsg = document.createElement('div');
+    errMsg.className = 'field-error-msg';
+    errMsg.style.cssText = 'color:#dc2626;font-size:12px;margin-top:4px;display:flex;align-items:center;gap:4px';
+    parent.appendChild(errMsg);
+  }
+  errMsg.innerHTML = `⚠️ ${mensaje}`;
+  // Scroll al campo
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Link directo: focus en el campo
+  setTimeout(() => el.focus(), 300);
+};
+
+const limpiarErrores = () => {
+  document.querySelectorAll('.field-error-msg').forEach(el => el.remove());
+  document.querySelectorAll('#sec-nueva-propiedad input, #sec-nueva-propiedad select, #sec-nueva-propiedad textarea').forEach(el => {
+    el.style.borderColor = '';
+    el.style.boxShadow = '';
+  });
   const errorEl = document.getElementById('form-error');
-  const setErr = (msg) => {
-    const showToast = typeof window.dsToast === 'function';
-    if (showToast) window.dsToast({ title: 'Revisa tu publicación', message: msg, type: 'error' });
-    if (errorEl) {
-      errorEl.textContent = msg;
-      errorEl.style.display = 'block';
-    } else {
-      dsToast({ title: data.ok ? 'Propiedad guardada' : 'Error', message: msg, type: data.ok ? 'success' : 'error' });
-    }
-  };
+  if (errorEl) { errorEl.textContent = ''; errorEl.style.display = 'none'; }
+};
 
+const validarPaso = (paso) => {
+  limpiarErrores();
 
-
-
-  // limpia si ok
-  const clearErr = () => {
-    if (errorEl) {
-      errorEl.textContent = '';
-      errorEl.style.display = 'none';
-    }
-  };
-
-  const titulo = document.getElementById('p-titulo')?.value?.trim();
-  const precio = document.getElementById('p-precio')?.value;
-  const operacion = document.getElementById('p-operacion')?.value;
-  const tipo = document.getElementById('p-tipo')?.value;
-  const descripcion = document.getElementById('p-descripcion')?.value?.trim();
-  const estado = document.getElementById('p-estado')?.value;
-  const ciudad = document.getElementById('p-ciudad')?.value?.trim();
-  const direccion = document.getElementById('p-direccion')?.value?.trim();
-  const lat = document.getElementById('p-lat')?.value;
-  const lng = document.getElementById('p-lng')?.value;
-  const recamaras = Number(document.getElementById('p-recamaras')?.value || 0);
-  const banos = Number(document.getElementById('p-banos')?.value || 0);
-  const mediosBanos = Number(document.getElementById('p-medios-banos')?.value || 0);
-  const estacionamientos = Number(document.getElementById('p-estacionamientos')?.value || 0);
-  const m2 = Number(document.getElementById('p-m2')?.value || 0);
-  const fotosInput = document.getElementById('p-fotos');
-  const fotosCount = fotosInput?.files?.length || 0;
-
-  clearErr();
+  const v = (id) => document.getElementById(id)?.value?.trim() || '';
+  const n = (id) => Number(document.getElementById(id)?.value || 0);
 
   switch (paso) {
-    case 1:
-      if (!titulo) return setErr('Ingresa el título de la propiedad.');
-      if (!precio || Number(precio) <= 0) return setErr('Ingresa un precio válido.');
-      if (!operacion) return setErr('Selecciona la operación.');
-      if (!tipo) return setErr('Selecciona el tipo.');
-      return true;
-    case 2:
-      if (!descripcion) return setErr('Ingresa una descripción.');
-      return true;
-    case 3:
-      if (!estado) return setErr('Selecciona el estado.');
-      if (!ciudad) return setErr('Ingresa la ciudad.');
-      if (!direccion) return setErr('Ingresa la dirección.');
-      return true;
-    case 4:
-      if (!lat || !lng || Number(lat) === 0 || Number(lng) === 0) return setErr('Selecciona la ubicación exacta en el mapa.');
-      return true;
-    case 5:
-      // se aceptan 0, pero deben ser numéricos (si vienen vacíos se vuelven 0)
-      if (Number.isNaN(recamaras) || Number.isNaN(banos) || Number.isNaN(mediosBanos) || Number.isNaN(estacionamientos) || Number.isNaN(m2)) {
-        return setErr('Revisa las características (valores inválidos).');
+    case 1: {
+      let ok = true;
+      if (!v('p-titulo')) { marcarError('p-titulo', 'El título es obligatorio'); ok = false; }
+      if (!v('p-precio') || Number(v('p-precio')) <= 0) { marcarError('p-precio', 'Ingresa un precio mayor a $0'); ok = false; }
+      if (!v('p-operacion')) { marcarError('p-operacion', 'Selecciona si es renta o venta'); ok = false; }
+      if (!v('p-tipo')) { marcarError('p-tipo', 'Selecciona el tipo de propiedad'); ok = false; }
+      if (!ok) dsToast({ title: 'Completa los campos requeridos', message: 'Los campos marcados en rojo son obligatorios.', type: 'error' });
+      return ok;
+    }
+    case 2: {
+      if (!v('p-descripcion') || v('p-descripcion').length < 20) {
+        marcarError('p-descripcion', 'La descripción debe tener al menos 20 caracteres');
+        dsToast({ title: 'Descripción muy corta', message: 'Agrega más detalle sobre la propiedad.', type: 'error' });
+        return false;
       }
       return true;
-    case 6:
-      if (fotosCount < 2) return setErr('Agrega al menos 2 fotos para enviar a revisión.');
-      // portada dentro de rango
-      if (fotoPortadaIdx < 0 || fotoPortadaIdx >= fotosCount) fotoPortadaIdx = 0;
+    }
+    case 3: {
+      let ok = true;
+      if (!v('p-estado')) { marcarError('p-estado', 'Selecciona el estado'); ok = false; }
+      if (!v('p-ciudad')) { marcarError('p-ciudad', 'Ingresa la ciudad'); ok = false; }
+      if (!v('p-direccion')) { marcarError('p-direccion', 'Ingresa la dirección (calle y número)'); ok = false; }
+      if (!ok) dsToast({ title: 'Completa la ubicación', message: 'Los campos marcados en rojo son obligatorios.', type: 'error' });
+      return ok;
+    }
+    case 4: {
+      const lat = v('p-lat');
+      const lng = v('p-lng');
+      if (!lat || !lng || Number(lat) === 0 || Number(lng) === 0) {
+        const mapaEl = document.getElementById('mapa-publicar');
+        if (mapaEl) {
+          mapaEl.style.outline = '3px solid #dc2626';
+          mapaEl.style.borderRadius = '12px';
+          const errDiv = document.createElement('div');
+          errDiv.className = 'field-error-msg';
+          errDiv.style.cssText = 'color:#dc2626;font-size:12px;margin-top:6px;display:flex;align-items:center;gap:4px';
+          errDiv.innerHTML = '⚠️ Haz clic en el mapa para marcar la ubicación aproximada';
+          mapaEl.parentElement.appendChild(errDiv);
+          mapaEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        dsToast({ title: 'Marca la ubicación', message: 'Haz clic en el mapa para continuar.', type: 'error' });
+        return false;
+      }
       return true;
-
+    }
+    case 5: {
+      const campos = ['p-recamaras','p-banos','p-medios-banos','p-estacionamientos','p-m2'];
+      let ok = true;
+      campos.forEach(id => {
+        const val = Number(document.getElementById(id)?.value);
+        if (Number.isNaN(val) || val < 0) {
+          marcarError(id, 'Valor inválido');
+          ok = false;
+        }
+      });
+      if (!ok) dsToast({ title: 'Valores inválidos', message: 'Revisa las características marcadas en rojo.', type: 'error' });
+      return ok;
+    }
+    case 6: {
+      const limite = getLimiteFotos();
+      const count = fotosOrden.length;
+      if (count < 2) {
+        const dropEl = document.getElementById('p-fotos-drop');
+        if (dropEl) {
+          dropEl.style.outline = '3px solid #dc2626';
+          const errDiv = document.createElement('div');
+          errDiv.className = 'field-error-msg';
+          errDiv.style.cssText = 'color:#dc2626;font-size:12px;margin-top:6px;display:flex;align-items:center;gap:4px';
+          errDiv.innerHTML = `⚠️ Agrega al menos 2 fotos (tu plan permite hasta ${limite})`;
+          dropEl.parentElement.appendChild(errDiv);
+          dropEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        dsToast({ title: 'Fotos insuficientes', message: `Agrega al menos 2 fotos. Puedes subir hasta ${limite} con tu plan actual.`, type: 'error' });
+        return false;
+      }
+      if (fotoPortadaIdx < 0 || fotoPortadaIdx >= count) fotoPortadaIdx = 0;
+      return true;
+    }
     case 7:
-      return true;
     default:
       return true;
   }
