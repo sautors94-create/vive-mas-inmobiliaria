@@ -321,8 +321,20 @@ async enviar() {
     const nombre = document.getElementById(`chatbot-${this.tipo}-lead-nombre`)?.value.trim();
     const tel = document.getElementById(`chatbot-${this.tipo}-lead-tel`)?.value.trim();
    if (!nombre || !tel) {
-      if (typeof dsToast === 'function') dsToast({ title: 'Faltan datos', message: tChat(this.lang, 'leadValidation'), type: 'error' });
-      else alert(tChat(this.lang, 'leadValidation'));
+      if (typeof dsToast === 'function') {
+        dsToast({ title: 'Faltan datos', message: tChat(this.lang, 'leadValidation'), type: 'error' });
+      } else {
+        // Notificación inline dentro del chatbot (no depende de toasts.js)
+        const chatBody = document.getElementById(`chatbot-${this.tipo}-messages`);
+        if (chatBody) {
+          const msg = document.createElement('div');
+          msg.style.cssText = 'padding:8px 12px;background:#fef2f2;color:#dc2626;border-radius:8px;font-size:13px;margin:6px 0;border-left:3px solid #dc2626';
+          msg.textContent = tChat(this.lang, 'leadValidation');
+          chatBody.appendChild(msg);
+          chatBody.scrollTop = chatBody.scrollHeight;
+          setTimeout(() => msg.remove(), 4000);
+        }
+      }
       return;
     }
     try {
