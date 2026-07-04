@@ -59,6 +59,124 @@ const buscarPorCP = async (cp) => {
     }
   } catch (e) {}
 };
+// ==================== MODAL DE PLANES ====================
+const mostrarModalPlanes = () => {
+  const planActual = (user?.plan || 'gratuito').toLowerCase();
+
+  // No mostrar si ya es premium
+  if (planActual === 'premium') {
+    dsToast({ title: 'Ya tienes el plan Premium', message: 'Estás en el mejor plan disponible.', type: 'success' });
+    return;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'modal-planes';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:10500;font-family:"Inter","Segoe UI",sans-serif';
+
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:20px;padding:32px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.28)">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:28px;margin-bottom:8px">🏡</div>
+        <h3 style="font-size:20px;font-weight:800;color:#0f172a;margin-bottom:4px">Elige tu plan</h3>
+        <p style="font-size:13px;color:#64748b">Publica más propiedades y llega a más personas</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
+
+        <!-- Plan Gratuito -->
+        <div style="border:2px solid ${planActual === 'gratuito' ? 'var(--primary)' : '#e5e7eb'};border-radius:14px;padding:18px;background:${planActual === 'gratuito' ? '#f0fdf4' : 'white'}">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div>
+              <div style="font-size:15px;font-weight:700;color:#0f172a">Gratuito</div>
+              <div style="font-size:12px;color:#64748b">Para empezar</div>
+            </div>
+            <div style="font-size:20px;font-weight:800;color:#0f172a">$0<span style="font-size:12px;font-weight:400;color:#64748b">/mes</span></div>
+          </div>
+          <ul style="font-size:12px;color:#475569;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px">
+            <li>✓ Hasta 1 propiedad publicada</li>
+            <li>✓ 5 fotos por propiedad</li>
+            <li>✓ Acceso al catálogo</li>
+          </ul>
+          ${planActual === 'gratuito' ? '<div style="margin-top:12px;font-size:12px;font-weight:600;color:var(--primary)">✓ Plan actual</div>' : ''}
+        </div>
+
+        <!-- Plan Básico -->
+        <div style="border:2px solid ${planActual === 'basico' ? 'var(--primary)' : '#0369a1'};border-radius:14px;padding:18px;background:${planActual === 'basico' ? '#f0fdf4' : '#f0f9ff'};position:relative">
+          <div style="position:absolute;top:-10px;right:16px;background:#0369a1;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">DISPONIBLE</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div>
+              <div style="font-size:15px;font-weight:700;color:#0f172a">Básico</div>
+              <div style="font-size:12px;color:#64748b">Para agentes activos</div>
+            </div>
+            <div style="font-size:20px;font-weight:800;color:#0369a1">$299<span style="font-size:12px;font-weight:400;color:#64748b">/mes</span></div>
+          </div>
+          <ul style="font-size:12px;color:#475569;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px">
+            <li>✓ Hasta 5 propiedades publicadas</li>
+            <li>✓ 10 fotos por propiedad</li>
+            <li>✓ Estadísticas de tu panel</li>
+            <li>✓ Mayor visibilidad en el catálogo</li>
+            <li>✓ Soporte prioritario</li>
+          </ul>
+          ${planActual === 'basico'
+            ? '<div style="margin-top:12px;font-size:12px;font-weight:600;color:var(--primary)">✓ Plan actual</div>'
+            : '<button onclick="contratarPlan(\'basico\')" style="width:100%;margin-top:14px;padding:10px;background:#0369a1;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Contratar Básico →</button>'
+          }
+        </div>
+
+        <!-- Plan Premium -->
+        <div style="border:2px solid #7c3aed;border-radius:14px;padding:18px;background:#faf5ff;position:relative;opacity:0.7">
+          <div style="position:absolute;top:-10px;right:16px;background:#7c3aed;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">PRÓXIMAMENTE</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div>
+              <div style="font-size:15px;font-weight:700;color:#0f172a">Premium</div>
+              <div style="font-size:12px;color:#64748b">Para inmobiliarias y equipos</div>
+            </div>
+            <div style="font-size:20px;font-weight:800;color:#7c3aed">$799<span style="font-size:12px;font-weight:400;color:#64748b">/mes</span></div>
+          </div>
+          <ul style="font-size:12px;color:#475569;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px">
+            <li>✓ Propiedades ilimitadas</li>
+            <li>✓ 15 fotos por propiedad</li>
+            <li>✓ Estadísticas avanzadas y comparativas</li>
+            <li>✓ Cuenta verificada con insignia</li>
+            <li>✓ Soporte dedicado 24/7</li>
+          </ul>
+          <button disabled style="width:100%;margin-top:14px;padding:10px;background:#e5e7eb;color:#9ca3af;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:not-allowed">Próximamente</button>
+        </div>
+
+      </div>
+
+      <button onclick="document.getElementById('modal-planes')?.remove()" style="width:100%;padding:11px;background:#f1f5f9;color:#475569;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Cerrar</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  // Botón mejorar en la topbar: actualizar texto según plan
+  const btnMejorar = document.getElementById('btn-mejorar-plan');
+  if (btnMejorar && planActual === 'premium') btnMejorar.style.display = 'none';
+};
+
+const contratarPlan = async (plan) => {
+  // Por ahora: simulación de contratación con toast informativo
+  // En el futuro: integrar pasarela de pago (Stripe, Conekta, etc.)
+  document.getElementById('modal-planes')?.remove();
+  dsToast({
+    title: `Plan ${plan.charAt(0).toUpperCase() + plan.slice(1)} seleccionado`,
+    message: 'En breve un asesor se pondrá en contacto contigo para completar la activación.',
+    type: 'info'
+  });
+  // Registrar interés en el backend (lead de upgrade)
+  try {
+    await api.post('/auth/leads', {
+      nombre: user?.nombre || 'Usuario',
+      telefono: user?.telefono || 'N/A',
+      email: user?.email || '',
+      servicio: `Upgrade a plan ${plan}`,
+      tipo: 'servicio'
+    });
+  } catch (e) {}
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   // Si llega con ?seccion=X en la URL (ej. desde el panel admin), abre esa sección directamente
