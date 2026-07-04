@@ -210,17 +210,17 @@ const iniciarMapaPublicar = () => {
   if (mapaPublicar) { mapaPublicar.invalidateSize(); return; }
   setTimeout(() => {
     const centro = [19.4326, -99.1332];
-    mapaPublicar.invalidateSize('mapa-publicar').setView(centro, 12);
+    mapaPublicar = L.map('mapa-publicar').setView(centro, 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
-    if (publicarPaso === 4) {
-    if (mapaPublicar) {
-      setTimeout(() => mapaPublicar.invalidateSize(), 100);
-    } else {
-      iniciarMapaPublicar();
-    }
-  }
-}
+    }).addTo(mapaPublicar);
+    mapaPublicar.on('click', (e) => {
+      const { lat, lng } = e.latlng;
+      colocarMarker(lat, lng);
+      geocodificarCoordenadas(lat, lng);
+    });
+  }, 300);
+};
 
 const colocarMarker = (lat, lng) => {
   if (markerPublicar) mapaPublicar.removeLayer(markerPublicar);
@@ -716,6 +716,14 @@ window.setPublicarStep = (n) => {
 
   if (submitWrap) submitWrap.style.display = publicarPaso === 7 ? 'block' : 'none';
 
+  // Mapa: si llegamos al step 4, forzar redimensionado
+  if (publicarPaso === 4) {
+    if (mapaPublicar) {
+      setTimeout(() => mapaPublicar.invalidateSize(), 100);
+    } else {
+      iniciarMapaPublicar();
+    }
+  }
   // resumen final en step 7
   if (publicarPaso === 7) {
     cargarResumenFinal();
