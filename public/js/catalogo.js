@@ -523,4 +523,40 @@ document.addEventListener('DOMContentLoaded', () => {
       closeAllFilterPopovers();
     }
   });
+
+  // Cargar estados dinámicos desde el backend
+  cargarEstadosDisponibles();
 });
+
+const cargarEstadosDisponibles = async () => {
+  try {
+    const data = await api.get('/propiedades/estados/disponibles');
+    if (!data.ok || !data.estados?.length) return;
+
+    const lista = document.getElementById('opciones-estado-catalogo');
+    const listaAdv = document.getElementById('adv-estado');
+    if (!lista) return;
+
+    // Actualizar la lista del popover rápido
+    lista.innerHTML = data.estados.map(e => `
+      <div class="popover-option" data-value="${e._id}" onclick="toggleEstadoCatalogo(this)">
+        ${e._id} <span style="font-size:11px;color:var(--text-light);margin-left:4px">(${e.total})</span>
+      </div>`).join('');
+
+    // Actualizar el select del panel avanzado si existe
+    if (listaAdv) {
+      const opcionTodas = listaAdv.querySelector('option[value=""]');
+      const opcionesAnteriores = Array.from(listaAdv.options).slice(1);
+      // Solo actualizar si la BD tiene estados que no están en el select
+      data.estados.forEach(e => {
+        const existe = opcionesAnteriores.some(o => o.value === e._id);
+        if (!existe) {
+          const opt = document.createElement('option');
+          opt.value = e._id;
+          opt.textContent = e._id;
+          listaAdv.appendChild(opt);
+        }
+      });
+    }
+  } catch (e) {}
+};

@@ -349,7 +349,21 @@ const cargarPropiedadesDestacadas = async () => {
 
 document.addEventListener('DOMContentLoaded', () => {
   cargarPropiedadesDestacadas();
+  cargarEstadosDisponiblesInicio();
+});
 
+const cargarEstadosDisponiblesInicio = async () => {
+  try {
+    const data = await api.get('/propiedades/estados/disponibles');
+    if (!data.ok || !data.estados?.length) return;
+    const lista = document.getElementById('opciones-estado');
+    if (!lista) return;
+    lista.innerHTML = data.estados.map(e => `
+      <div class="popover-option" data-value="${e._id}" onclick="toggleOption(this, 'estado')">
+        ${e._id} <span style="font-size:11px;color:var(--text-light);margin-left:4px">(${e.total})</span>
+      </div>`).join('');
+  } catch (e) {}
+};
   const toggle = document.getElementById('nav-toggle');
   const navLinks = document.querySelector('.nav-links');
   const navActions = document.querySelector('.nav-actions');
@@ -359,4 +373,4 @@ document.addEventListener('DOMContentLoaded', () => {
       navActions.style.display = navActions.style.display === 'flex' ? 'none' : 'flex';
     });
   }
-});
+);
