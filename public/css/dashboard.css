@@ -262,3 +262,81 @@ body { overflow: hidden; }
 .mis-props-view-list { display: flex; flex-direction: column; gap: 14px; }
 .mis-props-view-list .prop-admin-card { display: flex; gap: 16px; align-items: center; }
 .mis-props-view-list .prop-admin-card img { width: 120px; height: 80px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+/* ==================== SLIDERS DE PUBLICACIÓN ==================== */
+.form-grupo input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 4px;
+  background: var(--border, #e5e7eb);
+  outline: none;
+  cursor: pointer;
+}
+.form-grupo input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary, #1a472a);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: transform 0.15s;
+}
+.form-grupo input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+.form-grupo input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary, #1a472a);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* Contenedor slider + input number */
+.form-grupo > div > input[type="range"] {
+  flex: 1;
+}
+.form-grupo > div > input[type="number"] {
+  width: 80px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 8px;
+}
+
+/* Precio label */
+#p-precio-label {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--primary);
+  min-width: 110px;
+  text-align: right;
+}
+
+/* ==================== VISTA GRID / LISTA MIS PROPIEDADES ==================== */
+#mis-props-container.mis-props-view-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+#mis-props-container.mis-props-view-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#mis-props-container.mis-props-view-list .prop-admin-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+#mis-props-container.mis-props-view-list .prop-admin-card img {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
