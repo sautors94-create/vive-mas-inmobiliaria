@@ -53,9 +53,14 @@
 
     notifBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (!notifMenu) return;
-      avatarMenu?.classList.remove('open');
-      notifMenu.classList.toggle('open');
+      closeMenus();
+      // Navegar al resumen ejecutivo del dashboard
+      if (typeof window.mostrarSeccion === 'function') {
+        window.mostrarSeccion('inicio');
+      } else {
+        const inPages = window.location.pathname.includes('/pages/');
+        window.location.href = inPages ? 'dashboard.html' : 'pages/dashboard.html';
+      }
     });
 
     document.addEventListener('click', () => closeMenus());
