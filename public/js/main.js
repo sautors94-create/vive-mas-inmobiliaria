@@ -15,16 +15,14 @@ const openPopover = (popoverId, triggerElement) => {
   const popover = document.getElementById(popoverId);
   const overlay = document.getElementById('popover-overlay');
   if (!popover || !overlay) return;
-  
-  // Position popover
-  const rect = triggerElement.getBoundingClientRect();
+
   const searchBar = document.getElementById('search-bar');
   const searchRect = searchBar.getBoundingClientRect();
-  
+
   popover.style.top = (searchRect.bottom + 8) + 'px';
   popover.style.left = searchRect.left + 'px';
   popover.style.width = searchRect.width + 'px';
-  
+
   overlay.classList.add('active');
   popover.classList.add('active');
   triggerElement.classList.add('active');
@@ -34,35 +32,18 @@ const closeAllPopovers = () => {
   const overlay = document.getElementById('popover-overlay');
   const popovers = document.querySelectorAll('.popover');
   const fields = document.querySelectorAll('.search-bar-field');
-  
+
   overlay?.classList.remove('active');
   popovers.forEach(p => p.classList.remove('active'));
   fields.forEach(f => f.classList.remove('active'));
 };
 
-// Initialize popover triggers
-document.addEventListener('DOMContentLoaded', () => {
-  // Popover field click handlers
-  document.querySelectorAll('.search-bar-field').forEach(field => {
-    field.addEventListener('click', function() {
-      const popoverId = this.getAttribute('data-popover');
-      openPopover(popoverId, this);
-    });
-  });
-
-  // Close popovers on escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeAllPopovers();
-  });
-});
-
 // ==================== FILTER FUNCTIONS ====================
 
-// Toggle option (multi-select for estado)
 const toggleOption = (element, filterType) => {
   const value = element.getAttribute('data-value');
   element.classList.toggle('selected');
-  
+
   if (element.classList.contains('selected')) {
     if (!filtrosActivos[filterType].includes(value)) {
       filtrosActivos[filterType].push(value);
@@ -70,28 +51,26 @@ const toggleOption = (element, filterType) => {
   } else {
     filtrosActivos[filterType] = filtrosActivos[filterType].filter(v => v !== value);
   }
-  
+
   updateLabels();
   renderChips();
 };
 
-// Select radio (single select - ya no se usa para operación, queda por compatibilidad)
 const selectRadio = (element, filterType) => {
   const parent = element.parentElement;
   parent.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
   element.classList.add('selected');
-  
+
   filtrosActivos[filterType] = element.getAttribute('data-value');
   updateLabels();
   renderChips();
   closeAllPopovers();
 };
 
-// Toggle checkbox (multi-select for tipo y operacion)
 const toggleCheckbox = (element, filterType) => {
   const value = element.getAttribute('data-value');
   element.classList.toggle('selected');
-  
+
   if (element.classList.contains('selected')) {
     if (!filtrosActivos[filterType].includes(value)) {
       filtrosActivos[filterType].push(value);
@@ -99,19 +78,16 @@ const toggleCheckbox = (element, filterType) => {
   } else {
     filtrosActivos[filterType] = filtrosActivos[filterType].filter(v => v !== value);
   }
-  
+
   updateLabels();
   renderChips();
 };
 
-// Filter estados in popover search
 const filterEstados = (query) => {
   const options = document.querySelectorAll('#opciones-estado .popover-option');
   const lowerQuery = query.toLowerCase();
-  
   options.forEach(opt => {
-    const text = opt.textContent.toLowerCase();
-    opt.style.display = text.includes(lowerQuery) ? '' : 'none';
+    opt.style.display = opt.textContent.toLowerCase().includes(lowerQuery) ? '' : 'none';
   });
 };
 
@@ -122,23 +98,17 @@ const updateDualRange = (type) => {
   const minLabel = document.getElementById(`${type}-min-label`);
   const maxLabel = document.getElementById(`${type}-max-label`);
   const fill = document.getElementById(`${type}-fill`);
-  
+
   if (!minInput || !maxInput) return;
-  
+
   let min = parseInt(minInput.value);
   let max = parseInt(maxInput.value);
-  
-  // Ensure min doesn't exceed max
-  if (min > max) {
-    min = max;
-    minInput.value = min;
-  }
-  
-  // Update labels
+
+  if (min > max) { min = max; minInput.value = min; }
+
   if (minLabel) minLabel.textContent = formatPrecioCortoCorto(min);
   if (maxLabel) maxLabel.textContent = formatPrecioCortoCorto(max);
-  
-  // Update fill bar
+
   if (fill) {
     const range = 100000000;
     const left = (min / range) * 100;
@@ -146,11 +116,10 @@ const updateDualRange = (type) => {
     fill.style.left = left + '%';
     fill.style.width = width + '%';
   }
-  
-  // Update state
+
   filtrosActivos[`${type}Min`] = min;
   filtrosActivos[`${type}Max`] = max;
-  
+
   renderChips();
 };
 
@@ -158,57 +127,48 @@ const syncDualRange = (position, type) => {
   const input = document.getElementById(`${type}-${position}-input`);
   const slider = document.getElementById(`${type}-${position}`);
   const label = document.getElementById(`${type}-${position}-label`);
-  
+
   if (!input) return;
-  
+
   let value = parseInt(input.value) || 0;
   if (position === 'max') value = parseInt(input.value) || 100000000;
-  
+
   if (slider) slider.value = value;
   if (label) label.textContent = formatPrecioCortoCorto(value);
-  
+
   updateDualRange(type);
 };
 
 const formatPrecioCortoCorto = (valor) => {
-  if (valor >= 1000000) return `$${(valor/1000000).toFixed(1)}M`;
-  if (valor >= 1000) return `$${(valor/1000).toFixed(0)}K`;
+  if (valor >= 1000000) return `$${(valor / 1000000).toFixed(1)}M`;
+  if (valor >= 1000) return `$${(valor / 1000).toFixed(0)}K`;
   return `$${valor}`;
 };
 
 // ==================== LABELS & CHIPS ====================
 const updateLabels = () => {
-  // Ubicación label
   const labelUbicacion = document.getElementById('label-ubicacion');
   if (labelUbicacion) {
-    labelUbicacion.textContent = filtrosActivos.estado.length > 0 
+    labelUbicacion.textContent = filtrosActivos.estado.length > 0
       ? filtrosActivos.estado.join(', ')
       : '¿Dónde buscas?';
   }
-  
-  // Operación label
+
   const labelOperacion = document.getElementById('label-operacion');
   if (labelOperacion) {
     labelOperacion.textContent = filtrosActivos.operacion.length > 0
       ? filtrosActivos.operacion.map(v => v === 'renta' ? 'Renta' : 'Venta').join(' y ')
       : 'Renta o Venta';
   }
-  
-  // Tipo label
+
   const labelTipo = document.getElementById('label-tipo');
   if (labelTipo) {
-    const tipoLabels = {
-      casa: 'Casa',
-      departamento: 'Depto',
-      terreno: 'Terreno',
-      local: 'Local'
-    };
+    const tipoLabels = { casa: 'Casa', departamento: 'Depto', terreno: 'Terreno', local: 'Local' };
     labelTipo.textContent = filtrosActivos.tipo.length > 0
       ? filtrosActivos.tipo.map(t => tipoLabels[t] || t).join(', ')
       : 'Tipo de propiedad';
   }
-  
-  // Precio label
+
   const labelPrecio = document.getElementById('label-precio');
   if (labelPrecio) {
     if (filtrosActivos.precioMin > 0 || filtrosActivos.precioMax < 100000000) {
@@ -222,60 +182,54 @@ const updateLabels = () => {
 const renderChips = () => {
   const container = document.getElementById('active-chips');
   if (!container) return;
-  
+
   let chips = [];
-  
-  // Estado chips
+
   filtrosActivos.estado.forEach(e => {
     chips.push(`<div class="chip">📍 ${e} <button class="chip-remove" onclick="removeChip('estado', '${e}')">×</button></div>`);
   });
-  
-  // Operación chips
+
   filtrosActivos.operacion.forEach(o => {
     const nombre = o === 'renta' ? 'Renta' : 'Venta';
     chips.push(`<div class="chip">🏠 ${nombre} <button class="chip-remove" onclick="removeChip('operacion', '${o}')">×</button></div>`);
   });
-  
-  // Tipo chips
+
   filtrosActivos.tipo.forEach(t => {
     const labels = { casa: 'Casa', departamento: 'Depto', terreno: 'Terreno', local: 'Local' };
     chips.push(`<div class="chip">🏡 ${labels[t]} <button class="chip-remove" onclick="removeChip('tipo', '${t}')">×</button></div>`);
   });
-  
-  // Precio chip
+
   if (filtrosActivos.precioMin > 0 || filtrosActivos.precioMax < 100000000) {
     chips.push(`<div class="chip">💰 ${formatPrecioCortoCorto(filtrosActivos.precioMin)} - ${formatPrecioCortoCorto(filtrosActivos.precioMax)} <button class="chip-remove" onclick="removeChip('precio')">×</button></div>`);
   }
-  
-  // Clear all button
+
   if (chips.length > 0) {
     chips.push(`<span class="chip-clear" onclick="clearAllChips()">Limpiar todo</span>`);
   }
-  
+
   container.innerHTML = chips.join('');
 };
 
 const removeChip = (filterType, value) => {
   if (filterType === 'estado') {
     filtrosActivos.estado = filtrosActivos.estado.filter(v => v !== value);
-    const opt = document.querySelector(`.popover-option[data-value="${value}"]`);
-    opt?.classList.remove('selected');
+    document.querySelector(`#opciones-estado .popover-option[data-value="${value}"]`)?.classList.remove('selected');
   } else if (filterType === 'operacion') {
     filtrosActivos.operacion = filtrosActivos.operacion.filter(v => v !== value);
-    const opt = document.querySelector(`#popover-operacion .checkbox-option[data-value="${value}"]`);
-    opt?.classList.remove('selected');
+    document.querySelector(`#popover-operacion .checkbox-option[data-value="${value}"]`)?.classList.remove('selected');
   } else if (filterType === 'tipo') {
     filtrosActivos.tipo = filtrosActivos.tipo.filter(v => v !== value);
-    const opt = document.querySelector(`.checkbox-option[data-value="${value}"]`);
-    opt?.classList.remove('selected');
+    document.querySelector(`.checkbox-option[data-value="${value}"]`)?.classList.remove('selected');
   } else if (filterType === 'precio') {
     filtrosActivos.precioMin = 0;
     filtrosActivos.precioMax = 100000000;
-    document.getElementById('precio-min').value = 0;
-    document.getElementById('precio-max').value = 100000000;
+    const pMin = document.getElementById('precio-min');
+    const pMax = document.getElementById('precio-max');
+    if (pMin) pMin.value = 0;
+    if (pMax) pMax.value = 100000000;
     updateDualRange('precio');
   }
-  
+
   updateLabels();
   renderChips();
 };
@@ -286,14 +240,16 @@ const clearAllChips = () => {
   filtrosActivos.tipo = [];
   filtrosActivos.precioMin = 0;
   filtrosActivos.precioMax = 100000000;
-  
-  // Reset UI
+
   document.querySelectorAll('.popover-option.selected').forEach(opt => opt.classList.remove('selected'));
   document.querySelectorAll('.radio-option.selected').forEach(opt => opt.classList.remove('selected'));
   document.querySelectorAll('.checkbox-option.selected').forEach(opt => opt.classList.remove('selected'));
-  document.getElementById('precio-min').value = 0;
-  document.getElementById('precio-max').value = 100000000;
-  
+
+  const pMin = document.getElementById('precio-min');
+  const pMax = document.getElementById('precio-max');
+  if (pMin) pMin.value = 0;
+  if (pMax) pMax.value = 100000000;
+
   updateLabels();
   renderChips();
   updateDualRange('precio');
@@ -302,36 +258,33 @@ const clearAllChips = () => {
 // ==================== SEARCH FUNCTION ====================
 const buscar = () => {
   closeAllPopovers();
-  
+
   const params = new URLSearchParams();
-  
-  // Estado
-  if (filtrosActivos.estado.length > 0) {
-    params.append('estado', filtrosActivos.estado.join(','));
-  }
-  
-  // Operación
-  if (filtrosActivos.operacion.length > 0) {
-    params.append('operacion', filtrosActivos.operacion.join(','));
-  }
-  
-  // Tipo
-  if (filtrosActivos.tipo.length > 0) {
-    params.append('tipo', filtrosActivos.tipo.join(','));
-  }
-  
-  // Precio
-  if (filtrosActivos.precioMin > 0) {
-    params.append('precioMin', filtrosActivos.precioMin);
-  }
-  if (filtrosActivos.precioMax < 100000000) {
-    params.append('precioMax', filtrosActivos.precioMax);
-  }
-  
+
+  if (filtrosActivos.estado.length > 0) params.append('estado', filtrosActivos.estado.join(','));
+  if (filtrosActivos.operacion.length > 0) params.append('operacion', filtrosActivos.operacion.join(','));
+  if (filtrosActivos.tipo.length > 0) params.append('tipo', filtrosActivos.tipo.join(','));
+  if (filtrosActivos.precioMin > 0) params.append('precioMin', filtrosActivos.precioMin);
+  if (filtrosActivos.precioMax < 100000000) params.append('precioMax', filtrosActivos.precioMax);
+
   window.location.href = `pages/catalogo.html?${params.toString()}`;
 };
 
-// ==================== EXISTING FUNCTIONS ====================
+// ==================== ESTADOS DINÁMICOS ====================
+const cargarEstadosDisponiblesInicio = async () => {
+  try {
+    const data = await api.get('/propiedades/estados/disponibles');
+    if (!data.ok || !data.estados?.length) return;
+    const lista = document.getElementById('opciones-estado');
+    if (!lista) return;
+    lista.innerHTML = data.estados.map(e => `
+      <div class="popover-option" data-value="${e._id}" onclick="toggleOption(this, 'estado')">
+        ${e._id} <span style="font-size:11px;color:var(--text-light);margin-left:4px">(${e.total})</span>
+      </div>`).join('');
+  } catch (e) {}
+};
+
+// ==================== PROPIEDADES DESTACADAS ====================
 const cargarPropiedadesDestacadas = async () => {
   const grid = document.getElementById('propiedades-grid');
   if (!grid) return;
@@ -347,23 +300,26 @@ const cargarPropiedadesDestacadas = async () => {
   }
 };
 
+// ==================== DOM READY ====================
 document.addEventListener('DOMContentLoaded', () => {
+  // Popover field click handlers
+  document.querySelectorAll('.search-bar-field').forEach(field => {
+    field.addEventListener('click', function () {
+      const popoverId = this.getAttribute('data-popover');
+      openPopover(popoverId, this);
+    });
+  });
+
+  // Close popovers on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAllPopovers();
+  });
+
+  // Cargar contenido
   cargarPropiedadesDestacadas();
   cargarEstadosDisponiblesInicio();
-});
 
-const cargarEstadosDisponiblesInicio = async () => {
-  try {
-    const data = await api.get('/propiedades/estados/disponibles');
-    if (!data.ok || !data.estados?.length) return;
-    const lista = document.getElementById('opciones-estado');
-    if (!lista) return;
-    lista.innerHTML = data.estados.map(e => `
-      <div class="popover-option" data-value="${e._id}" onclick="toggleOption(this, 'estado')">
-        ${e._id} <span style="font-size:11px;color:var(--text-light);margin-left:4px">(${e.total})</span>
-      </div>`).join('');
-  } catch (e) {}
-};
+  // Nav toggle mobile
   const toggle = document.getElementById('nav-toggle');
   const navLinks = document.querySelector('.nav-links');
   const navActions = document.querySelector('.nav-actions');
@@ -373,4 +329,4 @@ const cargarEstadosDisponiblesInicio = async () => {
       navActions.style.display = navActions.style.display === 'flex' ? 'none' : 'flex';
     });
   }
-);
+});
