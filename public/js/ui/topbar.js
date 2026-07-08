@@ -54,7 +54,6 @@
     notifBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
       closeMenus();
-      // Navegar al resumen ejecutivo del dashboard
       if (typeof window.mostrarSeccion === 'function') {
         window.mostrarSeccion('inicio');
       } else {
