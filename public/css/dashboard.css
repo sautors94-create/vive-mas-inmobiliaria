@@ -80,6 +80,7 @@ body { overflow: hidden; }
 }
 
 .nav-badge {
+  display: flex;
   align-items: center;
   justify-content: center;
   min-width: 20px;
@@ -125,11 +126,113 @@ body { overflow: hidden; }
   gap: 20px;
 }
 
-.form-grupo textarea.form-input {
-  resize: vertical;
-  min-height: 100px;
+/* ==================== FORMULARIO UNIFICADO ==================== */
+.form-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
+.form-grupo label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #1a1a2e);
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  color: var(--text, #1a1a2e);
+  background: var(--bg-secondary, #f8fafc);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  border-color: var(--primary, #1a472a);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(26,71,42,0.08);
+}
+
+.form-input::placeholder {
+  color: #9ca3af;
+}
+
+.form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+select.form-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+textarea.form-input {
+  resize: vertical;
+  min-height: 200px;
+  line-height: 1.6;
+}
+
+/* Sliders del formulario */
+.form-grupo input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 4px;
+  background: var(--border, #e5e7eb);
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: none;
+}
+
+.form-grupo input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary, #1a472a);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: transform 0.15s;
+}
+
+.form-grupo input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.form-grupo input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary, #1a472a);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* Precio label */
+#p-precio-label {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--primary);
+  min-width: 110px;
+  text-align: right;
+}
+
+/* ==================== MIS PROPIEDADES ==================== */
 .mis-props-grid {
   display: flex;
   flex-direction: column;
@@ -161,9 +264,7 @@ body { overflow: hidden; }
   color: var(--text-light);
 }
 
-.prop-admin-info {
-  flex: 1;
-}
+.prop-admin-info { flex: 1; }
 
 .prop-admin-titulo {
   font-size: 16px;
@@ -184,6 +285,34 @@ body { overflow: hidden; }
   align-items: center;
 }
 
+/* ==================== VISTA GRID / LISTA ==================== */
+#mis-props-container.mis-props-view-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+#mis-props-container.mis-props-view-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+#mis-props-container.mis-props-view-list .prop-admin-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+#mis-props-container.mis-props-view-list .prop-admin-card img {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+/* ==================== BADGES DE ESTATUS ==================== */
 .status-badge {
   font-size: 11px;
   font-weight: 600;
@@ -196,10 +325,13 @@ body { overflow: hidden; }
 .status-revision { background: #fff3e0; color: #e65100; }
 .status-aprobada { background: #e8f5e9; color: #2e7d32; }
 .status-rechazada { background: #fce4ec; color: #c62828; }
+.status-bloqueada { background: #f3f4f6; color: #6b7280; }
+.status-pausada { background: #fef3c7; color: #92400e; }
 .status-nuevo { background: #e3f2fd; color: #1565c0; }
 .status-contactado { background: #fff3e0; color: #e65100; }
 .status-cerrado { background: #e8f5e9; color: #2e7d32; }
 
+/* ==================== MENSAJES ==================== */
 .mensajes-lista {
   display: flex;
   flex-direction: column;
@@ -245,6 +377,7 @@ body { overflow: hidden; }
   font-weight: 500;
 }
 
+/* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
   body { overflow: auto; }
   .dashboard-layout {
@@ -256,276 +389,5 @@ body { overflow: hidden; }
     border-bottom: 1px solid var(--border);
   }
   .form-grid { grid-template-columns: 1fr; }
-}
-/* Vista grid / lista en Mis propiedades */
-.mis-props-view-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 20px; }
-.mis-props-view-list { display: flex; flex-direction: column; gap: 14px; }
-.mis-props-view-list .prop-admin-card { display: flex; gap: 16px; align-items: center; }
-.mis-props-view-list .prop-admin-card img { width: 120px; height: 80px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
-/* ==================== SLIDERS DE PUBLICACIÓN ==================== */
-.form-grupo input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 4px;
-  background: var(--border, #e5e7eb);
-  outline: none;
-  cursor: pointer;
-}
-.form-grupo input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--primary, #1a472a);
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  transition: transform 0.15s;
-}
-.form-grupo input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
-}
-.form-grupo input[type="range"]::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--primary, #1a472a);
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
-
-/* Contenedor slider + input number */
-.form-grupo > div > input[type="range"] {
-  flex: 1;
-}
-.form-grupo > div > input[type="number"] {
-  width: 80px;
-  text-align: center;
-  font-weight: 700;
-  font-size: 15px;
-  padding: 8px;
-}
-
-/* Precio label */
-#p-precio-label {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--primary);
-  min-width: 110px;
-  text-align: right;
-}
-
-/* ==================== VISTA GRID / LISTA MIS PROPIEDADES ==================== */
-#mis-props-container.mis-props-view-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-}
-#mis-props-container.mis-props-view-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-#mis-props-container.mis-props-view-list .prop-admin-card {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-#mis-props-container.mis-props-view-list .prop-admin-card img {
-  width: 120px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 8px;
-  flex-shrink: 0;
-}
-/* ==================== FORMULARIO NUEVA PUBLICACIÓN ==================== */
-/* Unificar form-input con el mismo estilo que filter-select */
-.form-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1.5px solid var(--border, #e5e7eb);
-  border-radius: 10px;
-  font-size: 14px;
-  font-family: 'Inter', sans-serif;
-  color: var(--text, #1a1a2e);
-  background: var(--bg-secondary, #f8fafc);
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  box-sizing: border-box;
-}
-.form-input:focus {
-  border-color: var(--primary, #1a472a);
-  background: white;
-  box-shadow: 0 0 0 3px rgba(26,71,42,0.08);
-}
-.form-input::placeholder { color: #9ca3af; }
-.form-input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-select.form-input {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 40px;
-}
-.form-grupo { display: flex; flex-direction: column; gap: 6px; }
-.form-grupo label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text, #1a1a2e);
-}
-.form-grupo textarea.form-input {
-  resize: vertical;
-  min-height: 200px;
-  line-height: 1.6;
-}
-
-/* Sliders del formulario */
-.form-grupo input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 4px;
-  background: var(--border, #e5e7eb);
-  border: none;
-  outline: none;
-  cursor: pointer;
-  padding: 0;
-  box-shadow: none;
-}
-.form-grupo input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--primary, #1a472a);
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  transition: transform 0.15s;
-}
-.form-grupo input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-.form-grupo input[type="range"]::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--primary, #1a472a);
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
-
-/* Input número pequeño junto al slider */
-.slider-input-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 6px;
-}
-.slider-input-group input[type="number"].form-input {
-  width: 90px;
-  text-align: center;
-  font-weight: 700;
-  font-size: 15px;
-  flex-shrink: 0;
-}
-
-/* ==================== VISTA GRID / LISTA MIS PROPIEDADES ==================== */
-#mis-props-container.mis-props-view-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-}
-#mis-props-container.mis-props-view-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-#mis-props-container.mis-props-view-list .prop-admin-card {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-#mis-props-container.mis-props-view-list .prop-admin-card img {
-  width: 120px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 8px;
-  flex-shrink: 0;
-}
-/* ==================== FORMULARIO NUEVA PUBLICACIÓN ==================== */
-.form-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1.5px solid var(--border, #e5e7eb);
-  border-radius: 10px;
-  font-size: 14px;
-  font-family: 'Inter', sans-serif;
-  color: var(--text, #1a1a2e);
-  background: var(--bg-secondary, #f8fafc);
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  box-sizing: border-box;
-}
-.form-input:focus {
-  border-color: var(--primary, #1a472a);
-  background: white;
-  box-shadow: 0 0 0 3px rgba(26,71,42,0.08);
-}
-.form-input::placeholder { color: #9ca3af; }
-.form-input:disabled { opacity: 0.6; cursor: not-allowed; }
-select.form-input {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 40px;
-  cursor: pointer;
-}
-.form-grupo { display: flex; flex-direction: column; gap: 6px; }
-.form-grupo label { font-size: 13px; font-weight: 600; color: var(--text, #1a1a2e); }
-.form-grupo textarea.form-input { resize: vertical; min-height: 200px; line-height: 1.6; }
-.form-grupo input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 4px;
-  background: var(--border, #e5e7eb);
-  border: none;
-  outline: none;
-  cursor: pointer;
-  padding: 0;
-  box-shadow: none;
-}
-.form-grupo input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--primary, #1a472a);
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  transition: transform 0.15s;
-}
-.form-grupo input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-.form-grupo input[type="range"]::-moz-range-thumb {
-  width: 22px; height: 22px; border-radius: 50%;
-  background: var(--primary, #1a472a);
-  cursor: pointer; border: none;
-}
-#p-precio-label { font-size: 16px; font-weight: 800; color: var(--primary); min-width: 110px; text-align: right; }
-
-/* ==================== VISTA GRID / LISTA MIS PROPIEDADES ==================== */
-#mis-props-container.mis-props-view-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-}
-#mis-props-container.mis-props-view-list { display: flex; flex-direction: column; gap: 14px; }
-#mis-props-container.mis-props-view-list .prop-admin-card { display: flex; gap: 16px; align-items: center; }
-#mis-props-container.mis-props-view-list .prop-admin-card img {
-  width: 120px; height: 80px; object-fit: cover; border-radius: 8px; flex-shrink: 0;
+  .dashboard-main { padding: 20px 16px; }
 }
