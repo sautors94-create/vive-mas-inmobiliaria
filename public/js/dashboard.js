@@ -205,6 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     verificarPlanActual(0, false); // Sin polling, solo verificación
   }
+});
+
 // ==========================================
 // NAVEGACIÓN PRINCIPAL
 // ==========================================

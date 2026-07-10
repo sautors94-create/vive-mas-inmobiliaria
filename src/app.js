@@ -2,7 +2,6 @@ require('dotenv').config();
 const connectDB = require('./config/database');
 connectDB();
 
-
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -21,9 +20,15 @@ const siteconfigRoutes = require('./routes/siteconfig.routes');
 const chatbotRoutes = require('./routes/chatbot.routes');
 const servicesRoutes = require('./routes/services.routes');
 const pagoRoutes = require('./routes/pagos');
+const { webhookStripe } = require('./routes/pagos');
 
 const app = express();
 
+// ⚠️ CRÍTICO: el webhook de Stripe debe registrarse ANTES de express.json()
+// porque necesita el body como raw Buffer para verificar la firma
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), webhookStripe);
+
+// Rate limiters
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -36,6 +41,7 @@ const authLimiter = rateLimit({
   message: { error: 'Demasiados intentos de login, intenta de nuevo en 15 minutos' }
 });
 
+// Seguridad y headers
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -50,34 +56,40 @@ app.use(helmet({
     }
   }
 }));
+
 app.use(cors({ origin: process.env.CLIENT_URL || '*', credentials: true }));
 app.use(morgan('dev'));
-const { webhookStripe } = require('./routes/pagos');
-app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), webhookStripe);
-app.use('/api', pagoRoutes);
+
+// Body parsers (DESPUÉS del webhook raw)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static('public'));
 app.use(mongoSanitize());
 app.use(xss());
+
+// Rate limiting
 app.use('/api/', limiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/registro', authLimiter);
 
+// Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', proyecto: 'Vive Mas Inmobiliaria', version: '1.0.0' });
 });
 
+// Rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api', pagoRoutes);
 app.use('/api/propiedades', propertyRoutes);
 app.use('/api/favoritos', favoriteRoutes);
 app.use('/api/mensajes', messageRoutes);
 app.use('/api/site', siteconfigRoutes);
 app.use('/api/chat', chatbotRoutes);
 app.use('/api/services', servicesRoutes);
+app.use('/api', pagoRoutes); // Rutas de pagos: /api/admin/pagos
+
+// 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
 });
