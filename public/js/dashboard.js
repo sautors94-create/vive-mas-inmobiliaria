@@ -109,6 +109,37 @@ window.mostrarModalPlanes = () => {
   document.body.appendChild(overlay);
 };
 
+const mostrarModalBienvenidaPlan = (plan) => {
+  const nombres = { basico: 'Básico', premium: 'Premium' };
+  const iconos = { basico: '🚀', premium: '💎' };
+  const colores = { basico: '#0369a1', premium: '#7c3aed' };
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:10600;font-family:"Inter","Segoe UI",sans-serif';
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:24px;padding:40px 36px;max-width:420px;width:90%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,0.35);animation:fadeInUp 0.3s ease">
+      <div style="width:72px;height:72px;border-radius:50%;background:${colores[plan] || '#0369a1'}15;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px">${iconos[plan] || '🎉'}</div>
+      <h2 style="font-size:24px;font-weight:800;color:#0f172a;margin-bottom:8px">¡Bienvenido al Plan ${nombres[plan] || plan}!</h2>
+      <p style="font-size:14px;color:#64748b;line-height:1.6;margin-bottom:28px">Tu plan ha sido activado exitosamente. Ahora tienes acceso a todas las funciones de tu nuevo plan. ¡Empieza a publicar!</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button onclick="this.closest('[style*=fixed]').remove();window.location.reload()" style="padding:13px 28px;background:${colores[plan] || '#0369a1'};color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">¡Empezar ahora! →</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  // Actualizar UI de topbar y sidebar inmediatamente
+  const userActualizado = auth.getUser();
+  if (userActualizado) {
+    const planEl = document.getElementById('ds-user-plan');
+    const sidebarPlan = document.getElementById('sidebar-plan');
+    if (planEl) planEl.textContent = `Plan ${userActualizado.plan}`;
+    if (sidebarPlan) sidebarPlan.textContent = `Plan ${userActualizado.plan}`;
+    // Ocultar botón "Mejorar plan" si ya tiene premium
+    if (userActualizado.plan === 'premium') {
+      document.getElementById('btn-mejorar-plan')?.style.setProperty('display', 'none');
+    }
+  }
+};
 window.contratarPlan = (plan) => {
   const STRIPE_LINKS = { basico: 'https://buy.stripe.com/test_9B6fZhgExb2QejO8EGc3m00' };
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -119,7 +150,8 @@ window.contratarPlan = (plan) => {
   }
 
   if (plan === 'basico' && STRIPE_LINKS.basico) {
-    const linkFinal = `${STRIPE_LINKS.basico}?client_reference_id=${user._id || user.id}`;
+    const returnUrl = encodeURIComponent(`${window.location.origin}/pages/dashboard.html?pago=exito`);
+    const linkFinal = `${STRIPE_LINKS.basico}?client_reference_id=${user._id || user.id}&success_url=${returnUrl}`;
     window.location.href = linkFinal;
   } else {
     dsToast({ title: 'Próximamente', message: 'Este plan estará disponible muy pronto.', type: 'info' });
@@ -127,6 +159,32 @@ window.contratarPlan = (plan) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Si regresa de Stripe con ?pago=exito, refresca el perfil desde el servidor
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('pago') === 'exito') {
+    // Limpiar el parámetro de la URL sin recargar la página
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    // Esperar hasta 8 segundos a que el webhook de Stripe procese
+    const refrescarHastaActualizar = async (intentos = 0) => {
+      try {
+        const data = await api.get('/auth/perfil');
+        if (data.user) {
+          const planAnterior = auth.getUser()?.plan || 'gratuito';
+          localStorage.setItem('user', JSON.stringify(data.user));
+          if (data.user.plan !== planAnterior) {
+            mostrarModalBienvenidaPlan(data.user.plan);
+            return;
+          }
+        }
+      } catch (e) {}
+      // Si el plan no cambió aún, reintenta hasta 4 veces con 2 segundos de espera
+      if (intentos < 4) {
+        setTimeout(() => refrescarHastaActualizar(intentos + 1), 2000);
+      }
+    };
+    refrescarHastaActualizar();
+  }
   // Si llega con ?seccion=X en la URL (ej. desde el panel admin), abre esa sección directamente
   const seccionURL = new URLSearchParams(window.location.search).get('seccion');
   if (seccionURL && document.getElementById(`sec-${seccionURL}`)) {

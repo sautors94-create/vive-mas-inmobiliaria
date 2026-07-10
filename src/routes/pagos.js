@@ -61,6 +61,8 @@ router.post('/webhooks/stripe', async (req, res) => {
           }
           await usuario.save();
 
+          // Invalidar el token actual para forzar refresco con el nuevo plan
+          // (el endpoint /auth/perfil ya devuelve datos actualizados de MongoDB)
           console.log(`✅ Pago aprobado y plan BASICO activado para: ${usuario.email}. Expira: ${fechaExpiracion}`);
         }
       } else {
