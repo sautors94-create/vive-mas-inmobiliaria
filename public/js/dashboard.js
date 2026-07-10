@@ -59,11 +59,13 @@ const buscarPorCP = async (cp) => {
     }
   } catch (e) {}
 };
-// ==================== MODAL DE PLANES ====================
-const mostrarModalPlanes = () => {
-  const planActual = (user?.plan || 'gratuito').toLowerCase();
+// ==========================================
+// MODAL DE PLANES Y PASARELA STRIPE
+// ==========================================
 
-  // No mostrar si ya es premium
+window.mostrarModalPlanes = () => {
+  const planActual = (JSON.parse(localStorage.getItem('user') || '{}').plan || 'gratuito').toLowerCase();
+
   if (planActual === 'premium') {
     dsToast({ title: 'Ya tienes el plan Premium', message: 'Estás en el mejor plan disponible.', type: 'success' });
     return;
@@ -80,102 +82,48 @@ const mostrarModalPlanes = () => {
         <h3 style="font-size:20px;font-weight:800;color:#0f172a;margin-bottom:4px">Elige tu plan</h3>
         <p style="font-size:13px;color:#64748b">Publica más propiedades y llega a más personas</p>
       </div>
-
       <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
-
-        <!-- Plan Gratuito -->
         <div style="border:2px solid ${planActual === 'gratuito' ? 'var(--primary)' : '#e5e7eb'};border-radius:14px;padding:18px;background:${planActual === 'gratuito' ? '#f0fdf4' : 'white'}">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <div>
-              <div style="font-size:15px;font-weight:700;color:#0f172a">Gratuito</div>
-              <div style="font-size:12px;color:#64748b">Para empezar</div>
-            </div>
-            <div style="font-size:20px;font-weight:800;color:#0f172a">$0<span style="font-size:12px;font-weight:400;color:#64748b">/mes</span></div>
-          </div>
-          <ul style="font-size:12px;color:#475569;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px">
-            <li>✓ Hasta 1 propiedad publicada</li>
-            <li>✓ 5 fotos por propiedad</li>
-            <li>✓ Acceso al catálogo</li>
-          </ul>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div><div style="font-size:15px;font-weight:700;color:#0f172a">Gratuito</div><div style="font-size:12px;color:#64748b">Para empezar</div></div><div style="font-size:20px;font-weight:800;color:#0f172a">$0<span style="font-size:12px;font-weight:400;color:#64748b">/mes</span></div></div>
+          <ul style="font-size:12px;color:#475569;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px"><li>✓ Hasta 1 propiedad publicada</li><li>✓ 5 fotos por propiedad</li><li>✓ Acceso al catálogo</li></ul>
           ${planActual === 'gratuito' ? '<div style="margin-top:12px;font-size:12px;font-weight:600;color:var(--primary)">✓ Plan actual</div>' : ''}
         </div>
-
-        <!-- Plan Básico -->
         <div style="border:2px solid ${planActual === 'basico' ? 'var(--primary)' : '#0369a1'};border-radius:14px;padding:18px;background:${planActual === 'basico' ? '#f0fdf4' : '#f0f9ff'};position:relative">
           <div style="position:absolute;top:-10px;right:16px;background:#0369a1;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">DISPONIBLE</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <div>
-              <div style="font-size:15px;font-weight:700;color:#0f172a">Básico</div>
-              <div style="font-size:12px;color:#64748b">Para agentes activos</div>
-            </div>
-            <div style="font-size:20px;font-weight:800;color:#0369a1">$299<span style="font-size:12px;font-weight:400;color:#64748b">/mes</span></div>
-          </div>
-          <ul style="font-size:12px;color:#475569;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px">
-            <li>✓ Hasta 5 propiedades publicadas</li>
-            <li>✓ 10 fotos por propiedad</li>
-            <li>✓ Estadísticas de tu panel</li>
-            <li>✓ Mayor visibilidad en el catálogo</li>
-            <li>✓ Soporte prioritario</li>
-          </ul>
-          ${planActual === 'basico'
-            ? '<div style="margin-top:12px;font-size:12px;font-weight:600;color:var(--primary)">✓ Plan actual</div>'
-            : '<button onclick="contratarPlan(\'basico\')" style="width:100%;margin-top:14px;padding:10px;background:#0369a1;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Contratar Básico →</button>'
-          }
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div><div style="font-size:15px;font-weight:700;color:#0f172a">Básico</div><div style="font-size:12px;color:#64748b">Para agentes activos</div></div><div style="font-size:20px;font-weight:800;color:#0369a1">$299<span style="font-size:12px;font-weight:400;color:#64748b">/mes</span></div></div>
+          <ul style="font-size:12px;color:#475569;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px"><li>✓ Hasta 5 propiedades publicadas</li><li>✓ 10 fotos por propiedad</li><li>✓ Estadísticas de tu panel</li><li>✓ Mayor visibilidad en el catálogo</li><li>✓ Soporte prioritario</li></ul>
+          ${planActual === 'basico' ? '<div style="margin-top:12px;font-size:12px;font-weight:600;color:var(--primary)">✓ Plan actual</div>' : '<button onclick="contratarPlan(\'basico\')" style="width:100%;margin-top:14px;padding:10px;background:#0369a1;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Contratar Básico →</button>'}
         </div>
-
-        <!-- Plan Premium -->
         <div style="border:2px solid #7c3aed;border-radius:14px;padding:18px;background:#faf5ff;position:relative;opacity:0.7">
           <div style="position:absolute;top:-10px;right:16px;background:#7c3aed;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">PRÓXIMAMENTE</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <div>
-              <div style="font-size:15px;font-weight:700;color:#0f172a">Premium</div>
-              <div style="font-size:12px;color:#64748b">Para inmobiliarias y equipos</div>
-            </div>
-            <div style="font-size:20px;font-weight:800;color:#7c3aed">$799<span style="font-size:12px;font-weight:400;color:#64748b">/mes</span></div>
-          </div>
-          <ul style="font-size:12px;color:#475569;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px">
-            <li>✓ Propiedades ilimitadas</li>
-            <li>✓ 15 fotos por propiedad</li>
-            <li>✓ Estadísticas avanzadas y comparativas</li>
-            <li>✓ Cuenta verificada con insignia</li>
-            <li>✓ Soporte dedicado 24/7</li>
-          </ul>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div><div style="font-size:15px;font-weight:700;color:#0f172a">Premium</div><div style="font-size:12px;color:#64748b">Para inmobiliarias y equipos</div></div><div style="font-size:20px;font-weight:800;color:#7c3aed">$799<span style="font-size:12px;font-weight:400;color:#64748b">/mes</span></div></div>
+          <ul style="font-size:12px;color:#475569;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px"><li>✓ Propiedades ilimitadas</li><li>✓ 15 fotos por propiedad</li><li>✓ Estadísticas avanzadas y comparativas</li><li>✓ Cuenta verificada con insignia</li><li>✓ Soporte dedicado 24/7</li></ul>
           <button disabled style="width:100%;margin-top:14px;padding:10px;background:#e5e7eb;color:#9ca3af;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:not-allowed">Próximamente</button>
         </div>
-
       </div>
-
       <button onclick="document.getElementById('modal-planes')?.remove()" style="width:100%;padding:11px;background:#f1f5f9;color:#475569;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Cerrar</button>
     </div>
   `;
 
-  document.body.appendChild(overlay);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-
-  // Botón mejorar en la topbar: actualizar texto según plan
-  const btnMejorar = document.getElementById('btn-mejorar-plan');
-  if (btnMejorar && planActual === 'premium') btnMejorar.style.display = 'none';
+  document.body.appendChild(overlay);
 };
 
-const contratarPlan = async (plan) => {
-  // Por ahora: simulación de contratación con toast informativo
-  // En el futuro: integrar pasarela de pago (Stripe, Conekta, etc.)
-  document.getElementById('modal-planes')?.remove();
-  dsToast({
-    title: `Plan ${plan.charAt(0).toUpperCase() + plan.slice(1)} seleccionado`,
-    message: 'En breve un asesor se pondrá en contacto contigo para completar la activación.',
-    type: 'info'
-  });
-  // Registrar interés en el backend (lead de upgrade)
-  try {
-    await api.post('/auth/leads', {
-      nombre: user?.nombre || 'Usuario',
-      telefono: user?.telefono || 'N/A',
-      email: user?.email || '',
-      servicio: `Upgrade a plan ${plan}`,
-      tipo: 'servicio'
-    });
-  } catch (e) {}
+window.contratarPlan = (plan) => {
+  const STRIPE_LINKS = { basico: 'https://buy.stripe.com/test_9B6fZhgExb2QejO8EGc3m00' };
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  if (plan === 'basico' && user.plan === 'basico') {
+    dsToast({ title: 'Ya tienes este plan', message: 'Actualmente cuentas con el Plan Básico.', type: 'info' });
+    return;
+  }
+
+  if (plan === 'basico' && STRIPE_LINKS.basico) {
+    const linkFinal = `${STRIPE_LINKS.basico}?client_reference_id=${user._id || user.id}`;
+    window.location.href = linkFinal;
+  } else {
+    dsToast({ title: 'Próximamente', message: 'Este plan estará disponible muy pronto.', type: 'info' });
+  }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -190,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (user) {
-    document.getElementById('user-nombre').textContent = user.nombre;
+    document.getElementById('sidebar-nombre').textContent = user.nombre;
     // Actualizar límite de fotos según plan
     const limiteLabel = document.getElementById('texto-limite-fotos');
     if (limiteLabel) {
@@ -230,20 +178,28 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarCuenta();
   }
 });
-
-
+// ==========================================
+// NAVEGACIÓN PRINCIPAL
+// ==========================================
 const mostrarSeccion = window.mostrarSeccion = (seccion) => {
+  const secEl = document.getElementById(`sec-${seccion}`);
+  if (!secEl) return; // Escudo de seguridad
+
   document.querySelectorAll('.dash-section').forEach(s => s.style.display = 'none');
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-  document.getElementById(`sec-${seccion}`).style.display = 'block';
+  
+  secEl.style.display = 'block';
+
   const link = document.querySelector(`.sidebar-link[onclick*="${seccion}"]`);
   if (link) link.classList.add('active');
+  
   if (seccion === 'mis-propiedades') cargarMisPropiedades();
   if (seccion === 'favoritos') cargarFavoritos();
   if (seccion === 'leads') cargarLeadsUsuario();
   if (seccion === 'mensajes') cargarMensajes();
   if (seccion === 'nueva-propiedad') iniciarMapaPublicar();
   if (seccion === 'mi-cuenta') cargarCuenta();
+  if (seccion === 'resumen') verificarBloqueoResumen();
 };
 
 const actualizarBadgeMensajes = (total) => {
@@ -1210,5 +1166,66 @@ caracteristicas: {
       btn.disabled = false;
     }
     showToast({ title: 'Error', message: errorEl.textContent, type: 'error' });
+  }
+};
+
+// ==========================================
+// MIS PROPIEDADES (GRID / LISTA)
+// ==========================================
+let misPropsData = [];
+
+window.cambiarVistaMisProps = (vista) => {
+  const container = document.getElementById('mis-props-container');
+  const btnGrid = document.getElementById('view-grid-btn');
+  const btnLista = document.getElementById('view-list-btn');
+  if(!container) return;
+  
+  btnGrid.classList.remove('active');
+  btnLista.classList.remove('active');
+
+  if (vista === 'grid') {
+    container.className = 'mis-props-grid mis-props-view-grid';
+    btnGrid.classList.add('active');
+  } else {
+    container.className = 'mis-props-grid mis-props-view-list';
+    btnLista.classList.add('active');
+  }
+  renderizarMisProps();
+};
+
+const renderizarMisProps = () => {
+  const container = document.getElementById('mis-props-container');
+  if(!container) return;
+  const isGrid = container.classList.contains('mis-props-view-grid');
+
+  if (misPropsData.length === 0) {
+    container.innerHTML = '<div class="loading" style="color:var(--text-light)">No tienes propiedades publicadas aún.</div>';
+    return;
+  }
+
+  if (isGrid) {
+    container.innerHTML = misPropsData.map(p => crearCardPropiedad(p)).join('');
+  } else {
+    container.innerHTML = misPropsData.map(p => {
+      const foto = p.fotos && p.fotos.length > 0 ? `<img src="${p.fotos[0]}" alt="${p.titulo}" class="prop-admin-img">` : `<div class="prop-admin-img">Sin foto</div>`;
+      return `<div class="prop-admin-card">${foto}<div class="prop-admin-info"><div class="prop-admin-titulo">${p.titulo}</div><div class="prop-admin-meta"><span class="status-badge status-${p.estatus || 'nuevo'}">${p.estatus || 'nuevo'}</span> · ${p.ubicacion?.ciudad || ''}, ${p.ubicacion?.estado || ''} · <strong>${formatPrecio(p.precio)}</strong></div></div><div class="prop-admin-actions"><button class="btn btn-outline" style="padding:6px 12px;font-size:12px" onclick="window.location='propiedad.html?id=${p._id}'">Ver</button></div></div>`;
+    }).join('');
+  }
+};
+
+window.cargarMisPropiedades = async () => {
+  const container = document.getElementById('mis-props-container');
+  if(!container) return;
+  container.innerHTML = '<div class="loading">Cargando tus propiedades...</div>';
+  try {
+    const data = await api.get('/propiedades/mias'); 
+    if (data.ok && data.propiedades) {
+      misPropsData = data.propiedades;
+      renderizarMisProps();
+    } else {
+      container.innerHTML = '<div class="loading" style="color:var(--text-light)">No tienes propiedades publicadas aún.</div>';
+    }
+  } catch (error) {
+    container.innerHTML = '<div class="loading" style="color:red">Error al cargar propiedades.</div>';
   }
 };

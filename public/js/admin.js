@@ -17,6 +17,7 @@ const mostrarSeccion = (seccion) => {
   if (seccion === 'revision') cargarRevision();
   if (seccion === 'propiedades') cargarTodasPropiedades();
   if (seccion === 'leads') cargarLeads();
+  if (seccion === 'pagos') cargarPagosAdmin();
   if (seccion === 'usuarios') cargarUsuarios();
   if (seccion === 'temas') cargarTemasPersonalizados();
   if (seccion === 'destacadas') cargarDestacadas();
@@ -809,5 +810,76 @@ const descargarPlantillaUsuarios = async () => {
     document.body.removeChild(a);
   } catch (error) {
     dsToast({ title: 'No se pudo descargar', message: error.message, type: 'error' });
+  }
+};
+
+// ==================== MÓDULO DE PAGOS Y CONCILIACIÓN ====================
+let pagoEnEdicionId = null;
+
+window.cargarPagosAdmin = async () => {
+  const tbody = document.getElementById('pagos-admin-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center">Buscando pagos...</td></tr>';
+
+  const search = document.getElementById('pago-filtro-search').value;
+  const plan = document.getElementById('pago-filtro-plan').value;
+  const estatus = document.getElementById('pago-filtro-estatus').value;
+
+  try {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (plan) params.append('plan', plan);
+    if (estatus) params.append('estatus', estatus);
+
+    const data = await api.get(`/admin/pagos?${params.toString()}`);
+    
+    if (!data.ok || !data.pagos || !data.pagos.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--text-light)">No se encontraron pagos.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.pagos.map(p => {
+      const fecha = new Date(p.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+      return `
+        <tr>
+          <td>${fecha}</td>
+          <td>
+            <div style="font-weight:600">${p.usuario_email || 'N/A'}</div>
+            <div style="font-size:11px;color:var(--text-light)">ID: ${p.stripe_session_id?.substring(0, 15)}...</div>
+          </td>
+          <td style="text-transform:capitalize">${p.plan_contratado}</td>
+          <td style="font-weight:700">$${p.monto} MXN</td>
+          <td><span class="badge-estatus badge-${p.estatus}">${p.estatus}</span></td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-outline" style="padding:4px 10px;font-size:11px" onclick="window.open('https://dashboard.stripe.com/payments/${p.stripe_session_id}', '_blank')" target="_blank">🔍 Stripe</button>
+              <button class="btn btn-outline" style="padding:4px 10px;font-size:11px" onclick="abrirModalAclaracion('${p._id}', '${p.stripe_session_id}', \`${p.notas_admin || ''}\`)">📝 Nota</button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+  } catch (error) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:red">Error al conectar con el servidor.</td></tr>';
+  }
+};
+
+window.abrirModalAclaracion = (id, stripeId, notaActual) => {
+  pagoEnEdicionId = id;
+  document.getElementById('aclaracion-id').textContent = stripeId;
+  document.getElementById('aclaracion-texto').value = notaActual;
+  document.getElementById('modal-aclaracion-pago').style.display = 'flex';
+};
+
+window.guardarAclaracion = async () => {
+  const texto = document.getElementById('aclaracion-texto').value;
+  try {
+    const data = await api.patch(`/admin/pagos/${pagoEnEdicionId}`, { notas_admin: texto });
+    if (data.ok) {
+      dsToast({ title: 'Guardado', message: 'Nota agregada al pago.', type: 'success' });
+      document.getElementById('modal-aclaracion-pago').style.display = 'none';
+      cargarPagosAdmin(); 
+    }
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo guardar.', type: 'error' });
   }
 };

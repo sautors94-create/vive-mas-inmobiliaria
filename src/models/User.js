@@ -6,7 +6,9 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true, minlength: 6 },
   role: { type: String, enum: ['user', 'admin', 'services'], default: 'user' },
-  plan: { type: String, enum: ['gratuito', 'basico', 'premium'], default: 'gratuito' },
+  plan: { type: String, enum: ['gratuito', 'basico', 'premium'], default: 'gratuito' }, // <-- ESTA COMA ES OBLIGATORIA
+  planFechaFin: { type: Date, default: null },
+  stripeSubscriptionId: { type: String, default: null },
   status: { type: String, enum: ['activo', 'suspendido', 'bloqueado'], default: 'activo' },
   avatar: { type: String, default: null },
   telefono: { type: String, default: null },

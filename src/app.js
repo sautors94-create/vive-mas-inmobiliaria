@@ -2,6 +2,7 @@ require('dotenv').config();
 const connectDB = require('./config/database');
 connectDB();
 
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -19,7 +20,7 @@ const messageRoutes = require('./routes/message.routes');
 const siteconfigRoutes = require('./routes/siteconfig.routes');
 const chatbotRoutes = require('./routes/chatbot.routes');
 const servicesRoutes = require('./routes/services.routes');
-
+const pagoRoutes = require('./routes/pagos');
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use(helmet({
 }));
 app.use(cors({ origin: process.env.CLIENT_URL || '*', credentials: true }));
 app.use(morgan('dev'));
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), pagoRoutes);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -67,6 +69,7 @@ app.get('/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api', pagoRoutes);
 app.use('/api/propiedades', propertyRoutes);
 app.use('/api/favoritos', favoriteRoutes);
 app.use('/api/mensajes', messageRoutes);

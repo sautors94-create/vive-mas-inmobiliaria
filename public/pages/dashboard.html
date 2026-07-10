@@ -126,24 +126,34 @@
           <h2>Resumen ejecutivo</h2>
           <span class="badge-premium" id="resume-plan-pill" style="display:none">Plan: —</span>
         </div>
-        <div id="resume-section">
-          <div class="stats-grid" style="margin-bottom:18px" id="resume-stats-grid">
-            <div class="stat-card ds-skeleton" style="height:104px"></div>
-            <div class="stat-card ds-skeleton" style="height:104px"></div>
-            <div class="stat-card ds-skeleton" style="height:104px"></div>
-            <div class="stat-card ds-skeleton" style="height:104px"></div>
-          </div>
-          <div class="form-card" style="padding:18px 18px" id="resume-insights-card">
-            <div style="display:flex;gap:14px;align-items:flex-start">
-              <div class="stat-icon" style="width:44px;height:44px;border-radius:16px">
-                <span class="li-icon" data-lucide="activity"></span>
-              </div>
-              <div style="flex:1">
-                <div style="font-size:13px;color:var(--text-light);margin-bottom:6px">Tu actividad reciente</div>
-                <div style="font-weight:800;font-size:16px" id="resume-insights-title">Cargando...</div>
-                <div style="font-size:13px;color:var(--text-light);line-height:1.45;margin-top:6px" id="resume-insights-desc">Estamos preparando tu resumen.</div>
+        <!-- WRAPPER PARA BLUR -->
+        <div class="resumen-wrapper" id="resumen-ejecutivo-wrapper">
+          <!-- CONTENIDO REAL -->
+          <div id="resume-section" class="resumen-content">
+            <div class="stats-grid" style="margin-bottom:18px" id="resume-stats-grid">
+              <div class="stat-card ds-skeleton" style="height:104px"></div>
+              <div class="stat-card ds-skeleton" style="height:104px"></div>
+              <div class="stat-card ds-skeleton" style="height:104px"></div>
+              <div class="stat-card ds-skeleton" style="height:104px"></div>
+            </div>
+            <div class="form-card" style="padding:18px 18px" id="resume-insights-card">
+              <div style="display:flex;gap:14px;align-items:flex-start">
+                <div class="stat-icon" style="width:44px;height:44px;border-radius:16px">
+                  <span class="li-icon" data-lucide="activity"></span>
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:13px;color:var(--text-light);margin-bottom:6px">Tu actividad reciente</div>
+                  <div style="font-weight:800;font-size:16px" id="resume-insights-title">Cargando...</div>
+                  <div style="font-size:13px;color:var(--text-light);line-height:1.45;margin-top:6px" id="resume-insights-desc">Estamos preparando tu resumen.</div>
+                </div>
               </div>
             </div>
+          </div>
+          <!-- CAPA DE BLOQUEO GRATUITO -->
+          <div class="lock-overlay">
+            <h3>🔒 Función Premium</h3>
+            <p>Desbloquea el análisis completo de tus propiedades y métricas avanzadas de tu cuenta.</p>
+            <button class="btn-upgrade-plan" onclick="mostrarModalPlanes()">Mejorar a Premium</button>
           </div>
         </div>
       </section>
@@ -154,8 +164,8 @@
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
             <h2 style="margin:0">Mis propiedades</h2>
             <div class="view-toggle" style="display:flex;gap:8px;align-items:center">
-              <button type="button" id="view-grid-btn" class="btn btn-outline" style="padding:8px 14px;font-size:13px">Grid</button>
-              <button type="button" id="view-list-btn" class="btn btn-outline" style="padding:8px 14px;font-size:13px">Lista</button>
+              <button type="button" id="view-grid-btn" class="btn btn-outline active" style="padding:8px 14px;font-size:13px" onclick="cambiarVistaMisProps('grid')">Grid</button>
+              <button type="button" id="view-list-btn" class="btn btn-outline" style="padding:8px 14px;font-size:13px" onclick="cambiarVistaMisProps('lista')">Lista</button>
             </div>
           </div>
           <button class="btn btn-primary" onclick="mostrarSeccion('nueva-propiedad')">+ Nueva publicación</button>
@@ -190,7 +200,6 @@
           </div>
 
           <div class="publicar-steps-content">
-
             <!-- STEP 1: Datos básicos -->
             <div class="publicar-step-content" data-step-content="1" style="display:block">
               <div class="form-grid">
@@ -259,38 +268,7 @@
                   <label>Estado *</label>
                   <select id="p-estado" class="form-input">
                     <option value="">Selecciona</option>
-                    <option value="Aguascalientes">Aguascalientes</option>
-                    <option value="Baja California">Baja California</option>
-                    <option value="Baja California Sur">Baja California Sur</option>
-                    <option value="Campeche">Campeche</option>
-                    <option value="Chiapas">Chiapas</option>
-                    <option value="Chihuahua">Chihuahua</option>
-                    <option value="Ciudad de Mexico">Ciudad de México</option>
-                    <option value="Coahuila">Coahuila</option>
-                    <option value="Colima">Colima</option>
-                    <option value="Durango">Durango</option>
-                    <option value="Guanajuato">Guanajuato</option>
-                    <option value="Guerrero">Guerrero</option>
-                    <option value="Hidalgo">Hidalgo</option>
-                    <option value="Jalisco">Jalisco</option>
-                    <option value="Mexico">Estado de México</option>
-                    <option value="Michoacan">Michoacán</option>
-                    <option value="Morelos">Morelos</option>
-                    <option value="Nayarit">Nayarit</option>
-                    <option value="Nuevo Leon">Nuevo León</option>
-                    <option value="Oaxaca">Oaxaca</option>
-                    <option value="Puebla">Puebla</option>
-                    <option value="Queretaro">Querétaro</option>
-                    <option value="Quintana Roo">Quintana Roo</option>
-                    <option value="San Luis Potosi">San Luis Potosí</option>
-                    <option value="Sinaloa">Sinaloa</option>
-                    <option value="Sonora">Sonora</option>
-                    <option value="Tabasco">Tabasco</option>
-                    <option value="Tamaulipas">Tamaulipas</option>
-                    <option value="Tlaxcala">Tlaxcala</option>
-                    <option value="Veracruz">Veracruz</option>
-                    <option value="Yucatan">Yucatán</option>
-                    <option value="Zacatecas">Zacatecas</option>
+                    <option value="Aguascalientes">Aguascalientes</option><option value="Baja California">Baja California</option><option value="Baja California Sur">Baja California Sur</option><option value="Campeche">Campeche</option><option value="Chiapas">Chiapas</option><option value="Chihuahua">Chihuahua</option><option value="Ciudad de Mexico">Ciudad de México</option><option value="Coahuila">Coahuila</option><option value="Colima">Colima</option><option value="Durango">Durango</option><option value="Guanajuato">Guanajuato</option><option value="Guerrero">Guerrero</option><option value="Hidalgo">Hidalgo</option><option value="Jalisco">Jalisco</option><option value="Mexico">Estado de México</option><option value="Michoacan">Michoacán</option><option value="Morelos">Morelos</option><option value="Nayarit">Nayarit</option><option value="Nuevo Leon">Nuevo León</option><option value="Oaxaca">Oaxaca</option><option value="Puebla">Puebla</option><option value="Queretaro">Querétaro</option><option value="Quintana Roo">Quintana Roo</option><option value="San Luis Potosi">San Luis Potosí</option><option value="Sinaloa">Sinaloa</option><option value="Sonora">Sonora</option><option value="Tabasco">Tabasco</option><option value="Tamaulipas">Tamaulipas</option><option value="Tlaxcala">Tlaxcala</option><option value="Veracruz">Veracruz</option><option value="Yucatan">Yucatán</option><option value="Zacatecas">Zacatecas</option>
                   </select>
                 </div>
                 <div class="form-grupo">
@@ -334,42 +312,11 @@
             <!-- STEP 5: Características -->
             <div class="publicar-step-content" data-step-content="5" style="display:none">
               <div class="form-grid">
-                <div class="form-grupo" style="grid-column:1/-1">
-                  <label>Recámaras <span id="label-recamaras" style="color:var(--primary);font-weight:700">0</span></label>
-                  <div style="display:flex;align-items:center;gap:12px">
-                    <input type="range" id="p-recamaras-slider" min="0" max="20" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('recamaras')">
-                    <input type="number" id="p-recamaras" class="form-input" value="0" min="0" max="20" style="width:80px;text-align:center" oninput="syncCaracteristica('recamaras','input')">
-                  </div>
-                </div>
-                <div class="form-grupo" style="grid-column:1/-1">
-                  <label>Baños completos <span id="label-banos" style="color:var(--primary);font-weight:700">0</span></label>
-                  <div style="display:flex;align-items:center;gap:12px">
-                    <input type="range" id="p-banos-slider" min="0" max="10" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('banos')">
-                    <input type="number" id="p-banos" class="form-input" value="0" min="0" max="10" style="width:80px;text-align:center" oninput="syncCaracteristica('banos','input')">
-                  </div>
-                </div>
-                <div class="form-grupo" style="grid-column:1/-1">
-                  <label>Medios baños <span id="label-medios-banos" style="color:var(--primary);font-weight:700">0</span></label>
-                  <div style="display:flex;align-items:center;gap:12px">
-                    <input type="range" id="p-medios-banos-slider" min="0" max="5" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('medios-banos')">
-                    <input type="number" id="p-medios-banos" class="form-input" value="0" min="0" max="5" style="width:80px;text-align:center" oninput="syncCaracteristica('medios-banos','input')">
-                  </div>
-                </div>
-                <div class="form-grupo" style="grid-column:1/-1">
-                  <label>Estacionamientos <span id="label-estacionamientos" style="color:var(--primary);font-weight:700">0</span></label>
-                  <div style="display:flex;align-items:center;gap:12px">
-                    <input type="range" id="p-estacionamientos-slider" min="0" max="10" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('estacionamientos')">
-                    <input type="number" id="p-estacionamientos" class="form-input" value="0" min="0" max="10" style="width:80px;text-align:center" oninput="syncCaracteristica('estacionamientos','input')">
-                  </div>
-                </div>
-                <div class="form-grupo" style="grid-column:1/-1">
-                  <label>Metros cuadrados <span id="label-m2" style="color:var(--primary);font-weight:700">0</span> m²</label>
-                  <div style="display:flex;align-items:center;gap:12px">
-                    <input type="range" id="p-m2-slider" min="0" max="2000" step="5" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('m2')">
-                    <input type="number" id="p-m2" class="form-input" value="0" min="0" style="width:80px;text-align:center" oninput="syncCaracteristica('m2','input')">
-                    <span style="font-size:13px;color:var(--text-light)">m²</span>
-                  </div>
-                </div>
+                <div class="form-grupo" style="grid-column:1/-1"><label>Recámaras <span id="label-recamaras" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-recamaras-slider" min="0" max="20" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('recamaras')"><input type="number" id="p-recamaras" class="form-input" value="0" min="0" max="20" style="width:80px;text-align:center" oninput="syncCaracteristica('recamaras','input')"></div></div>
+                <div class="form-grupo" style="grid-column:1/-1"><label>Baños completos <span id="label-banos" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-banos-slider" min="0" max="10" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('banos')"><input type="number" id="p-banos" class="form-input" value="0" min="0" max="10" style="width:80px;text-align:center" oninput="syncCaracteristica('banos','input')"></div></div>
+                <div class="form-grupo" style="grid-column:1/-1"><label>Medios baños <span id="label-medios-banos" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-medios-banos-slider" min="0" max="5" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('medios-banos')"><input type="number" id="p-medios-banos" class="form-input" value="0" min="0" max="5" style="width:80px;text-align:center" oninput="syncCaracteristica('medios-banos','input')"></div></div>
+                <div class="form-grupo" style="grid-column:1/-1"><label>Estacionamientos <span id="label-estacionamientos" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-estacionamientos-slider" min="0" max="10" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('estacionamientos')"><input type="number" id="p-estacionamientos" class="form-input" value="0" min="0" max="10" style="width:80px;text-align:center" oninput="syncCaracteristica('estacionamientos','input')"></div></div>
+                <div class="form-grupo" style="grid-column:1/-1"><label>Metros cuadrados <span id="label-m2" style="color:var(--primary);font-weight:700">0</span> m²</label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-m2-slider" min="0" max="2000" step="5" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('m2')"><input type="number" id="p-m2" class="form-input" value="0" min="0" style="width:80px;text-align:center" oninput="syncCaracteristica('m2','input')"></div><span style="font-size:13px;color:var(--text-light)">m²</span></div>
               </div>
             </div>
 
@@ -378,13 +325,11 @@
               <div class="form-grid">
                 <div class="form-grupo" style="grid-column:1/-1">
                   <label id="label-fotos-limite">Fotos (JPG/PNG/WEBP, máx 5MB c/u) — <span id="texto-limite-fotos">cargando límite...</span></label>
-
                   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
                     <span class="ds-badge ds-badge-primary" id="badge-fotos-count">Fotos: —</span>
                     <span class="ds-badge ds-badge-soft" id="badge-fotos-min">Mínimo 2: Pendiente</span>
                     <span class="ds-badge ds-badge-soft" id="badge-fotos-portada">Portada: Pendiente</span>
                   </div>
-
                   <div id="p-fotos-drop" class="fotos-drop" style="display:block">
                     <input type="file" id="p-fotos" multiple accept="image/*" onchange="previsualizarFotos(this)" style="display:none">
                     <div class="fotos-drop-inner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px 12px;border:2px dashed var(--border);border-radius:12px;background:var(--bg-secondary);cursor:pointer" onclick="document.getElementById('p-fotos').click()">
@@ -394,11 +339,8 @@
                       <button type="button" class="btn btn-outline" style="padding:8px 14px;font-size:13px;margin-top:6px" onclick="event.stopPropagation();document.getElementById('p-fotos').click()">Seleccionar fotos</button>
                     </div>
                   </div>
-
                   <div id="fotos-preview" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px"></div>
-                  <div id="fotos-portada-hint" style="margin-top:10px;font-size:12px;color:var(--text-light)">
-                    Toca una foto para marcarla como <b>portada</b>. Arrastra para cambiar el orden.
-                  </div>
+                  <div id="fotos-portada-hint" style="margin-top:10px;font-size:12px;color:var(--text-light)">Toca una foto para marcarla como <b>portada</b>. Arrastra para cambiar el orden.</div>
                 </div>
               </div>
             </div>
@@ -412,59 +354,44 @@
                     <span class="ds-badge ds-badge-soft" id="badge-envio-ubic">Ubicación: —</span>
                     <span class="ds-badge ds-badge-soft" id="badge-envio-fotos">Fotos: —</span>
                   </div>
-                  <div id="publicar-final-summary" class="alert alert-success" style="display:block">
-                    Revisa tus datos y presiona <b>Enviar a revisión</b>.
-                  </div>
+                  <div id="publicar-final-summary" class="alert alert-success" style="display:block">Revisa tus datos y presiona <b>Enviar a revisión</b>.</div>
                 </div>
               </div>
             </div>
-
           </div>
 
           <div class="publicar-step-actions" style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:18px">
             <button type="button" class="btn btn-outline" id="publicar-back-btn" style="display:none" onclick="publicarPrevStep()">← Atrás</button>
             <button type="button" class="btn btn-primary" id="publicar-next-btn" onclick="publicarNextStep()">Siguiente →</button>
           </div>
-
           <div id="publicar-submit-wrap" style="display:none">
-            <button class="btn btn-primary" style="padding:14px 32px;font-size:16px;margin-top:8px" type="button" onclick="publicarPropiedad()">
-              Enviar a revisión
-            </button>
+            <button class="btn btn-primary" style="padding:14px 32px;font-size:16px;margin-top:8px" type="button" onclick="publicarPropiedad()">Enviar a revisión</button>
           </div>
-
         </div>
       </section>
 
       <!-- FAVORITOS -->
       <section id="sec-favoritos" class="dash-section" style="display:none">
         <div class="dash-section-header"><h2>Mis favoritos</h2></div>
-        <div id="favoritos-grid" class="properties-grid">
-          <div class="loading">Cargando favoritos...</div>
-        </div>
+        <div id="favoritos-grid" class="properties-grid"><div class="loading">Cargando favoritos...</div></div>
       </section>
 
       <!-- MENSAJES -->
       <section id="sec-mensajes" class="dash-section" style="display:none">
         <div class="dash-section-header"><h2>Mis mensajes</h2></div>
-        <div id="mensajes-lista" class="mensajes-lista">
-          <div class="loading">Cargando mensajes...</div>
-        </div>
+        <div id="mensajes-lista" class="mensajes-lista"><div class="loading">Cargando mensajes...</div></div>
       </section>
 
       <!-- LEADS -->
       <section id="sec-leads" class="dash-section" style="display:none">
         <div class="dash-section-header"><h2>Mis leads</h2></div>
-        <div id="leads-usuario-lista" class="mensajes-lista">
-          <div class="loading">Cargando leads...</div>
-        </div>
+        <div id="leads-usuario-lista" class="mensajes-lista"><div class="loading">Cargando leads...</div></div>
       </section>
 
       <!-- MI CUENTA -->
       <section id="sec-mi-cuenta" class="dash-section" style="display:none">
         <div class="dash-section-header"><h2>Mi cuenta</h2></div>
-        <div class="form-card">
-          <div id="cuenta-info"></div>
-        </div>
+        <div class="form-card"><div id="cuenta-info"></div></div>
       </section>
 
     </main>
