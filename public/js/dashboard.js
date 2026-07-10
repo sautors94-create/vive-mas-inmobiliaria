@@ -150,8 +150,7 @@ window.contratarPlan = (plan) => {
   }
 
   if (plan === 'basico' && STRIPE_LINKS.basico) {
-    const returnUrl = encodeURIComponent(`${window.location.origin}/pages/dashboard.html?pago=exito`);
-    const linkFinal = `${STRIPE_LINKS.basico}?client_reference_id=${user._id || user.id}&success_url=${returnUrl}`;
+    const linkFinal = `${STRIPE_LINKS.basico}?client_reference_id=${user._id || user.id}`;
     window.location.href = linkFinal;
   } else {
     dsToast({ title: 'Próximamente', message: 'Este plan estará disponible muy pronto.', type: 'info' });
@@ -159,32 +158,36 @@ window.contratarPlan = (plan) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Si regresa de Stripe con ?pago=exito, refresca el perfil desde el servidor
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('pago') === 'exito') {
-    // Limpiar el parámetro de la URL sin recargar la página
-    window.history.replaceState({}, document.title, window.location.pathname);
+// Siempre verificar el plan real en el servidor al cargar el dashboard
+  // Esto detecta: regreso de Stripe, cambio manual de plan por admin, expiración, etc.
+  const verificarPlanActual = async () => {
+    try {
+      const planLocalAntes = (auth.getUser()?.plan || 'gratuito').toLowerCase();
+      const data = await api.get('/auth/perfil');
+      if (!data.user) return;
 
-    // Esperar hasta 8 segundos a que el webhook de Stripe procese
-    const refrescarHastaActualizar = async (intentos = 0) => {
-      try {
-        const data = await api.get('/auth/perfil');
-        if (data.user) {
-          const planAnterior = auth.getUser()?.plan || 'gratuito';
-          localStorage.setItem('user', JSON.stringify(data.user));
-          if (data.user.plan !== planAnterior) {
-            mostrarModalBienvenidaPlan(data.user.plan);
-            return;
-          }
-        }
-      } catch (e) {}
-      // Si el plan no cambió aún, reintenta hasta 4 veces con 2 segundos de espera
-      if (intentos < 4) {
-        setTimeout(() => refrescarHastaActualizar(intentos + 1), 2000);
+      const planServidor = (data.user.plan || 'gratuito').toLowerCase();
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Actualizar UI de topbar y sidebar con datos frescos
+      const planEl = document.getElementById('ds-user-plan');
+      const sidebarPlan = document.getElementById('sidebar-plan');
+      if (planEl) planEl.textContent = `Plan ${data.user.plan}`;
+      if (sidebarPlan) sidebarPlan.textContent = `Plan ${data.user.plan}`;
+
+      // Si el plan mejoró vs lo que teníamos en localStorage → mostrar felicitación
+      const jerarquia = { gratuito: 0, basico: 1, premium: 2 };
+      if ((jerarquia[planServidor] || 0) > (jerarquia[planLocalAntes] || 0)) {
+        mostrarModalBienvenidaPlan(data.user.plan);
       }
-    };
-    refrescarHastaActualizar();
-  }
+
+      // Ocultar botón "Mejorar plan" si ya es premium
+      if (planServidor === 'premium') {
+        document.getElementById('btn-mejorar-plan')?.style.setProperty('display', 'none');
+      }
+    } catch (e) {}
+  };
+  verificarPlanActual();
   // Si llega con ?seccion=X en la URL (ej. desde el panel admin), abre esa sección directamente
   const seccionURL = new URLSearchParams(window.location.search).get('seccion');
   if (seccionURL && document.getElementById(`sec-${seccionURL}`)) {
