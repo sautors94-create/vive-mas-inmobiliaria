@@ -158,87 +158,53 @@ window.contratarPlan = (plan) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-// Siempre verificar el plan real en el servidor al cargar el dashboard
-  // Esto detecta: regreso de Stripe, cambio manual de plan por admin, expiración, etc.
-  const verificarPlanActual = async () => {
+// Verificar plan real en el servidor — detecta cambios de Stripe, admin, etc.
+  const verificarPlanActual = async (intentos = 0, mostrarModal = false) => {
     try {
       const planLocalAntes = (auth.getUser()?.plan || 'gratuito').toLowerCase();
-      const data = await api.get('/auth/perfil');
-      if (!data.user) return;
+      const data = await api.get('/auth/verificar-plan');
+      if (!data.ok || !data.user) return;
 
-      const planServidor = (data.user.plan || 'gratuito').toLowerCase();
-      localStorage.setItem('user', JSON.stringify(data.user));
+      const planServidor = (data.plan || 'gratuito').toLowerCase();
 
-      // Actualizar UI de topbar y sidebar con datos frescos
+      // Actualizar localStorage con datos frescos
+      const userActual = auth.getUser() || {};
+      const userActualizado = { ...userActual, plan: data.plan, planFechaFin: data.planFechaFin };
+      localStorage.setItem('user', JSON.stringify(userActualizado));
+
+      // Actualizar UI inmediatamente
       const planEl = document.getElementById('ds-user-plan');
       const sidebarPlan = document.getElementById('sidebar-plan');
-      if (planEl) planEl.textContent = `Plan ${data.user.plan}`;
-      if (sidebarPlan) sidebarPlan.textContent = `Plan ${data.user.plan}`;
-
-      // Si el plan mejoró vs lo que teníamos en localStorage → mostrar felicitación
-      const jerarquia = { gratuito: 0, basico: 1, premium: 2 };
-      if ((jerarquia[planServidor] || 0) > (jerarquia[planLocalAntes] || 0)) {
-        mostrarModalBienvenidaPlan(data.user.plan);
+      const limiteFotosEl = document.getElementById('texto-limite-fotos');
+      if (planEl) planEl.textContent = `Plan ${data.plan}`;
+      if (sidebarPlan) sidebarPlan.textContent = `Plan ${data.plan}`;
+      if (limiteFotosEl) {
+        const lim = getLimiteFotos();
+        limiteFotosEl.textContent = `Plan ${data.plan}: hasta ${lim} fotos`;
       }
 
-      // Ocultar botón "Mejorar plan" si ya es premium
-      if (planServidor === 'premium') {
-        document.getElementById('btn-mejorar-plan')?.style.setProperty('display', 'none');
+      const jerarquia = { gratuito: 0, basico: 1, premium: 2 };
+      if ((jerarquia[planServidor] || 0) > (jerarquia[planLocalAntes] || 0)) {
+        mostrarModalBienvenidaPlan(data.plan);
+        return;
+      }
+
+      // Si venimos de Stripe y el plan no cambió aún, reintentar hasta 5 veces
+      if (mostrarModal && planServidor === planLocalAntes && intentos < 5) {
+        setTimeout(() => verificarPlanActual(intentos + 1, true), 2500);
       }
     } catch (e) {}
   };
-  verificarPlanActual();
-  // Si llega con ?seccion=X en la URL (ej. desde el panel admin), abre esa sección directamente
-  const seccionURL = new URLSearchParams(window.location.search).get('seccion');
-  if (seccionURL && document.getElementById(`sec-${seccionURL}`)) {
-    document.querySelectorAll('.dash-section').forEach(s => s.style.display = 'none');
-    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-    document.getElementById(`sec-${seccionURL}`).style.display = 'block';
-    document.querySelector(`.sidebar-link[onclick*="${seccionURL}"]`)?.classList.add('active');
-    if (seccionURL === 'nueva-propiedad') setTimeout(() => iniciarMapaPublicar(), 200);
+
+  // Detectar regreso de Stripe (el Payment Link añade ?session_id=xxx en la URL)
+  const desdeStripe = window.location.search.includes('session_id') ||
+                      window.location.search.includes('pago=exito');
+  if (desdeStripe) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+    verificarPlanActual(0, true); // Con polling activo
+  } else {
+    verificarPlanActual(0, false); // Sin polling, solo verificación
   }
-
-  if (user) {
-    document.getElementById('sidebar-nombre').textContent = user.nombre;
-    // Actualizar límite de fotos según plan
-    const limiteLabel = document.getElementById('texto-limite-fotos');
-    if (limiteLabel) {
-      const limite = getLimiteFotos();
-      const plan = (user.plan || 'gratuito');
-      limiteLabel.textContent = `Plan ${plan}: hasta ${limite} fotos`;
-      limiteLabel.style.color = plan === 'premium' ? '#7c3aed' : plan === 'basico' ? '#0369a1' : '#6b7280';
-    }
-    document.getElementById('sidebar-nombre').textContent = user.nombre;
-    document.getElementById('sidebar-plan').textContent = `Plan ${user.plan}`;
-    document.getElementById('user-avatar').textContent = user.nombre.charAt(0).toUpperCase();
-
-    // Default view: grid
-    const gridBtn = document.getElementById('view-grid-btn');
-    const listBtn = document.getElementById('view-list-btn');
-    const container = document.getElementById('mis-props-container');
-    if (gridBtn && listBtn && container) {
-      const setView = (view) => {
-        container.classList.toggle('mis-props-view-grid', view === 'grid');
-        container.classList.toggle('mis-props-view-list', view === 'list');
-        gridBtn.classList.toggle('btn-primary', view === 'grid');
-        gridBtn.classList.toggle('btn-outline', view !== 'grid');
-        listBtn.classList.toggle('btn-primary', view === 'list');
-        listBtn.classList.toggle('btn-outline', view !== 'list');
-      };
-
-      setView('grid');
-      gridBtn.addEventListener('click', () => setView('grid'));
-      listBtn.addEventListener('click', () => {
-        setView('list');
-        cargarMisPropiedades();
-      });
-    }
-
-    cargarMisPropiedades();
-    cargarResumenUsuario();
-    cargarCuenta();
-  }
-});
 // ==========================================
 // NAVEGACIÓN PRINCIPAL
 // ==========================================

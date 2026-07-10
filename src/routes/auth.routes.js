@@ -14,6 +14,16 @@ router.get('/perfil', authMiddleware, perfil);
 router.get('/leads', authMiddleware, misLeads);
 router.patch('/notificaciones', authMiddleware, actualizarNotificaciones);
 router.patch('/perfil', authMiddleware, actualizarPerfil);
+// Endpoint para verificar si el plan cambió (útil al regresar de Stripe)
+router.get('/verificar-plan', authMiddleware, async (req, res) => {
+  try {
+    const user = await require('../models/User').findById(req.user.id).select('plan planFechaFin nombre email');
+    if (!user) return res.status(404).json({ ok: false });
+    res.json({ ok: true, plan: user.plan, planFechaFin: user.planFechaFin, user });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
 router.post(
   '/kyc',
   authMiddleware,

@@ -136,4 +136,67 @@ router.patch('/admin/pagos/:id', esAdmin, async (req, res) => {
   }
 });
 
-module.exports = router;    
+// Exportar la función del webhook separadamente para registrarla correctamente en app.js
+const webhookStripe = async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    console.error('❌ Error de firma del webhook:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const userId = session.client_reference_id;
+    try {
+      let usuario = null;
+      if (userId) {
+        usuario = await Usuario.findById(userId);
+      } else {
+        const email = session.customer_details?.email || session.customer_email;
+        if (email) usuario = await Usuario.findOne({ email });
+      }
+      if (usuario) {
+        const pagoExistente = await Pago.findOne({ stripe_session_id: session.id });
+        if (!pagoExistente) {
+          const fechaExpiracion = new Date();
+          fechaExpiracion.setDate(fechaExpiracion.getDate() + 30);
+          await Pago.create({
+            stripe_session_id: session.id,
+            usuario_id: usuario._id,
+            usuario_email: usuario.email,
+            plan_contratado: 'basico',
+            monto: session.amount_total / 100,
+            estatus: 'completado'
+          });
+          usuario.plan = 'basico';
+          usuario.planFechaFin = fechaExpiracion;
+          if (session.subscription) usuario.stripeSubscriptionId = session.subscription;
+          await usuario.save();
+          console.log(`✅ Plan BASICO activado para: ${usuario.email}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error al procesar pago:', error);
+    }
+  }
+
+  if (event.type === 'invoice.payment_failed') {
+    const invoice = event.data.object;
+    const usuario = await Usuario.findOne({ stripeSubscriptionId: invoice.subscription });
+    if (usuario) {
+      usuario.plan = 'gratuito';
+      usuario.stripeSubscriptionId = null;
+      await usuario.save();
+      console.log(`❌ Renovación fallida. ${usuario.email} regresado a GRATUITO.`);
+    }
+  }
+
+  res.json({ received: true });
+};
+
+module.exports = router;
+module.exports.webhookStripe = webhookStripe;  

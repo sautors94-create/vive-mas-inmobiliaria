@@ -52,7 +52,9 @@ app.use(helmet({
 }));
 app.use(cors({ origin: process.env.CLIENT_URL || '*', credentials: true }));
 app.use(morgan('dev'));
-app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), pagoRoutes);
+const { webhookStripe } = require('./routes/pagos');
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), webhookStripe);
+app.use('/api', pagoRoutes);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
