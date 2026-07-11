@@ -23,21 +23,23 @@ const formatPrecioCorto = (valor) => {
   return `$${valor}`;
 };
 
-// Get filters from state
 const obtenerFiltros = () => {
   const params = new URLSearchParams(window.location.search);
+  const f = filtrosActuales;
   return {
-    operacion: filtrosActuales.operacion || (params.get('operacion') || ''),
-    tipo: filtrosActuales.tipo || (params.get('tipo') || ''),
-    estado: filtrosActuales.estado || (params.get('estado') || ''),
-    ciudad: filtrosActuales.ciudad || (params.get('ciudad') || ''),
-    precioMin: filtrosActuales.precioMin || (params.get('precioMin') || ''),
-    precioMax: filtrosActuales.precioMax || (params.get('precioMax') || ''),
-    recamaras: filtrosActuales.recamaras || (params.get('recamaras') || ''),
-    banos: filtrosActuales.banos || (params.get('banos') || ''),
-    m2Min: filtrosActuales.m2Min || (params.get('m2Min') || ''),
-    m2Max: filtrosActuales.m2Max || (params.get('m2Max') || ''),
-    orden: filtrosActuales.orden || '-createdAt',
+    operacion: f.operacion || params.get('operacion') || '',
+    tipo: f.tipo || params.get('tipo') || '',
+    estado: f.estado || params.get('estado') || '',
+    ciudad: f.ciudad || params.get('ciudad') || '',
+    // precioMin solo se manda si es mayor a 0
+    precioMin: (f.precioMin > 0 ? f.precioMin : '') || params.get('precioMin') || '',
+    // precioMax solo se manda si es menor al máximo absoluto
+    precioMax: (f.precioMax < 100000000 ? f.precioMax : '') || params.get('precioMax') || '',
+    recamaras: f.recamaras || params.get('recamaras') || '',
+    banos: f.banos || params.get('banos') || '',
+    m2Min: (f.m2Min > 0 ? f.m2Min : '') || params.get('m2Min') || '',
+    m2Max: (f.m2Max < 1000 ? f.m2Max : '') || params.get('m2Max') || '',
+    orden: f.orden || '-createdAt',
     pagina: paginaActual,
     limite: 15
   };
@@ -439,8 +441,8 @@ const toggleAdvCheckbox = (element, type) => {
 // FILTER STATE MANAGEMENT
 // ===========================================
 
-// Clean all filters
 const limpiarFiltros = () => {
+  // Resetear estado de filtros a valores neutros
   Object.keys(filtrosActuales).forEach(key => {
     if (key === 'precioMax') filtrosActuales[key] = 100000000;
     else if (key === 'm2Max') filtrosActuales[key] = 1000;
@@ -448,11 +450,13 @@ const limpiarFiltros = () => {
     else filtrosActuales[key] = '';
   });
 
-  // Close panel
+  // Cerrar panel avanzado y popovers
   closeAdvancedPanel();
+  closeAllFilterPopovers();
 
-  // Reset visual state
+  // Limpiar UI: checkboxes, radios, selects del panel avanzado
   document.querySelectorAll('.checkbox-option.selected, .radio-option.selected').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('#opciones-estado-catalogo .popover-option.selected').forEach(el => el.classList.remove('selected'));
   const advEstado = document.getElementById('adv-estado');
   const advCiudad = document.getElementById('adv-ciudad');
   const advColonia = document.getElementById('adv-colonia');
@@ -460,8 +464,21 @@ const limpiarFiltros = () => {
   if (advCiudad) advCiudad.value = '';
   if (advColonia) advColonia.value = '';
 
-  // Update chip labels
+  // Limpiar sliders de precio si existen
+  const precioMin = document.getElementById('f-precio-min');
+  const precioMax = document.getElementById('f-precio-max');
+  if (precioMin) precioMin.value = 0;
+  if (precioMax) precioMax.value = 100000000;
+
+  // Actualizar labels de chips
   ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras'].forEach(actualizarChipLabel);
+
+  // Limpiar chips activos visualmente
+  const chipsContainer = document.getElementById('catalogo-chips');
+  if (chipsContainer) chipsContainer.innerHTML = '';
+
+  // Limpiar parámetros de URL para que no interfieran al recargar
+  window.history.replaceState({}, document.title, window.location.pathname);
 
   aplicarFiltros();
 };
