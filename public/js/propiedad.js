@@ -140,7 +140,7 @@ ${p.caracteristicas.banos ? `<div class="caract-item"><div class="caract-valor">
                 <p style="font-size:12px;color:var(--text-light);margin-top:10px">
                   Para guardar favoritos y contactar propietarios necesitas una cuenta.
                 </p>
-                <a href="login.html" class="btn btn-outline" style="width:100%;padding:10px;margin-top:8px;text-align:center;display:block">Iniciar sesión</a>
+                <a href="#" onclick="localStorage.setItem('redireccion_favorito', window.location.href); window.location.href='login.html'; return false;" class="btn btn-outline" style="width:100%;padding:10px;margin-top:8px;text-align:center;display:block">Iniciar sesión</a>
               ` : ''}
             </div>
             <div id="contacto-msg" style="display:none;margin-top:12px"></div>

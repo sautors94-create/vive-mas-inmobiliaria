@@ -26,6 +26,7 @@ caracteristicas: {
   },
   propietario: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   destacada: { type: Boolean, default: false },
+  planPeso: { type: Number, default: 0 }, // 0=Gratuito, 1=Básico, 2=Premium
 }, { timestamps: true });
 
 propertySchema.index({ 'ubicacion.estado': 1, 'ubicacion.ciudad': 1 });

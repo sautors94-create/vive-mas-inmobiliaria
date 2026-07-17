@@ -3,6 +3,7 @@ const router = express.Router();
 const Stripe = require('stripe');
 const Pago = require('../models/Pago');
 const Usuario = require('../models/User');
+const Property = require('../models/Property');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -50,7 +51,6 @@ const webhookStripe = async (req, res) => {
           fechaExpiracion.setDate(fechaExpiracion.getDate() + 30);
 
           // Determinar qué plan se contrató según el precio
-          // Por ahora solo existe "basico" — cuando exista premium, aquí se diferencia por price_id
           const planContratado = 'basico';
 
           await Pago.create({
@@ -64,6 +64,14 @@ const webhookStripe = async (req, res) => {
 
           usuario.plan = planContratado;
           usuario.planFechaFin = fechaExpiracion;
+          
+          // Actualizar peso de todas sus propiedades existentes
+          const pesoMap = { gratuito: 0, basico: 1, premium: 2 };
+          await Property.updateMany(
+            { propietario: usuario._id },
+            { $set: { planPeso: pesoMap[planContratado] || 0 } }
+          );
+          
           if (session.subscription) {
             usuario.stripeSubscriptionId = session.subscription;
           }
@@ -74,7 +82,36 @@ const webhookStripe = async (req, res) => {
           console.log(`ℹ️ Pago duplicado ignorado: ${session.id}`);
         }
       } else {
-        console.warn(`⚠️ Webhook: usuario no encontrado. Session ID: ${session.id}`);
+        // ==========================================
+        // ✅ NUEVO: CREAR CUENTA SI PAGÓ SIN REGISTRARSE
+        // ==========================================
+        console.warn(`⚠️ Webhook: usuario no encontrado. Creando cuenta automática...`);
+        const emailPago = session.customer_details?.email || session.customer_email;
+        
+        if (emailPago) {
+          // Crear cuenta temporal con contraseña aleatoria segura
+          const tempPassword = Math.random().toString(36).slice(-2) + Date.now().toString(36);
+          
+          const nuevoUsuario = await Usuario.create({
+            email: emailPago,
+            password: tempPassword,
+            nombre: emailPago.split('@')[0],
+            plan: 'basico',
+            verificado: true // Stripe ya validó su método de pago
+          });
+          
+          // Registrar el pago en la BD
+          await Pago.create({
+            stripe_session_id: session.id,
+            usuario_id: nuevoUsuario._id,
+            usuario_email: emailPago,
+            plan_contratado: 'basico',
+            monto: session.amount_total / 100,
+            estatus: 'completado'
+          });
+
+          console.log(`🆕 Cuenta nueva creada por pago Stripe: ${emailPago}`);
+        }
       }
     } catch (error) {
       console.error('❌ Error al procesar pago:', error);
@@ -86,7 +123,6 @@ const webhookStripe = async (req, res) => {
     const invoice = event.data.object;
     const usuario = await Usuario.findOne({ stripeSubscriptionId: invoice.subscription });
     if (usuario) {
-      // Extender 30 días más desde hoy
       const nuevaFecha = new Date();
       nuevaFecha.setDate(nuevaFecha.getDate() + 30);
       usuario.planFechaFin = nuevaFecha;
@@ -103,6 +139,11 @@ const webhookStripe = async (req, res) => {
       usuario.plan = 'gratuito';
       usuario.stripeSubscriptionId = null;
       usuario.planFechaFin = null;
+      // Bajar el peso de sus propiedades a 0
+      await Property.updateMany(
+        { propietario: usuario._id },
+        { $set: { planPeso: 0 } }
+      );
       await usuario.save();
       console.log(`❌ Renovación fallida. ${usuario.email} regresado a GRATUITO.`);
     }
@@ -116,6 +157,11 @@ const webhookStripe = async (req, res) => {
       usuario.plan = 'gratuito';
       usuario.stripeSubscriptionId = null;
       usuario.planFechaFin = null;
+      // Bajar el peso de sus propiedades a 0
+      await Property.updateMany(
+        { propietario: usuario._id },
+        { $set: { planPeso: 0 } }
+      );
       await usuario.save();
       console.log(`🚫 Suscripción cancelada. ${usuario.email} regresado a GRATUITO.`);
     }

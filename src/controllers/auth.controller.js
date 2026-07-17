@@ -104,8 +104,13 @@ const login = async (req, res) => {
     const passwordOk = await user.compararPassword(password);
     if (!passwordOk) return res.status(401).json({ error: 'Credenciales incorrectas' });
     if (user.status === 'suspendido') return res.status(403).json({ error: 'Cuenta suspendida' });
-    if (user.status === 'bloqueado') return res.status(403).json({ error: 'Cuenta bloqueada. Contacta soporte.' });
+    if (user.status === 'bloqueado') return res.status(403).json({ error: 'Cuenta bloqueado. Contacta soporte.' });
     if (!user.verificado) return res.status(403).json({ error: 'Debes verificar tu cuenta antes de continuar', requiereVerificacion: true, email });
+    
+    // ✅ Establecer última actividad al hacer login
+    user.ultimaActividad = new Date();
+    await user.save();
+    
     const { accessToken, refreshToken } = generarTokens(user);
     res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.json({ ok: true, accessToken, user });
@@ -149,6 +154,25 @@ const refreshToken = async (req, res) => {
     const user = await User.findById(decoded.id);
     if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
     if (user.status === 'suspendido') return res.status(403).json({ error: 'Cuenta suspendida' });
+    
+    // ✅ Verificar inactividad (15 minutos)
+    const ahora = new Date();
+    const diferencia = ahora - user.ultimaActividad;
+    const quinceMinutos = 15 * 60 * 1000;
+    
+    if (diferencia > quinceMinutos) {
+      // ✅ Limpiar cookie y rechazar
+      res.clearCookie('refreshToken');
+      return res.status(401).json({ 
+        error: 'Sesión expirada por inactividad',
+        sesionExpirada: true 
+      });
+    }
+    
+    // ✅ Actualizar última actividad
+    user.ultimaActividad = ahora;
+    await user.save();
+    
     const { accessToken, refreshToken: newRefreshToken } = generarTokens(user);
     res.cookie('refreshToken', newRefreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.json({ ok: true, accessToken });
@@ -156,6 +180,7 @@ const refreshToken = async (req, res) => {
     res.status(401).json({ error: 'Refresh token inválido o expirado' });
   }
 };
+
 const actualizarNotificaciones = async (req, res) => {
   try {
     const { notificaciones } = req.body;
@@ -216,6 +241,7 @@ const subirKyc = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 const actualizarPerfil = async (req, res) => {
   try {
     const { telefono } = req.body;
@@ -228,4 +254,17 @@ const actualizarPerfil = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-module.exports = { registro, login, logout, perfil, misLeads, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, actualizarPerfil, subirKyc };
+
+module.exports = { 
+  registro, 
+  login, 
+  logout, 
+  perfil, 
+  misLeads, 
+  refreshToken, 
+  verificarCodigo, 
+  reenviarCodigo, 
+  actualizarNotificaciones, 
+  actualizarPerfil, 
+  subirKyc 
+};

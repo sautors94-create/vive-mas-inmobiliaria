@@ -4,14 +4,16 @@ const Property = require('../models/Property');
 const LIMITE_POR_PLAN = {
   gratuito: 3,
   basico: 15,
+  basico_plus: Infinity, // Asignado por admin, sin límite de props
   premium: Infinity
 };
 
 const crearPropiedad = async (req, res) => {
   try {
     const { titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas } = req.body;
-    const plan = req.user.plan || 'gratuito';
-    const limite = LIMITE_POR_PLAN[plan] || 3;
+        // Permitir ilimitadas si el rol es basico_plus, sin importar el plan de pago
+    const planEfectivo = req.user.role === 'basico_plus' ? 'basico_plus' : (req.user.plan || 'gratuito');
+    const limite = LIMITE_POR_PLAN[planEfectivo] || 3;
     // Contar propiedades activas del usuario (no rechazadas/eliminadas)
     const count = await Property.countDocuments({
       propietario: req.user.id,
@@ -23,10 +25,15 @@ const crearPropiedad = async (req, res) => {
 ¡Haz upgrade a premium para publicaciones ilimitadas!`
       });
     }
+        // Definir peso según el plan del usuario
+    const pesoMap = { gratuito: 0, basico: 1, premium: 2 };
+    const pesoPlan = pesoMap[plan] || 0;
+
     const propiedad = await Property.create({
       titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas,
       propietario: req.user.id,
-      status: 'revision'
+      status: 'revision',
+      planPeso: pesoPlan // <- NUEVO
     });
     res.status(201).json({ ok: true, mensaje: 'Propiedad enviada a revisión', propiedad });
   } catch (error) {
@@ -86,7 +93,7 @@ const listarPropiedades = async (req, res) => {
     const total = await Property.countDocuments(filtro);
     const propiedades = await Property.find(filtro)
       .populate('propietario', 'nombre avatar')
-      .sort({ destacada: -1, ...ordenFinal })
+      .sort({ planPeso: -1, destacada: -1, ...ordenFinal }) // -1 significa de mayor a menor (Premium primero)
       .skip(skip)
       .limit(Number(limite));
 

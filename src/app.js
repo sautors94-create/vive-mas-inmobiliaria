@@ -89,6 +89,39 @@ app.use('/api/chat', chatbotRoutes);
 app.use('/api/services', servicesRoutes);
 app.use('/api', pagoRoutes); // Rutas de pagos: /api/admin/pagos
 
+// ==========================================
+// ✅ NUEVO: LISTA DE ESPERA PREMIUM
+// ==========================================
+const Waitlist = require('./models/Waitlist');
+
+app.post('/api/waitlist/premium', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Email inválido' });
+    }
+    
+    await Waitlist.create({ email });
+    res.json({ ok: true });
+  } catch (error) {
+    // Si el error es de duplicado, ya estaba registrado
+    if (error.code === 11000) {
+      return res.json({ ok: true }); 
+    }
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// Ruta para que el Admin vea los correos de la lista de espera
+app.get('/api/admin/waitlist', async (req, res) => {
+  try {
+    const correos = await Waitlist.find().sort({ createdAt: -1 });
+    res.json({ ok: true, correos });
+  } catch (error) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
 // 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });

@@ -36,12 +36,15 @@
         <input id="ds-global-search" type="text" placeholder="Buscar en tu dashboard..." />
       </div>
 
-      <div class="ds-topbar-right">
-        <button id="ds-notif-btn" class="ds-icon-btn" type="button" aria-label="Resumen ejecutivo">
-          <span class="li-icon" data-lucide="bar-chart-2"></span>
-          <span id="ds-notif-dot" class="ds-notif-dot" style="display:none"></span>
+            <div class="ds-topbar-right">
+        
+        <!-- BOTÓN IZQUIERDO: IR AL RESUMEN EJECUTIVO -->
+        <button id="ds-notif-btn" class="ds-icon-btn" type="button" aria-label="Ir al Resumen Ejecutivo" onclick="mostrarSeccion('resumen')" style="cursor:pointer; border-radius: 8px; padding: 6px; display: flex; align-items: center; gap: 8px; background: var(--bg-secondary); border: 1px solid var(--border);">
+          <span class="li-icon" data-lucide="layout-dashboard" style="width:20px;height:20px;color:var(--primary)"></span>
+          <span style="font-size: 13px; font-weight: 600; color: var(--text);">Resumen</span>
         </button>
 
+        <!-- BOTÓN DERECHO: MENÚ DE USUARIO (COMO ESTABA ANTES) -->
         <div id="ds-avatar-wrap" style="position:relative">
           <div id="ds-avatar-btn" class="ds-avatar">
             <span id="ds-avatar-bg" class="badge" aria-hidden="true"><span id="ds-user-initials">U</span></span>
@@ -76,6 +79,7 @@
             </div>
           </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -121,42 +125,55 @@
     <main class="dashboard-main">
 
       <!-- RESUMEN EJECUTIVO -->
-      <section id="sec-resumen" class="dash-section">
-        <div class="dash-section-header">
-          <h2>Resumen ejecutivo</h2>
-          <span class="badge-premium" id="resume-plan-pill" style="display:none">Plan: —</span>
-        </div>
-        <!-- WRAPPER PARA BLUR -->
-        <div class="resumen-wrapper" id="resumen-ejecutivo-wrapper">
-          <!-- CONTENIDO REAL -->
-          <div id="resume-section" class="resumen-content">
-            <div class="stats-grid" style="margin-bottom:18px" id="resume-stats-grid">
-              <div class="stat-card ds-skeleton" style="height:104px"></div>
-              <div class="stat-card ds-skeleton" style="height:104px"></div>
-              <div class="stat-card ds-skeleton" style="height:104px"></div>
-              <div class="stat-card ds-skeleton" style="height:104px"></div>
-            </div>
-            <div class="form-card" style="padding:18px 18px" id="resume-insights-card">
-              <div style="display:flex;gap:14px;align-items:flex-start">
-                <div class="stat-icon" style="width:44px;height:44px;border-radius:16px">
-                  <span class="li-icon" data-lucide="activity"></span>
-                </div>
-                <div style="flex:1">
-                  <div style="font-size:13px;color:var(--text-light);margin-bottom:6px">Tu actividad reciente</div>
-                  <div style="font-weight:800;font-size:16px" id="resume-insights-title">Cargando...</div>
-                  <div style="font-size:13px;color:var(--text-light);line-height:1.45;margin-top:6px" id="resume-insights-desc">Estamos preparando tu resumen.</div>
-                </div>
-              </div>
-            </div>
+<section id="sec-resumen" class="dash-section">
+  <div class="dash-section-header">
+    <h2>Resumen ejecutivo</h2>
+    <span class="badge-premium" id="resume-plan-pill" style="display:none">Plan: —</span>
+  </div>
+  
+  <!-- WRAPPER PARA BLUR -->
+  <div class="resumen-wrapper" id="resumen-ejecutivo-wrapper">
+    <!-- CONTENIDO REAL -->
+    <div class="resumen-content" id="resume-content">
+      <div class="stats-grid" style="margin-bottom:18px" id="resume-stats-grid">
+        <div class="stat-card ds-skeleton" style="height:104px"></div>
+        <div class="stat-card ds-skeleton" style="height:104px"></div>
+        <div class="stat-card ds-skeleton" style="height:104px"></div>
+        <div class="stat-card ds-skeleton" style="height:104px"></div>
+      </div>
+      <div class="form-card" style="padding:18px 18px" id="resume-insights-card">
+        <div style="display:flex;gap:14px;align-items:flex-start">
+          <div class="stat-icon" style="width:44px;height:44px;border-radius:16px">
+            <span class="li-icon" data-lucide="activity"></span>
           </div>
-          <!-- CAPA DE BLOQUEO GRATUITO -->
-          <div class="lock-overlay">
-            <h3>🔒 Función Premium</h3>
-            <p>Desbloquea el análisis completo de tus propiedades y métricas avanzadas de tu cuenta.</p>
-            <button class="btn-upgrade-plan" onclick="mostrarModalPlanes()">Mejorar a Premium</button>
+          <div style="flex:1">
+            <div style="font-size:13px;color:var(--text-light);margin-bottom:6px">Tu actividad reciente</div>
+            <div style="font-weight:800;font-size:16px" id="resume-insights-title">Cargando...</div>
+            <div style="font-size:13px;color:var(--text-light);line-height:1.45;margin-top:6px" id="resume-insights-desc">Estamos preparando tu resumen.</div>
           </div>
         </div>
-      </section>
+      </div>
+      
+      <!-- SECCIÓN DE PROPIEDADES DEBAJO DEL RESUMEN -->
+      <div style="margin-top: 32px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h3 style="font-size:18px;margin:0;font-family:'Bricolage Grotesque',sans-serif">Mis publicaciones</h3>
+          <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="mostrarSeccion('nueva-propiedad')">+ Nueva</button>
+        </div>
+        <div id="mis-props-container-resumen" class="mis-props-grid mis-props-view-grid">
+          <div class="loading">Cargando tus propiedades...</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- CAPA DE BLOQUEO GRATUITO -->
+    <div class="lock-overlay">
+      <h3>🔒 Función Premium</h3>
+      <p>Desbloquea el análisis completo de tus propiedades y métricas avanzadas.</p>
+      <button class="btn-upgrade-plan" onclick="mostrarModalPlanes()">Mejorar a Básico</button>
+    </div>
+  </div>
+</section>
 
       <!-- MIS PROPIEDADES -->
       <section id="sec-mis-propiedades" class="dash-section" style="display:none">
@@ -412,5 +429,53 @@
       if (window.initFotosPublicar) window.initFotosPublicar();
     });
   </script>
+  
+  <!-- BOTÓN FLOTANTE TUTORIAL -->
+<div id="tutorial-btn" style="position:fixed;bottom:30px;right:30px;z-index:9999;display:none">
+  <button onclick="abrirTutorial()" style="background:var(--primary);color:white;border:none;padding:16px 28px;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 8px 25px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+    🎓 Tutorial
+  </button>
+</div>
+
+<!-- MODAL TUTORIAL -->
+<div id="tutorial-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:10000;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:20px;padding:40px;max-width:500px;width:90%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,0.4);position:relative">
+    <button onclick="cerrarTutorial()" style="position:absolute;top:15px;right:20px;background:none;border:none;font-size:24px;cursor:pointer;color:#666">✕</button>
+    <div style="font-size:50px;margin-bottom:16px">🚀</div>
+    <h2 style="font-size:22px;font-weight:800;color:#1a1a2e;margin-bottom:20px">¡Bienvenido a tu Panel!</h2>
+    <div style="text-align:left;display:flex;flex-direction:column;gap:16px;margin-bottom:30px">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:30px;height:30px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">1</div>
+        <div><b>Publicar:</b> Haz clic en "Nueva publicación" para registrar tu propiedad en minutos.</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:30px;height:30px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">2</div>
+        <div><b>Leads:</b> Revisa "Mis leads" para ver quién te ha contactado o solicitado servicios.</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:30px;height:30px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">3</div>
+        <div><b>Mejorar Plan:</b> Desbloquea más propiedades y mejores herramientas desde "Mi cuenta".</div>
+      </div>
+    </div>
+    <button onclick="cerrarTutorial()" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px">¡Entendido, empezar!</button>
+  </div>
+</div>
+
+<script>
+  // Mostrar botón solo si es la primera vez
+  if (!localStorage.getItem('tutorial_visto')) {
+    document.getElementById('tutorial-btn').style.display = 'block';
+  }
+
+  const abrirTutorial = () => {
+    document.getElementById('tutorial-modal').style.display = 'flex';
+  };
+
+  const cerrarTutorial = () => {
+    document.getElementById('tutorial-modal').style.display = 'none';
+    document.getElementById('tutorial-btn').style.display = 'none'; // Esconde el botón para siempre
+    localStorage.setItem('tutorial_visto', 'true');
+  };
+</script>
 </body>
 </html>

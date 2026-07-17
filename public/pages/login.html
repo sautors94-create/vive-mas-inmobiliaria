@@ -104,7 +104,10 @@
 
       if (data.ok) {
         auth.save(data.accessToken, data.user);
-        window.location.href = data.user.role === 'admin' ? 'admin.html' : 'dashboard.html';
+        // Redirigir inteligentemente (si venía de guardar un favorito, regresa ahí)
+        const redireccion = localStorage.getItem('redireccion_favorito') || (data.user.role === 'admin' ? 'admin.html' : 'dashboard.html');
+        localStorage.removeItem('redireccion_favorito');
+        window.location.href = redireccion;
       } else if (data.requiereVerificacion) {
         window.location.href = `verificar.html?email=${encodeURIComponent(data.email || identificador)}`;
       } else {

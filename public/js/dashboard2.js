@@ -3,7 +3,6 @@ if (!auth.isLoggedIn()) window.location.href = 'login.html';
 const user = auth.getUser();
 let mapaPublicar = null;
 let markerPublicar = null;
-
 // ==================== SINCRONIZACIÓN SLIDERS ====================
 const syncPrecio = (origen) => {
   const slider = document.getElementById('p-precio-slider');
@@ -48,6 +47,7 @@ const buscarPorCP = async (cp) => {
     if (ciudad) ciudad.value = lugar['place name'] || '';
     if (colonia) colonia.value = lugar['place name'] || '';
     if (estadoLabel) estadoLabel.textContent = `✓ ${lugar['state']}`;
+    // Intentar seleccionar el estado en el select
     if (estado) {
       const opciones = Array.from(estado.options);
       const match = opciones.find(o =>
@@ -59,19 +59,22 @@ const buscarPorCP = async (cp) => {
     }
   } catch (e) {}
 };
-
 // ==========================================
 // MODAL DE PLANES Y PASARELA STRIPE
 // ==========================================
+
 window.mostrarModalPlanes = () => {
   const planActual = (JSON.parse(localStorage.getItem('user') || '{}').plan || 'gratuito').toLowerCase();
+
   if (planActual === 'premium') {
     dsToast({ title: 'Ya tienes el plan Premium', message: 'Estás en el mejor plan disponible.', type: 'success' });
     return;
   }
+
   const overlay = document.createElement('div');
   overlay.id = 'modal-planes';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:10500;font-family:"Inter","Segoe UI",sans-serif';
+
   overlay.innerHTML = `
     <div style="background:white;border-radius:20px;padding:32px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.28)">
       <div style="text-align:center;margin-bottom:24px">
@@ -80,11 +83,15 @@ window.mostrarModalPlanes = () => {
         <p style="font-size:13px;color:#64748b">Publica más propiedades y llega a más personas</p>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
+        
+        <!-- PLAN GRATUITO -->
         <div style="border:2px solid ${planActual === 'gratuito' ? 'var(--primary)' : '#e5e7eb'};border-radius:14px;padding:18px;background:${planActual === 'gratuito' ? '#f0fdf4' : 'white'}">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div><div style="font-size:15px;font-weight:700;color:#0f172a">Gratuito</div><div style="font-size:12px;color:#64748b">Para empezar</div></div><div style="font-size:20px;font-weight:800;color:#0f172a">$0<span style="font-size:12px;font-weight:400;color:#64748b">/siempre</span></div></div>
           <ul style="font-size:12px;color:#475569;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px"><li>✓ Hasta 3 propiedades publicadas</li><li>✓ 5 fotos por propiedad</li><li>✓ Acceso al catálogo</li></ul>
           ${planActual === 'gratuito' ? '<div style="margin-top:12px;font-size:12px;font-weight:600;color:var(--primary)">✓ Plan actual</div>' : ''}
         </div>
+
+        <!-- PLAN BÁSICO -->
         <div style="border:2px solid ${planActual === 'basico' ? 'var(--primary)' : '#0369a1'};border-radius:14px;padding:18px;background:${planActual === 'basico' ? '#f0fdf4' : '#f0f9ff'};position:relative">
           <div style="position:absolute;top:-10px;right:16px;background:#0369a1;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">DISPONIBLE</div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div><div style="font-size:15px;font-weight:700;color:#0f172a">Básico</div><div style="font-size:12px;color:#64748b">Para agentes activos</div></div><div style="font-size:20px;font-weight:800;color:#0369a1">$99<span style="font-size:12px;font-weight:400;color:#64748b">/mes</span></div></div>
@@ -95,6 +102,8 @@ window.mostrarModalPlanes = () => {
             <button onclick="contratarPlan('basico', 'anual')" style="width:100%;padding:10px;background:white;color:#0369a1;border:2px solid #0369a1;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">⚡ Anual: $999 (1 mes gratis)</button>
           </div>`}
         </div>
+
+        <!-- PLAN PREMIUM -->
         <div style="border:2px solid #7c3aed;border-radius:14px;padding:18px;background:#faf5ff;position:relative;opacity:0.7">
           <div style="position:absolute;top:-10px;right:16px;background:#7c3aed;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">PRÓXIMAMENTE</div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div><div style="font-size:15px;font-weight:700;color:#0f172a">Premium</div><div style="font-size:12px;color:#64748b">Para inmobiliarias y equipos</div></div><div style="font-size:20px;font-weight:800;color:#7c3aed">Próx.<span style="font-size:12px;font-weight:400;color:#64748b"></span></div></div>
@@ -105,6 +114,7 @@ window.mostrarModalPlanes = () => {
       <button onclick="document.getElementById('modal-planes')?.remove()" style="width:100%;padding:11px;background:#f1f5f9;color:#475569;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Cerrar</button>
     </div>
   `;
+
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
 };
@@ -126,25 +136,31 @@ const mostrarModalBienvenidaPlan = (plan) => {
     </div>
   `;
   document.body.appendChild(overlay);
+
+  // Actualizar UI de topbar y sidebar inmediatamente
   const userActualizado = auth.getUser();
   if (userActualizado) {
     const planEl = document.getElementById('ds-user-plan');
     const sidebarPlan = document.getElementById('sidebar-plan');
     if (planEl) planEl.textContent = `Plan ${userActualizado.plan}`;
     if (sidebarPlan) sidebarPlan.textContent = `Plan ${userActualizado.plan}`;
-    if (userActualizado.plan === 'premium') document.getElementById('btn-mejorar-plan')?.style.setProperty('display', 'none');
+    // Ocultar botón "Mejorar plan" si ya tiene premium
+    if (userActualizado.plan === 'premium') {
+      document.getElementById('btn-mejorar-plan')?.style.setProperty('display', 'none');
+    }
   }
 };
-
 window.contratarPlan = (plan, periodo = 'mensual') => {
   const STRIPE_LINKS = { 
     basico_mensual: 'https://buy.stripe.com/test_9B6fZhgExb2QejO8EGc3m00', 
-    basico_anual: 'https://buy.stripe.com/test_dRmfZh1JDc6U2B6cUWc3m01'
+    basico_anual: 'https://buy.stripe.com/test_dRmfZh1JDc6U2B6cUWc3m01' // LINK REAL ANUAL
   };
+  
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   if (plan === 'basico' && user.plan === 'basico') {
     return dsToast({ title: 'Ya tienes este plan', message: 'Actualmente cuentas con el Plan Básico.', type: 'info' });
   }
+
   const linkStripe = STRIPE_LINKS[`${plan}_${periodo}`];
   if (linkStripe) {
     window.location.href = `${linkStripe}?client_reference_id=${user._id || user.id}`;
@@ -154,15 +170,21 @@ window.contratarPlan = (plan, periodo = 'mensual') => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+// Verificar plan real en el servidor — detecta cambios de Stripe, admin, etc.
   const verificarPlanActual = async (intentos = 0, mostrarModal = false) => {
     try {
       const planLocalAntes = (auth.getUser()?.plan || 'gratuito').toLowerCase();
       const data = await api.get('/auth/verificar-plan');
       if (!data.ok || !data.user) return;
+
       const planServidor = (data.plan || 'gratuito').toLowerCase();
+
+      // Actualizar localStorage con datos frescos
       const userActual = auth.getUser() || {};
       const userActualizado = { ...userActual, plan: data.plan, planFechaFin: data.planFechaFin };
       localStorage.setItem('user', JSON.stringify(userActualizado));
+
+      // Actualizar UI inmediatamente
       const planEl = document.getElementById('ds-user-plan');
       const sidebarPlan = document.getElementById('sidebar-plan');
       const limiteFotosEl = document.getElementById('texto-limite-fotos');
@@ -172,23 +194,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const lim = getLimiteFotos();
         limiteFotosEl.textContent = `Plan ${data.plan}: hasta ${lim} fotos`;
       }
+
       const jerarquia = { gratuito: 0, basico: 1, premium: 2 };
       if ((jerarquia[planServidor] || 0) > (jerarquia[planLocalAntes] || 0)) {
         mostrarModalBienvenidaPlan(data.plan);
         return;
       }
+
+      // Si venimos de Stripe y el plan no cambió aún, reintentar hasta 5 veces
       if (mostrarModal && planServidor === planLocalAntes && intentos < 5) {
         setTimeout(() => verificarPlanActual(intentos + 1, true), 2500);
       }
     } catch (e) {}
   };
 
-  const desdeStripe = window.location.search.includes('session_id') || window.location.search.includes('pago=exito');
+  // Detectar regreso de Stripe (el Payment Link añade ?session_id=xxx en la URL)
+  const desdeStripe = window.location.search.includes('session_id') ||
+                      window.location.search.includes('pago=exito');
   if (desdeStripe) {
     window.history.replaceState({}, document.title, window.location.pathname);
-    verificarPlanActual(0, true);
+    verificarPlanActual(0, true); // Con polling activo
   } else {
-    verificarPlanActual(0, false);
+    verificarPlanActual(0, false); // Sin polling, solo verificación
   }
 });
 
@@ -197,17 +224,20 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 const mostrarSeccion = window.mostrarSeccion = (seccion) => {
   const secEl = document.getElementById(`sec-${seccion}`);
-  if (!secEl) return;
+  if (!secEl) return; // Escudo de seguridad
+
   document.querySelectorAll('.dash-section').forEach(s => s.style.display = 'none');
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  
   secEl.style.display = 'block';
+
   const link = document.querySelector(`.sidebar-link[onclick*="${seccion}"]`);
   if (link) link.classList.add('active');
   
   if (seccion === 'mis-propiedades') cargarMisPropiedades();
   if (seccion === 'favoritos') cargarFavoritos();
   if (seccion === 'leads') cargarLeadsUsuario();
-  if (section === 'mensajes') cargarMensajes();
+  if (seccion === 'mensajes') cargarMensajes();
   if (seccion === 'nueva-propiedad') iniciarMapaPublicar();
   if (seccion === 'mi-cuenta') cargarCuenta();
   if (seccion === 'resumen') cargarResumenUsuario();
@@ -220,9 +250,6 @@ const actualizarBadgeMensajes = (total) => {
   badge.style.display = total > 0 ? 'inline-flex' : 'none';
 };
 
-// ==========================================
-// CARGAR RESUMEN EJECUTIVO (ACTUALIZADO)
-// ==========================================
 const cargarResumenUsuario = async () => {
   const planPill = document.getElementById('resume-plan-pill');
   const titleEl = document.getElementById('resume-insights-title');
@@ -237,6 +264,7 @@ const cargarResumenUsuario = async () => {
   const isBasicoPlus = user.role === 'basico_plus';
   const esPremium = planUser === 'premium' || isBasicoPlus;
 
+  // 1. GRATUITO: Difuminar, limpiar esqueletos y salir
   if (planUser === 'gratuito' && !isBasicoPlus) {
     if (wrapper) wrapper.classList.add('is-locked');
     titleEl.textContent = 'Métricas de rendimiento';
@@ -276,7 +304,7 @@ const cargarResumenUsuario = async () => {
     const kpisExtra = [
       { key: 'rechazadas', label: 'Rechazadas', numero: rechazadas, icon: 'x-circle', emoji: '❌' },
       { key: 'visualizaciones', label: 'Visualizaciones', numero: 0, icon: 'eye', emoji: '👁️' },
-      { let key: 'favoritos', label: 'Favoritos', numero: 0, icon: 'heart', emoji: '❤️' },
+      { key: 'favoritos', label: 'Favoritos', numero: 0, icon: 'heart', emoji: '❤️' },
       { key: 'compartidas', label: 'Compartidas', numero: 0, icon: 'share-2', emoji: '🔄' }
     ];
 
@@ -286,6 +314,7 @@ const cargarResumenUsuario = async () => {
       const esBase = index < 4;
       const esClicable = esBase || esPremium;
       const estaBloqueado = !esClicable;
+      
       return `
         <div class="stat-card ds-anim-in" style="${estaBloqueado ? 'position:relative;overflow:hidden;cursor:default;opacity:0.8;' : 'cursor:pointer;'}" onclick="${esClicable ? `mostrarDetalleKpi('${s.key}', '${s.label}')` : `bloquearKpiBasico()`}" title="${estaBloqueado ? 'Disponible en Premium' : 'Ver detalle'}">
           ${estaBloqueado ? '<div style="position:absolute;inset:0;background:rgba(255,255,255,0.4);z-index:2;pointer-events:none"></div>' : ''}
@@ -336,6 +365,7 @@ const cargarResumenUsuario = async () => {
           </div>`).join('');
       }
     }
+
   } catch (e) {
     titleEl.textContent = 'No se pudo cargar el resumen';
     descEl.textContent = 'Intenta nuevamente más tarde.';
@@ -356,9 +386,40 @@ const mostrarDetalleKpi = (key, label) => {
   dsToast({ title: `Detalle de: ${label}`, message: `Aquí se desplegará la tabla detallada de ${label}.`, type: 'success' });
 };
 
+const bloquearKpiBasico = () => {
+  dsToast({ 
+    title: 'Función exclusiva de Premium', 
+    message: 'Mejora tu plan para ver el desglose detallado de estos indicadores.', 
+    type: 'info',
+    duration: 4000 
+  });
+};
+
+const mostrarDetalleKpi = (key, label) => {
+  dsToast({ title: `Detalle de: ${label}`, message: `Aquí se desplegará la tabla detallada de ${label} (Próximamente se conectará con la BD de métricas).`, type: 'success' });
+};
+
 // ==========================================
-// MAPA PUBLICAR
+// FUNCIONES DE INTERACCIÓN DE LOS KPIs
 // ==========================================
+
+// Si es Básico e intenta ver detalle
+const bloquearKpiBasico = () => {
+  dsToast({ 
+    title: 'Función exclusiva de Premium', 
+    message: 'Mejora tu plan para ver el desglose detallado de tus indicadores y métricas avanzadas.', 
+    type: 'info',
+    duration: 4000 
+  });
+};
+
+// Si es Premium/Plus, muestra el detalle en un modal
+const mostrarDetalleKpi = (key, label) => {
+  // Obtener datos guardados en el DOM temporalmente o hacer fetch específico
+  dsToast({ title: `Detalle de: ${label}`, message: `Aquí se desplegará la tabla detallada de ${label} (Próximamente se conectará con la BD de métricas).`, type: 'success' });
+};
+
+
 const iniciarMapaPublicar = () => {
   if (mapaPublicar) { mapaPublicar.invalidateSize(); return; }
   setTimeout(() => {
@@ -423,6 +484,7 @@ const buscarDireccion = async () => {
     dsToast({ title: 'Falta la dirección', message: 'Escribe una dirección o ciudad para buscar.', type: 'error' });
     return;
   }
+
   const query = `${direccion} ${ciudad} ${estado} México`.trim();
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&accept-language=es`);
@@ -441,30 +503,35 @@ const buscarDireccion = async () => {
   }
 };
 
-// ==========================================
-// FOTOS PUBLICAR
-// ==========================================
-let fotosOrden = []; 
-let fotoPortadaIdx = 0; 
+let fotosOrden = []; // array de objetos: { file, dataUrl }
+let fotoPortadaIdx = 0; // índice dentro de fotosOrden
 
 const getLimiteFotos = () => {
   const plan = (auth.getUser()?.plan || 'gratuito').toLowerCase();
   if (plan === 'premium') return 15;
   if (plan === 'basico') return 10;
-  return 5; 
+  return 5; // gratuito
 };
 
 const previsualizarFotos = (input) => {
   const preview = document.getElementById('fotos-preview');
   if (!preview) return;
+
   const limite = getLimiteFotos();
   const todas = Array.from(input.files || []);
+
   if (todas.length > limite) {
-    dsToast({ title: `Límite de fotos: ${limite}`, message: `Tu plan ${auth.getUser()?.plan || 'Gratuito'} permite hasta ${limite} fotos.`, type: 'error' });
+    dsToast({
+      title: `Límite de fotos: ${limite}`,
+      message: `Tu plan ${auth.getUser()?.plan || 'Gratuito'} permite hasta ${limite} fotos. Se tomarán las primeras ${limite}.`,
+      type: 'error'
+    });
   }
+
   preview.innerHTML = '';
   fotosOrden = [];
   fotoPortadaIdx = 0;
+
   const files = todas.slice(0, limite);
   files.forEach((file) => {
     const reader = new FileReader();
@@ -480,9 +547,11 @@ const actualizarBadgesPaso6 = () => {
   const badgeCount = document.getElementById('badge-fotos-count');
   const badgeMin = document.getElementById('badge-fotos-min');
   const badgePortada = document.getElementById('badge-fotos-portada');
+
   const fotosCount = fotosOrden.length;
   const minOk = fotosCount >= 2;
   const portadaOk = fotosCount > 0 && fotoPortadaIdx >= 0 && fotoPortadaIdx < fotosCount;
+
   if (badgeCount) badgeCount.textContent = `Fotos: ${fotosCount}`;
   if (badgeMin) {
     badgeMin.textContent = `Mínimo 2: ${minOk ? 'OK' : 'Pendiente'}`;
@@ -490,7 +559,7 @@ const actualizarBadgesPaso6 = () => {
     badgeMin.classList.toggle('ds-badge-soft', !minOk);
   }
   if (badgePortada) {
-    badgePortada.textContent = `Portada: ${portadaOk ? 'OK' : 'Pendiente'`;
+    badgePortada.textContent = `Portada: ${portadaOk ? 'OK' : 'Pendiente'}`;
     badgePortada.classList.toggle('ds-badge-primary', portadaOk);
     badgePortada.classList.toggle('ds-badge-soft', !portadaOk);
   }
@@ -499,14 +568,23 @@ const actualizarBadgesPaso6 = () => {
 const renderFotosPreview = () => {
   const preview = document.getElementById('fotos-preview');
   if (!preview) return;
+
   preview.innerHTML = '';
+
   actualizarBadgesPaso6();
+
   fotosOrden.forEach((f, idx) => {
+
+
+
+
     const wrap = document.createElement('div');
     wrap.style.cssText = 'position:relative;width:100px;height:100px;border-radius:8px;overflow:hidden;border:1px solid var(--border);cursor:grab;background:var(--bg-secondary)';
     wrap.setAttribute('draggable', 'true');
     wrap.dataset.index = String(idx);
+
     const isPortada = idx === fotoPortadaIdx;
+
     wrap.innerHTML = `
       <div style="position:absolute;inset:0">
         <img src="${f.dataUrl}" style="width:100%;height:100%;object-fit:cover">
@@ -515,37 +593,45 @@ const renderFotosPreview = () => {
           ${isPortada ? '⭐ Portada' : 'Marcar portada'}
         </button>
         ${isPortada ? '<div style="position:absolute;inset:0;border:2px solid rgba(26,71,42,0.9);pointer-events:none"></div>' : ''}
-      </div>`;
+      </div>
+    `;
+
     wrap.addEventListener('dragstart', (ev) => {
       ev.dataTransfer.setData('text/plain', String(idx));
       ev.dataTransfer.effectAllowed = 'move';
     });
+
     wrap.addEventListener('dragover', (ev) => {
       ev.preventDefault();
       ev.dataTransfer.dropEffect = 'move';
     });
+
     wrap.addEventListener('drop', (ev) => {
       ev.preventDefault();
       const from = Number(ev.dataTransfer.getData('text/plain'));
       const to = idx;
       if (Number.isNaN(from) || from === to) return;
       fotosOrden = arrayMove(fotosOrden, from, to);
+      // mantener portada según misma foto: aproximación usando portadaIdx
       if (fotoPortadaIdx === from) fotoPortadaIdx = to;
       else if (from < fotoPortadaIdx && to >= fotoPortadaIdx) fotoPortadaIdx -= 1;
       else if (from > fotoPortadaIdx && to <= fotoPortadaIdx) fotoPortadaIdx += 1;
       renderFotosPreview();
     });
+
     wrap.addEventListener('click', (ev) => {
       const target = ev.target;
       const actionBtn = target.closest && target.closest('button[data-action]');
       if (!actionBtn) return;
       const action = actionBtn.dataset.action;
-      if (action === 'eliminar') eliminarFotoPreview(idx);
-      else if (action === 'portada') {
+      if (action === 'eliminar') {
+        eliminarFotoPreview(idx);
+      } else if (action === 'portada') {
         fotoPortadaIdx = idx;
         renderFotosPreview();
       }
     });
+
     preview.appendChild(wrap);
   });
 };
@@ -554,6 +640,7 @@ const eliminarFotoPreview = (idx) => {
   if (idx < 0 || idx >= fotosOrden.length) return;
   fotosOrden.splice(idx, 1);
   if (fotoPortadaIdx >= fotosOrden.length) fotoPortadaIdx = Math.max(0, fotosOrden.length - 1);
+  // limpiar input para que al enviar use el estado actual
   const input = document.getElementById('p-fotos');
   if (input) {
     const dt = new DataTransfer();
@@ -574,18 +661,21 @@ window.initFotosPublicar = () => {
   const drop = document.getElementById('p-fotos-drop');
   const input = document.getElementById('p-fotos');
   if (!drop || !input) return;
+
   ['dragenter', 'dragover'].forEach(evt => {
     drop.addEventListener(evt, (e) => {
       e.preventDefault();
       drop.style.borderColor = 'var(--primary)';
     });
   });
+
   ['dragleave', 'drop'].forEach(evt => {
     drop.addEventListener(evt, (e) => {
       e.preventDefault();
       drop.style.borderColor = 'var(--border)';
     });
   });
+
   drop.addEventListener('drop', (e) => {
     e.preventDefault();
     const dt = new DataTransfer();
@@ -596,29 +686,13 @@ window.initFotosPublicar = () => {
   });
 };
 
-// ==========================================
-// MIS PROPIEDADES
-// ==========================================
-const cambiarVistaMisProps = (vista) => {
-  const container = document.getElementById('mis-props-container');
-  const gridBtn = document.getElementById('view-grid-btn');
-  const listBtn = document.getElementById('view-list-btn');
-  container.classList.remove('mis-props-view-grid', 'mis-props-view-list');
-  gridBtn.classList.remove('active');
-  listBtn.classList.remove('active');
-  if (vista === 'grid') {
-    container.classList.add('mis-props-view-grid');
-    gridBtn.classList.add('active');
-  } else {
-    container.classList.add('mis-props-lista');
-    listBtn.classList.add('active');
-  }
-  cargarMisPropiedades();
-};
 
 const cargarMisPropiedades = async () => {
   const container = document.getElementById('mis-props-container');
   const data = await api.get('/propiedades/mis-propiedades');
+    // 🚨 AGREGA ESTA LÍNEA:
+  console.log('Respuesta de Mis Propiedades:', data); 
+
   if (!data.propiedades || data.propiedades.length === 0) {
     container.innerHTML = `
       <div style="text-align:center;padding:60px;color:var(--text-light)">
@@ -628,6 +702,7 @@ const cargarMisPropiedades = async () => {
       </div>`;
     return;
   }
+
   const esGrid = container.classList.contains('mis-props-view-grid');
   container.innerHTML = data.propiedades.map(p => `
     <div class="prop-admin-card ${esGrid ? '' : 'prop-admin-card-list'}">
@@ -649,7 +724,6 @@ const cargarMisPropiedades = async () => {
       </div>
     </div>`).join('');
 };
-
 const editarPropiedad = (id) => {
   window.location.href = `propiedad.html?id=${id}&editar=1`;
 };
@@ -672,9 +746,6 @@ const eliminarMiPropiedad = async (id, titulo) => {
   }
 };
 
-// ==========================================
-// FAVORITOS
-// ==========================================
 const cargarFavoritos = async () => {
   const grid = document.getElementById('favoritos-grid');
   const data = await api.get('/favoritos');
@@ -691,8 +762,8 @@ const cargarFavoritos = async () => {
       </div>
       <div class="prop-admin-info">
         <div class="prop-admin-titulo">${f.propiedad.titulo}</div>
-        <div class="propiedad-meta">${f.propiedad.ubicacion.ciudad}, ${f.propiedad.ubicacion.estado} · ${formatPrecio(f.propiedad.precio)}</div>
-        <div class="propiedad-meta" style="margin-top:4px">
+        <div class="prop-admin-meta">${f.propiedad.ubicacion.ciudad}, ${f.propiedad.ubicacion.estado} · ${formatPrecio(f.propiedad.precio)}</div>
+        <div class="prop-admin-meta" style="margin-top:4px">
           <span class="tag tag-${f.propiedad.operacion}">${f.propiedad.operacion}</span>
           <span class="tag tag-${f.propiedad.tipo}">${f.propiedad.tipo}</span>
         </div>
@@ -709,19 +780,20 @@ const eliminarFavorito = async (propiedadId) => {
   if (!ok) return;
   const data = await api.delete(`/favoritos/${propiedadId}`);
   if (data.ok) {
-    document.getElementById(`fav-${propiedadId}`)?.remove();
+    document.getElementById(`fav-${propiedadId}`).remove();
     const grid = document.getElementById('favoritos-grid');
     if (!grid.children.length) grid.innerHTML = '<div class="loading">No tienes propiedades favoritas aún.</div>';
   }
 };
 
-// ==========================================
-// MENSAJES Y LEADS
-// ==========================================
 const cargarMensajes = async () => {
   const lista = document.getElementById('mensajes-lista');
   lista.innerHTML = '<div class="loading">Cargando mensajes...</div>';
+
+  // Cargamos leads del usuario como actividad de mensajes
+  // (el sistema de mensajería directa entre usuarios se implementará en una fase futura)
   const data = await api.get('/auth/leads');
+
   if (!data.ok || !data.leads || data.leads.length === 0) {
     lista.innerHTML = `
       <div style="text-align:center;padding:40px 20px;color:var(--text-light)">
@@ -732,8 +804,10 @@ const cargarMensajes = async () => {
     actualizarBadgeMensajes(0);
     return;
   }
+
   const noLeidos = data.leads.filter(l => l.status === 'nuevo').length;
   actualizarBadgeMensajes(noLeidos);
+
   lista.innerHTML = data.leads.map(lead => {
     const esSoporte = lead.tipo === 'soporte';
     const badgeTipo = esSoporte
@@ -754,7 +828,6 @@ const cargarMensajes = async () => {
     </div>`;
   }).join('');
 };
-
 const cargarLeadsUsuario = async () => {
   const lista = document.getElementById('leads-usuario-lista');
   const data = await api.get('/auth/leads');
@@ -783,9 +856,6 @@ const cargarLeadsUsuario = async () => {
   }).join('');
 };
 
-// ==========================================
-// MI CUENTA
-// ==========================================
 const cargarCuenta = () => {
   const info = document.getElementById('cuenta-info');
   if (!user) return;
@@ -827,7 +897,6 @@ const cargarCuenta = () => {
     </div>
     <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>`;
 };
-
 const guardarTelefono = async () => {
   const telefono = document.getElementById('cuenta-telefono')?.value.trim();
   if (!telefono || telefono.length < 10) {
@@ -863,11 +932,9 @@ const guardarNotificaciones = async () => {
   }
 };
 
-// ==========================================
-// FORMULARIO PUBLICAR (PASOS)
-// ==========================================
 let publicarPaso = 1;
 
+// expose helpers to global scope (HTML onclick)
 window.setPublicarStep = (n) => {
   publicarPaso = Number(n) || 1;
   const max = 7;
@@ -879,24 +946,27 @@ window.setPublicarStep = (n) => {
     el.style.display = step === publicarPaso ? 'block' : 'none';
   });
 
+  // progress
   const dots = document.querySelectorAll('#publicar-steps .ds-step');
   dots.forEach(d => {
     const step = Number(d.getAttribute('data-step'));
     d.classList.toggle('active', step === publicarPaso);
-    d.disabled = step !== publicarPaso; 
+    d.disabled = step !== publicarPaso; // evita saltos sin validar
   });
 
   const bar = document.getElementById('publicar-progress-bar');
   if (bar) {
-    const pct = ((publicarPaso - 1) / (max - 1) * 100;
+    const pct = ((publicarPaso - 1) / (max - 1)) * 100;
     bar.style.width = pct + '%';
   }
 
+  // back/next/submit
   const backBtn = document.getElementById('publicar-back-btn');
   const nextBtn = document.getElementById('publicar-next-btn');
   const submitWrap = document.getElementById('publicar-submit-wrap');
 
   if (backBtn) backBtn.style.display = publicarPaso === 1 ? 'none' : 'inline-flex';
+
   if (nextBtn) {
     nextBtn.style.display = publicarPaso === 7 ? 'none' : 'inline-flex';
     nextBtn.textContent = publicarPaso === 6 ? 'Revisar →' : 'Siguiente →';
@@ -904,6 +974,7 @@ window.setPublicarStep = (n) => {
 
   if (submitWrap) submitWrap.style.display = publicarPaso === 7 ? 'block' : 'none';
 
+  // Mapa: si llegamos al step 4, forzar redimensionado
   if (publicarPaso === 4) {
     if (mapaPublicar) {
       setTimeout(() => mapaPublicar.invalidateSize(), 100);
@@ -911,6 +982,7 @@ window.setPublicarStep = (n) => {
       iniciarMapaPublicar();
     }
   }
+  // resumen final en step 7
   if (publicarPaso === 7) {
     cargarResumenFinal();
   }
@@ -921,6 +993,7 @@ const marcarError = (id, mensaje) => {
   if (!el) return;
   el.style.borderColor = '#dc2626';
   el.style.boxShadow = '0 0 0 3px rgba(220,38,38,0.12)';
+  // Buscar o crear el mensaje de error debajo del campo
   const parent = el.closest('.form-grupo') || el.parentElement;
   let errMsg = parent.querySelector('.field-error-msg');
   if (!errMsg) {
@@ -930,7 +1003,9 @@ const marcarError = (id, mensaje) => {
     parent.appendChild(errMsg);
   }
   errMsg.innerHTML = `⚠️ ${mensaje}`;
+  // Scroll al campo
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Link directo: focus en el campo
   setTimeout(() => el.focus(), 300);
 };
 
@@ -946,6 +1021,7 @@ const limpiarErrores = () => {
 
 const validarPaso = (paso) => {
   limpiarErrores();
+
   const v = (id) => document.getElementById(id)?.value?.trim() || '';
   const n = (id) => Number(document.getElementById(id)?.value || 0);
 
@@ -1015,157 +1091,289 @@ const validarPaso = (paso) => {
         const dropEl = document.getElementById('p-fotos-drop');
         if (dropEl) {
           dropEl.style.outline = '3px solid #dc2626';
-          dropEl.style.borderRadius = '12px';
           const errDiv = document.createElement('div');
           errDiv.className = 'field-error-msg';
           errDiv.style.cssText = 'color:#dc2626;font-size:12px;margin-top:6px;display:flex;align-items:center;gap:4px';
-          errDiv.innerHTML = '⚠️ Se necesitan al menos 2 fotos';
+          errDiv.innerHTML = `⚠️ Agrega al menos 2 fotos (tu plan permite hasta ${limite})`;
           dropEl.parentElement.appendChild(errDiv);
           dropEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        dsToast({ title: 'Faltan fotos', message: 'Se necesitan al menos 2 fotos.', type: 'error' });
+        dsToast({ title: 'Fotos insuficientes', message: `Agrega al menos 2 fotos. Puedes subir hasta ${limite} con tu plan actual.`, type: 'error' });
         return false;
       }
+      if (fotoPortadaIdx < 0 || fotoPortadaIdx >= count) fotoPortadaIdx = 0;
       return true;
     }
-    case 7: {
-      return true;
-    }
+    case 7:
     default:
       return true;
   }
 };
 
-const publicarPropiedad = async () => {
-  if (!validarPaso(publicarPaso)) return;
+window.publicarNextStep = () => {
+  const ok = validarPaso(publicarPaso);
+  if (!ok) return;
+  if (publicarPaso >= 7) return;
 
-  const btn = document.getElementById('publicar-submit-btn');
-  btn.textContent = 'Enviando a revisión...';
-  btn.disabled = true;
+  // loading state simple en el botón para pasos de envío
+  const backBtn = document.getElementById('publicar-back-btn');
+  const nextBtn = document.getElementById('publicar-next-btn');
+  if (publicarPaso === 6 && nextBtn) {
+    nextBtn.disabled = true;
+    const originalText = nextBtn.textContent;
+    nextBtn.textContent = 'Revisar...';
+    setTimeout(() => {
+      nextBtn.disabled = false;
+      nextBtn.textContent = originalText;
+      setPublicarStep(publicarPaso + 1);
+    }, 350);
+    return;
+  }
 
-  try {
-    const data = await api.post('/propiedades', construirPayloadPublicacion());
-    if (data.ok) {
-      dsToast({ 
-        title: '¡Enviado a revisión!', 
-        message: 'Tu propiedad está en revisión. Te avisaremos cuando sea aprobada.', 
-        type: 'success' 
-      });
-      
-      // Limpiar formulario y volver al inicio
-      document.getElementById('publicar-form-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      
-      // Resetear pasos
-      publicarPaso = 1;
-      window.setPublicarStep(1);
-      
-      // Ir a "Mis propiedades"
-      mostrarSeccion('mis-propiedades');
-    } else {
-      dsToast({ title: 'Error al publicar', message: data.error || 'Ocurrió un error al publicar.', type: 'error' });
-      btn.textContent = 'Enviar a revisión';
-      btn.disabled = false;
-    }
+  setPublicarStep(publicarPaso + 1);
 };
 
-const construirPayloadPublicacion = () => {
-  const campos = {
-    titulo: document.getElementById('p-titulo')?.value?.trim(),
-    precio: Number(document.getElementById('p-precio') || 0,
-    operacion: document.getElementById('p-operacion')?.value,
-    tipo: document.getElementById('p-tipo')?.value,
-    descripcion: document.getElementById('p-descripcion')?.value?.trim(),
-    ubicacion: {
-      estado: document.getElementById('p-estado')?.value,
-      ciudad: document.getElementById('p-ciudad')?.value?.trim(),
-      colonia: document.getElementById('p-colonia')?.value?.trim(),
-      direccion: document.getElementById('p-direccion')?.value?.trim(),
-      lat: Number(document.getElementById('p-lat')?.value) || 0,
-      lng: Number(document.getElementById('p-lng')?.value) || 0,
-      cp: document.getElementById('p-cp')?.value?.trim(),
-    },
-    caracteristicas: {
-      recamaras: Number(document.getElementById('p-recamaras')?.value || 0,
-      banos: Number(document.getElementById('p-banos')?.value || 0),
-      mediosBanos: Number(document.getElementById('p-medios-banos')?.value || 0),
-      estacionamientos: Number(document.getElementById('p-estacionamientos')?.value || 0),
-      m2: Number(document.getElementById('p-m2')?.value || 0),
-    },
-    fotos: fotosOrden.map(f => f.dataUrl),
-    portada: fotoPortadaIdx
-  };
 
-  return campos;
+const publicarPrevStep = () => {
+  if (publicarPaso <= 1) return;
+  setPublicarStep(publicarPaso - 1);
 };
 
 const cargarResumenFinal = () => {
-  const resumen = document.getElementById('publicar-final-summary');
-  if (!resumen) return;
+  const el = document.getElementById('publicar-final-summary');
+  if (!el) return;
 
-  const titulo = document.getElementById('p-titulo')?.value?.trim();
-  const precio = document.getElementById('p-precio')?.value;
-  const operacion = document.getElementById('p-operacion')?.value;
-  const tipo = document.getElementById('p-tipo')?.value;
-  const direccion = document.getElementById('p-direccion')?.value?.trim();
-  const recamaras = document.getElementById('p-recamaras')?.value;
-  const banos = document.getElementById('p-banos')?.value;
-  const estacionamientos = document.getElementById('p-estacionamientos')?.value;
-  const m2 = document.getElementById('p-m2')?.value;
-  const numFotos = fotosOrden.length;
+  const titulo = document.getElementById('p-titulo')?.value?.trim() || '—';
+  const precio = document.getElementById('p-precio')?.value || '—';
+  const operacion = document.getElementById('p-operacion')?.value || '—';
+  const tipo = document.getElementById('p-tipo')?.value || '—';
+  const descripcion = document.getElementById('p-descripcion')?.value?.trim() || '—';
+  const estado = document.getElementById('p-estado')?.value || '—';
+  const ciudad = document.getElementById('p-ciudad')?.value?.trim() || '—';
+  const lat = document.getElementById('p-lat')?.value || '—';
+  const lng = document.getElementById('p-lng')?.value || '—';
+  const fotosCount = document.getElementById('p-fotos')?.files?.length || 0;
 
-  let html = `
-    <div style="display:grid;grid-template-columns:repeat(2, 1fr;gap:20px">
-      <div class="form-grupo">
-        <label>Título</label>
-        <div style="font-size:16px;font-weight:700;color:var(--text)">${titulo || 'Sin título'}</div>
-      </div>
-      <div class="form-grupo">
-        <label>Precio</label>
-        <div style="font-size:20px;font-weight:800;color:var(--primary)">${precio ? '$' + Number(precio).toLocaleString('es-MX') : '$0'}</div>
-      </div>
+  const badgeEnvioStatus = document.getElementById('badge-envio-status');
+  const badgeEnvioUbic = document.getElementById('badge-envio-ubic');
+  const badgeEnvioFotos = document.getElementById('badge-envio-fotos');
+
+  const fotosOk = fotosCount >= 2;
+  const ubicOk = lat !== '—' && lng !== '—' && lat !== '' && lng !== '';
+
+  if (badgeEnvioStatus) {
+    const ok = fotosOk && ubicOk;
+    badgeEnvioStatus.textContent = `Estado: ${ok ? 'Listo' : 'Pendiente'}`;
+    badgeEnvioStatus.classList.toggle('ds-badge-primary', ok);
+    badgeEnvioStatus.classList.toggle('ds-badge-soft', !ok);
+  }
+  if (badgeEnvioUbic) badgeEnvioUbic.textContent = `Ubicación: ${ubicOk ? 'OK' : 'Pendiente'}`;
+  if (badgeEnvioFotos) badgeEnvioFotos.textContent = `Fotos: ${fotosCount} (${fotosOk ? 'OK' : 'mín. 2'})`;
+
+
+  el.innerHTML = `
+    <div style="font-weight:800;margin-bottom:10px">Resumen final</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
+      <div><b>Título:</b> ${titulo}</div>
+      <div><b>Precio:</b> ${precio}</div>
+      <div><b>Operación:</b> ${operacion}</div>
+      <div><b>Tipo:</b> ${tipo}</div>
+      <div style="grid-column:1/-1"><b>Descripción:</b> ${descripcion.slice(0, 140)}${descripcion.length > 140 ? '…' : ''}</div>
+      <div><b>Estado:</b> ${estado}</div>
+      <div><b>Ciudad:</b> ${ciudad}</div>
+      <div><b>Lat/Lng:</b> ${lat}, ${lng}</div>
+      <div style="grid-column:1/-1"><b>Fotos:</b> ${fotosCount} foto(s)</div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:16px">
-      <div class="form-grupo">
-        <label>Operación</label>
-        <div style="font-size:14px;font-weight:600;text-transform:capitalize">${operacion || 'No definida'}</div>
-      </div>
-      <div class="form-grupo">
-        <label>Tipo de propiedad</label>
-        <div style="font-size:14px;font-weight:600;text-transform:capitalize">${tipo || 'No definido'}</div>
-      </div>
-      <div class="form-grupo">
-        <label>Metros</label>
-        <div style="font-size:13px;color:var(--text-light)">${recamaras || 0} recámaras · ${banos || 0} baños · ${estacionamientos || 0} estacionamientos · ${m2 || 0} m²</div>
-      </div>
-    </div>
-    <div style="margin-top:16px">
-      <label>Descripción</label>
-      <div style="font-size:14px;color:var(--text-light);line-height:1.5">${(document.getElementById('p-descripcion')?.value?.trim() || 'Sin descripción').substring(0, 100)}...</div>
-    </div>
-    <div style="margin-top:16px">
-      <label>Ubicación</label>
-      <div style="font-size:13px;color:var(--text-light)">${direccion || 'Sin dirección'}, ${document.getElementById('p-estado')?.value || 'Sin estado'}, ${document.getElementById('p-ciudad')?.value || 'Sin ciudad'} ${document.getElementById('p-colonia') ? ', ' + document.getElementById('p-colonia').value : ''}</div>
-    </div>
-    <div style="display:flex;gap:16px;margin-top:16px;padding:16px;background:var(--bg-secondary);border-radius:12px;border:1px solid var(--border)">
-      <div style="flex:1">
-        <label>Número de fotos</label>
-        <div style="font-size:24px;font-weight:800;color:var(--primary)">${numFotos} / ${document.getElementById('texto-limite-fotos')?.textContent || 5}</div>
-      </div>
-      <div style="flex:1">
-        <label>Portada</label>
-        <div style="font-size:14px;font-weight:600;color:var(--primary)">${numFotos > 0 ? '✅ Portada seleccionada' : '⚠️ Sin portada'}</div>
-      </div>
-    </div>
+    <div style="margin-top:14px;color:var(--text-light);font-size:12px">Al enviar, la publicación se crea en estado <b>revisión</b>.</div>
   `;
+};
 
-  resumen.innerHTML = html;
+
+const publicarPropiedad = async () => {
+  const errorEl = document.getElementById('form-error');
+  const successEl = document.getElementById('form-success');
+  errorEl.style.display = 'none';
+  successEl.style.display = 'none';
+
+  const showToast = (payload) => {
+    if (typeof window.dsToast === 'function') window.dsToast(payload);
+  };
+
+
+  const titulo = document.getElementById('p-titulo').value.trim();
+  const precio = document.getElementById('p-precio').value;
+  const operacion = document.getElementById('p-operacion').value;
+  const tipo = document.getElementById('p-tipo').value;
+  const descripcion = document.getElementById('p-descripcion').value.trim();
+  const estado = document.getElementById('p-estado').value;
+  const ciudad = document.getElementById('p-ciudad').value.trim();
+  const colonia = document.getElementById('p-colonia').value.trim();
+  const direccion = document.getElementById('p-direccion').value.trim();
+const recamaras = document.getElementById('p-recamaras').value;
+  const banos = document.getElementById('p-banos').value;
+  const mediosBanos = document.getElementById('p-medios-banos').value;
+  const estacionamientos = document.getElementById('p-estacionamientos').value;
+  const m2 = document.getElementById('p-m2').value;
+  const lat = document.getElementById('p-lat').value;
+  const lng = document.getElementById('p-lng').value;
+
+  if (!titulo || !precio || !operacion || !tipo || !descripcion || !estado || !ciudad) {
+    const msg = 'Por favor llena todos los campos obligatorios (*)';
+    errorEl.textContent = msg;
+
+    errorEl.style.display = 'block';
+    if (typeof window.dsToast === 'function') {
+      window.dsToast({ title: 'Faltan datos', message: msg, type: 'error' });
+    }
+    return;
+  }
+
+
+  const body = {
+    titulo, precio: Number(precio), operacion, tipo, descripcion,
+    ubicacion: { estado, ciudad, colonia, direccion, lat: lat ? parseFloat(lat) : null, lng: lng ? parseFloat(lng) : null },
+caracteristicas: {
+    recamaras: Number(recamaras) || 0,
+    banos: Number(banos) || 0,
+    mediosBanos: Number(mediosBanos) || 0,
+    estacionamientos: Number(estacionamientos) || 0,
+    m2: Number(m2) || 0
+  }
+  };
+
+
+  const btn = document.querySelector('#sec-nueva-propiedad .btn-primary');
+  if (btn) {
+    btn.textContent = 'Enviando...';
+    btn.disabled = true;
+  }
+
+  showToast({ title: 'Enviando', message: 'Tu publicación se está enviando a revisión.', type: 'info', duration: 2200 });
+
+
+
+  const data = await api.post('/propiedades', body);
+
+  if (data.ok) {
+    const fotosInput = document.getElementById('p-fotos');
+    if (fotosInput.files.length > 0) {
+      const formData = new FormData();
+      // enviar en el orden seleccionado; foto portada al inicio
+      const ordered = fotosOrden && fotosOrden.length ? fotosOrden.slice() : Array.from(fotosInput.files).map(file => ({ file }));
+      if (ordered.length > 0 && fotoPortadaIdx >= 0 && fotoPortadaIdx < ordered.length) {
+        const portada = ordered.splice(fotoPortadaIdx, 1)[0];
+        ordered.unshift(portada);
+      }
+      ordered.forEach(x => formData.append('fotos', x.file));
+      await api.postForm(`/propiedades/${data.propiedad._id}/fotos`, formData);
+    }
+
+    successEl.textContent = '¡Propiedad enviada a revisión exitosamente!';
+    successEl.style.display = 'block';
+    if (btn) {
+      btn.textContent = 'Enviar a revisión';
+      btn.disabled = false;
+    }
+    showToast({ title: 'Enviado', message: 'Propiedad enviada a revisión exitosamente.', type: 'success' });
+
+    setTimeout(() => mostrarSeccion('mis-propiedades'), 2000);
+  } else {
+    errorEl.textContent = data.error || 'Error al publicar la propiedad';
+    errorEl.style.display = 'block';
+    if (btn) {
+      btn.textContent = 'Enviar a revisión';
+      btn.disabled = false;
+    }
+    showToast({ title: 'Error', message: errorEl.textContent, type: 'error' });
+  }
 };
 
 // ==========================================
-// CARGAR RESUMEN AUTOMÁTICO AL ENTRAR AL DASHBOARD
+// MIS PROPIEDADES (GRID / LISTA)
 // ==========================================
+let misPropsData = [];
+
+window.cambiarVistaMisProps = (vista) => {
+  const container = document.getElementById('mis-props-container');
+  const btnGrid = document.getElementById('view-grid-btn');
+  const btnLista = document.getElementById('view-list-btn');
+  if(!container) return;
+  
+  btnGrid.classList.remove('active');
+  btnLista.classList.remove('active');
+
+  if (vista === 'grid') {
+    container.className = 'mis-props-grid mis-props-view-grid';
+    btnGrid.classList.add('active');
+  } else {
+    container.className = 'mis-props-grid mis-props-view-list';
+    btnLista.classList.add('active');
+  }
+  renderizarMisProps();
+};
+
+const renderizarMisProps = () => {
+  const container = document.getElementById('mis-props-container');
+  if(!container) return;
+  const isGrid = container.classList.contains('mis-props-view-grid');
+
+  if (misPropsData.length === 0) {
+    container.innerHTML = '<div class="loading" style="color:var(--text-light)">No tienes propiedades publicadas aún.</div>';
+    return;
+  }
+
+  if (isGrid) {
+    container.innerHTML = misPropsData.map(p => crearCardPropiedad(p)).join('');
+  } else {
+    container.innerHTML = misPropsData.map(p => {
+      const foto = p.fotos && p.fotos.length > 0 ? `<img src="${p.fotos[0]}" alt="${p.titulo}" class="prop-admin-img">` : `<div class="prop-admin-img">Sin foto</div>`;
+      return `<div class="prop-admin-card">${foto}<div class="prop-admin-info"><div class="prop-admin-titulo">${p.titulo}</div><div class="prop-admin-meta"><span class="status-badge status-${p.estatus || 'nuevo'}">${p.estatus || 'nuevo'}</span> · ${p.ubicacion?.ciudad || ''}, ${p.ubicacion?.estado || ''} · <strong>${formatPrecio(p.precio)}</strong></div></div><div class="prop-admin-actions"><button class="btn btn-outline" style="padding:6px 12px;font-size:12px" onclick="window.location='propiedad.html?id=${p._id}'">Ver</button></div></div>`;
+    }).join('');
+  }
+};
+
+window.cargarMisPropiedades = async () => {
+  const container = document.getElementById('mis-props-container');
+  if(!container) return;
+  container.innerHTML = '<div class="loading">Cargando tus propiedades...</div>';
+  try {
+    const data = await api.get('/propiedades/mias'); 
+    if (data.ok && data.propiedades) {
+      misPropsData = data.propiedades;
+      renderizarMisProps();
+    } else {
+      container.innerHTML = '<div class="loading" style="color:var(--text-light)">No tienes propiedades publicadas aún.</div>';
+    }
+  } catch (error) {
+    container.innerHTML = '<div class="loading" style="color:red">Error al cargar propiedades.</div>';
+  }
+};
+const cambiarVistaMisProps = (vista) => {
+  const container = document.getElementById('mis-props-container');
+  const gridBtn = document.getElementById('view-grid-btn');
+  const listBtn = document.getElementById('view-list-btn');
+
+  // Limpiar clases anteriores
+  container.classList.remove('mis-props-view-grid', 'mis-props-view-list');
+  gridBtn.classList.remove('active');
+  listBtn.classList.remove('active');
+
+  // Aplicar la nueva vista
+  if (vista === 'grid') {
+    container.classList.add('mis-props-view-grid');
+    gridBtn.classList.add('active');
+  } else {
+    container.classList.add('mis-props-view-list');
+    listBtn.classList.add('active');
+  }
+
+  // Volvemos a pintar las propiedades para que se adapten al nuevo CSS
+  cargarMisPropiedades();
+};
+// Forzar carga del resumen al entrar al dashboard
 document.addEventListener('DOMContentLoaded', () => {
+  // Pequeño delay para asegurar que el DOM y el usuario estén listos
   setTimeout(() => {
     cargarResumenUsuario();
-  }, 500);
+  }, 300);
 });

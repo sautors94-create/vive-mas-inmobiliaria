@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
   nombre: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true, minlength: 6 },
-  role: { type: String, enum: ['user', 'admin', 'services'], default: 'user' },
+  role: { type: String, enum: ['user', 'admin', 'services', 'basico_plus'], default: 'user' },
   plan: { type: String, enum: ['gratuito', 'basico', 'premium'], default: 'gratuito' }, // <-- ESTA COMA ES OBLIGATORIA
   planFechaFin: { type: Date, default: null },
   stripeSubscriptionId: { type: String, default: null },
@@ -29,6 +29,7 @@ const userSchema = new mongoose.Schema({
     propiedadRechazada: { type: Boolean, default: true },
     novedades: { type: Boolean, default: false },
   },
+  ultimaActividad: { type: Date, default: Date.now },  // ← AGREGAR ESTA LÍNEA
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {

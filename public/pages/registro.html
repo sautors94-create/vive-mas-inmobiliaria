@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
-<link rel="stylesheet" href="../css/registro.css">
+  <link rel="stylesheet" href="../css/registro.css">
 </head>
 <body>
 
@@ -104,7 +104,7 @@
           </div>
           <div class="plan-features-lista">
             <div class="feature-item si">✓ Propiedades ilimitadas</div>
-            <div class="feature-item si">✓ Fotos ilimitadas</div>
+            <div class="feature-item si">✓ 15 fotos por propiedad</div>
             <div class="feature-item si">✓ Contacto directo</div>
             <div class="feature-item si">✓ Acceso al catálogo</div>
             <div class="feature-item si">✓ Impulso máximo</div>
@@ -112,7 +112,7 @@
             <div class="feature-item si">✓ Fotografía profesional</div>
             <div class="feature-item si">✓ Gestoría completa</div>
           </div>
-          <button class="btn-plan">Proximamente</button>
+          <button class="btn-plan">Quiero Premium</button>
         </div>
 
       </div>
@@ -148,81 +148,85 @@
   </div>
 
   <!-- FORMULARIO REGISTRO -->
-<div class="registro-form-section" id="registro-form-section">
-  <div class="container">
-    <div class="registro-form-wrap">
-      <div class="registro-form-header">
-        <h2>Crear tu cuenta — Plan <span id="plan-seleccionado-label">Gratuito</span></h2>
-        <p>Completa tus datos para empezar en minutos</p>
-      </div>
+  <div class="registro-form-section" id="registro-form-section">
+    <div class="container">
+      <div class="registro-form-wrap">
+        <div class="registro-form-header">
+          <h2>Crear tu cuenta — Plan <span id="plan-seleccionado-label">Gratuito</span></h2>
+          <p>Completa tus datos para empezar en minutos</p>
+        </div>
 
-      <div id="reg-error" class="alert alert-error" style="display:none"></div>
-      <div id="reg-success" class="alert alert-success" style="display:none"></div>
+        <div id="reg-error" class="alert alert-error" style="display:none"></div>
+        <div id="reg-success" class="alert alert-success" style="display:none"></div>
 
-      <div class="registro-form-grid">
-        <div class="form-grupo">
-          <label>Nombre completo *</label>
-          <input type="text" id="r-nombre" class="form-input" placeholder="Tu nombre completo">
-        </div>
-        <div class="form-grupo">
-          <label>Correo electrónico *</label>
-          <input type="email" id="r-email" class="form-input" placeholder="tu@correo.com">
-        </div>
-        <div class="form-grupo">
-          <label>Teléfono *</label>
-          <input type="tel" id="r-telefono" class="form-input" placeholder="55 1234 5678">
-        </div>
-<div class="form-grupo">
-          <label>Contraseña *</label>
-          <div class="password-input-wrapper">
-            <input type="password" id="r-password" class="form-input" placeholder="Mínimo 6 caracteres">
-            <button type="button" class="password-toggle" onclick="togglePassword('r-password')" aria-label="Mostrar contraseña">
-              <span class="password-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>
-              <span class="sr-only">Mostrar contraseña</span>
-            </button>
+        <!-- CAMPOS OCULTOS PARA EL FLUJO DE PAGO -->
+        <input type="hidden" id="registro-plan-elegido" value="gratuito">
+        <input type="hidden" id="registro-periodo-elegido" value="mensual">
+
+        <div class="registro-form-grid">
+          <div class="form-grupo">
+            <label>Nombre completo *</label>
+            <input type="text" id="r-nombre" class="form-input" placeholder="Tu nombre completo">
+          </div>
+          <div class="form-grupo">
+            <label>Correo electrónico *</label>
+            <input type="email" id="r-email" class="form-input" placeholder="tu@correo.com">
+          </div>
+          <div class="form-grupo">
+            <label>Teléfono *</label>
+            <input type="tel" id="r-telefono" class="form-input" placeholder="55 1234 5678">
+          </div>
+          <div class="form-grupo">
+            <label>Contraseña *</label>
+            <div class="password-input-wrapper">
+              <input type="password" id="r-password" class="form-input" placeholder="Mínimo 6 caracteres">
+              <button type="button" class="password-toggle" onclick="togglePassword('r-password')" aria-label="Mostrar contraseña">
+                <span class="password-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>
+                <span class="sr-only">Mostrar contraseña</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="verificacion-opciones">
-        <p>Verificar cuenta con: *</p>
-        <div class="verificacion-options-grid">
-          <label class="verificacion-option">
-            <input type="radio" name="verificacion" value="email" checked>
-            <span class="verificacion-icon">📧</span>
-            <div>
-              <div style="font-weight:600">Correo electrónico</div>
-              <div style="font-size:12px;opacity:0.7">Recibirás un código</div>
-            </div>
-          </label>
-          <label class="verificacion-option">
-            <input type="radio" name="verificacion" value="sms">
-            <span class="verificacion-icon">📱</span>
-            <div>
-              <div style="font-weight:600">SMS al celular</div>
-              <div style="font-size:12px;opacity:0.7">Código por mensaje</div>
-            </div>
+        <div class="verificacion-opciones">
+          <p>Verificar cuenta con: *</p>
+          <div class="verificacion-options-grid">
+            <label class="verificacion-option">
+              <input type="radio" name="verificacion" value="email" checked>
+              <span class="verificacion-icon">📧</span>
+              <div>
+                <div style="font-weight:600">Correo electrónico</div>
+                <div style="font-size:12px;opacity:0.7">Recibirás un código</div>
+              </div>
+            </label>
+            <label class="verificacion-option">
+              <input type="radio" name="verificacion" value="sms">
+              <span class="verificacion-icon">📱</span>
+              <div>
+                <div style="font-weight:600">SMS al celular</div>
+                <div style="font-size:12px;opacity:0.7">Código por mensaje</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="terminos-row">
+          <input type="checkbox" id="r-terminos">
+          <label for="r-terminos">
+            Acepto los <a href="terminos.html" target="_blank">Términos y condiciones</a> y la Política de Privacidad de Vive Más Inmobiliaria
           </label>
         </div>
-      </div>
 
-      <div class="terminos-row">
-        <input type="checkbox" id="r-terminos">
-        <label for="r-terminos">
-          Acepto los <a href="terminos.html" target="_blank">Términos y condiciones</a> y la Política de Privacidad de Vive Más Inmobiliaria
-        </label>
-      </div>
+        <button class="btn-registro-final" id="btn-registro" onclick="registrarse()">
+          Crear mi cuenta gratis
+        </button>
 
-      <button class="btn-registro-final" id="btn-registro" onclick="registrarse()">
-        Crear mi cuenta gratis
-      </button>
-
-      <div class="login-link">
-        ¿Ya tienes cuenta? <a href="login.html">Inicia sesión aquí</a>
+        <div class="login-link">
+          ¿Ya tienes cuenta? <a href="login.html">Inicia sesión aquí</a>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
   <!-- FOOTER -->
   <footer class="footer">
@@ -248,69 +252,263 @@
   <script>
     if (auth.isLoggedIn()) window.location.href = auth.isAdmin() ? 'admin.html' : 'dashboard.html';
 
-    let planSeleccionado = 'gratuito';
-
+    // ==========================================
+    // LÓGICA DE SELECCIÓN DE PLANES
+    // ==========================================
     const seleccionarPlan = (plan) => {
-      planSeleccionado = plan;
+      // Cerrar cualquier modal previo abierto
+      document.getElementById('modal-planes-accion')?.remove();
+
+      if (plan === 'premium') {
+        abrirModalPremium();
+        return;
+      }
+
+      if (plan === 'basico') {
+        abrirModalBasico();
+        return;
+      }
+
+      // GRATUITO -> Flujo directo
       document.querySelectorAll('.plan-card-grande').forEach(c => c.classList.remove('seleccionado'));
       document.getElementById(`plan-${plan}`).classList.add('seleccionado');
-      const labels = { gratuito: 'Gratuito', basico: 'Básico', premium: 'Premium' };
-      document.getElementById('plan-seleccionado-label').textContent = labels[plan];
+      document.getElementById('plan-seleccionado-label').textContent = 'Gratuito';
+      document.getElementById('registro-plan-elegido').value = 'gratuito';
+      document.getElementById('btn-registro').textContent = 'Crear mi cuenta gratis';
       document.getElementById('registro-form-section').scrollIntoView({ behavior: 'smooth' });
-      const btn = document.getElementById('btn-registro');
-      btn.textContent = plan === 'gratuito' ? 'Crear mi cuenta gratis' : `Continuar con plan ${labels[plan]}`;
+      document.getElementById('r-nombre')?.focus();
     };
 
+    // ==========================================
+    // MODAL PLAN BÁSICO (Elegir Anual/Mensual)
+    // ==========================================
+    const abrirModalBasico = () => {
+      const modal = document.createElement('div');
+      modal.id = 'modal-planes-accion';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:10000;display:flex;align-items:center;justify-content:center;font-family:"Inter","Segoe UI",sans-serif';
+      
+      modal.innerHTML = `
+        <div style="background:white;border-radius:20px;padding:0;max-width:550px;width:92%;box-shadow:0 25px 60px rgba(0,0,0,0.4);overflow:hidden">
+          <div style="background:var(--primary, #1a472a);padding:24px 32px;color:white">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <h3 style="margin:0 0 4px 0;font-size:22px;font-weight:800;font-family:'Bricolage Grotesque',sans-serif">Elige tu periodicidad</h3>
+                <p style="margin:0;font-size:14px;opacity:0.85">Desbloquea hasta 15 propiedades y mayor visibilidad.</p>
+              </div>
+              <button onclick="document.getElementById('modal-planes-accion').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:36px;height:36px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+            </div>
+          </div>
+          <div style="padding:32px">
+            <div style="display:flex;gap:16px;margin-bottom:28px;padding:16px;background:#f8fafc;border-radius:12px;border:1px solid #e5e7eb">
+              <div style="font-size:24px">⚡</div>
+              <div style="font-size:13px;color:#334155;line-height:1.5">
+                <strong>¿Qué incluye el plan Básico?</strong><br>
+                Hasta 15 propiedades, 10 fotos por propiedad, estadísticas de tu panel y tus publicaciones aparecerán antes en los resultados de búsqueda.
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <button onclick="elegirPeriodoYContinuar('anual')" style="position:relative;border:2px solid #0369a1;border-radius:16px;padding:20px;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;transition:all 0.2s" onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='white'">
+                <div style="position:absolute;top:-12px;left:24px;background:#0369a1;color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px">RECOMENDADO</div>
+                <div>
+                  <div style="font-size:18px;font-weight:800;color:#0f172a">Pago Anual</div>
+                  <div style="font-size:24px;font-weight:800;color:#0369a1;margin:4px 0">$999 <span style="font-size:14px;font-weight:400;color:#64748b">/ año</span></div>
+                  <div style="font-size:13px;color:#16a34a;font-weight:600">✓ Equivale a $83/mes (Ahorras $99)</div>
+                </div>
+                <div style="font-size:30px;color:#0369a1">💳</div>
+              </button>
+              <button onclick="elegirPeriodoYContinuar('mensual')" style="border:2px solid #e5e7eb;border-radius:16px;padding:20px;background:white;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;transition:all 0.2s" onmouseover="this.style.borderColor='#cbd5e1'" onmouseout="this.style.borderColor='#e5e7eb'">
+                <div>
+                  <div style="font-size:18px;font-weight:800;color:#0f172a">Pago Mensual</div>
+                  <div style="font-size:24px;font-weight:800;color:#334155;margin:4px 0">$99 <span style="font-size:14px;font-weight:400;color:#64748b">/ mes</span></div>
+                  <div style="font-size:13px;color:#64748b">Sin compromiso, cancela cuando quieras</div>
+                </div>
+                <div style="font-size:30px;color:#94a3b8">💳</div>
+              </button>
+            </div>
+            <button onclick="document.getElementById('modal-planes-accion').remove()" style="width:100%;margin-top:20px;padding:12px;background:none;border:1px solid #e5e7eb;border-radius:12px;font-size:15px;font-weight:600;color:#64748b;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Terminar y volver a elegir</button>
+          </div>
+        </div>
+      `;
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+      document.body.appendChild(modal);
+    };
+
+    // ==========================================
+    // MODAL PLAN PREMIUM (Lista de espera)
+    // ==========================================
+    const abrirModalPremium = () => {
+      const modal = document.createElement('div');
+      modal.id = 'modal-planes-accion';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:10000;display:flex;align-items:center;justify-content:center;font-family:"Inter","Segoe UI",sans-serif';
+      
+      modal.innerHTML = `
+        <div style="background:white;border-radius:20px;padding:0;max-width:500px;width:92%;box-shadow:0 25px 60px rgba(0,0,0,0.4);overflow:hidden">
+          <div style="background:linear-gradient(135deg, #7c3aed, #6d28d9);padding:24px 32px;color:white">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <h3 style="margin:0 0 4px 0;font-size:22px;font-weight:800;font-family:'Bricolage Grotesque',sans-serif">👑 Lista de espera Premium</h3>
+                <p style="margin:0;font-size:14px;opacity:0.85">Sé el primero en acceder al servicio completo.</p>
+              </div>
+              <button onclick="document.getElementById('modal-planes-accion').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:36px;height:36px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+            </div>
+          </div>
+          <div style="padding:32px">
+            <div style="display:flex;gap:12px;margin-bottom:24px;padding:16px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px">
+              <div style="font-size:20px">🚀</div>
+              <div style="font-size:13px;color:#4c1d95;line-height:1.5">
+                <strong>¿Qué incluirá Premium?</strong><br>
+                Propiedades ilimitadas, 15 fotos, estadísticas avanzadas, fotografía profesional, gestoría completa y soporte dedicado 24/7.
+              </div>
+            </div>
+            
+            <div style="margin-bottom:20px">
+              <label style="font-size:14px;font-weight:600;color:#0f172a;display:block;margin-bottom:8px">Déjanos tu correo para avisarte al lanzamiento con un descuento especial:</label>
+              <input type="email" id="premium-waitlist-email" class="form-input" placeholder="tu@correo.com" style="width:100%;padding:14px 16px;border:2px solid #e5e7eb;border-radius:12px;font-size:15px;box-sizing:border-box;outline:none" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e5e7eb'">
+              <div id="premium-waitlist-msg" style="margin-top:8px;font-size:13px;display:none"></div>
+            </div>
+
+            <button onclick="enviarListaEsperaPremium()" id="btn-premium-waitlist" style="width:100%;padding:14px;background:linear-gradient(135deg, #7c3aed, #6d28d9);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(124, 58, 237, 0.3);transition:transform 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+              Quiero ser Premium 🚀
+            </button>
+
+            <button onclick="document.getElementById('modal-planes-accion').remove()" style="width:100%;margin-top:12px;padding:12px;background:none;border:1px solid #e5e7eb;border-radius:12px;font-size:15px;font-weight:600;color:#64748b;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">
+              Terminar y volver a elegir
+            </button>
+          </div>
+        </div>
+      `;
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+      document.body.appendChild(modal);
+      
+      // Enfocar el input automáticamente
+      setTimeout(() => document.getElementById('premium-waitlist-email')?.focus(), 200);
+    };
+
+    // Enviar correo a la lista de espera
+    const enviarListaEsperaPremium = async () => {
+      const email = document.getElementById('premium-waitlist-email')?.value?.trim();
+      const msgEl = document.getElementById('premium-waitlist-msg');
+      const btnEl = document.getElementById('btn-premium-waitlist');
+
+      if (!email || !email.includes('@')) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#dc2626';
+        msgEl.textContent = '⚠️ Por favor ingresa un correo válido.';
+        return;
+      }
+
+      btnEl.textContent = 'Enviando...';
+      btnEl.disabled = true;
+
+      try {
+        const res = await fetch('/api/waitlist/premium', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#16a34a';
+        msgEl.textContent = '✅ ¡Perfecto! Te avisaremos cuando el plan Premium esté listo con un descuento especial.';
+        btnEl.style.display = 'none';
+      } catch (e) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#dc2626';
+        msgEl.textContent = 'Ocurrió un error de conexión. Intenta de nuevo.';
+        btnEl.textContent = 'Quiero ser Premium 🚀';
+        btnEl.disabled = false;
+      }
+    };
+
+    // ==========================================
+    // ACCIÓN AL ELEGIR ANUAL O MENSUAL (BÁSICO)
+    // ==========================================
+    const elegirPeriodoYContinuar = (periodo) => {
+      document.getElementById('registro-plan-elegido').value = 'basico';
+      document.getElementById('registro-periodo-elegido').value = periodo;
+
+      document.querySelectorAll('.plan-card-grande').forEach(c => c.classList.remove('seleccionado'));
+      document.getElementById('plan-basico').classList.add('seleccionado');
+      document.getElementById('plan-seleccionado-label').textContent = 'Básico';
+      
+      const textoBtn = periodo === 'anual' ? 'Crear cuenta y Pagar Anual ($999)' : 'Crear cuenta y Pagar Mensual ($99)';
+      document.getElementById('btn-registro').textContent = textoBtn;
+
+      document.getElementById('modal-planes-accion')?.remove();
+      document.getElementById('registro-form-section').scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('r-nombre')?.focus();
+    };
+
+    // ==========================================
+    // FUNCIÓN DE REGISTRO
+    // ==========================================
     const registrarse = async () => {
-  const nombre = document.getElementById('r-nombre').value.trim();
-  const email = document.getElementById('r-email').value.trim();
-  const telefono = document.getElementById('r-telefono').value.trim();
-  const password = document.getElementById('r-password').value;
-  const terminos = document.getElementById('r-terminos').checked;
-  const metodoVerificacion = document.querySelector('input[name="verificacion"]:checked')?.value || 'email';
-  const errorEl = document.getElementById('reg-error');
-  const successEl = document.getElementById('reg-success');
+      const nombre = document.getElementById('r-nombre').value.trim();
+      const email = document.getElementById('r-email').value.trim();
+      const telefono = document.getElementById('r-telefono').value.trim();
+      const password = document.getElementById('r-password').value;
+      const terminos = document.getElementById('r-terminos').checked;
+      const metodoVerificacion = document.querySelector('input[name="verificacion"]:checked')?.value || 'email';
+      const planElegido = document.getElementById('registro-plan-elegido').value;
+      const errorEl = document.getElementById('reg-error');
+      const successEl = document.getElementById('reg-success');
 
-  errorEl.style.display = 'none';
-  successEl.style.display = 'none';
+      errorEl.style.display = 'none';
+      successEl.style.display = 'none';
 
-  if (!nombre || !email || !telefono || !password) {
-    errorEl.textContent = 'Por favor llena todos los campos obligatorios';
-    errorEl.style.display = 'block';
-    return;
-  }
-  if (password.length < 6) {
-    errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres';
-    errorEl.style.display = 'block';
-    return;
-  }
-  if (!terminos) {
-    errorEl.textContent = 'Debes aceptar los términos y condiciones';
-    errorEl.style.display = 'block';
-    return;
-  }
+      if (!nombre || !email || !telefono || !password) {
+        errorEl.textContent = 'Por favor llena todos los campos obligatorios';
+        errorEl.style.display = 'block';
+        return;
+      }
+      if (password.length < 6) {
+        errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres';
+        errorEl.style.display = 'block';
+        return;
+      }
+      if (!terminos) {
+        errorEl.textContent = 'Debes aceptar los términos y condiciones';
+        errorEl.style.display = 'block';
+        return;
+      }
 
       const btn = document.getElementById('btn-registro');
       btn.textContent = 'Creando cuenta...';
       btn.disabled = true;
 
-      const data = await api.post('/auth/registro', { nombre, email, telefono, password, plan: planSeleccionado, metodoVerificacion });
+      const data = await api.post('/auth/registro', { nombre, email, telefono, password, plan: planElegido, metodoVerificacion });
 
       if (data.ok) {
+        
+        // FLUJO SI ELIGIÓ BÁSICO (Ir a Stripe)
+        if (planElegido === 'basico') {
+          auth.save(data.accessToken, data.user); 
+          
+          const periodo = document.getElementById('registro-periodo-elegido').value;
+          const linkStripe = periodo === 'anual' 
+            ? 'https://buy.stripe.com/test_dRmfZh1JDc6U2B6cUWc3m01' 
+            : 'https://buy.stripe.com/test_9B6fZhgExb2QejO8EGc3m00';
+            
+          window.location.href = `${linkStripe}?client_reference_id=${data.user._id || data.user.id}&prefilled_email=${encodeURIComponent(data.user.email)}`;
+          return; 
+        }
+
+        // FLUJO NORMAL SI ES GRATUITO
         successEl.textContent = '¡Cuenta creada! Te enviamos un código de verificación. Redirigiendo...';
         successEl.style.display = 'block';
         setTimeout(() => {
           window.location.href = `verificar.html?email=${encodeURIComponent(email)}`;
         }, 1500);
+
       } else {
         errorEl.textContent = data.error || 'Error al crear la cuenta';
         errorEl.style.display = 'block';
-        btn.textContent = 'Crear mi cuenta gratis';
+        btn.textContent = planElegido === 'basico' ? 'Pagar Básico y Crear Cuenta' : 'Crear mi cuenta gratis';
         btn.disabled = false;
       }
     };
   </script>
-<script>window.SOLO_SOPORTE = true;</script>
-<script src="../js/chatbot.js"></script>
+  <script>window.SOLO_SOPORTE = true;</script>
+  <script src="../js/chatbot.js"></script>
 </body>
 </html>
