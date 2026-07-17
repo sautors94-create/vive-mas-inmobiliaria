@@ -393,10 +393,52 @@
       </section>
 
       <!-- MENSAJES -->
-      <section id="sec-mensajes" class="dash-section" style="display:none">
-        <div class="dash-section-header"><h2>Mis mensajes</h2></div>
-        <div id="mensajes-lista" class="mensajes-lista"><div class="loading">Cargando mensajes...</div></div>
-      </section>
+<section id="sec-mensajes" class="dash-section" style="display:none">
+  <div class="dash-section-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <h2>Mis mensajes</h2>
+    <button onclick="exportarMensajesExcel()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
+      📊 Exportar a Excel
+    </button>
+  </div>
+  <div id="msg-restriccion-banner" style="display:none;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#92400e;line-height:1.5">
+    <b>🔒 Plan Gratuito:</b> Solo puedes responder <b>1 vez</b> como vendedor en cada conversación. <span style="cursor:pointer;color:#075985;text-decoration:underline;font-weight:600" onclick="mostrarModalPlanes()">Mejorar plan</span>
+  </div>
+  <div id="msg-chat-container" style="display:grid;grid-template-columns:320px 1fr;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:500px;background:var(--bg-secondary)">
+    <div id="msg-panel-lista" style="border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:12px;border-bottom:1px solid var(--border)">
+        <input type="text" id="msg-buscar" placeholder="Buscar conversación..." style="width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none" oninput="filtrarConversaciones(this.value)">
+      </div>
+      <div id="msg-conversaciones" style="flex:1;overflow-y:auto;padding:6px">
+        <div style="padding:30px;text-align:center;color:var(--text-light)">Cargando...</div>
+      </div>
+    </div>
+    <div id="msg-panel-chat" style="display:flex;flex-direction:column;overflow:hidden">
+      <div id="msg-vacio" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-light);padding:30px">
+        <div style="font-size:48px;margin-bottom:14px;opacity:0.5">💬</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px;color:var(--text)">Selecciona una conversación</div>
+        <div style="font-size:13px">Elige un chat de la lista para ver los mensajes</div>
+      </div>
+      <div id="msg-chat-header" style="display:none;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--bg-secondary)">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div id="msg-chat-nombre" style="font-size:15px;font-weight:700;color:var(--text)"></div>
+            <div id="msg-chat-propiedad" style="font-size:12px;color:var(--text-light);margin-top:2px;cursor:pointer;display:none"></div>
+          </div>
+        </div>
+      </div>
+      <div id="msg-chat-mensajes" style="display:none;flex:1;overflow-y:auto;padding:18px;flex-direction:column;gap:8px"></div>
+      <div id="msg-limite-alcanzado" style="display:none;padding:10px 18px;background:#fef2f2;border-top:1px solid #fecaca;font-size:12px;color:#991b1b;text-align:center">
+        🔒 Alcanzaste tu límite de respuestas como vendedor en esta conversación. <span style="cursor:pointer;color:#075985;text-decoration:underline;font-weight:600" onclick="mostrarModalPlanes()">Mejora tu plan</span>
+      </div>
+      <div id="msg-chat-input-wrap" style="display:none;padding:14px 18px;border-top:1px solid var(--border);background:var(--bg-secondary)">
+        <div style="display:flex;gap:10px;align-items:flex-end">
+          <textarea id="msg-input" rows="1" placeholder="Escribe tu mensaje..." style="flex:1;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;resize:none;outline:none;max-height:100px;font-family:inherit;line-height:1.4" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarMensajeChat()}" oninput="autoResizeTextarea(this)"></textarea>
+          <button id="msg-btn-enviar" onclick="enviarMensajeChat()" style="padding:10px 18px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap">Enviar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
       <!-- LEADS -->
       <section id="sec-leads" class="dash-section" style="display:none">

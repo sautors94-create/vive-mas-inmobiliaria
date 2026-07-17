@@ -171,42 +171,50 @@ window.contratarPlan = (plan, periodo = 'mensual') => {
 
 document.addEventListener('DOMContentLoaded', () => {
 // Verificar plan real en el servidor — detecta cambios de Stripe, admin, etc.
-  const verificarPlanActual = async (intentos = 0, mostrarModal = false) => {
-    try {
-      const planLocalAntes = (auth.getUser()?.plan || 'gratuito').toLowerCase();
-      const data = await api.get('/auth/verificar-plan');
-      if (!data.ok || !data.user) return;
+const verificarPlanActual = async (intentos = 0, mostrarModal = false) => {
+  try {
+    const planLocalAntes = (auth.getUser()?.plan || 'gratuito').toLowerCase();
+    const data = await api.get('/auth/verificar-plan');
+    if (!data.ok || !data.user) return;
 
-      const planServidor = (data.plan || 'gratuito').toLowerCase();
+    const planServidor = (data.plan || 'gratuito').toLowerCase();
 
-      // Actualizar localStorage con datos frescos
-      const userActual = auth.getUser() || {};
-      const userActualizado = { ...userActual, plan: data.plan, planFechaFin: data.planFechaFin };
-      localStorage.setItem('user', JSON.stringify(userActualizado));
+    // Actualizar localStorage con datos frescos (TODOS los campos nuevos)
+    const userActual = auth.getUser() || {};
+    const userActualizado = { 
+      ...userActual, 
+      plan: data.plan, 
+      planFechaFin: data.planFechaFin,
+      planFechaInicio: data.planFechaInicio || null,
+      planPeriodo: data.planPeriodo || 'mensual',
+      planCancelado: data.planCancelado || false,
+      cargoRecurrenteAutorizado: data.cargoRecurrenteAutorizado || false
+    };
+    localStorage.setItem('user', JSON.stringify(userActualizado));
 
-      // Actualizar UI inmediatamente
-      const planEl = document.getElementById('ds-user-plan');
-      const sidebarPlan = document.getElementById('sidebar-plan');
-      const limiteFotosEl = document.getElementById('texto-limite-fotos');
-      if (planEl) planEl.textContent = `Plan ${data.plan}`;
-      if (sidebarPlan) sidebarPlan.textContent = `Plan ${data.plan}`;
-      if (limiteFotosEl) {
-        const lim = getLimiteFotos();
-        limiteFotosEl.textContent = `Plan ${data.plan}: hasta ${lim} fotos`;
-      }
+    // Actualizar UI inmediatamente
+    const planEl = document.getElementById('ds-user-plan');
+    const sidebarPlan = document.getElementById('sidebar-plan');
+    const limiteFotosEl = document.getElementById('texto-limite-fotos');
+    if (planEl) planEl.textContent = `Plan ${data.plan}`;
+    if (sidebarPlan) sidebarPlan.textContent = `Plan ${data.plan}`;
+    if (limiteFotosEl) {
+      const lim = getLimiteFotos();
+      limiteFotosEl.textContent = `Plan ${data.plan}: hasta ${lim} fotos`;
+    }
 
-      const jerarquia = { gratuito: 0, basico: 1, premium: 2 };
-      if ((jerarquia[planServidor] || 0) > (jerarquia[planLocalAntes] || 0)) {
-        mostrarModalBienvenidaPlan(data.plan);
-        return;
-      }
+    const jerarquia = { gratuito: 0, basico: 1, premium: 2 };
+    if ((jerarquia[planServidor] || 0) > (jerarquia[planLocalAntes] || 0)) {
+      mostrarModalBienvenidaPlan(data.plan);
+      return;
+    }
 
-      // Si venimos de Stripe y el plan no cambió aún, reintentar hasta 5 veces
-      if (mostrarModal && planServidor === planLocalAntes && intentos < 5) {
-        setTimeout(() => verificarPlanActual(intentos + 1, true), 2500);
-      }
-    } catch (e) {}
-  };
+    // Si venimos de Stripe y el plan no cambió aún, reintentar hasta 5 veces
+    if (mostrarModal && planServidor === planLocalAntes && intentos < 5) {
+      setTimeout(() => verificarPlanActual(intentos + 1, true), 2500);
+    }
+  } catch (e) {}
+};
 
   // Detectar regreso de Stripe (el Payment Link añade ?session_id=xxx en la URL)
   const desdeStripe = window.location.search.includes('session_id') ||
@@ -764,73 +772,180 @@ const eliminarFavorito = async (propiedadId) => {
   }
 };
 
+// ==========================================
+// MÓDULO DE MENSAJERÍA P2P
+// ==========================================
+let conversacionActiva = null;
+let todasLasConversaciones = [];
+
 const cargarMensajes = async () => {
-  const lista = document.getElementById('mensajes-lista');
-  lista.innerHTML = '<div class="loading">Cargando mensajes...</div>';
+  const lista = document.getElementById('msg-conversaciones');
+  if (!lista) return;
+  lista.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-light)">Cargando...</div>';
+  try {
+    const data = await api.get('/mensajes');
+    if (!data.ok) { lista.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-light)">Error al cargar</div>'; return; }
+    todasLasConversaciones = data.conversaciones || [];
+    renderConversaciones(todasLasConversaciones);
+    const user = auth.getUser();
+    const esGratuito = (user?.plan || 'gratuito').toLowerCase() === 'gratuito';
+    const banner = document.getElementById('msg-restriccion-banner');
+    if (banner) banner.style.display = esGratuito ? 'block' : 'none';
+  } catch (e) {
+    lista.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-light)">Error de conexión</div>';
+  }
+};
 
-  // Cargamos leads del usuario como actividad de mensajes
-  // (el sistema de mensajería directa entre usuarios se implementará en una fase futura)
-  const data = await api.get('/auth/leads');
-
-  if (!data.ok || !data.leads || data.leads.length === 0) {
-    lista.innerHTML = `
-      <div style="text-align:center;padding:40px 20px;color:var(--text-light)">
-        <div style="font-size:40px;margin-bottom:12px">💬</div>
-        <div style="font-size:15px;font-weight:600;margin-bottom:6px">No tienes mensajes aún</div>
-        <div style="font-size:13px">Cuando alguien contacte a través de Vivi o el formulario de servicios, aparecerá aquí.</div>
-      </div>`;
-    actualizarBadgeMensajes(0);
+const renderConversaciones = (convs) => {
+  const lista = document.getElementById('msg-conversaciones');
+  if (!lista) return;
+  if (convs.length === 0) {
+    lista.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-light)"><div style="font-size:36px;margin-bottom:10px;opacity:0.5">💬</div><div style="font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text)">Sin conversaciones</div><div style="font-size:12px">Los mensajes aparecerán cuando contactes a alguien o te contacten</div></div>';
     return;
   }
-
-  const noLeidos = data.leads.filter(l => l.status === 'nuevo').length;
-  actualizarBadgeMensajes(noLeidos);
-
-  lista.innerHTML = data.leads.map(lead => {
-    const esSoporte = lead.tipo === 'soporte';
-    const badgeTipo = esSoporte
-      ? `<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">🎧 Soporte</span>`
-      : `<span class="status-badge" style="background:#f0fdf4;color:#166534">🏠 Servicio</span>`;
+  lista.innerHTML = convs.map(c => {
+    const activa = conversacionActiva === c.conversacionId;
+    const inicial = (c.otroUsuario?.nombre || '?')[0].toUpperCase();
+    const propFoto = c.propiedad?.fotos?.[0];
+    const hora = new Date(c.ultimoMensajeFecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    const noLeidos = c.noLeidos > 0 ? `<span style="background:var(--primary);color:white;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;min-width:20px;text-align:center">${c.noLeidos}</span>` : '';
     return `
-    <div class="mensaje-card">
-      <div class="mensaje-header">
-        <span class="mensaje-de">${lead.folio || 'Lead'} · ${lead.servicio || 'Consulta general'}</span>
-        <div style="display:flex;gap:6px;align-items:center">
-          ${badgeTipo}
-          <span class="status-badge status-${lead.status}">${lead.status}</span>
+      <div onclick="abrirConversacion('${c.conversacionId}')" style="display:flex;gap:10px;padding:12px;border-radius:10px;cursor:pointer;transition:background 0.15s;align-items:flex-start;${activa ? 'background:rgba(26,71,42,0.12);' : ''}" onmouseover="if(!${activa})this.style.background='rgba(255,255,255,0.04)'" onmouseout="if(!${activa})this.style.background='transparent'">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0">${inicial}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+            <span style="font-size:13px;font-weight:${c.noLeidos > 0 ? '700' : '500'};color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.otroUsuario?.nombre || 'Usuario'}</span>
+            <span style="font-size:11px;color:var(--text-light);flex-shrink:0;margin-left:8px">${hora}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${propFoto ? `<img src="${propFoto}" style="width:28px;height:28px;border-radius:5px;object-fit:cover;flex-shrink:0">` : ''}
+            <span style="font-size:12px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${c.ultimoMensaje || ''}</span>
+            ${noLeidos}
+          </div>
         </div>
-      </div>
-      <div class="mensaje-texto">${lead.nombre} · ${lead.telefono}${lead.email ? ' · ' + lead.email : ''}</div>
-      <div class="mensaje-propiedad">${new Date(lead.createdAt).toLocaleDateString('es-MX')}${lead.ciudad ? ' · ' + lead.ciudad : ''}</div>
-      ${lead.conversacion?.length ? `<div style="margin-top:8px;font-size:12px;color:var(--text-light)">💬 ${lead.conversacion.length} mensaje(s) en la conversación</div>` : ''}
-    </div>`;
+      </div>`;
   }).join('');
 };
+
+const filtrarConversaciones = (texto) => {
+  const t = texto.toLowerCase().trim();
+  if (!t) { renderConversaciones(todasLasConversaciones); return; }
+  renderConversaciones(todasLasConversaciones.filter(c =>
+    (c.otroUsuario?.nombre || '').toLowerCase().includes(t) ||
+    (c.ultimoMensaje || '').toLowerCase().includes(t)
+  ));
+};
+
+const abrirConversacion = async (convId) => {
+  conversacionActiva = convId;
+  renderConversaciones(todasLasConversaciones);
+  document.getElementById('msg-vacio').style.display = 'none';
+  document.getElementById('msg-chat-header').style.display = 'block';
+  document.getElementById('msg-chat-mensajes').style.display = 'flex';
+  document.getElementById('msg-chat-input-wrap').style.display = 'block';
+  document.getElementById('msg-limite-alcanzado').style.display = 'none';
+  const contenedor = document.getElementById('msg-chat-mensajes');
+  contenedor.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-light)">Cargando mensajes...</div>';
+  try {
+    const data = await api.get(`/mensajes/conversacion/${convId}`);
+    if (!data.ok) { contenedor.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-light)">Error</div>'; return; }
+    const msgs = data.mensajes || [];
+    const ultima = msgs[msgs.length - 1];
+    const otroUser = msgs.length > 0 ? (ultima.remitente._id.toString() === auth.getUser()._id ? ultima.destinatario : ultima.remitente) : null;
+    document.getElementById('msg-chat-nombre').textContent = otroUser?.nombre || 'Usuario';
+    const propEl = document.getElementById('msg-chat-propiedad');
+    if (ultima?.propiedad) {
+      propEl.textContent = '🏠 ' + ultima.propiedad.titulo;
+      propEl.style.display = 'block';
+      propEl.onclick = () => window.open(ultima.propiedad._id ? (window.location.pathname.includes('/pages/') ? `propiedad.html?id=${ultima.propiedad._id}` : `pages/propiedad.html?id=${ultima.propiedad._id}`) : '#');
+    } else { propEl.style.display = 'none'; }
+    verificarLimiteRespuestas(msgs);
+    renderMensajesChat(msgs);
+    setTimeout(() => { contenedor.scrollTop = contenedor.scrollHeight; }, 100);
+    actualizarBadgeMensajes(todasLasConversaciones.reduce((s, c) => s + (c.noLeidos || 0), 0));
+  } catch (e) {
+    contenedor.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-light)">Error de conexión</div>';
+  }
+};
+
+const renderMensajesChat = (msgs) => {
+  const contenedor = document.getElementById('msg-chat-mensajes');
+  const userId = auth.getUser()._id;
+  if (msgs.length === 0) { contenedor.innerHTML = '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-light);font-size:13px">No hay mensajes aún</div>'; return; }
+  let html = '', fechaAnt = '';
+  const palabrasRiesgo = ['clabe','banco','santander','bbva','bancomer','deposita','transferir','whatsapp','telegram','spei'];
+  msgs.forEach(m => {
+    const fechaMsg = new Date(m.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' });
+    if (fechaMsg !== fechaAnt) { html += `<div style="text-align:center;font-size:11px;color:var(--text-light);padding:8px 0">${fechaMsg}</div>`; fechaAnt = fechaMsg; }
+    const esMio = m.remitente._id.toString() === userId;
+    const hora = new Date(m.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    let texto = m.mensaje.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    if (m.riesgoFlags?.length) palabrasRiesgo.forEach(p => { texto = texto.replace(new RegExp(`(${p})`,'gi'), '<span style="background:rgba(239,68,68,0.15);color:#fca5a5;padding:0 2px;border-radius:3px;font-weight:600">$1</span>'); });
+    html += `<div style="display:flex;flex-direction:column;${esMio ? 'align-items:flex-end' : 'align-items:flex-start'}">
+      <div style="font-size:11px;color:var(--text-light);margin-bottom:2px;margin-${esMio?'right':'left'}:4px">${esMio?'Tú':m.remitente.nombre} · ${hora}</div>
+      <div class="chat-bubble ${esMio?'sent':'received'}">${texto}</div>
+      ${m.riesgo&&m.riesgo!=='bajo'?`<div style="font-size:10px;color:#fca5a5;margin-top:2px;margin-${esMio?'right':'left'}:4px">⚠️ ${m.riesgo}</div>`:''}
+    </div>`;
+  });
+  contenedor.innerHTML = html;
+};
+
+const enviarMensajeChat = async () => {
+  const input = document.getElementById('msg-input');
+  const texto = input.value.trim();
+  if (!texto || !conversacionActiva) return;
+  const btn = document.getElementById('msg-btn-enviar');
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    const conv = todasLasConversaciones.find(c => c.conversacionId === conversacionActiva);
+    if (!conv) throw new Error('Conversación no encontrada');
+    const data = await api.post('/mensajes', { mensaje: texto, destinatarioId: conv.otroUsuario._id, propiedadId: conv.propiedad?._id || null });
+    if (!data.ok) {
+      if (data.limiteAlcanzado) {
+        document.getElementById('msg-limite-alcanzado').style.display = 'block';
+        document.getElementById('msg-chat-input-wrap').style.display = 'none';
+      }
+      dsToast({ title: 'Error', message: data.error || 'No se pudo enviar', type: 'error' }); return;
+    }
+    input.value = ''; input.style.height = 'auto';
+    await abrirConversacion(conversacionActiva);
+    const idx = todasLasConversaciones.findIndex(c => c.conversacionId === conversacionActiva);
+    if (idx > 0) { const [m] = todasLasConversaciones.splice(idx, 1); todasLasConversaciones.unshift({ ...m, ultimoMensaje: texto, ultimoMensajeFecha: new Date() }); renderConversaciones(todasLasConversaciones); }
+  } catch (e) { dsToast({ title: 'Error', message: 'No se pudo enviar', type: 'error' }); }
+  finally { btn.disabled = false; btn.textContent = 'Enviar'; input.focus(); }
+};
+
+const verificarLimiteRespuestas = (msgs) => {
+  const user = auth.getUser();
+  if ((user?.plan || 'gratuito').toLowerCase() !== 'gratuito') { document.getElementById('msg-limite-alcanzado').style.display = 'none'; document.getElementById('msg-chat-input-wrap').style.display = 'block'; return; }
+  const misRespuestas = msgs.filter(m => m.remitente._id.toString() === user._id).length;
+  if (misRespuestas >= 1) { document.getElementById('msg-limite-alcanzado').style.display = 'block'; document.getElementById('msg-chat-input-wrap').style.display = 'none'; }
+  else { document.getElementById('msg-limite-alcanzado').style.display = 'none'; document.getElementById('msg-chat-input-wrap').style.display = 'block'; }
+};
+
+const exportarMensajesExcel = async () => {
+  try {
+    const token = localStorage.getItem('accessToken');
+    const res = await fetch('/api/mensajes/exportar/excel', { headers: { Authorization: `Bearer ${token}` }, credentials: 'include' });
+    if (!res.ok) { const d = await res.json(); dsToast({ title: 'Error', message: d.error || 'No se pudo exportar', type: 'error' }); return; }
+    const blob = await res.blob(); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `mensajes-${Date.now()}.xlsx`; a.click();
+    URL.revokeObjectURL(url);
+    dsToast({ title: 'Exportado', message: 'Excel descargado correctamente.', type: 'success' });
+  } catch (e) { dsToast({ title: 'Error', message: 'No se pudo generar el Excel', type: 'error' }); }
+};
+
+const autoResizeTextarea = (el) => { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; };
+
 const cargarLeadsUsuario = async () => {
   const lista = document.getElementById('leads-usuario-lista');
   const data = await api.get('/auth/leads');
   if (data.ok) actualizarBadgeMensajes(data.mensajesNoLeidos || 0);
-  if (!data.leads || data.leads.length === 0) {
-    lista.innerHTML = '<div class="loading">No tienes leads registrados aún.</div>';
-    return;
-  }
+  if (!data.leads || data.leads.length === 0) { lista.innerHTML = '<div class="loading">No tienes leads registrados aún.</div>'; return; }
   lista.innerHTML = data.leads.map(lead => {
     const esSoporte = lead.tipo === 'soporte';
-    const badgeTipo = esSoporte
-      ? `<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">🎧 Soporte</span>`
-      : `<span class="status-badge" style="background:#f0fdf4;color:#166534">🏠 Servicio</span>`;
-    return `
-    <div class="mensaje-card">
-      <div class="mensaje-header">
-        <span class="mensaje-de">${lead.folio || 'Lead'} · ${lead.servicio || 'Servicio no especificado'}</span>
-        <div style="display:flex;gap:6px;align-items:center">
-          ${badgeTipo}
-          <span class="status-badge status-${lead.status}">${lead.status}</span>
-        </div>
-      </div>
-      <div class="mensaje-texto">${lead.nombre} · ${lead.telefono}${lead.email ? ' · ' + lead.email : ''}</div>
-      <div class="mensaje-propiedad">${new Date(lead.createdAt).toLocaleDateString('es-MX')}${lead.ciudad ? ' · ' + lead.ciudad : ''}</div>
-    </div>`;
+    const badgeTipo = esSoporte ? `<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">🎧 Soporte</span>` : `<span class="status-badge" style="background:#f0fdf4;color:#166534">🏠 Servicio</span>`;
+    return `<div class="mensaje-card"><div class="mensaje-header"><span class="mensaje-de">${lead.folio || 'Lead'} · ${lead.servicio || 'Servicio no especificado'}</span><div style="display:flex;gap:6px;align-items:center">${badgeTipo}<span class="status-badge status-${lead.status}">${lead.status}</span></div></div><div class="mensaje-texto">${lead.nombre} · ${lead.telefono}${lead.email ? ' · ' + lead.email : ''}</div><div class="mensaje-propiedad">${new Date(lead.createdAt).toLocaleDateString('es-MX')}${lead.ciudad ? ' · ' + lead.ciudad : ''}</div></div>`;
   }).join('');
 };
 

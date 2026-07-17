@@ -1,12 +1,31 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth.middleware');
-const { enviarMensaje, misConversaciones, conversacionPropiedad } = require('../controllers/message.controller');
+const requireRole = require('../middleware/role.middleware');
+const {
+  enviarMensaje,
+  misConversaciones,
+  conversacionPorId,
+  conversacionPropiedad,
+  exportarMensajesExcel,
+  mensajesConRiesgo,
+  marcarMensajeRevisado,
+  enviarMensajePropiedad
+} = require('../controllers/message.controller');
 
 router.use(authMiddleware);
 
+// Rutas de usuario
 router.get('/', misConversaciones);
+router.get('/exportar/excel', exportarMensajesExcel);
+router.get('/conversacion/:conversacionId', conversacionPorId);
 router.get('/:id', conversacionPropiedad);
-router.post('/:id', enviarMensaje);
+router.post('/', enviarMensaje);
+// Compatibilidad con propiedad.html (envía POST /mensajes/:id con solo { mensaje })
+router.post('/:id', enviarMensajePropiedad);
+
+// Rutas de admin
+router.get('/admin/riesgo', requireRole('admin'), mensajesConRiesgo);
+router.patch('/admin/:id/revisado', requireRole('admin'), marcarMensajeRevisado);
 
 module.exports = router;

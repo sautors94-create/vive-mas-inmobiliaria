@@ -127,4 +127,53 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
 });
 
+// ==========================================
+// CRON: Bajar a gratuito cuando vence el plan
+// Seguridad: no se expone como ruta, solo ejecución interna
+// ==========================================
+const User = require('./models/User');
+const Property = require('./models/Property');
+
+const bajarPlanesVencidos = async () => {
+  try {
+    const ahora = new Date();
+    const usuariosVencidos = await User.find({
+      plan: { $ne: 'gratuito' },
+      planFechaFin: { $lt: ahora },
+      $or: [
+        { planCancelado: true },
+        { planCancelado: { $exists: false } },
+        { planCancelado: null }
+      ]
+    });
+
+    if (usuariosVencidos.length === 0) return;
+
+    for (const u of usuariosVencidos) {
+      console.log(`⏰ Plan vencido: ${u.email} (${u.plan}) → gratuito`);
+      u.plan = 'gratuito';
+      u.planFechaFin = null;
+      u.planCancelado = false;
+      u.stripeSubscriptionId = null;
+      u.cargoRecurrenteAutorizado = false;
+      await u.save();
+
+      await Property.updateMany(
+        { propietario: u._id },
+        { $set: { planPeso: 0 } }
+      );
+    }
+
+    console.log(`⏰ ${usuariosVencidos.length} usuario(s) bajados a gratuito por vencimiento.`);
+  } catch (error) {
+    console.error('❌ Error en cron de planes vencidos:', error.message);
+  }
+};
+
+// Ejecutar una vez al arrancar (espera 5s a que MongoDB conecte)
+setTimeout(bajarPlanesVencidos, 5000);
+
+// Luego cada 6 horas
+setInterval(bajarPlanesVencidos, 6 * 60 * 60 * 1000);
+
 module.exports = app;

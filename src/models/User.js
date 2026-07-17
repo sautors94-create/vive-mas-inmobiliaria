@@ -6,9 +6,18 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true, minlength: 6 },
   role: { type: String, enum: ['user', 'admin', 'services', 'basico_plus'], default: 'user' },
-  plan: { type: String, enum: ['gratuito', 'basico', 'premium'], default: 'gratuito' }, // <-- ESTA COMA ES OBLIGATORIA
+  plan: { type: String, enum: ['gratuito', 'basico', 'premium'], default: 'gratuito' },
   planFechaFin: { type: Date, default: null },
+  planFechaInicio: { type: Date, default: null },
+  planPeriodo: { type: String, enum: ['mensual', 'anual'], default: 'mensual' },
+  planCancelado: { type: Boolean, default: false },
   stripeSubscriptionId: { type: String, default: null },
+  cargoRecurrenteAutorizado: { type: Boolean, default: false },
+  cargoRecurrenteFecha: { type: Date, default: null },
+  cargoRecurrenteRevocadoFecha: { type: Date, default: null },
+  cargoRecurrenteIP: { type: String, default: null },
+  cargoRecurrenteUserAgent: { type: String, default: null },
+  fechaCancelacion: { type: Date, default: null },
   status: { type: String, enum: ['activo', 'suspendido', 'bloqueado'], default: 'activo' },
   avatar: { type: String, default: null },
   telefono: { type: String, default: null },
@@ -28,8 +37,9 @@ const userSchema = new mongoose.Schema({
     propiedadAprobada: { type: Boolean, default: true },
     propiedadRechazada: { type: Boolean, default: true },
     novedades: { type: Boolean, default: false },
+    cargoRecurrente: { type: Boolean, default: true },
   },
-  ultimaActividad: { type: Date, default: Date.now },  // ← AGREGAR ESTA LÍNEA
+  ultimaActividad: { type: Date, default: Date.now },
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {
@@ -46,6 +56,8 @@ userSchema.methods.toJSON = function() {
   const user = this.toObject();
   delete user.password;
   delete user.codigoVerificacion;
+  delete user.cargoRecurrenteIP;
+  delete user.cargoRecurrenteUserAgent;
   return user;
 };
 

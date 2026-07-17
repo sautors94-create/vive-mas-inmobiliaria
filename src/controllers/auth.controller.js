@@ -2,8 +2,11 @@ const User = require('../models/User');
 const Lead = require('../models/Lead');
 const Message = require('../models/Message');
 const jwt = require('jsonwebtoken');
+const Stripe = require('stripe');
 const { subirACloudinary } = require('../config/cloudinary');
 const { generarCodigo, enviarCodigoVerificacion, enviarBienvenida } = require('../utils/email');
+
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 const generarTokens = (user) => {
   const accessToken = jwt.sign(
@@ -254,7 +257,198 @@ const actualizarPerfil = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// ==========================================
+// CANCELACIÓN DE SUSCRIPCIÓN (LeyMex)
+// ==========================================
 
+const cancelarSuscripcion = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const planUser = (user.plan || 'gratuito').toLowerCase();
+    if (planUser === 'gratuito') {
+      return res.status(400).json({ error: 'No tienes un plan activo para cancelar.' });
+    }
+
+    if (user.planCancelado) {
+      return res.status(400).json({ error: 'Tu suscripción ya está cancelada. Se mantiene activa hasta la fecha de vencimiento.' });
+    }
+
+    // Si tiene suscripción en Stripe, marcar cancel_at_period_end
+    if (user.stripeSubscriptionId) {
+      try {
+        await stripe.subscriptions.update(user.stripeSubscriptionId, {
+          cancel_at_period_end: true
+        });
+        console.log(`⏳ Stripe: cancel_at_period_end activado para ${user.email}`);
+      } catch (stripeErr) {
+        console.warn(`⚠️ No se pudo actualizar en Stripe: ${stripeErr.message}`);
+        // Continuamos aunque falle Stripe — lo manejamos por BD
+      }
+    }
+
+    // Actualizar en BD
+    user.planCancelado = true;
+    user.cargoRecurrenteAutorizado = false;
+    user.fechaCancelacion = new Date();
+    await user.save();
+
+    console.log(`🚫 Suscripción cancelada por usuario: ${user.email}. Activa hasta: ${user.planFechaFin?.toLocaleDateString('es-MX')}`);
+
+    res.json({
+      ok: true,
+      mensaje: 'Suscripción cancelada. Tu plan se mantiene activo hasta la fecha de vencimiento.',
+      planFechaFin: user.planFechaFin
+    });
+  } catch (error) {
+    console.error('❌ Error al cancelar suscripción:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const reactivarSuscripcion = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    if (!user.planCancelado) {
+      return res.status(400).json({ error: 'Tu suscripción no está cancelada.' });
+    }
+
+    // Verificar que aún no haya vencido
+    if (user.planFechaFin && new Date() > user.planFechaFin) {
+      return res.status(400).json({ error: 'Tu plan ya venció. Contrata un nuevo plan desde tu panel.' });
+    }
+
+    // Si tiene suscripción en Stripe, quitar cancel_at_period_end
+    if (user.stripeSubscriptionId) {
+      try {
+        await stripe.subscriptions.update(user.stripeSubscriptionId, {
+          cancel_at_period_end: false
+        });
+        console.log(`🔄 Stripe: cancel_at_period_end desactivado para ${user.email}`);
+      } catch (stripeErr) {
+        console.warn(`⚠️ No se pudo reactivar en Stripe: ${stripeErr.message}`);
+      }
+    }
+
+    // Actualizar en BD
+    user.planCancelado = false;
+    user.fechaCancelacion = null;
+    if (user.planPeriodo === 'mensual') {
+      user.cargoRecurrenteAutorizado = true;
+    }
+    await user.save();
+
+    console.log(`🔄 Suscripción reactivada: ${user.email}`);
+
+    res.json({
+      ok: true,
+      mensaje: 'Suscripción reactivada exitosamente.',
+      planFechaFin: user.planFechaFin
+    });
+  } catch (error) {
+    console.error('❌ Error al reactivar suscripción:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const autorizarCargoRecurrente = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    if (user.plan !== 'basico') {
+      return res.status(400).json({ error: 'El cargo recurrente solo aplica al plan mensual.' });
+    }
+
+    if (user.planPeriodo !== 'mensual') {
+      return res.status(400).json({ error: 'El cargo recurrente solo aplica a pagos mensuales. Tu plan es anual.' });
+    }
+
+    if (user.cargoRecurrenteAutorizado) {
+      return res.status(400).json({ error: 'Ya tienes autorizado el cargo recurrente.' });
+    }
+
+    if (user.planCancelado) {
+      return res.status(400).json({ error: 'Tienes la suscripción cancelada. Reactiva tu plan primero.' });
+    }
+
+    // Si tiene suscripción en Stripe, asegurarnos de que no esté cancelada
+    if (user.stripeSubscriptionId) {
+      try {
+        const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        if (sub.cancel_at_period_end) {
+          await stripe.subscriptions.update(user.stripeSubscriptionId, {
+            cancel_at_period_end: false
+          });
+        }
+      } catch (stripeErr) {
+        console.warn(`⚠️ No se pudo verificar suscripción en Stripe: ${stripeErr.message}`);
+      }
+    }
+
+    // Guardar evidencia legal del consentimiento
+    user.cargoRecurrenteAutorizado = true;
+    user.cargoRecurrenteFecha = new Date();
+    user.cargoRecurrenteIP = req.ip || req.headers['x-forwarded-for'] || 'no_disponible';
+    user.cargoRecurrenteUserAgent = req.headers['user-agent'] || 'no_disponible';
+    user.cargoRecurrenteRevocadoFecha = null;
+    await user.save();
+
+    console.log(`✅ Cargo recurrente autorizado por ${user.email} — IP: ${user.cargoRecurrenteIP}`);
+
+    res.json({
+      ok: true,
+      mensaje: 'Cargo recurrente autorizado exitosamente.',
+      fechaAutorizacion: user.cargoRecurrenteFecha
+    });
+  } catch (error) {
+    console.error('❌ Error al autorizar cargo recurrente:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const revocarCargoRecurrente = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    if (!user.cargoRecurrenteAutorizado) {
+      return res.status(400).json({ error: 'No tienes cargo recurrente autorizado.' });
+    }
+
+    // Si tiene suscripción en Stripe, marcar cancel_at_period_end
+    if (user.stripeSubscriptionId) {
+      try {
+        await stripe.subscriptions.update(user.stripeSubscriptionId, {
+          cancel_at_period_end: true
+        });
+        console.log(`⏳ Stripe: cancel_at_period_end activado por revocación de ${user.email}`);
+      } catch (stripeErr) {
+        console.warn(`⚠️ No se pudo actualizar en Stripe: ${stripeErr.message}`);
+      }
+    }
+
+    // Guardar evidencia de revocación
+    user.cargoRecurrenteAutorizado = false;
+    user.cargoRecurrenteRevocadoFecha = new Date();
+    // No borramos cargoRecurrenteFecha ni IP — es evidencia histórica legal
+    await user.save();
+
+    console.log(`🔓 Cargo recurrente revocado por ${user.email}`);
+
+    res.json({
+      ok: true,
+      mensaje: 'Cargo recurrente revocado. Tu plan sigue activo hasta la fecha de vencimiento.',
+      planFechaFin: user.planFechaFin
+    });
+  } catch (error) {
+    console.error('❌ Error al revocar cargo recurrente:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
 module.exports = { 
   registro, 
   login, 
@@ -266,5 +460,9 @@ module.exports = {
   reenviarCodigo, 
   actualizarNotificaciones, 
   actualizarPerfil, 
-  subirKyc 
+  subirKyc,
+  cancelarSuscripcion,
+  reactivarSuscripcion,
+  autorizarCargoRecurrente,
+  revocarCargoRecurrente
 };

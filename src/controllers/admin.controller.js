@@ -493,5 +493,292 @@ const descargarPlantillaUsuarios = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// ==========================================
+// VISTA PREVIA DE PROPIEDAD (modal catálogo)
+// ==========================================
+const verPropiedadAdmin = async (req, res) => {
+  try {
+    const propiedad = await Property.findById(req.params.id)
+      .populate('propietario', 'nombre email telefono plan role verificado');
 
-module.exports = { getUsuarios, cambiarPlan, suspenderUsuario, eliminarUsuario, getPropiedadesRevision, getLeads, aprobarPropiedad, rechazarPropiedad, eliminarPropiedad, bloquearPropiedad, dashboard, crearUsuariosMasivo, descargarPlantillaUsuarios };
+    if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
+
+    // Contar mensajes de esta propiedad
+    const Message = require('../models/Message');
+    const totalMensajes = await Message.countDocuments({ propiedad: req.params.id });
+
+    // Obtener leads relacionados si hay
+    const leadsRelacionados = await Lead.find({
+      $or: [
+        { propiedadId: req.params.id },
+        { 'datosPropiedad.propiedadId': req.params.id }
+      ]
+    }).sort({ createdAt: -1 }).limit(10);
+
+    res.json({
+      ok: true,
+      propiedad,
+      totalMensajes,
+      leadsRelacionados
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ==========================================
+// USUARIOS VETADOS
+// ==========================================
+const BannedUser = require('../models/BannedUser');
+
+const getUsuariosVetados = async (req, res) => {
+  try {
+    const { search, activo } = req.query;
+    const filtro = {};
+    if (activo === 'true') filtro.activo = true;
+    if (activo === 'false') filtro.activo = false;
+    if (search) {
+      filtro.$or = [
+        { razon: { $regex: search, $options: 'i' } },
+        { detalles: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const vetados = await BannedUser.find(filtro)
+      .populate('usuario', 'nombre email telefono plan status createdAt')
+      .populate('admin', 'nombre email')
+      .populate('aliases.usuarioId', 'nombre email telefono plan status createdAt')
+      .sort({ createdAt: -1 });
+
+    res.json({ ok: true, total: vetados.length, vetados });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const vetarUsuario = async (req, res) => {
+  try {
+    const { razon, detalles, aliasIds } = req.body;
+    if (!razon) return res.status(400).json({ error: 'La razón del vetado es obligatoria' });
+
+    const usuario = await User.findById(req.params.id);
+    if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (usuario.role === 'admin') return res.status(403).json({ error: 'No puedes vetar a un administrador' });
+
+    // Verificar si ya está vetado
+    const yaVetado = await BannedUser.findOne({ usuario: req.params.id, activo: true });
+    if (yaVetado) return res.status(400).json({ error: 'El usuario ya está vetado' });
+
+    // Suspender al usuario
+    usuario.status = 'suspendido';
+    await usuario.save();
+
+    // Crear registro de vetado
+    const aliases = [];
+    if (aliasIds && Array.isArray(aliasIds)) {
+      for (const aliasId of aliasIds) {
+        const aliasUser = await User.findById(aliasId);
+        if (aliasUser) {
+          aliasUser.status = 'suspendido';
+          await aliasUser.save();
+          aliases.push({
+            usuarioId: aliasId,
+            email: aliasUser.email,
+            telefono: aliasUser.telefono
+          });
+        }
+      }
+    }
+
+    const vetado = await BannedUser.create({
+      usuario: req.params.id,
+      aliases,
+      razon,
+      detalles: detalles || '',
+      admin: req.user.id
+    });
+
+    await vetado.populate('usuario', 'nombre email telefono');
+    await vetado.populate('admin', 'nombre email');
+    await vetado.populate('aliases.usuarioId', 'nombre email telefono');
+
+    res.json({ ok: true, mensaje: 'Usuario vetado correctamente', vetado });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const desvetarUsuario = async (req, res) => {
+  try {
+    const vetado = await BannedUser.findOne({ usuario: req.params.id, activo: true });
+    if (!vetado) return res.status(404).json({ error: 'El usuario no está vetado' });
+
+    // Reactivar al usuario principal
+    await User.findByIdAndUpdate(req.params.id, { status: 'activo' });
+
+    // Reactivar aliases
+    if (vetado.aliases && vetado.aliases.length > 0) {
+      for (const alias of vetado.aliases) {
+        if (alias.usuarioId) {
+          await User.findByIdAndUpdate(alias.usuarioId, { status: 'activo' });
+        }
+      }
+    }
+
+    vetado.activo = false;
+    await vetado.save();
+
+    res.json({ ok: true, mensaje: 'Usuario desvetado, cuenta reactivada' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const vincularAlias = async (req, res) => {
+  try {
+    const { aliasId } = req.body;
+    if (!aliasId) return res.status(400).json({ error: 'ID del alias requerido' });
+
+    const vetado = await BannedUser.findOne({ usuario: req.params.id, activo: true });
+    if (!vetado) return res.status(404).json({ error: 'Vetado no encontrado' });
+
+    // Verificar que el alias no sea el mismo usuario
+    if (aliasId === req.params.id) {
+      return res.status(400).json({ error: 'No puedes vincular el mismo usuario' });
+    }
+
+    // Verificar que no esté ya vinculado
+    const yaVinculado = vetado.aliases.some(a => a.usuarioId?.toString() === aliasId);
+    if (yaVinculado) return res.status(400).json({ error: 'Este alias ya está vinculado' });
+
+    const aliasUser = await User.findById(aliasId);
+    if (!aliasUser) return res.status(404).json({ error: 'Usuario alias no encontrado' });
+
+    // Suspender al alias
+    aliasUser.status = 'suspendido';
+    await aliasUser.save();
+
+    // Agregar alias
+    vetado.aliases.push({
+      usuarioId: aliasId,
+      email: aliasUser.email,
+      telefono: aliasUser.telefono
+    });
+    await vetado.save();
+
+    await vetado.populate('aliases.usuarioId', 'nombre email telefono');
+
+    res.json({ ok: true, mensaje: 'Alias vinculado y suspendido', vetado });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const desvincularAlias = async (req, res) => {
+  try {
+    const { aliasId } = req.params;
+    const vetado = await BannedUser.findOne({ usuario: req.body.vetadoId, activo: true });
+    if (!vetado) return res.status(404).json({ error: 'Vetado no encontrado' });
+
+    // Encontrar y quitar el alias
+    const alias = vetado.aliases.find(a => a.usuarioId?.toString() === aliasId);
+    if (!alias) return res.status(404).json({ error: 'Alias no encontrado en este vetado' });
+
+    // Reactivar al alias desvinculado
+    await User.findByIdAndUpdate(aliasId, { status: 'activo' });
+
+    vetado.aliases = vetado.aliases.filter(a => a.usuarioId?.toString() !== aliasId);
+    await vetado.save();
+
+    res.json({ ok: true, mensaje: 'Alias desvinculado y reactivado' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Buscar potenciales aliases (mismo teléfono, email相似, mismo nombre)
+const buscarAliases = async (req, res) => {
+  try {
+    const usuario = await User.findById(req.params.id);
+    if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const candidatos = [];
+    const filtroBase = { _id: { $ne: req.params.id } };
+
+    // Por teléfono
+    if (usuario.telefono) {
+      const porTelefono = await User.find({
+        ...filtroBase,
+        telefono: usuario.telefono
+      }).select('nombre email telefono plan status createdAt');
+      porTelefono.forEach(u => {
+        if (!candidatos.find(c => c._id.toString() === u._id.toString())) {
+          candidatos.push({ ...u.toObject(), matchRazon: 'Mismo teléfono' });
+        }
+      });
+    }
+
+    // Por nombre similar (primeras 2 palabras)
+    if (usuario.nombre) {
+      const partes = usuario.nombre.trim().split(/\s+/).slice(0, 2).join(' ');
+      if (partes.length >= 2) {
+        const porNombre = await User.find({
+          ...filtroBase,
+          nombre: { $regex: partes, $options: 'i' }
+        }).select('nombre email telefono plan status createdAt');
+        porNombre.forEach(u => {
+          if (!candidatos.find(c => c._id.toString() === u._id.toString())) {
+            candidatos.push({ ...u.toObject(), matchRazon: 'Nombre similar' });
+          }
+        });
+      }
+    }
+
+    // Por dominio de email
+    if (usuario.email && usuario.email.includes('@')) {
+      const dominio = usuario.email.split('@')[1];
+      if (dominio && dominio !== 'gmail.com' && dominio !== 'hotmail.com' && dominio !== 'yahoo.com') {
+        const porDominio = await User.find({
+          ...filtroBase,
+          email: { $regex: `@${dominio}$`, $options: 'i' }
+        }).select('nombre email telefono plan status createdAt');
+        porDominio.forEach(u => {
+          if (!candidatos.find(c => c._id.toString() === u._id.toString())) {
+            candidatos.push({ ...u.toObject(), matchRazon: `Mismo dominio: @${dominio}` });
+          }
+        });
+      }
+    }
+
+    // Excluir los que ya están vinculados como alias
+    const vetadoActual = await BannedUser.findOne({ usuario: req.params.id, activo: true });
+    const aliasIds = vetadoActual?.aliases?.map(a => a.usuarioId?.toString()) || [];
+    const candidatosFinales = candidatos.filter(c => !aliasIds.includes(c._id.toString()));
+
+    res.json({ ok: true, candidatos: candidatosFinales, total: candidatosFinales.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+module.exports = { 
+  getUsuarios, 
+  cambiarPlan, 
+  suspenderUsuario, 
+  eliminarUsuario, 
+  getPropiedadesRevision, 
+  getLeads, 
+  aprobarPropiedad, 
+  rechazarPropiedad, 
+  eliminarPropiedad, 
+  bloquearPropiedad, 
+  dashboard, 
+  crearUsuariosMasivo, 
+  descargarPlantillaUsuarios,
+  verPropiedadAdmin,
+  getUsuariosVetados,
+  vetarUsuario,
+  desvetarUsuario,
+  vincularAlias,
+  desvincularAlias,
+  buscarAliases
+};

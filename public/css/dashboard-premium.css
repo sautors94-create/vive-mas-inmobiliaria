@@ -208,3 +208,11 @@
   }
 }
 
+/* Chat P2P */
+.chat-bubble{max-width:72%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.5;word-break:break-word}
+.chat-bubble.sent{background:linear-gradient(135deg,#1a472a,#166534);color:#fff;border-bottom-right-radius:4px}
+.chat-bubble.received{background:#1e2233;color:#e4e5ea;border-bottom-left-radius:4px}
+@media(max-width:768px){
+  #msg-chat-container{grid-template-columns:1fr!important}
+  #msg-panel-lista{border-right:none!important;border-bottom:1px solid var(--border);max-height:250px}
+}

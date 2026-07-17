@@ -1,6 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const { registro, login, logout, perfil, misLeads, refreshToken, verificarCodigo, reenviarCodigo, actualizarNotificaciones, actualizarPerfil, subirKyc } = require('../controllers/auth.controller');
+const { 
+  registro, 
+  login, 
+  logout, 
+  perfil, 
+  misLeads, 
+  refreshToken, 
+  verificarCodigo, 
+  reenviarCodigo, 
+  actualizarNotificaciones, 
+  actualizarPerfil, 
+  subirKyc,
+  cancelarSuscripcion,
+  reactivarSuscripcion,
+  autorizarCargoRecurrente,
+  revocarCargoRecurrente
+} = require('../controllers/auth.controller');
 const authMiddleware = require('../middleware/auth.middleware');
 const { upload } = require('../config/cloudinary');
 
@@ -14,16 +30,27 @@ router.get('/perfil', authMiddleware, perfil);
 router.get('/leads', authMiddleware, misLeads);
 router.patch('/notificaciones', authMiddleware, actualizarNotificaciones);
 router.patch('/perfil', authMiddleware, actualizarPerfil);
-// Endpoint para verificar si el plan cambió (útil al regresar de Stripe)
+
+// Verificar si el plan cambió (al regresar de Stripe)
 router.get('/verificar-plan', authMiddleware, async (req, res) => {
   try {
-    const user = await require('../models/User').findById(req.user.id).select('plan planFechaFin nombre email');
+    const user = await require('../models/User').findById(req.user.id).select('plan planFechaFin planFechaInicio planPeriodo planCancelado cargoRecurrenteAutorizado nombre email');
     if (!user) return res.status(404).json({ ok: false });
-    res.json({ ok: true, plan: user.plan, planFechaFin: user.planFechaFin, user });
+    res.json({ ok: true, plan: user.plan, planFechaFin: user.planFechaFin, planFechaInicio: user.planFechaInicio, planPeriodo: user.planPeriodo, planCancelado: user.planCancelado, cargoRecurrenteAutorizado: user.cargoRecurrenteAutorizado, user });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
+
+// Suscripción: cancelar, reactivar
+router.post('/cancelar-suscripcion', authMiddleware, cancelarSuscripcion);
+router.post('/reactivar-suscripcion', authMiddleware, reactivarSuscripcion);
+
+// Cargo recurrente: autorizar, revocar (Ley Banxico)
+router.post('/autorizar-cargo-recurrente', authMiddleware, autorizarCargoRecurrente);
+router.post('/revocar-cargo-recurrente', authMiddleware, revocarCargoRecurrente);
+
+// KYC
 router.post(
   '/kyc',
   authMiddleware,
@@ -33,15 +60,12 @@ router.post(
       { name: 'ineReverso', maxCount: 1 }
     ])(req, res, (err) => {
       if (!err) return next();
-
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(413).json({ error: 'Archivo demasiado grande (máximo 5MB)' });
       }
-
       if (err.message === 'Solo se permiten imágenes') {
         return res.status(400).json({ error: 'Solo se permiten imágenes' });
       }
-
       return res.status(400).json({ error: err.message || 'Error al subir archivos' });
     });
   },
