@@ -48,6 +48,26 @@
     star: {
       viewBox: '0 0 24 24',
       path: 'M12 2l3.2 6.5 7.2 1-5.2 5.1 1.2 7.1L12 18.7 5.6 21.8l1.2-7.1L1.6 9.5l7.2-1L12 2z'
+    },
+    clock: {
+      viewBox: '0 0 24 24',
+      path: 'M12 22a10 10 0 1 0-10-10 10 10 0 0 0 10 10ZM12 7v5l3.5 2'
+    },
+    'x-circle': {
+      viewBox: '0 0 24 24',
+      path: 'M12 22a10 10 0 1 0-10-10 10 10 0 0 0 10 10ZM9 9l6 6M15 9l-6 6'
+    },
+    eye: {
+      viewBox: '0 0 24 24',
+      path: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'
+    },
+    'bar-chart-2': {
+      viewBox: '0 0 24 24',
+      path: 'M6 20V10M12 20V4M18 20v-6'
+    },
+    'share-2': {
+      viewBox: '0 0 24 24',
+      path: 'M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM8.6 13.5l6.8-3.9M8.6 16.5l6.8 3.9'
     }
   };
 
@@ -77,4 +97,3 @@
   window.dsLucide = { inject };
   document.addEventListener('DOMContentLoaded', inject);
 })();
-

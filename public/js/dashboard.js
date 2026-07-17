@@ -320,11 +320,8 @@ const cargarResumenUsuario = async () => {
           ${estaBloqueado ? '<div style="position:absolute;inset:0;background:rgba(255,255,255,0.4);z-index:2;pointer-events:none"></div>' : ''}
           <div class="stat-row">
             <div class="stat-left">
-              <div class="stat-numero">${s.numero} ${s.emoji}</div>
+              <div class="stat-numero">${s.numero}</div>
               <div class="stat-label">${s.label} ${estaBloqueado ? '🔒' : ''}</div>
-            </div>
-            <div class="stat-icon">
-              <span class="li-icon" data-lucide="${s.icon}"></span>
             </div>
           </div>
         </div>`;
@@ -661,6 +658,8 @@ window.initFotosPublicar = () => {
 };
 
 
+const escapeHtmlLocal = (str) => String(str ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 const cargarMisPropiedades = async () => {
   const container = document.getElementById('mis-props-container');
   const data = await api.get('/propiedades/mis-propiedades');
@@ -689,11 +688,16 @@ const cargarMisPropiedades = async () => {
         <div class="prop-admin-titulo">${p.titulo}</div>
         <div class="prop-admin-meta">${p.ubicacion.ciudad}, ${p.ubicacion.estado} · ${formatPrecio(p.precio)}</div>
         ${!esGrid ? `<div class="prop-admin-meta" style="margin-top:6px">Estado: <b style="color:var(--text)">${p.status}</b></div>` : ''}
+        ${p.status === 'rechazada' ? `
+          <div style="margin-top:8px;padding:10px 12px;background:#fdecea;border:1px solid #f5c2c0;border-radius:10px;font-size:12px;color:#7a2a27">
+            <b>Motivo de rechazo:</b> ${p.motivo_rechazo ? escapeHtmlLocal(p.motivo_rechazo) : 'No especificado.'}
+            ${p.permiteEdicion === false ? '<div style="margin-top:4px">Esta propiedad no se puede editar. Solo puedes eliminarla.</div>' : ''}
+          </div>` : ''}
       </div>
       <div class="prop-admin-actions">
         <span class="status-badge status-${p.status}">${p.status}</span>
         <button class="btn btn-outline" style="padding:6px 14px;font-size:13px" onclick="window.location='propiedad.html?id=${p._id}'">Ver</button>
-        ${p.status !== 'aprobada' ? `<button class="btn btn-outline" style="padding:6px 14px;font-size:13px" onclick="editarPropiedad('${p._id}')">✏️ Editar</button>` : ''}
+        ${p.status !== 'aprobada' && (p.status !== 'rechazada' || p.permiteEdicion !== false) ? `<button class="btn btn-outline" style="padding:6px 14px;font-size:13px" onclick="editarPropiedad('${p._id}')">✏️ Editar</button>` : ''}
         <button class="btn btn-outline" style="padding:6px 14px;font-size:13px;border-color:#e24b4a;color:#e24b4a" onclick="eliminarMiPropiedad('${p._id}','${p.titulo.replace(/'/g,"\\'")}')">🗑️</button>
       </div>
     </div>`).join('');
