@@ -837,6 +837,107 @@ const cargarLeadsUsuario = async () => {
 const cargarCuenta = () => {
   const info = document.getElementById('cuenta-info');
   if (!user) return;
+
+  const planUser = (user.plan || 'gratuito').toLowerCase();
+  const tienePlanPago = planUser === 'basico' || planUser === 'premium';
+  const planCancelado = user.planCancelado === true;
+  const planPeriodo = user.planPeriodo || 'mensual';
+  const planFechaFin = user.planFechaFin ? new Date(user.planFechaFin) : null;
+  const planFechaInicio = user.planFechaInicio ? new Date(user.planFechaInicio) : null;
+  const cargoRecurrenteAutorizado = user.cargoRecurrenteAutorizado === true;
+
+  // Calcular días restantes
+  let diasRestantes = null;
+  let fechaFinTexto = 'No disponible';
+  if (planFechaFin && planFechaFin > new Date()) {
+    diasRestantes = Math.ceil((planFechaFin - new Date()) / (1000 * 60 * 60 * 24));
+    fechaFinTexto = planFechaFin.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  // Etiqueta de periodo
+  const periodoLabel = planPeriodo === 'anual' ? 'Anual' : 'Mensual';
+  const periodoIcon = planPeriodo === 'anual' ? '📅' : '🗓️';
+
+  // Sección de gestión de plan (solo si tiene plan de pago)
+  let planManagementHTML = '';
+  if (tienePlanPago) {
+    const estadoPlanColor = planCancelado ? '#dc2626' : '#16a34a';
+    const estadoPlanTexto = planCancelado ? 'Cancelado (vigente hasta la fecha de término)' : 'Activo';
+    const estadoPlanIcon = planCancelado ? '⏳' : '✅';
+
+    planManagementHTML = `
+      <div style="background:var(--bg-secondary);border-radius:16px;padding:24px;border:1px solid var(--border);margin-bottom:24px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+          <div>
+            <h3 style="font-size:16px;margin-bottom:4px;font-family:'Bricolage Grotesque',sans-serif">📋 Gestión de suscripción</h3>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+              <span style="display:inline-flex;align-items:center;gap:4px;background:${estadoPlanColor}18;color:${estadoPlanColor};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">
+                ${estadoPlanIcon} ${estadoPlanTexto}
+              </span>
+              <span style="font-size:13px;color:var(--text-light)">${periodoIcon} Plan ${user.plan} · ${periodoLabel}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px">
+          <div style="background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border)">
+            <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Inicio</div>
+            <div style="font-size:14px;font-weight:600">${planFechaInicio ? planFechaInicio.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border)">
+            <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Vigencia hasta</div>
+            <div style="font-size:14px;font-weight:600">${fechaFinTexto}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border)">
+            <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Días restantes</div>
+            <div style="font-size:14px;font-weight:600;color:${diasRestantes !== null && diasRestantes <= 7 ? '#dc2626' : 'var(--text)'}">${diasRestantes !== null ? diasRestantes + ' días' : 'N/A'}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border)">
+            <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Periodo</div>
+            <div style="font-size:14px;font-weight:600">${periodoLabel}</div>
+          </div>
+        </div>
+
+        ${planCancelado ? `
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-bottom:16px">
+            <div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:4px">⚠️ Suscripción cancelada</div>
+            <div style="font-size:12px;color:#7f1d1d;line-height:1.6">
+              Tu plan se mantiene activo hasta el <b>${fechaFinTexto}</b>. Después de esa fecha, tu cuenta regresará al plan Gratuito automáticamente. No se realizarán cargos adicionales. Puedes reactivar tu suscripción en cualquier momento antes de la fecha de vencimiento.
+            </div>
+            <button class="btn btn-primary" style="margin-top:12px;padding:9px 20px;font-size:13px" onclick="reactivarSuscripcion()">
+              🔄 Reactivar suscripción
+            </button>
+          </div>
+        ` : `
+          ${planPeriodo === 'mensual' && !cargoRecurrenteAutorizado ? `
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;margin-bottom:16px">
+              <div style="font-size:13px;font-weight:600;color:#92400e;margin-bottom:4px">⚡ Cargo recurrente no autorizado</div>
+              <div style="font-size:12px;color:#78350f;line-height:1.6">
+                Tu plan mensual requiere autorización de cargo recurrente para renovarse automáticamente. Sin esta autorización, tu plan no se renovará al final del periodo y pasarás al plan Gratuito.
+              </div>
+              <button class="btn btn-primary" style="margin-top:12px;padding:9px 20px;font-size:13px;background:#92400e" onclick="mostrarModalAutorizacionCargo()">
+                Autorizar cargo recurrente
+              </button>
+            </div>
+          ` : planPeriodo === 'mensual' && cargoRecurrenteAutorizado ? `
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:16px">
+              <div style="font-size:13px;color:#166534;line-height:1.6">
+                ✅ Cargo recurrente autorizado. Tu plan se renovará automáticamente el <b>${fechaFinTexto}</b>. Recibirás notificación mínimo 10 días hábiles antes del cargo.
+              </div>
+              <button class="btn btn-outline" style="margin-top:10px;padding:7px 16px;font-size:12px;border-color:#dc2626;color:#dc2626" onclick="mostrarModalRevocarCargo()">
+                Revocar autorización de cargo recurrente
+              </button>
+            </div>
+          ` : ''}
+
+          <button class="btn btn-outline" style="padding:10px 24px;font-size:14px;border-color:#dc2626;color:#dc2626" onclick="mostrarModalCancelarPlan()">
+            Cancelar suscripción
+          </button>
+        `}
+      </div>
+    `;
+  }
+
   info.innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:32px">
       <div class="form-grupo"><label>Nombre completo</label><input type="text" class="form-input" value="${user.nombre}" disabled></div>
@@ -848,8 +949,17 @@ const cargarCuenta = () => {
           <button class="btn btn-primary" style="padding:10px 18px;font-size:13px;white-space:nowrap" onclick="guardarTelefono()">Guardar</button>
         </div>
       </div>
-      <div class="form-grupo"><label>Plan actual</label><input type="text" class="form-input" value="${user.plan}" disabled></div>
+      <div class="form-grupo">
+        <label>Plan actual</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="text" class="form-input" value="${user.plan}" disabled style="flex:1">
+          ${!tienePlanPago ? `<button class="btn btn-primary" style="padding:10px 18px;font-size:13px;white-space:nowrap" onclick="mostrarModalPlanes()">Mejorar plan</button>` : ''}
+        </div>
+      </div>
     </div>
+
+    ${planManagementHTML}
+
     <div style="background:var(--bg-secondary);border-radius:16px;padding:24px;border:1px solid var(--border);margin-bottom:24px">
       <h3 style="font-size:16px;margin-bottom:16px;font-family:'Bricolage Grotesque',sans-serif">🔔 Preferencias de notificaciones</h3>
       <div style="display:flex;flex-direction:column;gap:14px">
@@ -869,11 +979,18 @@ const cargarCuenta = () => {
           <div><div style="font-size:14px;font-weight:500">Novedades y promociones</div><div style="font-size:12px;color:var(--text-light)">Nuevas propiedades y ofertas especiales</div></div>
           <input type="checkbox" id="notif-novedades" ${user.notificaciones?.novedades ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer">
         </label>
+        ${tienePlanPago && planPeriodo === 'mensual' && cargoRecurrenteAutorizado ? `
+          <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+            <div><div style="font-size:14px;font-weight:500">Recordatorio de cargo recurrente</div><div style="font-size:12px;color:var(--text-light)">Aviso mínimo 10 días hábiles antes de cada cargo a tu tarjeta</div></div>
+            <input type="checkbox" id="notif-cargo-recurrente" ${user.notificaciones?.cargoRecurrente !== false ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer">
+          </label>
+        ` : ''}
       </div>
       <button class="btn btn-primary" style="margin-top:20px;padding:10px 24px;font-size:14px" onclick="guardarNotificaciones()">Guardar preferencias</button>
       <div id="notif-msg" style="display:none;margin-top:12px"></div>
     </div>
-    <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>`;
+    <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>
+  `;
 };
 const guardarTelefono = async () => {
   const telefono = document.getElementById('cuenta-telefono')?.value.trim();
@@ -907,6 +1024,51 @@ const guardarNotificaciones = async () => {
     userActual.notificaciones = notificaciones;
     localStorage.setItem('user', JSON.stringify(userActual));
     setTimeout(() => msgEl.style.display = 'none', 3000);
+  }
+};
+window.contratarPlan = (plan, periodo = 'mensual') => {
+  const STRIPE_LINKS = { 
+    basico_mensual: 'https://buy.stripe.com/test_9B6fZhgExb2QejO8EGc3m00', 
+    basico_anual: 'https://buy.stripe.com/test_dRmfZh1JDc6U2B6cUWc3m01'
+  };
+  
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  if (plan === 'basico' && user.plan === 'basico') {
+    return dsToast({ title: 'Ya tienes este plan', message: 'Actualmente cuentas con el Plan Básico.', type: 'info' });
+  }
+
+  // Si es mensual, mostrar aviso de que el cargo recurrente se autoriza DESPUÉS
+  // (conforme a la ley: la autorización debe ser un acto separado y explícito,
+  //  no un checkbox oculto en la compra)
+  if (plan === 'basico' && periodo === 'mensual') {
+    const overlay = document.createElement('div');
+    overlay.id = 'modal-previo-mensual';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:10600;font-family:"Inter","Segoe UI",sans-serif';
+    overlay.innerHTML = `
+      <div style="background:white;border-radius:20px;padding:28px;max-width:440px;width:90%;box-shadow:0 32px 80px rgba(0,0,0,0.35)">
+        <div style="font-size:36px;text-align:center;margin-bottom:12px">🛒</div>
+        <h2 style="font-size:18px;font-weight:800;color:#0f172a;text-align:center;margin-bottom:8px">Plan Básico Mensual — $99 MXN</h2>
+        <p style="font-size:13px;color:#64748b;text-align:center;line-height:1.6;margin-bottom:20px">
+          Estás a punto de realizar un <b>pago único de $99 MXN</b> por tu primer mes. <br><br>
+          <span style="color:#dc2626;font-weight:600">Este pago NO activa el cargo recurrente automáticamente.</span> Después de tu compra, podrás autorizar la renovación automática desde tu panel de cuenta, con todos los detalles y protecciones que exige la ley.
+        </p>
+        <div style="display:flex;gap:10px">
+          <button onclick="document.getElementById('modal-previo-mensual')?.remove()" style="flex:1;padding:12px;background:#f1f5f9;color:#475569;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">Cancelar</button>
+          <button onclick="document.getElementById('modal-previo-mensual')?.remove(); window.location.href='${STRIPE_LINKS.basico_mensual}?client_reference_id=${user._id || user.id}'" style="flex:1;padding:12px;background:#0369a1;color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">Pagar $99 MXN</button>
+        </div>
+      </div>
+    `;
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+    return;
+  }
+
+  // Plan anual: va directo a Stripe (pago único, no es recurrente)
+  const linkStripe = STRIPE_LINKS[`${plan}_${periodo}`];
+  if (linkStripe) {
+    window.location.href = `${linkStripe}?client_reference_id=${user._id || user.id}`;
+  } else {
+    dsToast({ title: 'Próximamente', message: 'Este plan estará disponible muy pronto.', type: 'info' });
   }
 };
 
