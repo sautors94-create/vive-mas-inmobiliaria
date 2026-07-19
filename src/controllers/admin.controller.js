@@ -112,16 +112,14 @@ const { enviarNotificacionMensaje } = require('../utils/email');
 
 
 const enviarMensajeInternoParaPropiedad = async ({ req, propiedadId, mensaje }) => {
-  // Crea el mensaje usando el flujo existente de messages
   const Message = require('../models/Message');
   const propiedad = await Property.findById(propiedadId).populate('propietario', 'nombre notificaciones');
   if (!propiedad) throw new Error('Propiedad no encontrada');
 
-  const remitenteId = req.user.id; // admin
+  const remitenteId = req.user.id;
   const destinatarioId = propiedad.propietario._id;
 
   if (destinatarioId.toString() === remitenteId.toString()) {
-    // Evitar envío a sí mismo
     return;
   }
 
@@ -135,7 +133,6 @@ const enviarMensajeInternoParaPropiedad = async ({ req, propiedadId, mensaje }) 
   await nuevoMensaje.populate('remitente', 'nombre email');
   await nuevoMensaje.populate('destinatario', 'nombre email');
 
-  // Notificación email si el usuario lo tiene activo
   const notifs = propiedad.propietario.notificaciones;
   const enviarEmail = !notifs || notifs.mensajes !== false;
   if (enviarEmail && propiedad.propietario.email) {
@@ -156,7 +153,6 @@ const aprobarPropiedad = async (req, res) => {
     const propiedad = await Property.findById(req.params.id).populate('propietario', 'nombre notificaciones');
     if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
 
-    // Un admin no puede aprobar sus propias propiedades
     if (propiedad.propietario._id.toString() === req.user.id) {
       return res.status(403).json({ 
         error: 'No puedes aprobar tus propias propiedades. Otro administrador debe revisarla.',
@@ -164,7 +160,6 @@ const aprobarPropiedad = async (req, res) => {
       });
     }
 
-    // Validación inicial de fotos: rechazar si fotos < 2
     const minFotos = 2;
     const fotosOK = validarFotosParaAprobacion({ propiedad, minFotos });
 
@@ -266,15 +261,11 @@ const dashboard = async (req, res) => {
     const usuariosBasico = await User.countDocuments({ plan: 'basico' });
     const usuariosPremium = await User.countDocuments({ plan: 'premium' });
 
-    // --- Fase 5.3: Gráficas de tendencias (últimos 6 periodos) ---
-    // Nota: "periodo" se interpreta como semanas. Esto evita suposiciones sobre el backend existente.
     const now = new Date();
     const periods = 6;
     const MS_WEEK = 7 * 24 * 60 * 60 * 1000;
 
     const periodStart = (idx) => {
-      // idx = 0 => 5 semanas atrás (inicio)
-      // idx = 5 => actual (inicio)
       const d = new Date(now.getTime() - (periods - 1 - idx) * MS_WEEK);
       d.setHours(0, 0, 0, 0);
       return d;
@@ -289,7 +280,6 @@ const dashboard = async (req, res) => {
     const labels = Array.from({ length: periods }, (_, i) => `P${i + 1}`);
 
     const buildSeries = async (model, baseFilter) => {
-      // Retorna valores por periodo
       const values = [];
       for (let i = 0; i < periods; i++) {
         const start = periodStart(i);
@@ -342,16 +332,23 @@ const dashboard = async (req, res) => {
   }
 };
 
-// Creación masiva de usuarios desde Excel/CSV
+// =============================================
+// CREACIÓN MASIVA DE USUARIOS (CORREGIDA)
+// =============================================
 const crearUsuariosMasivo = async (req, res) => {
   try {
-    const archivo = req.files?.archivo?.[0];
+    const archivo = req.file;
     if (!archivo) {
       return res.status(400).json({ error: 'Debes subir un archivo Excel (.xlsx) o CSV' });
     }
 
+    // Opciones del frontend
+    const planForzar = req.body.planForzar || '';
+    const forzarDuplicados = req.body.forzarDuplicados === 'true';
+    const planesValidos = ['gratuito', 'basico', 'premium'];
+
     const resultado = {
-      успе: [],
+      exito: [],
       errores: [],
       totalProcesados: 0,
       totalCreados: 0,
@@ -362,7 +359,6 @@ const crearUsuariosMasivo = async (req, res) => {
 
     // Procesar según tipo de archivo
     if (archivo.originalname.endsWith('.csv')) {
-      // Parsear CSV manualmente
       const contenido = archivo.buffer.toString('utf-8');
       const lineas = contenido.split('\n').map(l => l.trim()).filter(l => l);
       if (lineas.length < 2) {
@@ -376,7 +372,6 @@ const crearUsuariosMasivo = async (req, res) => {
         filas.push(fila);
       }
     } else {
-      // Excel: usar xlsx (debe estar instalado)
       const XLSX = require('xlsx');
       const workbook = XLSX.read(archivo.buffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
@@ -386,19 +381,24 @@ const crearUsuariosMasivo = async (req, res) => {
 
     resultado.totalProcesados = filas.length;
 
-    // Validar y crear usuarios
-    const planesValidos = ['gratuito', 'basico', 'premium'];
-    
+    // Nombres usados EN ESTA importación para evitar duplicados internos
+    const nombresUsadosEnImportacion = new Set();
+
     for (let i = 0; i < filas.length; i++) {
       const fila = filas[i];
-      const email = (fila.email || fila.correo || fila.Email || fila.Correo || '').toString().trim().toLowerCase();
-      const nombre = (fila.nombre || fila.Nombre || '').toString().trim();
-      const telefono = (fila.telefono || fila.telefono || fila.Telefono || '').toString().trim();
-      const plan = (fila.plan || fila.plan || fila.Plan || 'gratuito').toString().toLowerCase().trim();
+      let email = (fila.email || fila.correo || fila.Email || fila.Correo || '').toString().trim().toLowerCase();
+      let nombre = (fila.nombre || fila.Nombre || '').toString().trim();
+      const telefono = (fila.telefono || fila.Telefono || '').toString().trim();
+      
+      // Plan: usar el forzado si viene, si no el del archivo, si no gratuito
+      let plan = planForzar && planesValidos.includes(planForzar)
+        ? planForzar
+        : (fila.plan || fila.Plan || 'gratuito').toString().toLowerCase().trim();
+      if (!planesValidos.includes(plan)) plan = 'gratuito';
 
-      const numeroFila = i + 2; // +2 porque Excel empieza en 1 y hay encabezado
+      const numeroFila = i + 2;
 
-      // Validaciones
+      // Validar email (esto SÍ es obligatorio)
       if (!email || !email.includes('@')) {
         resultado.errores.push({
           fila: numeroFila,
@@ -409,48 +409,65 @@ const crearUsuariosMasivo = async (req, res) => {
         continue;
       }
 
+      // Si no hay nombre, generarlo del email
       if (!nombre) {
+        const parte = email.split('@')[0];
+        nombre = parte.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ]/g, ' ') || 'usuario';
+        nombre = nombre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      }
+
+      // Verificar si el email ya existe en la BD
+      const existeEmail = await User.findOne({ email });
+      if (existeEmail && !forzarDuplicados) {
         resultado.errores.push({
           fila: numeroFila,
           email,
-          error: 'Nombre faltante'
+          error: 'El email ya está registrado (activa "Permitir duplicados")'
         });
         resultado.totalErrores++;
         continue;
       }
 
-      // Verificar si ya existe
-      const existe = await User.findOne({ email });
-      if (existe) {
-        resultado.errores.push({
-          fila: numeroFila,
-          email,
-          error: 'El email ya está registrado'
-        });
-        resultado.totalErrores++;
-        continue;
+      // Si el email existe Y se permite duplicado, o si el nombre ya existe,
+      // generar un nombre único
+      const nombreYaExiste = await User.findOne({ nombre }) || nombresUsadosEnImportacion.has(nombre);
+      if (nombreYaExiste || existeEmail) {
+        let baseNombre = nombre;
+        let contador = 1;
+        let nombreUnico = `${baseNombre} ${contador}`;
+        
+        while (
+          await User.findOne({ nombre: nombreUnico }) || 
+          nombresUsadosEnImportacion.has(nombreUnico)
+        ) {
+          contador++;
+          nombreUnico = `${baseNombre} ${contador}`;
+        }
+        nombre = nombreUnico;
       }
+
+      nombresUsadosEnImportacion.add(nombre);
 
       // Generar contraseña temporal
       const passwordTemporal = Math.random().toString(36).slice(-8);
 
       try {
-        const nuevoUsuario = await User.create({
+        await User.create({
           nombre,
           email,
           telefono,
           password: passwordTemporal,
-          plan: planesValidos.includes(plan) ? plan : 'gratuito',
-          verificado: true, // Por批量 creación, se crean verificados
+          plan,
+          verificado: true,
           status: 'activo'
         });
 
-        resultado.éxito.push({
+        resultado.exito.push({
           fila: numeroFila,
           email,
           nombre,
           passwordTemporal,
-          plan: planesValidos.includes(plan) ? plan : 'gratuito'
+          plan
         });
         resultado.totalCreados++;
       } catch (errorCrear) {
@@ -493,6 +510,7 @@ const descargarPlantillaUsuarios = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 // ==========================================
 // VISTA PREVIA DE PROPIEDAD (modal catálogo)
 // ==========================================
@@ -503,11 +521,9 @@ const verPropiedadAdmin = async (req, res) => {
 
     if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
 
-    // Contar mensajes de esta propiedad
     const Message = require('../models/Message');
     const totalMensajes = await Message.countDocuments({ propiedad: req.params.id });
 
-    // Obtener leads relacionados si hay
     const leadsRelacionados = await Lead.find({
       $or: [
         { propiedadId: req.params.id },
@@ -565,15 +581,12 @@ const vetarUsuario = async (req, res) => {
     if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
     if (usuario.role === 'admin') return res.status(403).json({ error: 'No puedes vetar a un administrador' });
 
-    // Verificar si ya está vetado
     const yaVetado = await BannedUser.findOne({ usuario: req.params.id, activo: true });
     if (yaVetado) return res.status(400).json({ error: 'El usuario ya está vetado' });
 
-    // Suspender al usuario
     usuario.status = 'suspendido';
     await usuario.save();
 
-    // Crear registro de vetado
     const aliases = [];
     if (aliasIds && Array.isArray(aliasIds)) {
       for (const aliasId of aliasIds) {
@@ -613,10 +626,8 @@ const desvetarUsuario = async (req, res) => {
     const vetado = await BannedUser.findOne({ usuario: req.params.id, activo: true });
     if (!vetado) return res.status(404).json({ error: 'El usuario no está vetado' });
 
-    // Reactivar al usuario principal
     await User.findByIdAndUpdate(req.params.id, { status: 'activo' });
 
-    // Reactivar aliases
     if (vetado.aliases && vetado.aliases.length > 0) {
       for (const alias of vetado.aliases) {
         if (alias.usuarioId) {
@@ -642,23 +653,19 @@ const vincularAlias = async (req, res) => {
     const vetado = await BannedUser.findOne({ usuario: req.params.id, activo: true });
     if (!vetado) return res.status(404).json({ error: 'Vetado no encontrado' });
 
-    // Verificar que el alias no sea el mismo usuario
     if (aliasId === req.params.id) {
       return res.status(400).json({ error: 'No puedes vincular el mismo usuario' });
     }
 
-    // Verificar que no esté ya vinculado
     const yaVinculado = vetado.aliases.some(a => a.usuarioId?.toString() === aliasId);
     if (yaVinculado) return res.status(400).json({ error: 'Este alias ya está vinculado' });
 
     const aliasUser = await User.findById(aliasId);
     if (!aliasUser) return res.status(404).json({ error: 'Usuario alias no encontrado' });
 
-    // Suspender al alias
     aliasUser.status = 'suspendido';
     await aliasUser.save();
 
-    // Agregar alias
     vetado.aliases.push({
       usuarioId: aliasId,
       email: aliasUser.email,
@@ -680,11 +687,9 @@ const desvincularAlias = async (req, res) => {
     const vetado = await BannedUser.findOne({ usuario: req.body.vetadoId, activo: true });
     if (!vetado) return res.status(404).json({ error: 'Vetado no encontrado' });
 
-    // Encontrar y quitar el alias
     const alias = vetado.aliases.find(a => a.usuarioId?.toString() === aliasId);
     if (!alias) return res.status(404).json({ error: 'Alias no encontrado en este vetado' });
 
-    // Reactivar al alias desvinculado
     await User.findByIdAndUpdate(aliasId, { status: 'activo' });
 
     vetado.aliases = vetado.aliases.filter(a => a.usuarioId?.toString() !== aliasId);
@@ -696,7 +701,6 @@ const desvincularAlias = async (req, res) => {
   }
 };
 
-// Buscar potenciales aliases (mismo teléfono, email相似, mismo nombre)
 const buscarAliases = async (req, res) => {
   try {
     const usuario = await User.findById(req.params.id);
@@ -705,7 +709,6 @@ const buscarAliases = async (req, res) => {
     const candidatos = [];
     const filtroBase = { _id: { $ne: req.params.id } };
 
-    // Por teléfono
     if (usuario.telefono) {
       const porTelefono = await User.find({
         ...filtroBase,
@@ -718,7 +721,6 @@ const buscarAliases = async (req, res) => {
       });
     }
 
-    // Por nombre similar (primeras 2 palabras)
     if (usuario.nombre) {
       const partes = usuario.nombre.trim().split(/\s+/).slice(0, 2).join(' ');
       if (partes.length >= 2) {
@@ -734,7 +736,6 @@ const buscarAliases = async (req, res) => {
       }
     }
 
-    // Por dominio de email
     if (usuario.email && usuario.email.includes('@')) {
       const dominio = usuario.email.split('@')[1];
       if (dominio && dominio !== 'gmail.com' && dominio !== 'hotmail.com' && dominio !== 'yahoo.com') {
@@ -750,7 +751,6 @@ const buscarAliases = async (req, res) => {
       }
     }
 
-    // Excluir los que ya están vinculados como alias
     const vetadoActual = await BannedUser.findOne({ usuario: req.params.id, activo: true });
     const aliasIds = vetadoActual?.aliases?.map(a => a.usuarioId?.toString()) || [];
     const candidatosFinales = candidatos.filter(c => !aliasIds.includes(c._id.toString()));
@@ -760,6 +760,7 @@ const buscarAliases = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 module.exports = { 
   getUsuarios, 
   cambiarPlan, 

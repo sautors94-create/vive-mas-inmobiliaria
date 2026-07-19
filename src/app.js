@@ -25,7 +25,6 @@ const { webhookStripe } = require('./routes/pagos');
 const app = express();
 
 // ⚠️ CRÍTICO: el webhook de Stripe debe registrarse ANTES de express.json()
-// porque necesita el body como raw Buffer para verificar la firma
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), webhookStripe);
 
 // Rate limiters
@@ -46,7 +45,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "unpkg.com", "cdnjs.cloudflare.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "unpkg.com", "cdnjs.cloudflare.com", "cdn.sheetjs.com"],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "fonts.gstatic.com", "unpkg.com"],
       fontSrc: ["'self'", "fonts.googleapis.com", "fonts.gstatic.com"],
@@ -87,10 +86,11 @@ app.use('/api/mensajes', messageRoutes);
 app.use('/api/site', siteconfigRoutes);
 app.use('/api/chat', chatbotRoutes);
 app.use('/api/services', servicesRoutes);
-app.use('/api', pagoRoutes); // Rutas de pagos: /api/admin/pagos
+app.use('/api', pagoRoutes);
 
+// ✅ LA RUTA DE WAITLIST SE MOVIÓ A admin.routes.js (Está protegida por auth admin ahora)
 // ==========================================
-// ✅ NUEVO: LISTA DE ESPERA PREMIUM
+// LISTA DE ESPERA PREMIUM (Pública, sin auth)
 // ==========================================
 const Waitlist = require('./models/Waitlist');
 
@@ -112,16 +112,10 @@ app.post('/api/waitlist/premium', async (req, res) => {
   }
 });
 
-// Ruta para que el Admin vea los correos de la lista de espera
-app.get('/api/admin/waitlist', async (req, res) => {
-  try {
-    const correos = await Waitlist.find().sort({ createdAt: -1 });
-    res.json({ ok: true, correos });
-  } catch (error) {
-    res.status(500).json({ error: 'Error del servidor' });
-  }
+// 404
+app.use((req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' });
 });
-
 // 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
@@ -129,7 +123,6 @@ app.use((req, res) => {
 
 // ==========================================
 // CRON: Bajar a gratuito cuando vence el plan
-// Seguridad: no se expone como ruta, solo ejecución interna
 // ==========================================
 const User = require('./models/User');
 const Property = require('./models/Property');
@@ -170,7 +163,7 @@ const bajarPlanesVencidos = async () => {
   }
 };
 
-// Ejecutar una vez al arrancar (espera 5s a que MongoDB conecte)
+// Ejecutar una vez al arrancar
 setTimeout(bajarPlanesVencidos, 5000);
 
 // Luego cada 6 horas

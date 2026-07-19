@@ -1,6 +1,8 @@
 ﻿<!DOCTYPE html>
 <html lang="es">
- <head>
+  
+<head>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -89,36 +91,17 @@
         </div>
       </div>
 
-<nav class="sidebar-nav">
-        <a href="#" class="sidebar-link active" onclick="mostrarSeccion('dashboard')">
-          📊 Dashboard
-        </a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('revision')">
-          ⏳ En revisión
-        </a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('propiedades')">
-          🏠 Propiedades
-        </a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('leads')">
-          📋 Leads
-        </a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('usuarios')">
-          👥 Usuarios
-        </a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('temas')">
-         🎨 Temas del sitio
-        </a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('destacadas')">
-         ⭐ Propiedades destacadas
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('pagos')">
-          💳 Pagos y Conciliación
-        </a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('bloqueos')">
-          🛡️ Usuarios vetados
-        </a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('monitoreo')">
-          🤖 Monitoreo de chats
-        </a>
+      <nav class="sidebar-nav">
+        <a href="#" class="sidebar-link active" onclick="mostrarSeccion('dashboard')">📊 Dashboard</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('revision')">⏳ En revisión</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('propiedades')">🏠 Propiedades</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('leads')">📋 Leads</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('usuarios')">👥 Usuarios</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('temas')">🎨 Temas del sitio</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('destacadas')">⭐ Propiedades destacadas</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('pagos')">💳 Pagos y Conciliación</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('bloqueos')">🛡️ Usuarios vetados</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('monitoreo')">🤖 Monitoreo de chats</a>
       </nav>
     </aside>
 
@@ -134,7 +117,7 @@
           <div class="loading">Cargando estadísticas...</div>
         </div>
 
-        <!-- TENDENCIAS (Fase 5.3) -->
+        <!-- TENDENCIAS -->
         <div class="admin-trends" id="admin-trends" style="margin-top:18px;display:none">
           <div class="dash-section-header" style="margin-bottom:12px">
             <h2 style="font-size:20px">Tendencias</h2>
@@ -157,7 +140,6 @@
         </div>
       </section>
 
-
       <!-- EN REVISIÓN -->
       <section id="sec-revision" class="dash-section" style="display:none">
         <div class="dash-section-header">
@@ -169,24 +151,24 @@
       </section>
 
       <!-- TODAS LAS PROPIEDADES -->
-          <section id="sec-propiedades" class="dash-section" style="display:none">
-            <div class="dash-section-header">
-              <h2>Todas las propiedades</h2>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <input type="text" id="search-props" class="form-input" placeholder="Buscar propiedad..." style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarTodasPropiedades()">
-                <select id="filtro-status" class="filter-select" style="width:auto" onchange="cargarTodasPropiedades()">
-                  <option value="">Todas</option>
-                  <option value="revision">En revisión</option>
-                  <option value="aprobada">Aprobadas</option>
-                  <option value="rechazada">Rechazadas</option>
-                  <option value="bloqueada">Bloqueadas</option>
-                </select>
-              </div>
-            </div>
-            <div id="todas-props-lista" class="mis-props-grid">
-              <div class="loading">Cargando...</div>
-            </div>
-          </section>
+      <section id="sec-propiedades" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Todas las propiedades</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="search-props" class="form-input" placeholder="Buscar propiedad..." style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarTodasPropiedades()">
+            <select id="filtro-status" class="filter-select" style="width:auto" onchange="cargarTodasPropiedades()">
+              <option value="">Todas</option>
+              <option value="revision">En revisión</option>
+              <option value="aprobada">Aprobadas</option>
+              <option value="rechazada">Rechazadas</option>
+              <option value="bloqueada">Bloqueadas</option>
+            </select>
+          </div>
+        </div>
+        <div id="todas-props-lista" class="mis-props-grid">
+          <div class="loading">Cargando...</div>
+        </div>
+      </section>
 
       <!-- LEADS -->
       <section id="sec-leads" class="dash-section" style="display:none">
@@ -212,7 +194,7 @@
         </div>
       </section>
 
-<!-- USUARIOS -->
+      <!-- USUARIOS -->
       <section id="sec-usuarios" class="dash-section" style="display:none">
         <div class="dash-section-header">
           <h2>Usuarios registrados</h2>
@@ -239,154 +221,225 @@
           <div class="loading">Cargando...</div>
         </div>
       </section>
-<!-- TEMAS -->
-<section id="sec-temas" class="dash-section" style="display:none">
-  <div class="dash-section-header">
-    <h2>Temas del sitio</h2>
-  </div>
 
-  <!-- TEMAS PREDEFINIDOS -->
-  <div class="temas-grid" id="temas-grid">
-    <div class="tema-card" onclick="aplicarTema('default')" id="tema-default">
-      <div class="tema-preview" style="background:linear-gradient(135deg,#0f1923,#1a472a)"></div>
-      <div class="tema-nombre">Verde bosque</div>
-      <div class="tema-desc">Tema original</div>
-    </div>
-    <div class="tema-card" onclick="aplicarTema('azul')" id="tema-azul">
-      <div class="tema-preview" style="background:linear-gradient(135deg,#0a1628,#1a3a6e)"></div>
-      <div class="tema-nombre">Azul océano</div>
-      <div class="tema-desc">Profesional y moderno</div>
-    </div>
-    <div class="tema-card" onclick="aplicarTema('dorado')" id="tema-dorado">
-      <div class="tema-preview" style="background:linear-gradient(135deg,#1a1200,#8B6914)"></div>
-      <div class="tema-nombre">Dorado luxury</div>
-      <div class="tema-desc">Elegante y premium</div>
-    </div>
-    <div class="tema-card" onclick="aplicarTema('rojo')" id="tema-rojo">
-      <div class="tema-preview" style="background:linear-gradient(135deg,#1a0000,#8B1414)"></div>
-      <div class="tema-nombre">Rojo pasión</div>
-      <div class="tema-desc">Impactante y dinámico</div>
-    </div>
-    <div class="tema-card" onclick="aplicarTema('navidad')" id="tema-navidad">
-      <div class="tema-preview" style="background:linear-gradient(135deg,#0d1f0d,#8B0000)"></div>
-      <div class="tema-nombre">Navidad</div>
-      <div class="tema-desc">Temporada decembrina</div>
-    </div>
-    <div class="tema-card" onclick="aplicarTema('morado')" id="tema-morado">
-      <div class="tema-preview" style="background:linear-gradient(135deg,#0f0a1a,#3d1a6e)"></div>
-      <div class="tema-nombre">Morado real</div>
-      <div class="tema-desc">Sofisticado y único</div>
-    </div>
-  </div>
-  <div id="tema-msg" style="display:none;margin-top:12px;margin-bottom:24px"></div>
+      <!-- TEMAS -->
+      <section id="sec-temas" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Temas del sitio</h2>
+        </div>
 
-  <!-- PALETA PERSONALIZADA -->
-  <div class="form-card" style="margin-top:32px">
-    <h3 style="font-size:18px;margin-bottom:6px;font-family:'Bricolage Grotesque',sans-serif">🎨 Paleta personalizada</h3>
-    <p style="font-size:13px;color:var(--text-light);margin-bottom:24px">Elige tus propios colores y aplícalos al sitio completo</p>
+        <div class="temas-grid" id="temas-grid">
+          <div class="tema-card" onclick="aplicarTema('default')" id="tema-default">
+            <div class="tema-preview" style="background:linear-gradient(135deg,#0f1923,#1a472a)"></div>
+            <div class="tema-nombre">Verde bosque</div>
+            <div class="tema-desc">Tema original</div>
+          </div>
+          <div class="tema-card" onclick="aplicarTema('azul')" id="tema-azul">
+            <div class="tema-preview" style="background:linear-gradient(135deg,#0a1628,#1a3a6e)"></div>
+            <div class="tema-nombre">Azul océano</div>
+            <div class="tema-desc">Profesional y moderno</div>
+          </div>
+          <div class="tema-card" onclick="aplicarTema('dorado')" id="tema-dorado">
+            <div class="tema-preview" style="background:linear-gradient(135deg,#1a1200,#8B6914)"></div>
+            <div class="tema-nombre">Dorado luxury</div>
+            <div class="tema-desc">Elegante y premium</div>
+          </div>
+          <div class="tema-card" onclick="aplicarTema('rojo')" id="tema-rojo">
+            <div class="tema-preview" style="background:linear-gradient(135deg,#1a0000,#8B1414)"></div>
+            <div class="tema-nombre">Rojo pasión</div>
+            <div class="tema-desc">Impactante y dinámico</div>
+          </div>
+          <div class="tema-card" onclick="aplicarTema('navidad')" id="tema-navidad">
+            <div class="tema-preview" style="background:linear-gradient(135deg,#0d1f0d,#8B0000)"></div>
+            <div class="tema-nombre">Navidad</div>
+            <div class="tema-desc">Temporada decembrina</div>
+          </div>
+          <div class="tema-card" onclick="aplicarTema('morado')" id="tema-morado">
+            <div class="tema-preview" style="background:linear-gradient(135deg,#0f0a1a,#3d1a6e)"></div>
+            <div class="tema-nombre">Morado real</div>
+            <div class="tema-desc">Sofisticado y único</div>
+          </div>
+        </div>
+        <div id="tema-msg" style="display:none;margin-top:12px;margin-bottom:24px"></div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
-      <!-- CONTROLES -->
-      <div>
-        <div style="display:flex;flex-direction:column;gap:16px">
-          <div class="form-grupo">
-            <label>Color primario</label>
-            <div style="display:flex;gap:10px;align-items:center">
-              <input type="color" id="cp-primary" value="#1a472a" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
-              <input type="text" id="cp-primary-hex" class="form-input" value="#1a472a" oninput="sincronizarColor('primary', this.value)">
+        <!-- PALETA PERSONALIZADA -->
+        <div class="form-card" style="margin-top:32px">
+          <h3 style="font-size:18px;margin-bottom:6px;font-family:'Bricolage Grotesque',sans-serif">🎨 Paleta personalizada</h3>
+          <p style="font-size:13px;color:var(--text-light);margin-bottom:24px">Elige tus propios colores y aplícalos al sitio completo</p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
+            <!-- CONTROLES -->
+            <div>
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div class="form-grupo">
+                  <label>Color primario</label>
+                  <div style="display:flex;gap:10px;align-items:center">
+                    <input type="color" id="cp-primary" value="#1a472a" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
+                    <input type="text" id="cp-primary-hex" class="form-input" value="#1a472a" oninput="sincronizarColor('primary', this.value)">
+                  </div>
+                </div>
+                <div class="form-grupo">
+                  <label>Color secundario</label>
+                  <div style="display:flex;gap:10px;align-items:center">
+                    <input type="color" id="cp-primaryLight" value="#2d6a4f" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
+                    <input type="text" id="cp-primaryLight-hex" class="form-input" value="#2d6a4f" oninput="sincronizarColor('primaryLight', this.value)">
+                  </div>
+                </div>
+                <div class="form-grupo">
+                  <label>Color acento</label>
+                  <div style="display:flex;gap:10px;align-items:center">
+                    <input type="color" id="cp-accent" value="#f4a261" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
+                    <input type="text" id="cp-accent-hex" class="form-input" value="#f4a261" oninput="sincronizarColor('accent', this.value)">
+                  </div>
+                </div>
+                <div class="form-grupo">
+                  <label>Acento oscuro</label>
+                  <div style="display:flex;gap:10px;align-items:center">
+                    <input type="color" id="cp-accentDark" value="#e76f51" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
+                    <input type="text" id="cp-accentDark-hex" class="form-input" value="#e76f51" oninput="sincronizarColor('accentDark', this.value)">
+                  </div>
+                </div>
+                <div class="form-grupo">
+                  <label>Fondo oscuro (hero)</label>
+                  <div style="display:flex;gap:10px;align-items:center">
+                    <input type="color" id="cp-bgDark" value="#0f1923" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
+                    <input type="text" id="cp-bgDark-hex" class="form-input" value="#0f1923" oninput="sincronizarColor('bgDark', this.value)">
+                  </div>
+                </div>
+              </div>
+              <div style="margin-bottom:16px">
+                <label style="font-size:13px;font-weight:600;color:var(--text);display:block;margin-bottom:6px">Nombre de este tema *</label>
+                <input type="text" id="cp-nombre" class="form-input" placeholder="Ej: Mi tema verano, Corporativo azul...">
+              </div>
+              <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
+                <button class="btn btn-primary" onclick="aplicarPaletaPersonalizada()" style="padding:12px 24px;flex:1">Aplicar al sitio</button>
+                <button class="btn btn-outline" onclick="guardarTemaPersonalizado()" style="padding:12px 24px;flex:1">💾 Guardar tema</button>
+                <button class="btn btn-outline" onclick="previsualizarPaleta()" style="padding:12px 20px">👁 Preview</button>
+              </div>
+              <div id="paleta-msg" style="display:none;margin-top:12px"></div>
+
+              <!-- TEMAS GUARDADOS -->
+              <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border)">
+                <h4 style="font-size:15px;margin-bottom:16px;font-family:'Bricolage Grotesque',sans-serif">Mis temas guardados</h4>
+                <div id="temas-personalizados-lista" style="display:flex;flex-direction:column;gap:10px">
+                  <div style="font-size:13px;color:var(--text-light)">Cargando...</div>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="form-grupo">
-            <label>Color secundario</label>
-            <div style="display:flex;gap:10px;align-items:center">
-              <input type="color" id="cp-primaryLight" value="#2d6a4f" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
-              <input type="text" id="cp-primaryLight-hex" class="form-input" value="#2d6a4f" oninput="sincronizarColor('primaryLight', this.value)">
-            </div>
-          </div>
-          <div class="form-grupo">
-            <label>Color acento</label>
-            <div style="display:flex;gap:10px;align-items:center">
-              <input type="color" id="cp-accent" value="#f4a261" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
-              <input type="text" id="cp-accent-hex" class="form-input" value="#f4a261" oninput="sincronizarColor('accent', this.value)">
-            </div>
-          </div>
-          <div class="form-grupo">
-            <label>Acento oscuro</label>
-            <div style="display:flex;gap:10px;align-items:center">
-              <input type="color" id="cp-accentDark" value="#e76f51" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
-              <input type="text" id="cp-accentDark-hex" class="form-input" value="#e76f51" oninput="sincronizarColor('accentDark', this.value)">
-            </div>
-          </div>
-          <div class="form-grupo">
-            <label>Fondo oscuro (hero)</label>
-            <div style="display:flex;gap:10px;align-items:center">
-              <input type="color" id="cp-bgDark" value="#0f1923" style="width:52px;height:44px;border:none;cursor:pointer;border-radius:10px;padding:2px">
-              <input type="text" id="cp-bgDark-hex" class="form-input" value="#0f1923" oninput="sincronizarColor('bgDark', this.value)">
+
+            <!-- VISTA PREVIA -->
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:12px">Vista previa en tiempo real</label>
+              <div style="border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow)">
+                <div id="prev-hero" style="background:linear-gradient(135deg,#0f1923,#1a472a);padding:28px 24px;color:white">
+                  <div style="font-size:22px;font-weight:700;margin-bottom:4px">Vive<span id="prev-mas" style="color:#f4a261">Más</span></div>
+                  <div style="font-size:13px;opacity:0.7;margin-bottom:16px">Encuentra tu hogar ideal</div>
+                  <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:12px;font-size:12px;color:rgba(255,255,255,0.8)">Barra de búsqueda aquí...</div>
+                </div>
+                <div style="padding:20px;background:white">
+                  <div style="display:flex;gap:10px;margin-bottom:16px">
+                    <button id="prev-btn-primary" style="background:#1a472a;color:white;border:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;flex:1">Publicar</button>
+                    <button id="prev-btn-outline" style="background:transparent;color:#1a472a;border:2px solid #1a472a;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;flex:1">Ver más</button>
+                  </div>
+                  <div style="background:#f8f9fa;border-radius:10px;padding:14px;border:1px solid #e5e7eb">
+                    <div style="font-size:13px;color:#6b7280;margin-bottom:4px">Casa en Polanco</div>
+                    <div id="prev-price" style="font-size:22px;font-weight:700;color:#1a472a">$5,500,000</div>
+                    <button id="prev-btn-accent" style="background:#e76f51;color:white;border:none;padding:8px 16px;border-radius:8px;font-size:12px;margin-top:10px;cursor:pointer">Contactar</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        <div style="margin-bottom:16px">
-  <label style="font-size:13px;font-weight:600;color:var(--text);display:block;margin-bottom:6px">Nombre de este tema *</label>
-  <input type="text" id="cp-nombre" class="form-input" placeholder="Ej: Mi tema verano, Corporativo azul...">
-</div>
-<div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
-  <button class="btn btn-primary" onclick="aplicarPaletaPersonalizada()" style="padding:12px 24px;flex:1">Aplicar al sitio</button>
-  <button class="btn btn-outline" onclick="guardarTemaPersonalizado()" style="padding:12px 24px;flex:1">💾 Guardar tema</button>
-  <button class="btn btn-outline" onclick="previsualizarPaleta()" style="padding:12px 20px">👁 Preview</button>
-</div>
-<div id="paleta-msg" style="display:none;margin-top:12px"></div>
+      </section>
 
-<!-- TEMAS GUARDADOS -->
-<div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border)">
-  <h4 style="font-size:15px;margin-bottom:16px;font-family:'Bricolage Grotesque',sans-serif">Mis temas guardados</h4>
-  <div id="temas-personalizados-lista" style="display:flex;flex-direction:column;gap:10px">
-    <div style="font-size:13px;color:var(--text-light)">Cargando...</div>
-  </div>
-</div>
-        <div id="paleta-msg" style="display:none;margin-top:12px"></div>
-      </div>
+      <!-- DESTACADAS -->
+      <section id="sec-destacadas" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Propiedades destacadas en inicio</h2>
+        </div>
+        <div id="destacadas-lista" class="mis-props-grid">
+          <div class="loading">Cargando...</div>
+        </div>
+      </section>
 
-      <!-- VISTA PREVIA -->
-      <div>
-        <label style="font-size:12px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:12px">Vista previa en tiempo real</label>
-        <div style="border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow)">
-          <div id="prev-hero" style="background:linear-gradient(135deg,#0f1923,#1a472a);padding:28px 24px;color:white">
-            <div style="font-size:22px;font-weight:700;margin-bottom:4px">Vive<span id="prev-mas" style="color:#f4a261">Más</span></div>
-            <div style="font-size:13px;opacity:0.7;margin-bottom:16px">Encuentra tu hogar ideal</div>
-            <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:12px;font-size:12px;color:rgba(255,255,255,0.8)">
-              Barra de búsqueda aquí...
-            </div>
-          </div>
-          <div style="padding:20px;background:white">
-            <div style="display:flex;gap:10px;margin-bottom:16px">
-              <button id="prev-btn-primary" style="background:#1a472a;color:white;border:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;flex:1">Publicar</button>
-              <button id="prev-btn-outline" style="background:transparent;color:#1a472a;border:2px solid #1a472a;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;flex:1">Ver más</button>
-            </div>
-            <div style="background:#f8f9fa;border-radius:10px;padding:14px;border:1px solid #e5e7eb">
-              <div style="font-size:13px;color:#6b7280;margin-bottom:4px">Casa en Polanco</div>
-              <div id="prev-price" style="font-size:22px;font-weight:700;color:#1a472a">$5,500,000</div>
-              <button id="prev-btn-accent" style="background:#e76f51;color:white;border:none;padding:8px 16px;border-radius:8px;font-size:12px;margin-top:10px;cursor:pointer">Contactar</button>
-            </div>
+      <!-- PAGOS Y CONCILIACIÓN -->
+      <section id="sec-pagos" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Pagos y Conciliación</h2>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+          <input type="text" id="pago-filtro-search" class="form-input" placeholder="Buscar por email o ID..." style="width:220px;padding:8px 12px;font-size:13px" oninput="cargarPagosAdmin()">
+          <select id="pago-filtro-plan" class="filter-select" style="width:auto" onchange="cargarPagosAdmin()">
+            <option value="">Todos los planes</option>
+            <option value="basico">Básico</option>
+            <option value="premium">Premium</option>
+          </select>
+          <select id="pago-filtro-estatus" class="filter-select" style="width:auto" onchange="cargarPagosAdmin()">
+            <option value="">Todos los estados</option>
+            <option value="completado">Completados</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="reembolsado">Reembolsados</option>
+          </select>
+        </div>
+        <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px">
+          <table class="data-table">
+            <thead>
+              <tr><th>Fecha</th><th>Usuario</th><th>Plan</th><th>Monto</th><th>Estado</th><th>Acciones</th></tr>
+            </thead>
+            <tbody id="pagos-admin-tbody">
+              <tr><td colspan="6" style="padding:40px;text-align:center">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- USUARIOS VETADOS -->
+      <section id="sec-bloqueos" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Usuarios vetados</h2>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+          <input type="text" id="vetado-search" class="form-input" placeholder="Buscar por razón..." style="width:220px;padding:8px 12px;font-size:13px" oninput="cargarVetados()">
+          <select id="vetado-filtro" class="filter-select" style="width:auto" onchange="cargarVetados()">
+            <option value="">Todos</option>
+            <option value="true">Activos</option>
+            <option value="false">Desactivados</option>
+          </select>
+        </div>
+        <div id="vetados-lista" class="leads-lista">
+          <div class="loading">Cargando...</div>
+        </div>
+      </section>
+
+      <!-- MONITOREO DE CHATS -->
+      <section id="sec-monitoreo" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>Monitoreo de mensajes</h2>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <select id="monitoreo-nivel" class="filter-select" style="width:auto" onchange="cargarMonitoreo()">
+              <option value="">Todos los riesgos</option>
+              <option value="medio">Medio</option>
+              <option value="alto">Alto</option>
+              <option value="critico">Crítico</option>
+            </select>
+            <select id="monitoreo-revision" class="filter-select" style="width:auto" onchange="cargarMonitoreo()">
+              <option value="">Todos</option>
+              <option value="true">Pendientes de revisión</option>
+              <option value="false">Revisados</option>
+            </select>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
+        <div id="monitoreo-resumen" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px"></div>
+        <div id="monitoreo-lista" class="leads-lista">
+          <div class="loading">Cargando...</div>
+        </div>
+      </section>
 
-<!-- DESTACADAS -->
-<section id="sec-destacadas" class="dash-section" style="display:none">
-  <div class="dash-section-header">
-    <h2>Propiedades destacadas en inicio</h2>
-  </div>
-  <div id="destacadas-lista" class="mis-props-grid">
-    <div class="loading">Cargando...</div>
-  </div>
-</section>
     </main>
   </div>
 
-<!-- MODAL RECHAZO -->
+  <!-- MODAL RECHAZO -->
   <div id="modal-rechazo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
     <div style="background:white;border-radius:16px;padding:32px;max-width:480px;width:90%">
       <h3 style="margin-bottom:16px">Motivo de rechazo</h3>
@@ -399,37 +452,125 @@
   </div>
 
   <!-- MODAL IMPORTAR USUARIOS -->
-  <div id="modal-importar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
-    <div style="background:white;border-radius:16px;padding:32px;max-width:520px;width:90%">
-      <h3 style="margin-bottom:16px">📤 Importar usuarios</h3>
-      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Sube un archivo Excel (.xlsx) o CSV con las columnas: nombre, email, telefono, plan</p>
-      
-      <div style="border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;margin-bottom:16px;cursor:pointer" onclick="document.getElementById('input-archivo').click()">
-        <input type="file" id="input-archivo" accept=".xlsx,.csv" style="display:none" onchange="seleccionarArchivo(this)">
-        <div id="archivo-seleccionado" style="font-size:13px;color:var(--text)">📁 Haz clic para seleccionar archivo</div>
+<div id="modal-importar" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(3px);z-index:10500;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:18px;padding:0;max-width:850px;width:95%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,0.3)">
+    
+    <!-- Header -->
+    <div style="padding:20px 24px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;color:#0f172a;margin:0">📦 Importar usuarios masivamente</h2>
+        <p style="font-size:13px;color:#64748b;margin:4px 0 0">Sube un archivo Excel (.xlsx) o CSV con los datos</p>
       </div>
+      <button onclick="cerrarModalImportar()" style="width:36px;height:36px;border:none;background:#f1f5f9;border-radius:10px;cursor:pointer;font-size:18px;color:#475569">✕</button>
+    </div>
+
+    <!-- Body con scroll -->
+    <div style="padding:24px;overflow-y:auto;flex:1">
       
-      <div id="importar-resultado" style="display:none;margin-top:16px;padding:12px;border-radius:8px;background:#f0fdf4;font-size:13px"></div>
-      
-      <div style="display:flex;gap:12px;margin-top:16px">
-        <button class="btn btn-primary" onclick="importarUsuarios()" style="flex:1" id="btn-importar" disabled>Importar usuarios</button>
-        <button class="btn btn-outline" onclick="cerrarModalImportar()" style="flex:1">Cerrar</button>
+      <!-- Opciones -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Plan para todos los importados</label>
+          <select id="importar-plan" style="width:100%;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none;cursor:pointer">
+            <option value="">Usar el plan del archivo</option>
+            <option value="gratuito">Gratuito</option>
+            <option value="basico">Básico</option>
+            <option value="premium">Premium</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:4px">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;color:#374151">
+            <input type="checkbox" id="importar-forzar-duplicados" checked style="width:18px;height:18px;accent-color:#1a472a;cursor:pointer">
+            <div>
+              <div style="font-weight:600">Permitir emails duplicados</div>
+              <div style="font-size:11px;color:#64748b">Si el email ya existe, se crea el usuario con nombre auto-generado</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Subir archivo -->
+      <div id="importar-dropzone" onclick="document.getElementById('importar-file-input').click()" style="border:2px dashed #cbd5e1;border-radius:14px;padding:32px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;margin-bottom:20px">
+        <input type="file" id="importar-file-input" accept=".xlsx,.csv" style="display:none" onchange="seleccionarArchivoImportar(this)">
+        <div style="font-size:36px;margin-bottom:8px">📁</div>
+        <div id="archivo-seleccionado" style="font-size:14px;font-weight:600;color:#334155">Haz clic para seleccionar archivo</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:4px">Solo .xlsx o .csv</div>
+      </div>
+
+      <!-- Vista previa -->
+      <div id="importar-preview" style="display:none"></div>
+
+      <!-- Resultado -->
+      <div id="importar-resultado" style="display:none;margin-top:16px;padding:16px;border-radius:12px;font-size:13px;line-height:1.6"></div>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:16px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;background:#f8fafc">
+      <button onclick="cerrarModalImportar()" style="padding:10px 20px;border:2px solid #e5e7eb;border-radius:10px;background:white;font-size:14px;font-weight:600;cursor:pointer;color:#475569">Cancelar</button>
+      <button id="btn-importar" disabled onclick="importarUsuarios()" style="padding:10px 24px;border:none;border-radius:10px;background:#1a472a;color:white;font-size:14px;font-weight:600;cursor:pointer;opacity:0.5;transition:opacity 0.2s">
+        ⬆️ Importar usuarios
+      </button>
+    </div>
+  </div>
+</div>
+
+  <!-- MODAL VISTA PREVIA PROPIEDAD -->
+  <div id="modal-preview-prop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:10000;align-items:center;justify-content:center">
+    <div style="background:white;border-radius:18px;max-width:640px;width:92%;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,0.35);position:relative">
+      <button onclick="document.getElementById('modal-preview-prop').style.display='none'" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:#666;z-index:1">✕</button>
+      <div id="preview-prop-content" style="padding:0"></div>
+    </div>
+  </div>
+
+  <!-- MODAL VETAR USUARIO -->
+  <div id="modal-vetar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:10000;align-items:center;justify-content:center">
+    <div style="background:white;border-radius:18px;max-width:500px;width:92%;padding:28px;box-shadow:0 25px 60px rgba(0,0,0,0.35)">
+      <h3 style="font-size:18px;font-weight:700;margin-bottom:4px">🛡️ Vetar usuario</h3>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:20px">El usuario será suspendido y no podrá enviar ni recibir mensajes.</p>
+      <div style="margin-bottom:16px">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Razón del vetado *</label>
+        <input type="text" id="vetar-razon" class="form-input" placeholder="Ej: Estafa, pago fuera de plataforma, acoso...">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Detalles adicionales</label>
+        <textarea id="vetar-detalles" class="form-input" rows="3" placeholder="Información extra sobre el caso..."></textarea>
+      </div>
+      <div id="vetar-alias-section" style="display:none;margin-bottom:20px;padding:14px;background:#fef3c7;border:1px solid #fde68a;border-radius:10px">
+        <div style="font-size:13px;font-weight:600;color:#92400e;margin-bottom:8px">🔗 Cuentas vinculadas como alias</div>
+        <div id="vetar-aliases-lista" style="font-size:13px;color:var(--text-light)"></div>
+        <input type="text" id="vetar-alias-id" class="form-input" placeholder="ID del usuario a vincular" style="margin-top:8px;font-size:13px">
+        <button class="btn btn-outline" style="margin-top:8px;padding:6px 14px;font-size:12px;border-color:#92400e;color:#92400e" onclick="agregarAliasVetado()">+ Vincular alias</button>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('modal-vetar').style.display='none'">Cancelar</button>
+        <button class="btn btn-primary" style="flex:1;background:#dc2626;border-color:#dc2626" id="btn-confirmar-vetar" onclick="confirmarVetado()">Vetar usuario</button>
       </div>
     </div>
   </div>
 
-<script src="../js/api.js"></script>
+  <!-- MODAL ACLARACIÓN PAGO -->
+  <div id="modal-aclaracion-pago" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center">
+    <div style="background:white;border-radius:16px;padding:28px;max-width:440px;width:90%">
+      <h3 style="margin-bottom:12px">📝 Nota de aclaración</h3>
+      <div style="font-size:12px;color:var(--text-light);margin-bottom:12px">Pago: <span id="aclaracion-id"></span></div>
+      <textarea id="aclaracion-texto" class="form-input" rows="4" placeholder="Agregar nota de conciliación..."></textarea>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn btn-primary" style="flex:1" onclick="guardarAclaracion()">Guardar</button>
+        <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('modal-aclaracion-pago').style.display='none'">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/admin.js"></script>
   <script src="../js/session-manager.js"></script>
-<script>window.SOLO_SOPORTE = true;</script>
-<script src="../js/ui/toasts.js"></script>
-<script src="../js/ui/confirm.js"></script>
-<script src="../js/ui/lucide.js"></script>  
-<script src="../js/ui/topbar.js"></script>
-<script src="../js/chatbot.js"></script>
-<script src="../js/ui/admin-charts.js"></script>
-
+  <script>window.SOLO_SOPORTE = true;</script>
+  <script src="../js/ui/toasts.js"></script>
+  <script src="../js/ui/confirm.js"></script>
+  <script src="../js/ui/lucide.js"></script>
+  <script src="../js/ui/topbar.js"></script>
+  <script src="../js/chatbot.js"></script>
+  <script src="../js/ui/admin-charts.js"></script>
 </body>
 </html>
-

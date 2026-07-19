@@ -3,6 +3,8 @@ const multer = require('multer');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth.middleware');
 const requireRole = require('../middleware/role.middleware');
+const Waitlist = require('../models/Waitlist');
+
 const {
   getUsuarios,
   cambiarPlan,
@@ -26,10 +28,23 @@ const {
   buscarAliases
 } = require('../controllers/admin.controller');
 
+// ✅ Protección global: todas las rutas de aquí abajo requieren ser admin
 router.use(authMiddleware);
 router.use(requireRole('admin'));
 
 const upload = multer({ storage: multer.memoryStorage() });
+
+// ==========================================
+// WAITLIST (Protegida por admin)
+// ==========================================
+router.get('/waitlist', async (req, res) => {
+  try {
+    const correos = await Waitlist.find().sort({ createdAt: -1 });
+    res.json({ ok: true, correos });
+  } catch (error) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
 
 // Dashboard
 router.get('/dashboard', dashboard);
