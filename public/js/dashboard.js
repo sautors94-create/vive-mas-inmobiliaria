@@ -671,7 +671,6 @@ const escapeHtmlLocal = (str) => String(str ?? '').replace(/[&<>"']/g, (c) => ({
 const cargarMisPropiedades = async () => {
   const container = document.getElementById('mis-props-container');
   const data = await api.get('/propiedades/mis-propiedades');
-    // 🚨 AGREGA ESTA LÍNEA:
   console.log('Respuesta de Mis Propiedades:', data); 
 
   if (!data.propiedades || data.propiedades.length === 0) {
@@ -693,8 +692,8 @@ const cargarMisPropiedades = async () => {
           : 'Sin foto'}
       </div>
       <div class="prop-admin-info">
-        <div class="prop-admin-titulo">${p.titulo}</div>
-        <div class="prop-admin-meta">${p.ubicacion.ciudad}, ${p.ubicacion.estado} · ${formatPrecio(p.precio)}</div>
+        <div class="prop-admin-titulo" title="${p.titulo}">${p.titulo}</div>
+        <div class="prop-admin-meta">${p.ubicacion?.ciudad || ''}, ${p.ubicacion?.estado || ''} · ${formatPrecio(p.precio)}</div>
         ${!esGrid ? `<div class="prop-admin-meta" style="margin-top:6px">Estado: <b style="color:var(--text)">${p.status}</b></div>` : ''}
         ${p.status === 'rechazada' ? `
           <div style="margin-top:8px;padding:10px 12px;background:#fdecea;border:1px solid #f5c2c0;border-radius:10px;font-size:12px;color:#7a2a27">
@@ -704,12 +703,13 @@ const cargarMisPropiedades = async () => {
       </div>
       <div class="prop-admin-actions">
         <span class="status-badge status-${p.status}">${p.status}</span>
-        <button class="btn btn-outline" style="padding:6px 14px;font-size:13px" onclick="window.location='propiedad.html?id=${p._id}'">Ver</button>
-        ${p.status !== 'aprobada' && (p.status !== 'rechazada' || p.permiteEdicion !== false) ? `<button class="btn btn-outline" style="padding:6px 14px;font-size:13px" onclick="editarPropiedad('${p._id}')">✏️ Editar</button>` : ''}
-        <button class="btn btn-outline" style="padding:6px 14px;font-size:13px;border-color:#e24b4a;color:#e24b4a" onclick="eliminarMiPropiedad('${p._id}','${p.titulo.replace(/'/g,"\\'")}')">🗑️</button>
+        <button class="btn btn-outline" onclick="window.location='propiedad.html?id=${p._id}'">Ver</button>
+        ${p.status !== 'aprobada' && (p.status !== 'rechazada' || p.permiteEdicion !== false) ? `<button class="btn btn-outline" onclick="editarPropiedad('${p._id}')">Editar</button>` : ''}
+        <button class="btn btn-outline btn-del-prop" onclick="eliminarMiPropiedad('${p._id}','${p.titulo.replace(/'/g,"\\'")}')">🗑️</button>
       </div>
     </div>`).join('');
 };
+
 const editarPropiedad = (id) => {
   window.location.href = `propiedad.html?id=${id}&editar=1`;
 };

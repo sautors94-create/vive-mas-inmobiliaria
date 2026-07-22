@@ -121,12 +121,13 @@ input[type="range"].precio-range::-webkit-slider-thumb {
   font-weight: 500;
 }
 
+/* ==================== PAGINACIÓN ==================== */
 .paginacion {
   display: flex;
   justify-content: center;
   gap: 8px;
   margin-top: 40px;
-  flex-wrap: wrap;
+  flex-wrap: wrap; /* Mantenemos el wrap por si la pantalla es muy pequeña */
 }
 
 .paginacion button {
@@ -140,6 +141,39 @@ input[type="range"].precio-range::-webkit-slider-thumb {
   font-weight: 500;
   color: var(--text);
   transition: all 0.2s;
+}
+
+/* NUEVO: Efecto hover para todos los botones (números y flechas) */
+.paginacion button:hover:not(:disabled):not(.active) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* NUEVO: El botón de la página en la que estás actualmente */
+.paginacion button.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* NUEVO: Cuando las flechas llegan al límite (no puedes retroceder más) */
+.paginacion button:disabled {
+  background: #f8fafc;
+  color: #cbd5e1;
+  cursor: not-allowed;
+  border-color: transparent;
+}
+
+/* NUEVO: Los puntos suspensivos (...) */
+.pag-puntos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: var(--text-light);
+  font-weight: 700;
+  user-select: none;
 }
 
 .paginacion button:hover { border-color: var(--primary); color: var(--primary); }

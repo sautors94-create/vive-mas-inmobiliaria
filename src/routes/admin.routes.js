@@ -11,11 +11,17 @@ const {
   suspenderUsuario,
   eliminarUsuario,
   getPropiedadesRevision,
+  getPropiedadesStats,
+  exportarPropiedadesExcel,
   aprobarPropiedad,
   rechazarPropiedad,
   eliminarPropiedad,
   bloquearPropiedad,
   getLeads,
+  getLeadsStats,
+  actualizarLead,
+  eliminarLead,
+  exportarLeadsExcel,
   dashboard,
   crearUsuariosMasivo,
   descargarPlantillaUsuarios,
@@ -50,7 +56,11 @@ router.get('/waitlist', async (req, res) => {
 router.get('/dashboard', dashboard);
 
 // Leads
+router.get('/leads/stats', getLeadsStats);
+router.get('/leads/exportar', exportarLeadsExcel);
 router.get('/leads', getLeads);
+router.patch('/leads/:id', actualizarLead);
+router.delete('/leads/:id', eliminarLead);
 
 // Usuarios
 router.get('/usuarios', getUsuarios);
@@ -61,6 +71,8 @@ router.patch('/usuarios/:id/suspender', suspenderUsuario);
 router.delete('/usuarios/:id', eliminarUsuario);
 
 // Propiedades
+router.get('/propiedades/stats', getPropiedadesStats);
+router.get('/propiedades/exportar', exportarPropiedadesExcel);
 router.get('/propiedades', getPropiedadesRevision);
 router.get('/propiedades/:id/preview', verPropiedadAdmin);
 router.patch('/propiedades/:id/aprobar', aprobarPropiedad);

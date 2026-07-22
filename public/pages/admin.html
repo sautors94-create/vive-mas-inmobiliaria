@@ -152,47 +152,148 @@
 
       <!-- TODAS LAS PROPIEDADES -->
       <section id="sec-propiedades" class="dash-section" style="display:none">
-        <div class="dash-section-header">
-          <h2>Todas las propiedades</h2>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input type="text" id="search-props" class="form-input" placeholder="Buscar propiedad..." style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarTodasPropiedades()">
-            <select id="filtro-status" class="filter-select" style="width:auto" onchange="cargarTodasPropiedades()">
-              <option value="">Todas</option>
-              <option value="revision">En revisión</option>
-              <option value="aprobada">Aprobadas</option>
-              <option value="rechazada">Rechazadas</option>
-              <option value="bloqueada">Bloqueadas</option>
-            </select>
+        <div class="mod-header">
+          <div>
+            <h2>Todas las propiedades</h2>
+            <div class="mod-header-sub">Panel &gt; Propiedades · <span id="prop-mod-updated" class="mod-updated"></span></div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarTodasPropiedades()">↻ Actualizar</button>
+            <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="exportarPropiedadesExcel()">⬇ Exportar Excel</button>
           </div>
         </div>
-        <div id="todas-props-lista" class="mis-props-grid">
-          <div class="loading">Cargando...</div>
+
+        <div class="mod-kpis" id="prop-mod-kpis">
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Total</div></div>
+        </div>
+
+        <div class="mod-trend">
+          <div id="prop-mod-tendencia"></div>
+        </div>
+
+        <div class="mod-filters">
+          <input type="text" id="search-props" class="form-input" placeholder="Buscar propiedad..." style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarTodasPropiedades()">
+          <select id="filtro-status" class="filter-select" style="width:auto" onchange="cargarTodasPropiedades()">
+            <option value="">Todos los estados</option>
+            <option value="revision">En revisión</option>
+            <option value="aprobada">Aprobadas</option>
+            <option value="rechazada">Rechazadas</option>
+            <option value="bloqueada">Bloqueadas</option>
+          </select>
+          <input type="text" id="filtro-ciudad" class="form-input" placeholder="Ciudad..." style="width:140px;padding:8px 12px;font-size:13px" oninput="cargarTodasPropiedades()">
+          <select id="filtro-plan" class="filter-select" style="width:auto" onchange="cargarTodasPropiedades()">
+            <option value="">Todos los planes</option>
+            <option value="gratuito">Gratuito</option>
+            <option value="basico">Básico</option>
+            <option value="premium">Premium</option>
+          </select>
+          <select id="filtro-fecha" class="filter-select" style="width:auto" onchange="cargarTodasPropiedades()">
+            <option value="">Cualquier fecha</option>
+            <option value="hoy">Hoy</option>
+            <option value="7">Últimos 7 días</option>
+            <option value="30">Últimos 30 días</option>
+            <option value="90">Últimos 90 días</option>
+          </select>
+        </div>
+
+        <div style="overflow-x:auto">
+          <table class="admin-table" id="prop-mod-tabla">
+            <thead>
+              <tr>
+                <th class="sortable" onclick="ordenarPropiedades('titulo')">Título</th>
+                <th class="sortable" onclick="ordenarPropiedades('propietario')">Propietario</th>
+                <th class="sortable" onclick="ordenarPropiedades('ciudad')">Ciudad</th>
+                <th class="sortable" onclick="ordenarPropiedades('precio')">Precio</th>
+                <th class="sortable" onclick="ordenarPropiedades('plan')">Plan</th>
+                <th class="sortable" onclick="ordenarPropiedades('status')">Estado</th>
+                <th class="sortable" onclick="ordenarPropiedades('fecha')">Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="prop-mod-tbody">
+              <tr><td colspan="8" class="loading">Cargando...</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
+      <!-- DRAWER LATERAL DE PROPIEDAD -->
+      <div id="drawer-prop-overlay" onclick="cerrarDrawerPropiedad()"></div>
+      <div id="drawer-prop">
+        <button class="drawer-close-btn" onclick="cerrarDrawerPropiedad()">✕</button>
+        <div id="drawer-prop-content"></div>
+      </div>
+
       <!-- LEADS -->
       <section id="sec-leads" class="dash-section" style="display:none">
-        <div class="dash-section-header">
-          <h2>Leads capturados</h2>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input type="text" id="search-leads" class="form-input" placeholder="Buscar lead..." style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarLeads()">
-            <select id="filtro-leads-status" class="filter-select" style="width:auto" onchange="cargarLeads()">
-              <option value="">Todos los status</option>
-              <option value="nuevo">Nuevos</option>
-              <option value="contactado">Contactados</option>
-              <option value="cerrado">Cerrados</option>
-            </select>
-            <select id="filtro-leads-tipo" class="filter-select" style="width:auto" onchange="cargarLeads()">
-              <option value="">Todos los tipos</option>
-              <option value="soporte">🎧 Soporte</option>
-              <option value="servicio">🏠 Servicio</option>
-            </select>
+        <div class="mod-header">
+          <div>
+            <h2>Leads capturados</h2>
+            <div class="mod-header-sub">Panel &gt; Leads · <span id="leads-mod-updated" class="mod-updated"></span></div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarLeads()">↻ Actualizar</button>
+            <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="exportarLeadsExcel()">⬇ Exportar Excel</button>
           </div>
         </div>
-        <div id="leads-lista" class="leads-lista">
-          <div class="loading">Cargando leads...</div>
+
+        <div class="mod-kpis" id="leads-mod-kpis">
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Total</div></div>
+        </div>
+
+        <div class="mod-trend">
+          <div id="leads-mod-tendencia"></div>
+        </div>
+
+        <div class="mod-filters">
+          <input type="text" id="search-leads" class="form-input" placeholder="Buscar lead..." style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarLeads()">
+          <select id="filtro-leads-status" class="filter-select" style="width:auto" onchange="cargarLeads()">
+            <option value="">Todos los status</option>
+            <option value="nuevo">Nuevos</option>
+            <option value="contactado">Contactados</option>
+            <option value="cerrado">Cerrados</option>
+          </select>
+          <select id="filtro-leads-tipo" class="filter-select" style="width:auto" onchange="cargarLeads()">
+            <option value="">Todos los tipos</option>
+            <option value="soporte">🎧 Soporte</option>
+            <option value="servicio">🏠 Servicio</option>
+          </select>
+          <select id="filtro-leads-fecha" class="filter-select" style="width:auto" onchange="cargarLeads()">
+            <option value="">Cualquier fecha</option>
+            <option value="hoy">Hoy</option>
+            <option value="7">Últimos 7 días</option>
+            <option value="30">Últimos 30 días</option>
+            <option value="90">Últimos 90 días</option>
+          </select>
+        </div>
+
+        <div style="overflow-x:auto">
+          <table class="admin-table" id="leads-mod-tabla">
+            <thead>
+              <tr>
+                <th class="sortable" onclick="ordenarLeads('folio')">Folio</th>
+                <th class="sortable" onclick="ordenarLeads('nombre')">Nombre</th>
+                <th class="sortable" onclick="ordenarLeads('tipo')">Tipo</th>
+                <th class="sortable" onclick="ordenarLeads('servicio')">Servicio</th>
+                <th class="sortable" onclick="ordenarLeads('ciudad')">Ciudad</th>
+                <th class="sortable" onclick="ordenarLeads('status')">Estado</th>
+                <th class="sortable" onclick="ordenarLeads('fecha')">Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="leads-mod-tbody">
+              <tr><td colspan="8" class="loading">Cargando...</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
+
+      <!-- DRAWER LATERAL DE LEAD -->
+      <div id="drawer-lead-overlay" onclick="cerrarDrawerLead()"></div>
+      <div id="drawer-lead">
+        <button class="drawer-close-btn" onclick="cerrarDrawerLead()">✕</button>
+        <div id="drawer-lead-content"></div>
+      </div>
 
       <!-- USUARIOS -->
       <section id="sec-usuarios" class="dash-section" style="display:none">

@@ -206,58 +206,365 @@ const escapeHtml = (str) => {
     .replaceAll("'", '&#039;');
 };
 
+let propMod = { data: [], ordenCampo: null, ordenAsc: true };
+
 const cargarTodasPropiedades = async () => {
-  const lista = document.getElementById('todas-props-lista');
   const status = document.getElementById('filtro-status')?.value || '';
   const search = document.getElementById('search-props')?.value || '';
-  const url = `/admin/propiedades?${status ? 'status=' + status : ''}${search ? '&search=' + search : ''}`;
-  const data = await api.get(url);
-  if (!data.propiedades || data.propiedades.length === 0) {
-    lista.innerHTML = '<div class="loading">No hay propiedades.</div>';
-    return;
+  const ciudad = document.getElementById('filtro-ciudad')?.value || '';
+  const plan = document.getElementById('filtro-plan')?.value || '';
+  const rangoFecha = document.getElementById('filtro-fecha')?.value || '';
+
+  const params = new URLSearchParams();
+  if (status) params.append('status', status);
+  if (search) params.append('search', search);
+  if (ciudad) params.append('ciudad', ciudad);
+  if (plan) params.append('plan', plan);
+  if (rangoFecha) {
+    const dias = rangoFecha === 'hoy' ? 0 : parseInt(rangoFecha, 10);
+    const desde = new Date(); desde.setHours(0, 0, 0, 0); desde.setDate(desde.getDate() - dias);
+    params.append('fechaDesde', desde.toISOString());
   }
-  lista.innerHTML = data.propiedades.map(p => crearCardAdmin(p)).join('');
+
+  const [dataProps, dataStats] = await Promise.all([
+    api.get(`/admin/propiedades?${params.toString()}`),
+    api.get('/admin/propiedades/stats')
+  ]);
+
+  renderPropModKpis(dataStats);
+  renderPropModTendencia(dataStats.tendencia || []);
+
+  propMod.data = dataProps.propiedades || [];
+  propMod.ordenCampo = null;
+  renderPropModTabla();
+
+  const updEl = document.getElementById('prop-mod-updated');
+  if (updEl) updEl.textContent = `Actualizado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
 };
 
+const renderPropModKpis = (s) => {
+  const el = document.getElementById('prop-mod-kpis');
+  if (!el || !s.ok) return;
+  const kpis = [
+    { num: s.total, label: 'Total' },
+    { num: s.revision, label: 'En revisión' },
+    { num: s.aprobadas, label: 'Aprobadas (30d)' },
+    { num: s.rechazadas, label: 'Rechazadas (30d)' },
+    { num: s.nuevasHoy, label: 'Nuevas hoy' }
+  ];
+  el.innerHTML = kpis.map(k => `<div class="mod-kpi-card"><div class="mod-kpi-num">${k.num}</div><div class="mod-kpi-label">${k.label}</div></div>`).join('');
+};
+
+const renderPropModTendencia = (tendencia) => {
+  const el = document.getElementById('prop-mod-tendencia');
+  if (!el || !window.adminCharts) return;
+  window.adminCharts.renderBarTrend(el, {
+    labels: tendencia.map(d => new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'short' })),
+    series: [{ name: 'Publicaciones nuevas', values: tendencia.map(d => d.count), color: 'var(--primary)' }]
+  });
+};
+
+const ordenarPropiedades = (campo) => {
+  if (propMod.ordenCampo === campo) { propMod.ordenAsc = !propMod.ordenAsc; }
+  else { propMod.ordenCampo = campo; propMod.ordenAsc = true; }
+  renderPropModTabla();
+};
+
+const valorOrdenable = (p, campo) => {
+  switch (campo) {
+    case 'titulo': return (p.titulo || '').toLowerCase();
+    case 'propietario': return (p.propietario?.nombre || '').toLowerCase();
+    case 'ciudad': return (p.ubicacion?.ciudad || '').toLowerCase();
+    case 'precio': return p.precio || 0;
+    case 'plan': return (p.propietario?.plan || '').toLowerCase();
+    case 'status': return (p.status || '').toLowerCase();
+    case 'fecha': return new Date(p.createdAt).getTime();
+    default: return '';
+  }
+};
+
+const renderPropModTabla = () => {
+  const tbody = document.getElementById('prop-mod-tbody');
+  if (!tbody) return;
+  let filas = [...propMod.data];
+  if (propMod.ordenCampo) {
+    filas.sort((a, b) => {
+      const va = valorOrdenable(a, propMod.ordenCampo);
+      const vb = valorOrdenable(b, propMod.ordenCampo);
+      if (va < vb) return propMod.ordenAsc ? -1 : 1;
+      if (va > vb) return propMod.ordenAsc ? 1 : -1;
+      return 0;
+    });
+  }
+  if (filas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="loading">No hay propiedades con esos filtros.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filas.map(p => `
+    <tr onclick="abrirDrawerPropiedad('${p._id}')">
+      <td>${escapeHtml(p.titulo || 'Sin título')}</td>
+      <td>${escapeHtml(p.propietario?.nombre || '—')}</td>
+      <td>${escapeHtml(p.ubicacion?.ciudad || '—')}</td>
+      <td>${formatPrecio(p.precio)}</td>
+      <td><span class="plan-badge plan-${p.propietario?.plan || 'gratuito'}">${p.propietario?.plan || 'gratuito'}</span></td>
+      <td><span class="status-badge status-${p.status}">${p.status}</span></td>
+      <td>${new Date(p.createdAt).toLocaleDateString('es-MX')}</td>
+      <td onclick="event.stopPropagation()">
+        ${p.status === 'revision' ? `<button class="btn btn-primary admin-mini-btn" onclick="aprobarPropiedad('${p._id}')">Aprobar</button>` : ''}
+        <button class="btn btn-outline admin-mini-btn" onclick="abrirDrawerPropiedad('${p._id}')">Ver</button>
+      </td>
+    </tr>`).join('');
+};
+
+const exportarPropiedadesExcel = async () => {
+  try {
+    const status = document.getElementById('filtro-status')?.value || '';
+    const search = document.getElementById('search-props')?.value || '';
+    const ciudad = document.getElementById('filtro-ciudad')?.value || '';
+    const plan = document.getElementById('filtro-plan')?.value || '';
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (search) params.append('search', search);
+    if (ciudad) params.append('ciudad', ciudad);
+    if (plan) params.append('plan', plan);
+
+    const token = localStorage.getItem('accessToken');
+    const res = await fetch(`/api/admin/propiedades/exportar?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` }, credentials: 'include' });
+    if (!res.ok) { const d = await res.json(); dsToast({ title: 'Error', message: d.error || 'No se pudo exportar', type: 'error' }); return; }
+    const blob = await res.blob(); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `propiedades-${Date.now()}.xlsx`; a.click();
+    URL.revokeObjectURL(url);
+    dsToast({ title: 'Exportado', message: 'Excel descargado correctamente.', type: 'success' });
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo generar el Excel', type: 'error' });
+  }
+};
+
+let leadsMod = { data: [], ordenCampo: null, ordenAsc: true };
+
 const cargarLeads = async () => {
-  const lista = document.getElementById('leads-lista');
   const status = document.getElementById('filtro-leads-status')?.value || '';
   const tipo = document.getElementById('filtro-leads-tipo')?.value || '';
   const search = document.getElementById('search-leads')?.value || '';
+  const rangoFecha = document.getElementById('filtro-leads-fecha')?.value || '';
+
   const params = new URLSearchParams();
   if (status) params.append('status', status);
   if (tipo) params.append('tipo', tipo);
   if (search) params.append('search', search);
-
-  const data = await api.get(`/admin/leads?${params.toString()}`);
-  if (!data.leads || data.leads.length === 0) {
-    lista.innerHTML = '<div class="loading">No hay leads con esos filtros.</div>';
-    return;
+  if (rangoFecha) {
+    const dias = rangoFecha === 'hoy' ? 0 : parseInt(rangoFecha, 10);
+    const desde = new Date(); desde.setHours(0, 0, 0, 0); desde.setDate(desde.getDate() - dias);
+    params.append('fechaDesde', desde.toISOString());
   }
 
-  lista.innerHTML = data.leads.map(lead => {
-    const esSoporte = lead.tipo === 'soporte';
-    const badgeTipo = esSoporte
-      ? `<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">🎧 Soporte</span>`
-      : `<span class="status-badge" style="background:#f0fdf4;color:#166534">🏠 Servicio</span>`;
-    return `
-    <div class="lead-card">
-      <div class="lead-main">
-        <div class="lead-title">
-          <span>${lead.nombre}</span>
-          ${badgeTipo}
-          <span class="status-badge status-${lead.status}">${lead.status}</span>
-        </div>
-        <div class="lead-meta">
-          ${lead.folio || 'Sin folio'} · ${lead.telefono}${lead.email ? ' · ' + lead.email : ''}${lead.ciudad ? ' · ' + lead.ciudad : ''}
-        </div>
-        <div class="lead-meta">
-          ${lead.servicio || 'Servicio no especificado'}${lead.usuarioRegistrado ? ' · Usuario: ' + lead.usuarioRegistrado.nombre : ''}
+  const [dataLeads, dataStats] = await Promise.all([
+    api.get(`/admin/leads?${params.toString()}`),
+    api.get('/admin/leads/stats')
+  ]);
+
+  renderLeadsModKpis(dataStats);
+  if (window.adminCharts) {
+    window.adminCharts.renderBarTrend(document.getElementById('leads-mod-tendencia'), {
+      labels: (dataStats.tendencia || []).map(d => new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'short' })),
+      series: [{ name: 'Leads nuevos', values: (dataStats.tendencia || []).map(d => d.count), color: 'var(--primary)' }]
+    });
+  }
+
+  leadsMod.data = dataLeads.leads || [];
+  leadsMod.ordenCampo = null;
+  renderLeadsModTabla();
+
+  const updEl = document.getElementById('leads-mod-updated');
+  if (updEl) updEl.textContent = `Actualizado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
+const renderLeadsModKpis = (s) => {
+  const el = document.getElementById('leads-mod-kpis');
+  if (!el || !s.ok) return;
+  const kpis = [
+    { num: s.total, label: 'Total' },
+    { num: s.nuevos, label: 'Nuevos' },
+    { num: s.contactados, label: 'Contactados' },
+    { num: s.cerrados, label: 'Cerrados (30d)' },
+    { num: s.nuevosHoy, label: 'Nuevos hoy' }
+  ];
+  el.innerHTML = kpis.map(k => `<div class="mod-kpi-card"><div class="mod-kpi-num">${k.num}</div><div class="mod-kpi-label">${k.label}</div></div>`).join('');
+};
+
+const ordenarLeads = (campo) => {
+  if (leadsMod.ordenCampo === campo) { leadsMod.ordenAsc = !leadsMod.ordenAsc; }
+  else { leadsMod.ordenCampo = campo; leadsMod.ordenAsc = true; }
+  renderLeadsModTabla();
+};
+
+const valorOrdenableLead = (l, campo) => {
+  switch (campo) {
+    case 'folio': return (l.folio || '').toLowerCase();
+    case 'nombre': return (l.nombre || '').toLowerCase();
+    case 'tipo': return (l.tipo || '').toLowerCase();
+    case 'servicio': return (l.servicio || '').toLowerCase();
+    case 'ciudad': return (l.ciudad || '').toLowerCase();
+    case 'status': return (l.status || '').toLowerCase();
+    case 'fecha': return new Date(l.createdAt).getTime();
+    default: return '';
+  }
+};
+
+const renderLeadsModTabla = () => {
+  const tbody = document.getElementById('leads-mod-tbody');
+  if (!tbody) return;
+  let filas = [...leadsMod.data];
+  if (leadsMod.ordenCampo) {
+    filas.sort((a, b) => {
+      const va = valorOrdenableLead(a, leadsMod.ordenCampo);
+      const vb = valorOrdenableLead(b, leadsMod.ordenCampo);
+      if (va < vb) return leadsMod.ordenAsc ? -1 : 1;
+      if (va > vb) return leadsMod.ordenAsc ? 1 : -1;
+      return 0;
+    });
+  }
+  if (filas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="loading">No hay leads con esos filtros.</td></tr>';
+    return;
+  }
+  const badgeTipo = (tipo) => tipo === 'soporte'
+    ? `<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">🎧 Soporte</span>`
+    : `<span class="status-badge" style="background:#f0fdf4;color:#166534">🏠 Servicio</span>`;
+  tbody.innerHTML = filas.map(l => `
+    <tr onclick="abrirDrawerLead('${l._id}')">
+      <td>${escapeHtml(l.folio || '—')}</td>
+      <td>${escapeHtml(l.nombre)}</td>
+      <td>${badgeTipo(l.tipo)}</td>
+      <td>${escapeHtml(l.servicio || '—')}</td>
+      <td>${escapeHtml(l.ciudad || '—')}</td>
+      <td><span class="status-badge status-${l.status}">${l.status}</span></td>
+      <td>${new Date(l.createdAt).toLocaleDateString('es-MX')}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="btn btn-outline admin-mini-btn" onclick="abrirDrawerLead('${l._id}')">Ver</button>
+      </td>
+    </tr>`).join('');
+};
+
+const exportarLeadsExcel = async () => {
+  try {
+    const status = document.getElementById('filtro-leads-status')?.value || '';
+    const tipo = document.getElementById('filtro-leads-tipo')?.value || '';
+    const search = document.getElementById('search-leads')?.value || '';
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (tipo) params.append('tipo', tipo);
+    if (search) params.append('search', search);
+
+    const token = localStorage.getItem('accessToken');
+    const res = await fetch(`/api/admin/leads/exportar?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` }, credentials: 'include' });
+    if (!res.ok) { const d = await res.json(); dsToast({ title: 'Error', message: d.error || 'No se pudo exportar', type: 'error' }); return; }
+    const blob = await res.blob(); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `leads-${Date.now()}.xlsx`; a.click();
+    URL.revokeObjectURL(url);
+    dsToast({ title: 'Exportado', message: 'Excel descargado correctamente.', type: 'success' });
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo generar el Excel', type: 'error' });
+  }
+};
+
+// ==========================================
+// DRAWER LATERAL — MÓDULO "LEADS"
+// ==========================================
+window.abrirDrawerLead = (id) => {
+  const l = leadsMod.data.find(x => x._id === id);
+  const content = document.getElementById('drawer-lead-content');
+  if (!content || !l) return;
+
+  const badgeTipo = l.tipo === 'soporte'
+    ? `<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">🎧 Soporte</span>`
+    : `<span class="status-badge" style="background:#f0fdf4;color:#166534">🏠 Servicio</span>`;
+
+  const conversacion = Array.isArray(l.conversacion) && l.conversacion.length > 0
+    ? l.conversacion.map(m => `<div style="padding:8px 12px;background:${m.role === 'user' ? '#eff6ff' : '#f8f9fa'};border-radius:8px;margin-bottom:6px;font-size:13px"><b>${m.role === 'user' ? 'Usuario' : 'Bot'}:</b> ${escapeHtml(m.content || m.text || '')}</div>`).join('')
+    : '<div style="font-size:13px;color:var(--text-light)">Sin historial de conversación.</div>';
+
+  content.innerHTML = `
+    <div style="padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;margin-bottom:4px">${escapeHtml(l.nombre)}</h2>
+          <div style="font-size:13px;color:var(--text-light)">Folio: ${escapeHtml(l.folio || '—')}</div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            ${badgeTipo}
+            <span class="status-badge status-${l.status}">${l.status}</span>
+          </div>
         </div>
       </div>
-      <div class="lead-date">${new Date(lead.createdAt).toLocaleDateString('es-MX')}</div>
+
+      <div style="padding:16px;background:#f8f9fa;border-radius:10px;border:1px solid #e5e7eb;margin-bottom:16px;font-size:13px;line-height:1.9">
+        <div><b>Teléfono:</b> ${escapeHtml(l.telefono || '—')}</div>
+        <div><b>Email:</b> ${escapeHtml(l.email || '—')}</div>
+        <div><b>Servicio:</b> ${escapeHtml(l.servicio || '—')}</div>
+        <div><b>Ciudad:</b> ${escapeHtml(l.ciudad || '—')}${l.pais ? ', ' + escapeHtml(l.pais) : ''}</div>
+        <div><b>Fecha:</b> ${new Date(l.createdAt).toLocaleString('es-MX')}</div>
+        ${l.usuarioRegistrado ? `<div><b>Usuario registrado:</b> ${escapeHtml(l.usuarioRegistrado.nombre)} (${escapeHtml(l.usuarioRegistrado.email)})</div>` : ''}
+        ${l.atendidoPor ? `<div><b>Atendido por:</b> ${escapeHtml(l.atendidoPor.nombre)}</div>` : ''}
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em">Historial de conversación</label>
+        <div style="margin-top:8px;max-height:220px;overflow-y:auto">${conversacion}</div>
+      </div>
+
+      <div class="form-grupo" style="margin-bottom:12px">
+        <label>Estado</label>
+        <select id="drawer-lead-status" class="form-input">
+          <option value="nuevo" ${l.status === 'nuevo' ? 'selected' : ''}>Nuevo</option>
+          <option value="contactado" ${l.status === 'contactado' ? 'selected' : ''}>Contactado</option>
+          <option value="cerrado" ${l.status === 'cerrado' ? 'selected' : ''}>Cerrado</option>
+        </select>
+      </div>
+      <div class="form-grupo" style="margin-bottom:16px">
+        <label>Notas internas</label>
+        <textarea id="drawer-lead-notas" class="form-input" rows="3" placeholder="Notas de seguimiento...">${escapeHtml(l.notas || '')}</textarea>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="cerrarDrawerLead()">Cerrar</button>
+        <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:#c62828;color:#c62828" onclick="eliminarLeadAdmin('${l._id}')">Eliminar</button>
+        <button class="btn btn-primary" style="padding:9px 18px;font-size:13px" onclick="guardarLeadDrawer('${l._id}')">Guardar cambios</button>
+      </div>
     </div>`;
-  }).join('');
+
+  document.getElementById('drawer-lead').classList.add('abierto');
+  document.getElementById('drawer-lead-overlay').classList.add('abierto');
+};
+
+window.cerrarDrawerLead = () => {
+  document.getElementById('drawer-lead').classList.remove('abierto');
+  document.getElementById('drawer-lead-overlay').classList.remove('abierto');
+};
+
+window.guardarLeadDrawer = async (id) => {
+  const status = document.getElementById('drawer-lead-status').value;
+  const notas = document.getElementById('drawer-lead-notas').value;
+  const data = await api.patch(`/admin/leads/${id}`, { status, notas });
+  if (data.ok) {
+    dsToast({ title: 'Lead actualizado', message: 'Los cambios se guardaron correctamente.', type: 'success' });
+    cerrarDrawerLead();
+    cargarLeads();
+  } else {
+    dsToast({ title: 'No se pudo guardar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
+};
+
+window.eliminarLeadAdmin = async (id) => {
+  const ok = await dsConfirm({ title: '¿Eliminar este lead?', message: 'Esta acción no se puede deshacer.', confirmText: 'Sí, eliminar', danger: true });
+  if (!ok) return;
+  const data = await api.delete(`/admin/leads/${id}`);
+  if (data.ok) {
+    dsToast({ title: 'Lead eliminado', message: '', type: 'success' });
+    cerrarDrawerLead();
+    cargarLeads();
+  } else {
+    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
 };
 
 const crearCardAdmin = (p) => `
@@ -1020,6 +1327,57 @@ window.guardarAclaracion = async () => {
 // ==========================================
 // VISTA PREVIA DE PROPIEDAD
 // ==========================================
+const construirDetallePropiedad = (p, botonesHtml) => {
+  const fotos = p.fotos && p.fotos.length > 0
+    ? p.fotos.map((f, i) => `<div style="width:100%;height:300px;border-radius:12px;overflow:hidden;position:relative"><img src="${f}" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,0.6);color:white;padding:3px 10px;border-radius:20px;font-size:12px">${i+1}/${p.fotos.length}</div></div>`).join('')
+    : '<div style="width:100%;height:300px;background:#f3f4f6;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:14px">Sin fotografías</div>';
+  const propietario = p.propietario;
+  const ubicacion = p.ubicacion || {};
+  return `
+    <div style="position:relative">
+      <div id="preview-fotos-container" style="position:relative">${fotos}</div>
+      ${p.fotos?.length > 1 ? `<div style="display:flex;justify-content:center;gap:6px;padding:12px 0"><button onclick="previewFoto(-1)" style="padding:8px 14px;background:#f1f5f9;border:none;border-radius:8px;cursor:pointer">←</button><button onclick="previewFoto(1)" style="padding:8px 14px;background:#f1f5f9;border:none;border-radius:8px;cursor:pointer">→</button></div>` : ''}
+    </div>
+    <div style="padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+        <div>
+          <h2 style="font-size:22px;font-weight:700;margin-bottom:4px">${escapeHtml(p.titulo || 'Sin título')}</h2>
+          <div style="font-size:14px;color:var(--text-light)">📍 ${escapeHtml(ubicacion.ciudad || '')}, ${escapeHtml(ubicacion.estado || '')}</div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <span class="status-badge status-${p.status}">${p.status}</span>
+            <span class="status-badge" style="background:#eff6ff;color:#1d4ed8">${p.operacion}</span>
+            <span class="status-badge" style="background:#f0fdf4;color:#166534">${p.tipo}</span>
+          </div>
+        </div>
+        <div style="text-align:right"><div style="font-size:24px;font-weight:800;color:var(--primary)">${formatPrecio(p.precio)}</div></div>
+      </div>
+      ${p.motivo_rechazo ? `<div style="margin-bottom:16px;padding:12px 14px;background:#fdecea;border:1px solid #f5c2c0;border-radius:10px;font-size:13px;color:#7a2a27"><b>Motivo de rechazo:</b> ${escapeHtml(p.motivo_rechazo)}</div>` : ''}
+      ${p.descripcion ? `<div style="margin-bottom:20px;padding:16px;background:#f8f9fa;border-radius:10px;font-size:14px;line-height:1.7;color:#374151;white-space:pre-wrap">${escapeHtml(p.descripcion)}</div>` : ''}
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-bottom:20px">
+        ${p.caracteristicas?.recamaras ? `<div style="text-align:center;padding:12px;background:#f0fdf4;border-radius:10px"><div style="font-size:20px">🛏️</div><div style="font-size:13px;font-weight:600">${p.caracteristicas.recamaras}</div><div style="font-size:11px;color:var(--text-light)">Recámaras</div></div>` : ''}
+        ${p.caracteristicas?.banos ? `<div style="text-align:center;padding:12px;background:#eff6ff;border-radius:10px"><div style="font-size:20px">🚿</div><div style="font-size:13px;font-weight:600">${p.caracteristicas.banos}</div><div style="font-size:11px;color:var(--text-light)">Baños</div></div>` : ''}
+        ${p.caracteristicas?.m2 ? `<div style="text-align:center;padding:12px;background:#fef3c7;border-radius:10px"><div style="font-size:20px">📐</div><div style="font-size:13px;font-weight:600">${p.caracteristicas.m2} m²</div><div style="font-size:11px;color:var(--text-light)">Construcción</div></div>` : ''}
+        ${p.caracteristicas?.estacionamientos ? `<div style="text-align:center;padding:12px;background:#f0fdf4;border-radius:10px"><div style="font-size:20px">🚗</div><div style="font-size:13px;font-weight:600">${p.caracteristicas.estacionamientos}</div><div style="font-size:11px;color:var(--text-light)">Estaciona.</div></div>` : ''}
+      </div>
+      <div style="padding:16px;background:#f8f9fa;border-radius:10px;border:1px solid #e5e7eb">
+        <div style="font-size:12px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Propietario</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700">${(propietario?.nombre || '?')[0].toUpperCase()}</div>
+          <div>
+            <div style="font-size:15px;font-weight:600">${escapeHtml(propietario?.nombre || 'Desconocido')}</div>
+            <div style="font-size:13px;color:var(--text-light)">${escapeHtml(propietario?.email || '')}${propietario?.telefono ? ' · ' + propietario.telefono : ''}</div>
+            <div style="display:flex;gap:6px;margin-top:4px">
+              <span class="plan-badge plan-${propietario?.plan || 'gratuito'}">${propietario?.plan || 'gratuito'}</span>
+              <span class="status-badge status-${propietario?.status || 'activo'}">${propietario?.status || 'activo'}</span>
+              ${propietario?.verificado ? '<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">✓ Verificado</span>' : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;flex-wrap:wrap">${botonesHtml}</div>
+    </div>`;
+};
+
 window.verPropiedadPreview = async (id) => {
   const content = document.getElementById('preview-prop-content');
   if (!content) return;
@@ -1029,60 +1387,48 @@ window.verPropiedadPreview = async (id) => {
     const data = await api.get(`/admin/propiedades/${id}/preview`);
     if (!data.ok) { content.innerHTML = '<div style="padding:40px;text-align:center;color:#c62828">Error al cargar</div>'; return; }
     const p = data.propiedad;
-    const fotos = p.fotos && p.fotos.length > 0
-      ? p.fotos.map((f, i) => `<div style="width:100%;height:300px;border-radius:12px;overflow:hidden;position:relative"><img src="${f}" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,0.6);color:white;padding:3px 10px;border-radius:20px;font-size:12px">${i+1}/${p.fotos.length}</div></div>`).join('')
-      : '<div style="width:100%;height:300px;background:#f3f4f6;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:14px">Sin fotografías</div>';
-    const propietario = p.propietario;
-    const ubicacion = p.ubicacion || {};
-    content.innerHTML = `
-      <div style="position:relative">
-        <div id="preview-fotos-container" style="position:relative">${fotos}</div>
-        ${p.fotos?.length > 1 ? `<div style="display:flex;justify-content:center;gap:6px;padding:12px 0"><button onclick="previewFoto(-1)" style="padding:8px 14px;background:#f1f5f9;border:none;border-radius:8px;cursor:pointer">←</button><button onclick="previewFoto(1)" style="padding:8px 14px;background:#f1f5f9;border:none;border-radius:8px;cursor:pointer">→</button></div>` : ''}
-      </div>
-      <div style="padding:24px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">
-          <div>
-            <h2 style="font-size:22px;font-weight:700;margin-bottom:4px">${escapeHtml(p.titulo || 'Sin título')}</h2>
-            <div style="font-size:14px;color:var(--text-light)">📍 ${escapeHtml(ubicacion.ciudad || '')}, ${escapeHtml(ubicacion.estado || '')}</div>
-            <div style="display:flex;gap:8px;margin-top:8px">
-              <span class="status-badge status-${p.status}">${p.status}</span>
-              <span class="status-badge" style="background:#eff6ff;color:#1d4ed8">${p.operacion}</span>
-              <span class="status-badge" style="background:#f0fdf4;color:#166534">${p.tipo}</span>
-            </div>
-          </div>
-          <div style="text-align:right"><div style="font-size:24px;font-weight:800;color:var(--primary)">${formatPrecio(p.precio)}</div></div>
-        </div>
-        ${p.descripcion ? `<div style="margin-bottom:20px;padding:16px;background:#f8f9fa;border-radius:10px;font-size:14px;line-height:1.7;color:#374151;white-space:pre-wrap">${escapeHtml(p.descripcion)}</div>` : ''}
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-bottom:20px">
-          ${p.caracteristicas?.recamaras ? `<div style="text-align:center;padding:12px;background:#f0fdf4;border-radius:10px"><div style="font-size:20px">🛏️</div><div style="font-size:13px;font-weight:600">${p.caracteristicas.recamaras}</div><div style="font-size:11px;color:var(--text-light)">Recámaras</div></div>` : ''}
-          ${p.caracteristicas?.banos ? `<div style="text-align:center;padding:12px;background:#eff6ff;border-radius:10px"><div style="font-size:20px">🚿</div><div style="font-size:13px;font-weight:600">${p.caracteristicas.banos}</div><div style="font-size:11px;color:var(--text-light)">Baños</div></div>` : ''}
-          ${p.caracteristicas?.m2 ? `<div style="text-align:center;padding:12px;background:#fef3c7;border-radius:10px"><div style="font-size:20px">📐</div><div style="font-size:13px;font-weight:600">${p.caracteristicas.m2} m²</div><div style="font-size:11px;color:var(--text-light)">Construcción</div></div>` : ''}
-          ${p.caracteristicas?.estacionamientos ? `<div style="text-align:center;padding:12px;background:#f0fdf4;border-radius:10px"><div style="font-size:20px">🚗</div><div style="font-size:13px;font-weight:600">${p.caracteristicas.estacionamientos}</div><div style="font-size:11px;color:var(--text-light)">Estaciona.</div></div>` : ''}
-        </div>
-        <div style="padding:16px;background:#f8f9fa;border-radius:10px;border:1px solid #e5e7eb">
-          <div style="font-size:12px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Propietario</div>
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700">${(propietario?.nombre || '?')[0].toUpperCase()}</div>
-            <div>
-              <div style="font-size:15px;font-weight:600">${escapeHtml(propietario?.nombre || 'Desconocido')}</div>
-              <div style="font-size:13px;color:var(--text-light)">${escapeHtml(propietario?.email || '')}${propietario?.telefono ? ' · ' + propietario.telefono : ''}</div>
-              <div style="display:flex;gap:6px;margin-top:4px">
-                <span class="plan-badge plan-${propietario?.plan || 'gratuito'}">${propietario?.plan || 'gratuito'}</span>
-                <span class="status-badge status-${propietario?.status || 'activo'}">${propietario?.status || 'activo'}</span>
-                ${propietario?.verificado ? '<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">✓ Verificado</span>' : ''}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
-          <button class="btn btn-outline" style="padding:10px 20px;font-size:13px" onclick="document.getElementById('modal-preview-prop').style.display='none'">Cerrar</button>
-          <button class="btn btn-primary" style="padding:10px 20px;font-size:13px" onclick="document.getElementById('modal-preview-prop').style.display='none';aprobarPropiedad('${p._id}')">✅ Aprobar</button>
-        </div>
-      </div>`;
+    const botones = `
+      <button class="btn btn-outline" style="padding:10px 20px;font-size:13px" onclick="document.getElementById('modal-preview-prop').style.display='none'">Cerrar</button>
+      <button class="btn btn-primary" style="padding:10px 20px;font-size:13px" onclick="document.getElementById('modal-preview-prop').style.display='none';aprobarPropiedad('${p._id}')">✅ Aprobar</button>`;
+    content.innerHTML = construirDetallePropiedad(p, botones);
     window.previewFotoIdx = 0;
   } catch (e) {
     content.innerHTML = '<div style="padding:40px;text-align:center;color:#c62828">Error de conexión</div>';
   }
+};
+
+// ==========================================
+// DRAWER LATERAL — MÓDULO "TODAS LAS PROPIEDADES"
+// ==========================================
+window.abrirDrawerPropiedad = async (id) => {
+  const content = document.getElementById('drawer-prop-content');
+  if (!content) return;
+  content.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-light)">Cargando...</div>';
+  document.getElementById('drawer-prop').classList.add('abierto');
+  document.getElementById('drawer-prop-overlay').classList.add('abierto');
+  try {
+    const data = await api.get(`/admin/propiedades/${id}/preview`);
+    if (!data.ok) { content.innerHTML = '<div style="padding:40px;text-align:center;color:#c62828">Error al cargar</div>'; return; }
+    const p = data.propiedad;
+    const botones = [
+      `<button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="cerrarDrawerPropiedad()">Cerrar</button>`
+    ];
+    if (p.status === 'revision') {
+      botones.push(`<button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:#e65100;color:#e65100" onclick="cerrarDrawerPropiedad();abrirModalRechazo('${p._id}')">Rechazar</button>`);
+      botones.push(`<button class="btn btn-primary" style="padding:9px 18px;font-size:13px" onclick="cerrarDrawerPropiedad();aprobarPropiedad('${p._id}')">✅ Aprobar</button>`);
+    }
+    botones.push(`<button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:${p.status === 'bloqueada' ? '#2e7d32' : '#6a1b9a'};color:${p.status === 'bloqueada' ? '#2e7d32' : '#6a1b9a'}" onclick="cerrarDrawerPropiedad();bloquearPropiedad('${p._id}')">${p.status === 'bloqueada' ? 'Desbloquear' : 'Bloquear'}</button>`);
+    botones.push(`<button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:#c62828;color:#c62828" onclick="cerrarDrawerPropiedad();eliminarPropAdmin('${p._id}', '${(p.titulo || '').replace(/'/g, "\\'")}')">Eliminar</button>`);
+    content.innerHTML = construirDetallePropiedad(p, botones.join(''));
+    window.previewFotoIdx = 0;
+  } catch (e) {
+    content.innerHTML = '<div style="padding:40px;text-align:center;color:#c62828">Error de conexión</div>';
+  }
+};
+
+window.cerrarDrawerPropiedad = () => {
+  document.getElementById('drawer-prop').classList.remove('abierto');
+  document.getElementById('drawer-prop-overlay').classList.remove('abierto');
 };
 
 window.previewFotoIdx = 0;

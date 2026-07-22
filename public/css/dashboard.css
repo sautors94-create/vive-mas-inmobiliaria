@@ -1,3 +1,4 @@
+/* ==================== DASHBOARD LAYOUT ==================== */
 body { overflow: hidden; }
 
 .dashboard-layout {
@@ -112,6 +113,7 @@ body { overflow: hidden; }
   color: var(--text);
 }
 
+/* ==================== FORMULARIO UNIFICADO ==================== */
 .form-card {
   background: white;
   border-radius: var(--radius-lg);
@@ -126,7 +128,6 @@ body { overflow: hidden; }
   gap: 20px;
 }
 
-/* ==================== FORMULARIO UNIFICADO ==================== */
 .form-grupo {
   display: flex;
   flex-direction: column;
@@ -242,19 +243,20 @@ textarea.form-input {
 .prop-admin-card {
   background: white;
   border-radius: var(--radius-lg);
-  padding: 20px 24px;
+  padding: 16px 20px;
   border: 1px solid var(--border);
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   box-shadow: var(--shadow);
+  overflow: hidden;
 }
 
 .prop-admin-img {
-  width: 80px;
-  height: 60px;
+  width: 90px;
+  height: 68px;
   border-radius: 8px;
-  object-fit: cover;
+  overflow: hidden;
   background: var(--bg-secondary);
   flex-shrink: 0;
   display: flex;
@@ -264,25 +266,57 @@ textarea.form-input {
   color: var(--text-light);
 }
 
-.prop-admin-info { flex: 1; }
+.prop-admin-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.prop-admin-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
 
 .prop-admin-titulo {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text);
   margin-bottom: 4px;
   font-family: 'Bricolage Grotesque', sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .prop-admin-meta {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .prop-admin-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+
+.prop-admin-actions .status-badge {
+  font-size: 10px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.prop-admin-actions .btn {
+  padding: 5px 10px !important;
+  font-size: 12px !important;
+  white-space: nowrap;
+  border-radius: 6px;
 }
 
 /* ==================== VISTA GRID / LISTA ==================== */
@@ -377,7 +411,105 @@ textarea.form-input {
   font-weight: 500;
 }
 
+/* ==================== SISTEMA DE BLUR PARA PLANES ==================== */
+.resumen-wrapper { 
+  position: relative; 
+  overflow: hidden; 
+  border-radius: 12px; 
+}
+
+.resumen-wrapper.is-locked .resumen-content { 
+  filter: blur(5px); 
+  user-select: none; 
+  pointer-events: none; 
+}
+
+.lock-overlay {
+  position: absolute; 
+  inset: 0; 
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(1px); 
+  display: flex; 
+  flex-direction: column;
+  align-items: center; 
+  justify-content: center; 
+  text-align: center;
+  z-index: 10; 
+  padding: 20px; 
+  opacity: 0; 
+  pointer-events: none; 
+  transition: opacity 0.3s;
+}
+
+.resumen-wrapper.is-locked .lock-overlay { 
+  opacity: 1; 
+  pointer-events: auto; 
+}
+
+.lock-overlay h3 { 
+  margin: 0 0 10px 0; 
+  color: var(--text-dark, #1a1a2e); 
+  font-size: 22px; 
+}
+
+.lock-overlay p { 
+  margin: 0 0 20px 0; 
+  color: var(--text-light, #666); 
+  max-width: 300px; 
+  font-size: 14px;
+}
+
+.btn-upgrade-plan {
+  background: var(--primary); 
+  color: #fff; 
+  border: none; 
+  padding: 12px 30px;
+  border-radius: 8px; 
+  font-size: 16px; 
+  font-weight: 600; 
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+  transition: transform 0.2s;
+}
+
+.btn-upgrade-plan:hover { 
+  transform: translateY(-2px); 
+}
+
+/* Botón activo en Grid/Lista */
+.view-toggle .btn.active { 
+  background: var(--primary); 
+  color: white; 
+  border-color: var(--primary); 
+}
+
 /* ==================== RESPONSIVE ==================== */
+@media (max-width: 900px) {
+  .prop-admin-card {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .prop-admin-img {
+    width: 100%;
+    height: 140px;
+  }
+  
+  .prop-admin-info {
+    flex: 1 1 100%;
+    order: 2;
+  }
+  
+  .prop-admin-actions {
+    flex: 1 1 100%;
+    order: 3;
+    justify-content: flex-start;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 768px) {
   body { overflow: auto; }
   .dashboard-layout {
@@ -391,36 +523,47 @@ textarea.form-input {
   .form-grid { grid-template-columns: 1fr; }
   .dashboard-main { padding: 20px 16px; }
 }
-/* === SISTEMA DE BLUR PARA PLANES === */
-.resumen-wrapper { position: relative; overflow: hidden; border-radius: 12px; }
-.resumen-wrapper.is-locked .resumen-content { filter: blur(5px); user-select: none; pointer-events: none; }
 
-.lock-overlay {
-  position: absolute; inset: 0; background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(1px); display: flex; flex-direction: column;
-  align-items: center; justify-content: center; text-align: center;
-  z-index: 10; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+@media (max-width: 480px) {
+  .prop-admin-actions .btn {
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+  }
+  
+  .status-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+} 
+/* ==================== FUERZA ESPECÍFICA PARA BOTONES DE PROPIEDADES ==================== */
+#mis-props-container .prop-admin-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 5px !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  flex-wrap: wrap !important;
 }
-.resumen-wrapper.is-locked .lock-overlay { opacity: 1; pointer-events: auto; }
-.lock-overlay h3 { margin: 0 0 10px 0; color: var(--text-dark, #1a1a2e); font-size: 22px; }
-.lock-overlay p { margin: 0 0 20px 0; color: var(--text-light, #666); max-width: 300px; font-size: 14px;}
-.btn-upgrade-plan {
-  background: var(--primary); color: #fff; border: none; padding: 12px 30px;
-  border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s;
-}
-.btn-upgrade-plan:hover { transform: translateY(-2px); }
-/* Botón activo en Grid/Lista */
-.view-toggle .btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-/* === SISTEMA DE BLUR PARA PLANES === */
-.resumen-wrapper { position: relative; overflow: hidden; border-radius: 12px; }
-.resumen-wrapper.is-locked .resumen-content { filter: blur(5px); user-select: none; pointer-events: none; }
-.lock-overlay { position: absolute; inset: 0; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(1px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 10; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-.resumen-wrapper.is-locked .lock-overlay { opacity: 1; pointer-events: auto; }
-.lock-overlay h3 { margin: 0 0 10px 0; color: var(--text-dark, #1a1a2e); font-size: 22px; }
-.lock-overlay p { margin: 0 0 20px 0; color: var(--text-light, #666); max-width: 300px; font-size: 14px;}
-.btn-upgrade-plan { background: var(--primary); color: #fff; border: none; padding: 12px 30px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s; }
-.btn-upgrade-plan:hover { transform: translateY(-2px); }
 
-/* Botón activo en Grid/Lista */
-.view-toggle .btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+#mis-props-container .prop-admin-actions .btn {
+  padding: 4px 8px !important;
+  margin: 0 !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  min-width: auto !important;
+  width: auto !important;
+  border-width: 1px !important;
+}
+
+#mis-props-container .prop-admin-actions .status-badge {
+  font-size: 9px !important;
+  padding: 2px 6px !important;
+  margin: 0 !important;
+  min-width: auto !important;
+}
+
+/* Clase exclusiva para el botón de eliminar */
+.btn-del-prop {
+  border-color: #e24b4a !important;
+  color: #e24b4a !important;
+}

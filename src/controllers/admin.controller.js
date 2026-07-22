@@ -60,18 +60,31 @@ const eliminarUsuario = async (req, res) => {
 
 const getPropiedadesRevision = async (req, res) => {
   try {
-    const { status, search, estado, tipo } = req.query;
+    const { status, search, estado, tipo, ciudad, plan, fechaDesde, fechaHasta } = req.query;
     const filtro = {};
 
     if (status) filtro.status = status;
-
     if (estado) filtro['ubicacion.estado'] = estado;
     if (tipo) filtro.tipo = tipo;
+    if (ciudad) filtro['ubicacion.ciudad'] = { $regex: ciudad, $options: 'i' };
     if (search) filtro.$or = [
       { titulo: { $regex: search, $options: 'i' } },
       { 'ubicacion.ciudad': { $regex: search, $options: 'i' } },
       { 'ubicacion.estado': { $regex: search, $options: 'i' } }
     ];
+    if (fechaDesde || fechaHasta) {
+      filtro.createdAt = {};
+      if (fechaDesde) filtro.createdAt.$gte = new Date(fechaDesde);
+      if (fechaHasta) filtro.createdAt.$lte = new Date(fechaHasta);
+    }
+
+    // El filtro por plan vive en el propietario (User), no en la propiedad
+    if (plan) {
+      const User = require('../models/User');
+      const usuariosConPlan = await User.find({ plan }).select('_id');
+      filtro.propietario = { $in: usuariosConPlan.map(u => u._id) };
+    }
+
     const propiedades = await Property.find(filtro)
       .populate('propietario', 'nombre email telefono plan')
       .sort({ createdAt: -1 });
@@ -81,9 +94,100 @@ const getPropiedadesRevision = async (req, res) => {
   }
 };
 
+// KPIs para el módulo "Todas las propiedades" del panel admin
+const getPropiedadesStats = async (req, res) => {
+  try {
+    const ahora = new Date();
+    const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+    const inicioSemana = new Date(inicioHoy); inicioSemana.setDate(inicioSemana.getDate() - 7);
+    const inicioMes = new Date(inicioHoy); inicioMes.setDate(inicioMes.getDate() - 30);
+
+    const [total, revision, aprobadas, rechazadas, nuevasHoy, nuevasSemana] = await Promise.all([
+      Property.countDocuments({}),
+      Property.countDocuments({ status: 'revision' }),
+      Property.countDocuments({ status: 'aprobada', updatedAt: { $gte: inicioMes } }),
+      Property.countDocuments({ status: 'rechazada', updatedAt: { $gte: inicioMes } }),
+      Property.countDocuments({ createdAt: { $gte: inicioHoy } }),
+      Property.countDocuments({ createdAt: { $gte: inicioSemana } })
+    ]);
+
+    // Serie de los últimos 7 días para la mini gráfica de tendencia
+    const tendencia = [];
+    for (let i = 6; i >= 0; i--) {
+      const inicio = new Date(inicioHoy); inicio.setDate(inicio.getDate() - i);
+      const fin = new Date(inicio); fin.setDate(fin.getDate() + 1);
+      const count = await Property.countDocuments({ createdAt: { $gte: inicio, $lt: fin } });
+      tendencia.push({ fecha: inicio.toISOString().slice(0, 10), count });
+    }
+
+    res.json({ ok: true, total, revision, aprobadas, rechazadas, nuevasHoy, nuevasSemana, tendencia });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Exportar el listado filtrado a Excel, respetando los mismos filtros de la tabla
+const exportarPropiedadesExcel = async (req, res) => {
+  try {
+    const { status, search, ciudad, plan, fechaDesde, fechaHasta } = req.query;
+    const filtro = {};
+    if (status) filtro.status = status;
+    if (ciudad) filtro['ubicacion.ciudad'] = { $regex: ciudad, $options: 'i' };
+    if (search) filtro.$or = [
+      { titulo: { $regex: search, $options: 'i' } },
+      { 'ubicacion.ciudad': { $regex: search, $options: 'i' } }
+    ];
+    if (fechaDesde || fechaHasta) {
+      filtro.createdAt = {};
+      if (fechaDesde) filtro.createdAt.$gte = new Date(fechaDesde);
+      if (fechaHasta) filtro.createdAt.$lte = new Date(fechaHasta);
+    }
+    if (plan) {
+      const User = require('../models/User');
+      const usuariosConPlan = await User.find({ plan }).select('_id');
+      filtro.propietario = { $in: usuariosConPlan.map(u => u._id) };
+    }
+
+    const propiedades = await Property.find(filtro)
+      .populate('propietario', 'nombre email telefono plan')
+      .sort({ createdAt: -1 });
+
+    if (propiedades.length === 0) {
+      return res.status(404).json({ error: 'No hay propiedades para exportar con esos filtros' });
+    }
+
+    const XLSX = require('xlsx');
+    const datos = propiedades.map(p => ({
+      'Fecha': new Date(p.createdAt).toLocaleString('es-MX'),
+      'Título': p.titulo,
+      'Estado': p.status,
+      'Operación': p.operacion,
+      'Tipo': p.tipo,
+      'Precio': p.precio,
+      'Ciudad': p.ubicacion?.ciudad || '',
+      'Estado (ubicación)': p.ubicacion?.estado || '',
+      'Propietario': p.propietario?.nombre || '',
+      'Email propietario': p.propietario?.email || '',
+      'Plan propietario': p.propietario?.plan || '',
+      'Motivo rechazo': p.motivo_rechazo || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(datos);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Propiedades');
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=propiedades-${Date.now()}.xlsx`);
+    res.send(buffer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getLeads = async (req, res) => {
   try {
-    const { status, search, servicio, tipo } = req.query;
+    const { status, search, servicio, tipo, fechaDesde, fechaHasta } = req.query;
     const filtro = {};
     if (status) filtro.status = status;
     if (tipo) filtro.tipo = tipo;
@@ -95,6 +199,11 @@ const getLeads = async (req, res) => {
       { email: { $regex: search, $options: 'i' } },
       { ciudad: { $regex: search, $options: 'i' } }
     ];
+    if (fechaDesde || fechaHasta) {
+      filtro.createdAt = {};
+      if (fechaDesde) filtro.createdAt.$gte = new Date(fechaDesde);
+      if (fechaHasta) filtro.createdAt.$lte = new Date(fechaHasta);
+    }
 
     const leads = await Lead.find(filtro)
       .populate('usuarioRegistrado', 'nombre email telefono plan')
@@ -102,6 +211,120 @@ const getLeads = async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.json({ ok: true, total: leads.length, leads });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// KPIs para el módulo "Leads" del panel admin
+const getLeadsStats = async (req, res) => {
+  try {
+    const ahora = new Date();
+    const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+    const inicioMes = new Date(inicioHoy); inicioMes.setDate(inicioMes.getDate() - 30);
+
+    const [total, nuevos, contactados, cerrados, nuevosHoy] = await Promise.all([
+      Lead.countDocuments({}),
+      Lead.countDocuments({ status: 'nuevo' }),
+      Lead.countDocuments({ status: 'contactado' }),
+      Lead.countDocuments({ status: 'cerrado', updatedAt: { $gte: inicioMes } }),
+      Lead.countDocuments({ createdAt: { $gte: inicioHoy } })
+    ]);
+
+    const tendencia = [];
+    for (let i = 6; i >= 0; i--) {
+      const inicio = new Date(inicioHoy); inicio.setDate(inicio.getDate() - i);
+      const fin = new Date(inicio); fin.setDate(fin.getDate() + 1);
+      const count = await Lead.countDocuments({ createdAt: { $gte: inicio, $lt: fin } });
+      tendencia.push({ fecha: inicio.toISOString().slice(0, 10), count });
+    }
+
+    res.json({ ok: true, total, nuevos, contactados, cerrados, nuevosHoy, tendencia });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Actualizar status/notas de un lead (atención al cliente)
+const actualizarLead = async (req, res) => {
+  try {
+    const { status, notas } = req.body;
+    const update = {};
+    if (status) update.status = status;
+    if (notas !== undefined) update.notas = notas;
+    if (status) update.atendidoPor = req.user.id;
+
+    const lead = await Lead.findByIdAndUpdate(req.params.id, update, { new: true })
+      .populate('usuarioRegistrado', 'nombre email telefono plan')
+      .populate('atendidoPor', 'nombre email');
+    if (!lead) return res.status(404).json({ error: 'Lead no encontrado' });
+
+    res.json({ ok: true, lead });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const eliminarLead = async (req, res) => {
+  try {
+    const lead = await Lead.findByIdAndDelete(req.params.id);
+    if (!lead) return res.status(404).json({ error: 'Lead no encontrado' });
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const exportarLeadsExcel = async (req, res) => {
+  try {
+    const { status, search, tipo, fechaDesde, fechaHasta } = req.query;
+    const filtro = {};
+    if (status) filtro.status = status;
+    if (tipo) filtro.tipo = tipo;
+    if (search) filtro.$or = [
+      { folio: { $regex: search, $options: 'i' } },
+      { nombre: { $regex: search, $options: 'i' } },
+      { telefono: { $regex: search, $options: 'i' } }
+    ];
+    if (fechaDesde || fechaHasta) {
+      filtro.createdAt = {};
+      if (fechaDesde) filtro.createdAt.$gte = new Date(fechaDesde);
+      if (fechaHasta) filtro.createdAt.$lte = new Date(fechaHasta);
+    }
+
+    const leads = await Lead.find(filtro)
+      .populate('usuarioRegistrado', 'nombre email telefono plan')
+      .populate('atendidoPor', 'nombre email')
+      .sort({ createdAt: -1 });
+
+    if (leads.length === 0) {
+      return res.status(404).json({ error: 'No hay leads para exportar con esos filtros' });
+    }
+
+    const XLSX = require('xlsx');
+    const datos = leads.map(l => ({
+      'Folio': l.folio,
+      'Fecha': new Date(l.createdAt).toLocaleString('es-MX'),
+      'Nombre': l.nombre,
+      'Teléfono': l.telefono,
+      'Email': l.email || '',
+      'Tipo': l.tipo,
+      'Servicio': l.servicio || '',
+      'Ciudad': l.ciudad || '',
+      'Estado': l.status,
+      'Usuario registrado': l.usuarioRegistrado?.nombre || '',
+      'Atendido por': l.atendidoPor?.nombre || '',
+      'Notas': l.notas || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(datos);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Leads');
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=leads-${Date.now()}.xlsx`);
+    res.send(buffer);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -767,7 +990,13 @@ module.exports = {
   suspenderUsuario, 
   eliminarUsuario, 
   getPropiedadesRevision, 
+  getPropiedadesStats,
+  exportarPropiedadesExcel,
   getLeads, 
+  getLeadsStats,
+  actualizarLead,
+  eliminarLead,
+  exportarLeadsExcel,
   aprobarPropiedad, 
   rechazarPropiedad, 
   eliminarPropiedad, 

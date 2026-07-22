@@ -11,30 +11,42 @@ const LIMITE_POR_PLAN = {
 const crearPropiedad = async (req, res) => {
   try {
     const { titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas } = req.body;
-        // Permitir ilimitadas si el rol es basico_plus, sin importar el plan de pago
+    
+    // Permitir ilimitadas si el rol es basico_plus, sin importar el plan de pago
     const planEfectivo = req.user.role === 'basico_plus' ? 'basico_plus' : (req.user.plan || 'gratuito');
     const limite = LIMITE_POR_PLAN[planEfectivo] || 3;
+    
     // Contar propiedades activas del usuario (no rechazadas/eliminadas)
     const count = await Property.countDocuments({
       propietario: req.user.id,
       status: { $ne: 'rechazada' }
     });
+    
     if (count >= limite) {
       return res.status(403).json({
-        error: `Has alcanzado el límite de ${limite} propiedades para tu plan ${plan}. 
-¡Haz upgrade a premium para publicaciones ilimitadas!`
+        // ✅ CORREGIDO: Cambiado ${plan} por ${planEfectivo}
+        error: `Has alcanzado el límite de ${limite} propiedades para tu plan ${planEfectivo}. ¡Haz upgrade a premium para publicaciones ilimitadas!`
       });
     }
-        // Definir peso según el plan del usuario
-    const pesoMap = { gratuito: 0, basico: 1, premium: 2 };
-    const pesoPlan = pesoMap[plan] || 0;
+    
+    // Definir peso según el plan del usuario
+    const pesoMap = { 
+      gratuito: 0, 
+      basico: 1, 
+      basico_plus: 1, // ✅ AGREGADO para que no dé undefined
+      premium: 2 
+    };
+    
+    // ✅ CORREGIDO: Cambiado 'plan' por 'planEfectivo'
+    const pesoPlan = pesoMap[planEfectivo] || 0;
 
     const propiedad = await Property.create({
       titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas,
       propietario: req.user.id,
       status: 'revision',
-      planPeso: pesoPlan // <- NUEVO
+      planPeso: pesoPlan
     });
+    
     res.status(201).json({ ok: true, mensaje: 'Propiedad enviada a revisión', propiedad });
   } catch (error) {
     res.status(500).json({ error: error.message });

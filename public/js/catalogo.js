@@ -71,19 +71,61 @@ const cargarPropiedades = async () => {
   renderPaginacion(data.paginas);
 };
 
+// ==========================================
+// PAGINACIÓN CON FLECHAS Y PUNTOS SUSPENSIVOS
+// ==========================================
+
 // Render pagination
 const renderPaginacion = (totalPaginas) => {
   const paginacion = document.getElementById('paginacion');
   if (totalPaginas <= 1) { paginacion.innerHTML = ''; return; }
+  
   let html = '';
-  for (let i = 1; i <= totalPaginas; i++) {
+
+  // 1. Flecha Izquierda ‹
+  html += `<button ${paginaActual === 1 ? 'disabled' : ''} onclick="irPagina(${paginaActual - 1})">‹</button>`;
+
+  // 2. Lógica para mostrar solo un bloque de páginas y puntos suspensivos
+  let inicio = 1;
+  let fin = totalPaginas;
+
+  if (totalPaginas > 7) {
+    inicio = Math.max(1, paginaActual - 2);
+    fin = Math.min(totalPaginas, inicio + 4);
+    if (fin - inicio < 4) inicio = Math.max(1, fin - 4);
+  }
+
+  // Puntos y primer número al inicio
+  if (inicio > 1) {
+    html += `<button class="${1 === paginaActual ? 'active' : ''}" onclick="irPagina(1)">1</button>`;
+    if (inicio > 2) {
+      html += `<span class="pag-puntos">...</span>`;
+    }
+  }
+
+  // Bloque de números del medio
+  for (let i = inicio; i <= fin; i++) {
     html += `<button class="${i === paginaActual ? 'active' : ''}" onclick="irPagina(${i})">${i}</button>`;
   }
+
+  // Puntos y último número al final
+  if (fin < totalPaginas) {
+    if (fin < totalPaginas - 1) {
+      html += `<span class="pag-puntos">...</span>`;
+    }
+    html += `<button class="${totalPaginas === paginaActual ? 'active' : ''}" onclick="irPagina(${totalPaginas})">${totalPaginas}</button>`;
+  }
+
+  // 3. Flecha Derecha ›
+  html += `<button ${paginaActual === totalPaginas ? 'disabled' : ''} onclick="irPagina(${paginaActual + 1})">›</button>`;
+
   paginacion.innerHTML = html;
 };
 
 // Go to page
 const irPagina = (pagina) => {
+  // Validar que la página a la que quiere ir no sea menor a 1 (por la flecha izquierda)
+  if (pagina < 1) return;
   paginaActual = pagina;
   cargarPropiedades();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -111,8 +153,6 @@ const toggleFilterPopover = (filterType) => {
   document.querySelectorAll('.sticky-chip').forEach(c => c.classList.remove('active'));
 
   if (!yaEstabaActivo) {
-    // Posiciona el popover justo debajo del chip que se clickeó,
-    // usando coordenadas reales en lugar de depender de un ancestro con position relative
     const rect = chip.getBoundingClientRect();
     popover.style.position = 'fixed';
     popover.style.top = (rect.bottom + 8) + 'px';
@@ -146,6 +186,7 @@ const selectQuickRadio = (element, type) => {
   closeAllFilterPopovers();
   aplicarFiltros();
 };
+
 // Selección múltiple de estado en el popover de ubicación del catálogo (igual que en inicio)
 const toggleEstadoCatalogo = (element) => {
   element.classList.toggle('selected');
@@ -164,6 +205,7 @@ const filterEstadosCatalogo = (query) => {
     opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
 };
+
 // Recámaras: selección única (1+, 2+, 3+ o 4+), no acumulable. Click de nuevo para quitar.
 const selectQuickRecamaras = (element) => {
   const yaSeleccionado = element.classList.contains('selected');
@@ -278,6 +320,7 @@ const actualizarChipLabel = (type) => {
   const chip = document.getElementById(chipId);
   if (chip) chip.textContent = label;
 };
+
 // ===========================================
 // CHIPS ACTIVOS (con botón para quitar individual)
 // ===========================================
@@ -326,7 +369,6 @@ const quitarValorFiltro = (tipo, valor) => {
     filtrosActuales[tipo] = (filtrosActuales[tipo] || '')
       .split(',').filter(Boolean).filter(v => v !== valor).join(',');
 
-    // Desmarca visualmente solo las casillas que pertenecen a este filtro específico
     document.querySelectorAll(`.checkbox-option[data-value="${valor}"]`).forEach(el => {
       const onclickAttr = el.getAttribute('onclick') || '';
       if (onclickAttr.includes(`'${tipo}'`)) el.classList.remove('selected');
@@ -348,7 +390,7 @@ const quitarValorFiltro = (tipo, valor) => {
     if (fMax) fMax.value = 100000000;
     if (advMin) advMin.value = 0;
     if (advMax) advMax.value = 100000000;
-    } else if (tipo === 'recamaras') {
+  } else if (tipo === 'recamaras') {
     filtrosActuales.recamaras = '';
     document.querySelectorAll(`.checkbox-option.selected`).forEach(el => {
       const onclickAttr = el.getAttribute('onclick') || '';
@@ -442,7 +484,6 @@ const toggleAdvCheckbox = (element, type) => {
 // ===========================================
 
 const limpiarFiltros = () => {
-  // Resetear estado de filtros a valores neutros
   Object.keys(filtrosActuales).forEach(key => {
     if (key === 'precioMax') filtrosActuales[key] = 100000000;
     else if (key === 'm2Max') filtrosActuales[key] = 1000;
@@ -450,11 +491,9 @@ const limpiarFiltros = () => {
     else filtrosActuales[key] = '';
   });
 
-  // Cerrar panel avanzado y popovers
   closeAdvancedPanel();
   closeAllFilterPopovers();
 
-  // Limpiar UI: checkboxes, radios, selects del panel avanzado
   document.querySelectorAll('.checkbox-option.selected, .radio-option.selected').forEach(el => el.classList.remove('selected'));
   document.querySelectorAll('#opciones-estado-catalogo .popover-option.selected').forEach(el => el.classList.remove('selected'));
   const advEstado = document.getElementById('adv-estado');
@@ -464,20 +503,16 @@ const limpiarFiltros = () => {
   if (advCiudad) advCiudad.value = '';
   if (advColonia) advColonia.value = '';
 
-  // Limpiar sliders de precio si existen
   const precioMin = document.getElementById('f-precio-min');
   const precioMax = document.getElementById('f-precio-max');
   if (precioMin) precioMin.value = 0;
   if (precioMax) precioMax.value = 100000000;
 
-  // Actualizar labels de chips
   ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras'].forEach(actualizarChipLabel);
 
-  // Limpiar chips activos visualmente
   const chipsContainer = document.getElementById('catalogo-chips');
   if (chipsContainer) chipsContainer.innerHTML = '';
 
-  // Limpiar parámetros de URL para que no interfieran al recargar
   window.history.replaceState({}, document.title, window.location.pathname);
 
   aplicarFiltros();
@@ -496,7 +531,6 @@ const cargarFiltrosDesdeURL = () => {
   filtrosActuales.recamaras = params.get('recamaras') || '';
   filtrosActuales.banos = params.get('banos') || '';
 
-  // Update chip labels
   ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras'].forEach(actualizarChipLabel);
 };
 
@@ -534,14 +568,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Close popovers when clicking outside
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.sticky-chip') && !e.target.closest('.filter-popover-container')) {
       closeAllFilterPopovers();
     }
   });
 
-  // Cargar estados dinámicos desde el backend
   cargarEstadosDisponibles();
 });
 
@@ -554,17 +586,14 @@ const cargarEstadosDisponibles = async () => {
     const listaAdv = document.getElementById('adv-estado');
     if (!lista) return;
 
-    // Actualizar la lista del popover rápido
     lista.innerHTML = data.estados.map(e => `
       <div class="popover-option" data-value="${e._id}" onclick="toggleEstadoCatalogo(this)">
         ${e._id} <span style="font-size:11px;color:var(--text-light);margin-left:4px">(${e.total})</span>
       </div>`).join('');
 
-    // Actualizar el select del panel avanzado si existe
     if (listaAdv) {
       const opcionTodas = listaAdv.querySelector('option[value=""]');
       const opcionesAnteriores = Array.from(listaAdv.options).slice(1);
-      // Solo actualizar si la BD tiene estados que no están en el select
       data.estados.forEach(e => {
         const existe = opcionesAnteriores.some(o => o.value === e._id);
         if (!existe) {
