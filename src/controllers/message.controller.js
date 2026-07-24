@@ -361,6 +361,88 @@ const marcarMensajeRevisado = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// ADMIN: KPIs para el módulo de Monitoreo
+const getRiesgoStats = async (req, res) => {
+  try {
+    const ahora = new Date();
+    const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+
+    const [resumen, pendientesRevision, hoy] = await Promise.all([
+      Message.aggregate([{ $group: { _id: '$riesgo', total: { $sum: 1 } } }]),
+      Message.countDocuments({ riesgoRevision: true }),
+      Message.countDocuments({ riesgo: { $ne: 'bajo' }, createdAt: { $gte: inicioHoy } })
+    ]);
+    const porNivel = resumen.reduce((acc, r) => { acc[r._id || 'bajo'] = r.total; return acc; }, {});
+
+    const tendencia = [];
+    for (let i = 6; i >= 0; i--) {
+      const inicio = new Date(inicioHoy); inicio.setDate(inicio.getDate() - i);
+      const fin = new Date(inicio); fin.setDate(fin.getDate() + 1);
+      const count = await Message.countDocuments({ riesgo: { $ne: 'bajo' }, createdAt: { $gte: inicio, $lt: fin } });
+      tendencia.push({ fecha: inicio.toISOString().slice(0, 10), count });
+    }
+
+    res.json({
+      ok: true,
+      medio: porNivel.medio || 0,
+      alto: porNivel.alto || 0,
+      critico: porNivel.critico || 0,
+      pendientesRevision,
+      hoy,
+      tendencia
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ADMIN: Exportar mensajes de riesgo a Excel
+const exportarMensajesRiesgoExcel = async (req, res) => {
+  try {
+    const { nivel, revision } = req.query;
+    const filtro = {};
+    if (nivel && nivel !== 'todos') filtro.riesgo = nivel;
+    else filtro.riesgo = { $ne: 'bajo' };
+    if (revision === 'true') filtro.riesgoRevision = true;
+    if (revision === 'false') filtro.riesgoRevision = false;
+
+    const mensajes = await Message.find(filtro)
+      .populate('remitente', 'nombre email telefono plan')
+      .populate('destinatario', 'nombre email telefono plan')
+      .populate('propiedad', 'titulo precio')
+      .sort({ createdAt: -1 });
+
+    if (mensajes.length === 0) {
+      return res.status(404).json({ error: 'No hay mensajes para exportar con esos filtros' });
+    }
+
+    const XLSX = require('xlsx');
+    const datos = mensajes.map(m => ({
+      'Fecha': new Date(m.createdAt).toLocaleString('es-MX'),
+      'Remitente': m.remitente?.nombre || 'Desconocido',
+      'Email remitente': m.remitente?.email || '',
+      'Destinatario': m.destinatario?.nombre || 'Desconocido',
+      'Email destinatario': m.destinatario?.email || '',
+      'Propiedad': m.propiedad?.titulo || 'Conversación directa',
+      'Mensaje': m.mensaje,
+      'Nivel de riesgo': m.riesgo || 'bajo',
+      'Flags': (m.riesgoFlags || []).join(', ') || 'Ninguno',
+      'Pendiente de revisión': m.riesgoRevision ? 'Sí' : 'No'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(datos);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Mensajes de riesgo');
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=mensajes-riesgo-${Date.now()}.xlsx`);
+    res.send(buffer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 // ==========================================
 // COMPATIBILIDAD: propiedad.html envía POST /mensajes/:id
 // con solo { mensaje } — formato viejo
@@ -445,5 +527,7 @@ module.exports = {
   exportarMensajesExcel,
   mensajesConRiesgo,
   marcarMensajeRevisado,
+  getRiesgoStats,
+  exportarMensajesRiesgoExcel,
   enviarMensajePropiedad
 };

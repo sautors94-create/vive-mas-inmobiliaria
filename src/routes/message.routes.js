@@ -10,6 +10,8 @@ const {
   exportarMensajesExcel,
   mensajesConRiesgo,
   marcarMensajeRevisado,
+  getRiesgoStats,
+  exportarMensajesRiesgoExcel,
   enviarMensajePropiedad
 } = require('../controllers/message.controller');
 
@@ -25,6 +27,8 @@ router.post('/', enviarMensaje);
 router.post('/:id', enviarMensajePropiedad);
 
 // Rutas de admin
+router.get('/admin/riesgo/stats', requireRole('admin'), getRiesgoStats);
+router.get('/admin/riesgo/exportar', requireRole('admin'), exportarMensajesRiesgoExcel);
 router.get('/admin/riesgo', requireRole('admin'), mensajesConRiesgo);
 router.patch('/admin/:id/revisado', requireRole('admin'), marcarMensajeRevisado);
 

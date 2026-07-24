@@ -589,27 +589,65 @@
 
       <!-- MONITOREO DE CHATS -->
       <section id="sec-monitoreo" class="dash-section" style="display:none">
-        <div class="dash-section-header">
-          <h2>Monitoreo de mensajes</h2>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <select id="monitoreo-nivel" class="filter-select" style="width:auto" onchange="cargarMonitoreo()">
-              <option value="">Todos los riesgos</option>
-              <option value="medio">Medio</option>
-              <option value="alto">Alto</option>
-              <option value="critico">Crítico</option>
-            </select>
-            <select id="monitoreo-revision" class="filter-select" style="width:auto" onchange="cargarMonitoreo()">
-              <option value="">Todos</option>
-              <option value="true">Pendientes de revisión</option>
-              <option value="false">Revisados</option>
-            </select>
+        <div class="mod-header">
+          <div>
+            <h2>Monitoreo de mensajes</h2>
+            <div class="mod-header-sub">Panel &gt; Monitoreo · <span id="mon-mod-updated" class="mod-updated"></span></div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarMonitoreo()">↻ Actualizar</button>
+            <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="exportarMonitoreoExcel()">⬇ Exportar Excel</button>
           </div>
         </div>
-        <div id="monitoreo-resumen" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px"></div>
-        <div id="monitoreo-lista" class="leads-lista">
-          <div class="loading">Cargando...</div>
+
+        <div class="mod-kpis" id="mon-mod-kpis">
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Pendientes</div></div>
+        </div>
+
+        <div class="mod-trend">
+          <div id="mon-mod-tendencia"></div>
+        </div>
+
+        <div class="mod-filters">
+          <select id="monitoreo-nivel" class="filter-select" style="width:auto" onchange="cargarMonitoreo()">
+            <option value="">Todos los riesgos</option>
+            <option value="medio">Medio</option>
+            <option value="alto">Alto</option>
+            <option value="critico">Crítico</option>
+          </select>
+          <select id="monitoreo-revision" class="filter-select" style="width:auto" onchange="cargarMonitoreo()">
+            <option value="">Todos</option>
+            <option value="true">Pendientes de revisión</option>
+            <option value="false">Revisados</option>
+          </select>
+        </div>
+
+        <div style="overflow-x:auto">
+          <table class="admin-table" id="mon-mod-tabla">
+            <thead>
+              <tr>
+                <th class="sortable" onclick="ordenarMonitoreo('fecha')">Fecha</th>
+                <th class="sortable" onclick="ordenarMonitoreo('remitente')">Remitente</th>
+                <th class="sortable" onclick="ordenarMonitoreo('destinatario')">Destinatario</th>
+                <th class="sortable" onclick="ordenarMonitoreo('propiedad')">Propiedad</th>
+                <th class="sortable" onclick="ordenarMonitoreo('riesgo')">Riesgo</th>
+                <th class="sortable" onclick="ordenarMonitoreo('revision')">Revisión</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="mon-mod-tbody">
+              <tr><td colspan="7" class="loading">Cargando...</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
+
+      <!-- DRAWER LATERAL DE MENSAJE DE RIESGO -->
+      <div id="drawer-mon-overlay" onclick="cerrarDrawerMonitoreo()"></div>
+      <div id="drawer-mon">
+        <button class="drawer-close-btn" onclick="cerrarDrawerMonitoreo()">✕</button>
+        <div id="drawer-mon-content"></div>
+      </div>
 
     </main>
   </div>

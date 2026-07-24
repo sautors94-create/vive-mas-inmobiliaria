@@ -1835,67 +1835,194 @@ window.cerrarDrawerVetado = () => {
 // ==========================================
 // MONITOREO DE CHATS
 // ==========================================
+let monMod = { data: [], ordenCampo: null, ordenAsc: true };
+
 window.cargarMonitoreo = async () => {
-  const lista = document.getElementById('monitoreo-lista');
-  const resumenEl = document.getElementById('monitoreo-resumen');
-  if (!lista) return;
-  lista.innerHTML = '<div class="loading">Cargando...</div>';
+  const nivel = document.getElementById('monitoreo-nivel')?.value || '';
+  const revision = document.getElementById('monitoreo-revision')?.value || '';
+  const params = new URLSearchParams();
+  if (nivel) params.append('nivel', nivel);
+  if (revision) params.append('revision', revision);
+
+  const [dataMsj, dataStats] = await Promise.all([
+    api.get(`/mensajes/admin/riesgo?${params.toString()}`),
+    api.get('/mensajes/admin/riesgo/stats')
+  ]);
+
+  renderMonModKpis(dataStats);
+  if (window.adminCharts) {
+    window.adminCharts.renderBarTrend(document.getElementById('mon-mod-tendencia'), {
+      labels: (dataStats.tendencia || []).map(d => new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'short' })),
+      series: [{ name: 'Mensajes de riesgo', values: (dataStats.tendencia || []).map(d => d.count), color: 'var(--primary)' }]
+    });
+  }
+
+  monMod.data = dataMsj.mensajes || [];
+  monMod.ordenCampo = null;
+  renderMonModTabla();
+
+  const updEl = document.getElementById('mon-mod-updated');
+  if (updEl) updEl.textContent = `Actualizado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
+const renderMonModKpis = (s) => {
+  const el = document.getElementById('mon-mod-kpis');
+  if (!el || !s.ok) return;
+  const kpis = [
+    { num: s.pendientesRevision, label: 'Pendientes de revisión' },
+    { num: s.medio, label: 'Riesgo medio' },
+    { num: s.alto, label: 'Riesgo alto' },
+    { num: s.critico, label: 'Riesgo crítico' },
+    { num: s.hoy, label: 'Nuevos hoy' }
+  ];
+  el.innerHTML = kpis.map(k => `<div class="mod-kpi-card"><div class="mod-kpi-num">${k.num}</div><div class="mod-kpi-label">${k.label}</div></div>`).join('');
+};
+
+const ordenarMonitoreo = (campo) => {
+  if (monMod.ordenCampo === campo) { monMod.ordenAsc = !monMod.ordenAsc; }
+  else { monMod.ordenCampo = campo; monMod.ordenAsc = true; }
+  renderMonModTabla();
+};
+
+const riesgoOrden = { bajo: 0, medio: 1, alto: 2, critico: 3 };
+
+const valorOrdenableMon = (m, campo) => {
+  switch (campo) {
+    case 'fecha': return new Date(m.createdAt).getTime();
+    case 'remitente': return (m.remitente?.nombre || '').toLowerCase();
+    case 'destinatario': return (m.destinatario?.nombre || '').toLowerCase();
+    case 'propiedad': return (m.propiedad?.titulo || '').toLowerCase();
+    case 'riesgo': return riesgoOrden[m.riesgo] ?? -1;
+    case 'revision': return m.riesgoRevision ? 1 : 0;
+    default: return '';
+  }
+};
+
+const renderMonModTabla = () => {
+  const tbody = document.getElementById('mon-mod-tbody');
+  if (!tbody) return;
+  let filas = [...monMod.data];
+  if (monMod.ordenCampo) {
+    filas.sort((a, b) => {
+      const va = valorOrdenableMon(a, monMod.ordenCampo);
+      const vb = valorOrdenableMon(b, monMod.ordenCampo);
+      if (va < vb) return monMod.ordenAsc ? -1 : 1;
+      if (va > vb) return monMod.ordenAsc ? 1 : -1;
+      return 0;
+    });
+  }
+  if (filas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">No hay mensajes con esos filtros.</td></tr>';
+    return;
+  }
+  const riesgoColor = { bajo: '#16a34a', medio: '#d97706', alto: '#dc2626', critico: '#7f1d1d' };
+  tbody.innerHTML = filas.map(m => {
+    const c = riesgoColor[m.riesgo] || '#6b7280';
+    return `
+    <tr onclick="abrirDrawerMonitoreo('${m._id}')">
+      <td>${new Date(m.createdAt).toLocaleDateString('es-MX')}</td>
+      <td>${escapeHtml(m.remitente?.nombre || '—')}</td>
+      <td>${escapeHtml(m.destinatario?.nombre || '—')}</td>
+      <td>${escapeHtml(m.propiedad?.titulo || 'Directa')}</td>
+      <td><span style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${c}20;color:${c};border:1px solid ${c}40">${(m.riesgo || 'bajo').toUpperCase()}</span></td>
+      <td>${m.riesgoRevision ? '<span class="status-badge" style="background:#fef3c7;color:#92400e">Pendiente</span>' : '<span class="status-badge" style="background:#f0fdf4;color:#16a34a">Revisado</span>'}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="btn btn-outline admin-mini-btn" onclick="abrirDrawerMonitoreo('${m._id}')">Ver</button>
+      </td>
+    </tr>`;
+  }).join('');
+};
+
+const exportarMonitoreoExcel = async () => {
   try {
     const nivel = document.getElementById('monitoreo-nivel')?.value || '';
     const revision = document.getElementById('monitoreo-revision')?.value || '';
     const params = new URLSearchParams();
     if (nivel) params.append('nivel', nivel);
     if (revision) params.append('revision', revision);
-    const data = await api.get(`/mensajes/admin/riesgo?${params.toString()}`);
-    if (!data.ok) { lista.innerHTML = '<div style="padding:40px;text-align:center;color:#c62828">Error</div>'; return; }
-    if (resumenEl && data.resumen) {
-      const colores = { bajo: '#16a34a', medio: '#d97706', alto: '#dc2626', critico: '#7f1d1d' };
-      resumenEl.innerHTML = Object.entries(data.resumen).map(([nivel, count]) => `
-        <div style="padding:10px 16px;background:${colores[nivel]}15;border:1px solid ${colores[nivel]}30;border-radius:10px;font-size:13px;font-weight:600;color:${colores[nivel]}">${nivel.toUpperCase()}: ${count}</div>
-      `).join('') + (data.pendientesRevision > 0 ? `<div style="padding:10px 16px;background:#dc262615;border:1px solid #dc262630;border-radius:10px;font-size:13px;font-weight:600;color:#dc2626">⚠️ Pendientes de revisión: ${data.pendientesRevision}</div>` : '');
-    }
-    if (!data.mensajes?.length) {
-      lista.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-light)">Sin mensajes con riesgo.</div>';
-      return;
-    }
-    lista.innerHTML = data.mensajes.map(m => {
-      const riesgoColor = { bajo: '#16a34a', medio: '#d97706', alto: '#dc2626', critico: '#7f1d1d' };
-      const c = riesgoColor[m.riesgo] || '#6b7280';
-      const flags = (m.riesgoFlags || []).join(', ') || 'Ninguno';
-      const remitente = m.remitente || {};
-      const destinatario = m.destinatario || {};
-      const propiedad = m.propiedad || {};
-      const fecha = new Date(m.createdAt).toLocaleString('es-MX');
-      return `
-        <div style="background:var(--bg-secondary);border:1px solid ${c}30;border-radius:12px;padding:16px;margin-bottom:12px;border-left:4px solid ${c}">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-            <div>
-              <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Remitente → Destinatario</div>
-              <div style="font-size:14px;font-weight:600">${escapeHtml(remitente.nombre || '?')} → ${escapeHtml(destinatario.nombre || '?')}</div>
-              <div style="font-size:11px;color:var(--text-light)">${escapeHtml(remitente.email || '')} · ${fecha}</div>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center">
-              <span style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${c}20;color:${c};border:1px solid ${c}40">${m.riesgo?.toUpperCase()}</span>
-              ${m.riesgoRevision ? '<span style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;border:1px solid #fde68a">Pendiente</span>' : '<span style="padding:4px 10px;border-radius:20px;font-size:11px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">Revisado</span>'}
-            </div>
-          </div>
-          ${propiedad.titulo ? `<div style="font-size:12px;color:var(--text-light);margin-bottom:8px">🏠 ${escapeHtml(propiedad.titulo)}</div>` : ''}
-          <div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:12px;font-size:14px;line-height:1.5">${escapeHtml(m.mensaje)}</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap;gap:8px">
-            <div style="font-size:11px;color:var(--text-light)">Flags: ${flags}</div>
-            ${m.riesgoRevision ? `<button class="btn btn-primary" style="padding:5px 14px;font-size:12px" onclick="marcarRevisado('${m._id}')">✓ Marcar como revisado</button>` : ''}
-          </div>
-        </div>`;
-    }).join('');
+
+    const token = localStorage.getItem('accessToken');
+    const res = await fetch(`/api/mensajes/admin/riesgo/exportar?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` }, credentials: 'include' });
+    if (!res.ok) { const d = await res.json(); dsToast({ title: 'Error', message: d.error || 'No se pudo exportar', type: 'error' }); return; }
+    const blob = await res.blob(); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `mensajes-riesgo-${Date.now()}.xlsx`; a.click();
+    URL.revokeObjectURL(url);
+    dsToast({ title: 'Exportado', message: 'Excel descargado correctamente.', type: 'success' });
   } catch (e) {
-    lista.innerHTML = '<div style="padding:40px;text-align:center;color:#c62828">Error de conexión</div>';
+    dsToast({ title: 'Error', message: 'No se pudo generar el Excel', type: 'error' });
   }
 };
 
-window.marcarRevisado = async (id) => {
-  try {
-    const data = await api.patch(`/mensajes/admin/riesgo/${id}/revisar`);
-    if (data.ok) { dsToast({ title: 'Marcado como revisado', type: 'success' }); cargarMonitoreo(); }
-    else { dsToast({ title: 'Error', message: data.error || 'No se pudo marcar', type: 'error' }); }
-  } catch (e) { dsToast({ title: 'Error de conexión', type: 'error' }); }
+// ==========================================
+// DRAWER LATERAL — MÓDULO "MONITOREO"
+// ==========================================
+window.abrirDrawerMonitoreo = (id) => {
+  const m = monMod.data.find(x => x._id === id);
+  const content = document.getElementById('drawer-mon-content');
+  if (!content || !m) return;
+
+  const riesgoColor = { bajo: '#16a34a', medio: '#d97706', alto: '#dc2626', critico: '#7f1d1d' };
+  const c = riesgoColor[m.riesgo] || '#6b7280';
+  const flags = (m.riesgoFlags || []).join(', ') || 'Ninguno';
+
+  content.innerHTML = `
+    <div style="padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+        <div>
+          <h2 style="font-size:19px;font-weight:700;margin-bottom:6px">${escapeHtml(m.remitente?.nombre || '?')} → ${escapeHtml(m.destinatario?.nombre || '?')}</h2>
+          <div style="font-size:13px;color:var(--text-light)">${new Date(m.createdAt).toLocaleString('es-MX')}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <span style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${c}20;color:${c};border:1px solid ${c}40">${(m.riesgo || 'bajo').toUpperCase()}</span>
+          ${m.riesgoRevision ? '<span class="status-badge" style="background:#fef3c7;color:#92400e">Pendiente</span>' : '<span class="status-badge" style="background:#f0fdf4;color:#16a34a">Revisado</span>'}
+        </div>
+      </div>
+
+      ${m.propiedad?.titulo ? `<div style="font-size:13px;color:var(--text-light);margin-bottom:12px">🏠 ${escapeHtml(m.propiedad.titulo)}${m.propiedad.precio ? ' · ' + formatPrecio(m.propiedad.precio) : ''}</div>` : ''}
+
+      <div style="background:#f8f9fa;border:1px solid #e5e7eb;border-radius:10px;padding:16px;font-size:14px;line-height:1.6;margin-bottom:16px;white-space:pre-wrap">${escapeHtml(m.mensaje)}</div>
+
+      <div style="padding:14px;background:${c}10;border:1px solid ${c}30;border-radius:10px;margin-bottom:20px;font-size:13px">
+        <b style="color:${c}">Flags detectados:</b> ${escapeHtml(flags)}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div style="padding:12px;background:#f8f9fa;border-radius:10px;border:1px solid #e5e7eb;font-size:12px;line-height:1.7">
+          <div style="font-weight:600;color:var(--text-light);text-transform:uppercase;font-size:11px;margin-bottom:4px">Remitente</div>
+          <div>${escapeHtml(m.remitente?.nombre || '—')}</div>
+          <div style="color:var(--text-light)">${escapeHtml(m.remitente?.email || '')}</div>
+          ${m.remitente?.plan ? `<span class="plan-badge plan-${m.remitente.plan}" style="margin-top:4px;display:inline-block">${m.remitente.plan}</span>` : ''}
+        </div>
+        <div style="padding:12px;background:#f8f9fa;border-radius:10px;border:1px solid #e5e7eb;font-size:12px;line-height:1.7">
+          <div style="font-weight:600;color:var(--text-light);text-transform:uppercase;font-size:11px;margin-bottom:4px">Destinatario</div>
+          <div>${escapeHtml(m.destinatario?.nombre || '—')}</div>
+          <div style="color:var(--text-light)">${escapeHtml(m.destinatario?.email || '')}</div>
+          ${m.destinatario?.plan ? `<span class="plan-badge plan-${m.destinatario.plan}" style="margin-top:4px;display:inline-block">${m.destinatario.plan}</span>` : ''}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="cerrarDrawerMonitoreo()">Cerrar</button>
+        ${m.riesgoRevision ? `<button class="btn btn-primary" style="padding:9px 18px;font-size:13px" onclick="marcarRevisadoDrawer('${m._id}')">✓ Marcar como revisado</button>` : ''}
+      </div>
+    </div>`;
+
+  document.getElementById('drawer-mon').classList.add('abierto');
+  document.getElementById('drawer-mon-overlay').classList.add('abierto');
+};
+
+window.cerrarDrawerMonitoreo = () => {
+  document.getElementById('drawer-mon').classList.remove('abierto');
+  document.getElementById('drawer-mon-overlay').classList.remove('abierto');
+};
+
+window.marcarRevisadoDrawer = async (id) => {
+  const data = await api.patch(`/mensajes/admin/${id}/revisado`);
+  if (data.ok) {
+    dsToast({ title: 'Marcado como revisado', type: 'success' });
+    cerrarDrawerMonitoreo();
+    cargarMonitoreo();
+  } else {
+    dsToast({ title: 'Error', message: data.error || 'No se pudo marcar', type: 'error' });
+  }
 };
