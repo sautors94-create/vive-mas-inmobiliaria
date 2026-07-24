@@ -4,7 +4,7 @@ const Lead = require('../models/Lead');
 
 const getUsuarios = async (req, res) => {
   try {
-    const { plan, role, status, search } = req.query;
+    const { plan, role, status, search, fechaDesde, fechaHasta } = req.query;
     const filtro = {};
     if (plan) filtro.plan = plan;
     if (role) filtro.role = role;
@@ -13,8 +13,82 @@ const getUsuarios = async (req, res) => {
       { nombre: { $regex: search, $options: 'i' } },
       { email: { $regex: search, $options: 'i' } }
     ];
+    if (fechaDesde || fechaHasta) {
+      filtro.createdAt = {};
+      if (fechaDesde) filtro.createdAt.$gte = new Date(fechaDesde);
+      if (fechaHasta) filtro.createdAt.$lte = new Date(fechaHasta);
+    }
     const usuarios = await User.find(filtro).sort({ createdAt: -1 });
     res.json({ ok: true, total: usuarios.length, usuarios });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// KPIs para el módulo "Usuarios" del panel admin
+const getUsuariosStats = async (req, res) => {
+  try {
+    const ahora = new Date();
+    const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+
+    const [total, gratuito, basico, premium, suspendidos, nuevosHoy] = await Promise.all([
+      User.countDocuments({}),
+      User.countDocuments({ plan: 'gratuito' }),
+      User.countDocuments({ plan: 'basico' }),
+      User.countDocuments({ plan: 'premium' }),
+      User.countDocuments({ status: 'suspendido' }),
+      User.countDocuments({ createdAt: { $gte: inicioHoy } })
+    ]);
+
+    const tendencia = [];
+    for (let i = 6; i >= 0; i--) {
+      const inicio = new Date(inicioHoy); inicio.setDate(inicio.getDate() - i);
+      const fin = new Date(inicio); fin.setDate(fin.getDate() + 1);
+      const count = await User.countDocuments({ createdAt: { $gte: inicio, $lt: fin } });
+      tendencia.push({ fecha: inicio.toISOString().slice(0, 10), count });
+    }
+
+    res.json({ ok: true, total, gratuito, basico, premium, suspendidos, nuevosHoy, tendencia });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const exportarUsuariosExcel = async (req, res) => {
+  try {
+    const { plan, status, search } = req.query;
+    const filtro = {};
+    if (plan) filtro.plan = plan;
+    if (status) filtro.status = status;
+    if (search) filtro.$or = [
+      { nombre: { $regex: search, $options: 'i' } },
+      { email: { $regex: search, $options: 'i' } }
+    ];
+    const usuarios = await User.find(filtro).sort({ createdAt: -1 });
+    if (usuarios.length === 0) {
+      return res.status(404).json({ error: 'No hay usuarios para exportar con esos filtros' });
+    }
+
+    const XLSX = require('xlsx');
+    const datos = usuarios.map(u => ({
+      'Fecha de registro': new Date(u.createdAt).toLocaleString('es-MX'),
+      'Nombre': u.nombre,
+      'Email': u.email,
+      'Teléfono': u.telefono || '',
+      'Plan': u.plan,
+      'Estado': u.status,
+      'Rol': u.role,
+      'Verificado': u.verificado ? 'Sí' : 'No'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(datos);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Usuarios');
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=usuarios-${Date.now()}.xlsx`);
+    res.send(buffer);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -924,6 +998,82 @@ const desvincularAlias = async (req, res) => {
   }
 };
 
+// KPIs para el módulo "Usuarios vetados" del panel admin
+const getVetadosStats = async (req, res) => {
+  try {
+    const ahora = new Date();
+    const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+    const inicioMes = new Date(inicioHoy); inicioMes.setDate(inicioMes.getDate() - 30);
+
+    const [total, activos, desactivados, nuevosMes, todosVetados] = await Promise.all([
+      BannedUser.countDocuments({}),
+      BannedUser.countDocuments({ activo: true }),
+      BannedUser.countDocuments({ activo: false }),
+      BannedUser.countDocuments({ createdAt: { $gte: inicioMes } }),
+      BannedUser.find({ activo: true }).select('aliases')
+    ]);
+    const conAlias = todosVetados.filter(v => v.aliases && v.aliases.length > 0).length;
+
+    const tendencia = [];
+    for (let i = 6; i >= 0; i--) {
+      const inicio = new Date(inicioHoy); inicio.setDate(inicio.getDate() - i);
+      const fin = new Date(inicio); fin.setDate(fin.getDate() + 1);
+      const count = await BannedUser.countDocuments({ createdAt: { $gte: inicio, $lt: fin } });
+      tendencia.push({ fecha: inicio.toISOString().slice(0, 10), count });
+    }
+
+    res.json({ ok: true, total, activos, desactivados, conAlias, nuevosMes, tendencia });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const exportarVetadosExcel = async (req, res) => {
+  try {
+    const { search, activo } = req.query;
+    const filtro = {};
+    if (activo === 'true') filtro.activo = true;
+    if (activo === 'false') filtro.activo = false;
+    if (search) filtro.$or = [
+      { razon: { $regex: search, $options: 'i' } },
+      { detalles: { $regex: search, $options: 'i' } }
+    ];
+
+    const vetados = await BannedUser.find(filtro)
+      .populate('usuario', 'nombre email telefono')
+      .populate('admin', 'nombre email')
+      .sort({ createdAt: -1 });
+
+    if (vetados.length === 0) {
+      return res.status(404).json({ error: 'No hay vetados para exportar con esos filtros' });
+    }
+
+    const XLSX = require('xlsx');
+    const datos = vetados.map(v => ({
+      'Fecha': new Date(v.createdAt).toLocaleString('es-MX'),
+      'Usuario': v.usuario?.nombre || 'Usuario eliminado',
+      'Email': v.usuario?.email || '',
+      'Teléfono': v.usuario?.telefono || '',
+      'Razón': v.razon,
+      'Detalles': v.detalles || '',
+      'Estado': v.activo ? 'Activo' : 'Desactivado',
+      'Vetado por': v.admin?.nombre || '',
+      'Aliases vinculados': (v.aliases || []).length
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(datos);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Vetados');
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=vetados-${Date.now()}.xlsx`);
+    res.send(buffer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const buscarAliases = async (req, res) => {
   try {
     const usuario = await User.findById(req.params.id);
@@ -986,6 +1136,8 @@ const buscarAliases = async (req, res) => {
 
 module.exports = { 
   getUsuarios, 
+  getUsuariosStats,
+  exportarUsuariosExcel,
   cambiarPlan, 
   suspenderUsuario, 
   eliminarUsuario, 
@@ -1006,6 +1158,8 @@ module.exports = {
   descargarPlantillaUsuarios,
   verPropiedadAdmin,
   getUsuariosVetados,
+  getVetadosStats,
+  exportarVetadosExcel,
   vetarUsuario,
   desvetarUsuario,
   vincularAlias,

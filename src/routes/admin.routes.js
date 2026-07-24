@@ -7,6 +7,8 @@ const Waitlist = require('../models/Waitlist');
 
 const {
   getUsuarios,
+  getUsuariosStats,
+  exportarUsuariosExcel,
   cambiarPlan,
   suspenderUsuario,
   eliminarUsuario,
@@ -27,6 +29,8 @@ const {
   descargarPlantillaUsuarios,
   verPropiedadAdmin,
   getUsuariosVetados,
+  getVetadosStats,
+  exportarVetadosExcel,
   vetarUsuario,
   desvetarUsuario,
   vincularAlias,
@@ -63,6 +67,8 @@ router.patch('/leads/:id', actualizarLead);
 router.delete('/leads/:id', eliminarLead);
 
 // Usuarios
+router.get('/usuarios/stats', getUsuariosStats);
+router.get('/usuarios/exportar', exportarUsuariosExcel);
 router.get('/usuarios', getUsuarios);
 router.post('/usuarios/masivo', upload.single('archivo'), crearUsuariosMasivo);
 router.get('/usuarios/plantilla', descargarPlantillaUsuarios);
@@ -81,6 +87,8 @@ router.patch('/propiedades/:id/bloquear', bloquearPropiedad);
 router.delete('/propiedades/:id', eliminarPropiedad);
 
 // Usuarios vetados
+router.get('/vetados/stats', getVetadosStats);
+router.get('/vetados/exportar', exportarVetadosExcel);
 router.get('/vetados', getUsuariosVetados);
 router.post('/vetados/:id', vetarUsuario);
 router.post('/vetados/:id/desvetar', desvetarUsuario);

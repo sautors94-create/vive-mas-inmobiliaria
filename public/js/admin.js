@@ -212,7 +212,7 @@ const cargarTodasPropiedades = async () => {
   const status = document.getElementById('filtro-status')?.value || '';
   const search = document.getElementById('search-props')?.value || '';
   const ciudad = document.getElementById('filtro-ciudad')?.value || '';
-  const plan = document.getElementById('filtro-plan')?.value || '';
+  const plan = document.getElementById('filtro-plan-prop')?.value || '';
   const rangoFecha = document.getElementById('filtro-fecha')?.value || '';
 
   const params = new URLSearchParams();
@@ -321,7 +321,7 @@ const exportarPropiedadesExcel = async () => {
     const status = document.getElementById('filtro-status')?.value || '';
     const search = document.getElementById('search-props')?.value || '';
     const ciudad = document.getElementById('filtro-ciudad')?.value || '';
-    const plan = document.getElementById('filtro-plan')?.value || '';
+    const plan = document.getElementById('filtro-plan-prop')?.value || '';
     const params = new URLSearchParams();
     if (status) params.append('status', status);
     if (search) params.append('search', search);
@@ -658,33 +658,167 @@ const eliminarPropAdmin = async (id, titulo) => {
   }
 };
 
+let usrMod = { data: [], ordenCampo: null, ordenAsc: true };
+
 const cargarUsuarios = async () => {
-  const lista = document.getElementById('usuarios-lista');
   const plan = document.getElementById('filtro-plan')?.value || '';
+  const status = document.getElementById('filtro-status-user')?.value || '';
   const search = document.getElementById('search-usuarios')?.value || '';
-  const url = `/admin/usuarios?${plan ? 'plan=' + plan : ''}${search ? '&search=' + search : ''}`;
-  const data = await api.get(url);
-  if (!data.usuarios || data.usuarios.length === 0) {
-    lista.innerHTML = '<div class="loading">No hay usuarios.</div>';
+
+  const params = new URLSearchParams();
+  if (plan) params.append('plan', plan);
+  if (status) params.append('status', status);
+  if (search) params.append('search', search);
+
+  const [dataUsr, dataStats] = await Promise.all([
+    api.get(`/admin/usuarios?${params.toString()}`),
+    api.get('/admin/usuarios/stats')
+  ]);
+
+  renderUsrModKpis(dataStats);
+  if (window.adminCharts) {
+    window.adminCharts.renderBarTrend(document.getElementById('usr-mod-tendencia'), {
+      labels: (dataStats.tendencia || []).map(d => new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'short' })),
+      series: [{ name: 'Usuarios nuevos', values: (dataStats.tendencia || []).map(d => d.count), color: 'var(--primary)' }]
+    });
+  }
+
+  usrMod.data = dataUsr.usuarios || [];
+  usrMod.ordenCampo = null;
+  renderUsrModTabla();
+
+  const updEl = document.getElementById('usr-mod-updated');
+  if (updEl) updEl.textContent = `Actualizado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
+const renderUsrModKpis = (s) => {
+  const el = document.getElementById('usr-mod-kpis');
+  if (!el || !s.ok) return;
+  const kpis = [
+    { num: s.total, label: 'Total' },
+    { num: s.gratuito, label: 'Gratuito' },
+    { num: s.basico, label: 'Básico' },
+    { num: s.premium, label: 'Premium' },
+    { num: s.suspendidos, label: 'Suspendidos' }
+  ];
+  el.innerHTML = kpis.map(k => `<div class="mod-kpi-card"><div class="mod-kpi-num">${k.num}</div><div class="mod-kpi-label">${k.label}</div></div>`).join('');
+};
+
+const ordenarUsuarios = (campo) => {
+  if (usrMod.ordenCampo === campo) { usrMod.ordenAsc = !usrMod.ordenAsc; }
+  else { usrMod.ordenCampo = campo; usrMod.ordenAsc = true; }
+  renderUsrModTabla();
+};
+
+const valorOrdenableUsr = (u, campo) => {
+  switch (campo) {
+    case 'nombre': return (u.nombre || '').toLowerCase();
+    case 'email': return (u.email || '').toLowerCase();
+    case 'plan': return (u.plan || '').toLowerCase();
+    case 'status': return (u.status || '').toLowerCase();
+    case 'fecha': return new Date(u.createdAt).getTime();
+    default: return '';
+  }
+};
+
+const renderUsrModTabla = () => {
+  const tbody = document.getElementById('usr-mod-tbody');
+  if (!tbody) return;
+  let filas = [...usrMod.data];
+  if (usrMod.ordenCampo) {
+    filas.sort((a, b) => {
+      const va = valorOrdenableUsr(a, usrMod.ordenCampo);
+      const vb = valorOrdenableUsr(b, usrMod.ordenCampo);
+      if (va < vb) return usrMod.ordenAsc ? -1 : 1;
+      if (va > vb) return usrMod.ordenAsc ? 1 : -1;
+      return 0;
+    });
+  }
+  if (filas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="loading">No hay usuarios con esos filtros.</td></tr>';
     return;
   }
-  lista.innerHTML = data.usuarios.map(u => `
-    <div class="usuario-card">
-      <div class="usuario-avatar">${u.nombre.charAt(0).toUpperCase()}</div>
-      <div class="usuario-info">
-        <div class="usuario-nombre">${u.nombre}</div>
-        <div class="usuario-meta">${u.email} · ${u.telefono || 'Sin teléfono'} · ${new Date(u.createdAt).toLocaleDateString('es-MX')}</div>
+  tbody.innerHTML = filas.map(u => `
+    <tr onclick="abrirDrawerUsuario('${u._id}')">
+      <td>${escapeHtml(u.nombre)}</td>
+      <td>${escapeHtml(u.email)}</td>
+      <td><span class="plan-badge plan-${u.plan}">${u.plan}</span></td>
+      <td><span class="status-badge status-${u.status}">${u.status}</span></td>
+      <td>${new Date(u.createdAt).toLocaleDateString('es-MX')}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="btn btn-outline admin-mini-btn" onclick="abrirDrawerUsuario('${u._id}')">Ver</button>
+      </td>
+    </tr>`).join('');
+};
+
+const exportarUsuariosExcel = async () => {
+  try {
+    const plan = document.getElementById('filtro-plan')?.value || '';
+    const status = document.getElementById('filtro-status-user')?.value || '';
+    const search = document.getElementById('search-usuarios')?.value || '';
+    const params = new URLSearchParams();
+    if (plan) params.append('plan', plan);
+    if (status) params.append('status', status);
+    if (search) params.append('search', search);
+
+    const token = localStorage.getItem('accessToken');
+    const res = await fetch(`/api/admin/usuarios/exportar?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` }, credentials: 'include' });
+    if (!res.ok) { const d = await res.json(); dsToast({ title: 'Error', message: d.error || 'No se pudo exportar', type: 'error' }); return; }
+    const blob = await res.blob(); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `usuarios-${Date.now()}.xlsx`; a.click();
+    URL.revokeObjectURL(url);
+    dsToast({ title: 'Exportado', message: 'Excel descargado correctamente.', type: 'success' });
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo generar el Excel', type: 'error' });
+  }
+};
+
+// ==========================================
+// DRAWER LATERAL — MÓDULO "USUARIOS"
+// ==========================================
+window.abrirDrawerUsuario = (id) => {
+  const u = usrMod.data.find(x => x._id === id);
+  const content = document.getElementById('drawer-usr-content');
+  if (!content || !u) return;
+
+  content.innerHTML = `
+    <div style="padding:24px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+        <div style="width:54px;height:54px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700">${u.nombre.charAt(0).toUpperCase()}</div>
+        <div>
+          <h2 style="font-size:19px;font-weight:700">${escapeHtml(u.nombre)}</h2>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <span class="plan-badge plan-${u.plan}">${u.plan}</span>
+            <span class="status-badge status-${u.status}">${u.status}</span>
+            ${u.verificado ? '<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">✓ Verificado</span>' : ''}
+          </div>
+        </div>
       </div>
-      <div class="usuario-actions">
-        <span class="plan-badge plan-${u.plan}">${u.plan}</span>
-        <span class="status-badge status-${u.status}">${u.status}</span>
-        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px" onclick="seleccionarPlan('${u._id}', '${u.plan}')">Plan</button>
-        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;border-color:${u.status === 'activo' ? '#e65100' : '#2e7d32'};color:${u.status === 'activo' ? '#e65100' : '#2e7d32'}" onclick="suspenderUsuario('${u._id}')">
-          ${u.status === 'activo' ? 'Suspender' : 'Activar'}
-        </button>
-        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;border-color:#c62828;color:#c62828" onclick="eliminarUsuario('${u._id}', '${u.nombre.replace(/'/g, "\\'")}')">Eliminar</button>
+
+      <div style="padding:16px;background:#f8f9fa;border-radius:10px;border:1px solid #e5e7eb;margin-bottom:20px;font-size:13px;line-height:1.9">
+        <div><b>Email:</b> ${escapeHtml(u.email)}</div>
+        <div><b>Teléfono:</b> ${escapeHtml(u.telefono || '—')}</div>
+        <div><b>Rol:</b> ${escapeHtml(u.role || 'user')}</div>
+        <div><b>Registrado:</b> ${new Date(u.createdAt).toLocaleString('es-MX')}</div>
+        ${u.planFechaFin ? `<div><b>Plan vence:</b> ${new Date(u.planFechaFin).toLocaleDateString('es-MX')}</div>` : ''}
       </div>
-    </div>`).join('');
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="cerrarDrawerUsuario()">Cerrar</button>
+        <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="seleccionarPlan('${u._id}', '${u.plan}')">Cambiar plan</button>
+        <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:${u.status === 'activo' ? '#e65100' : '#2e7d32'};color:${u.status === 'activo' ? '#e65100' : '#2e7d32'}" onclick="cerrarDrawerUsuario();suspenderUsuario('${u._id}')">${u.status === 'activo' ? 'Suspender' : 'Activar'}</button>
+        <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:#dc2626;color:#dc2626" onclick="cerrarDrawerUsuario();abrirModalVetar('${u._id}')">🛡️ Vetar</button>
+        <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:#c62828;color:#c62828" onclick="cerrarDrawerUsuario();eliminarUsuario('${u._id}', '${(u.nombre || '').replace(/'/g, "\\'")}')">Eliminar</button>
+      </div>
+    </div>`;
+
+  document.getElementById('drawer-usr').classList.add('abierto');
+  document.getElementById('drawer-usr-overlay').classList.add('abierto');
+};
+
+window.cerrarDrawerUsuario = () => {
+  document.getElementById('drawer-usr').classList.remove('abierto');
+  document.getElementById('drawer-usr-overlay').classList.remove('abierto');
 };
 
 let estilosPlanInyectados = false;
@@ -1444,59 +1578,258 @@ window.previewFoto = (dir) => {
 // ==========================================
 // USUARIOS VETADOS
 // ==========================================
+let vetMod = { data: [], ordenCampo: null, ordenAsc: true };
+
 const cargarVetados = async () => {
-  const lista = document.getElementById('vetados-lista');
-  if (!lista) return;
-  lista.innerHTML = '<div class="loading">Cargando...</div>';
+  const search = document.getElementById('vetado-search')?.value || '';
+  const activo = document.getElementById('vetado-filtro')?.value || '';
+  const params = new URLSearchParams();
+  if (search) params.append('search', search);
+  if (activo) params.append('activo', activo);
+
+  const [dataVet, dataStats] = await Promise.all([
+    api.get(`/admin/vetados?${params.toString()}`),
+    api.get('/admin/vetados/stats')
+  ]);
+
+  renderVetModKpis(dataStats);
+  if (window.adminCharts) {
+    window.adminCharts.renderBarTrend(document.getElementById('vet-mod-tendencia'), {
+      labels: (dataStats.tendencia || []).map(d => new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'short' })),
+      series: [{ name: 'Vetados nuevos', values: (dataStats.tendencia || []).map(d => d.count), color: 'var(--primary)' }]
+    });
+  }
+
+  vetMod.data = dataVet.vetados || [];
+  vetMod.ordenCampo = null;
+  renderVetModTabla();
+
+  const updEl = document.getElementById('vet-mod-updated');
+  if (updEl) updEl.textContent = `Actualizado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
+const renderVetModKpis = (s) => {
+  const el = document.getElementById('vet-mod-kpis');
+  if (!el || !s.ok) return;
+  const kpis = [
+    { num: s.total, label: 'Total' },
+    { num: s.activos, label: 'Activos' },
+    { num: s.desactivados, label: 'Desactivados' },
+    { num: s.conAlias, label: 'Con alias vinculado' },
+    { num: s.nuevosMes, label: 'Nuevos (30d)' }
+  ];
+  el.innerHTML = kpis.map(k => `<div class="mod-kpi-card"><div class="mod-kpi-num">${k.num}</div><div class="mod-kpi-label">${k.label}</div></div>`).join('');
+};
+
+const ordenarVetados = (campo) => {
+  if (vetMod.ordenCampo === campo) { vetMod.ordenAsc = !vetMod.ordenAsc; }
+  else { vetMod.ordenCampo = campo; vetMod.ordenAsc = true; }
+  renderVetModTabla();
+};
+
+const valorOrdenableVet = (v, campo) => {
+  switch (campo) {
+    case 'usuario': return (v.usuario?.nombre || '').toLowerCase();
+    case 'razon': return (v.razon || '').toLowerCase();
+    case 'aliases': return (v.aliases || []).length;
+    case 'status': return v.activo ? 1 : 0;
+    case 'fecha': return new Date(v.createdAt).getTime();
+    default: return '';
+  }
+};
+
+const renderVetModTabla = () => {
+  const tbody = document.getElementById('vet-mod-tbody');
+  if (!tbody) return;
+  let filas = [...vetMod.data];
+  if (vetMod.ordenCampo) {
+    filas.sort((a, b) => {
+      const va = valorOrdenableVet(a, vetMod.ordenCampo);
+      const vb = valorOrdenableVet(b, vetMod.ordenCampo);
+      if (va < vb) return vetMod.ordenAsc ? -1 : 1;
+      if (va > vb) return vetMod.ordenAsc ? 1 : -1;
+      return 0;
+    });
+  }
+  if (filas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="loading">No hay usuarios vetados con esos filtros.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filas.map(v => {
+    const u = v.usuario || {};
+    return `
+    <tr onclick="abrirDrawerVetado('${v._id}')">
+      <td>${escapeHtml(u.nombre || 'Usuario eliminado')}</td>
+      <td>${escapeHtml(v.razon || '—')}</td>
+      <td>${(v.aliases || []).length}</td>
+      <td><span class="status-badge" style="background:${v.activo ? '#fef2f2' : '#f0fdf4'};color:${v.activo ? '#991b1b' : '#166534'}">${v.activo ? 'Activo' : 'Desactivado'}</span></td>
+      <td>${new Date(v.createdAt).toLocaleDateString('es-MX')}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="btn btn-outline admin-mini-btn" onclick="abrirDrawerVetado('${v._id}')">Ver</button>
+      </td>
+    </tr>`;
+  }).join('');
+};
+
+const exportarVetadosExcel = async () => {
   try {
     const search = document.getElementById('vetado-search')?.value || '';
     const activo = document.getElementById('vetado-filtro')?.value || '';
     const params = new URLSearchParams();
     if (search) params.append('search', search);
     if (activo) params.append('activo', activo);
-    const data = await api.get(`/admin/vetados?${params.toString()}`);
-    if (!data.ok || !data.vetados?.length) {
-      lista.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-light)"><div style="font-size:36px;margin-bottom:10px;opacity:0.5">🛡️</div><div style="font-size:14px;font-weight:600;color:var(--text)">No hay usuarios vetados</div></div>';
-      return;
-    }
-    lista.innerHTML = data.vetados.map(v => {
-      const u = v.usuario || {};
-      const admin = v.admin || {};
-      const aliases = v.aliases || [];
-      return `
-        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:12px">
-            <div style="display:flex;align-items:center;gap:12px">
-              <div style="width:44px;height:44px;border-radius:50%;background:#dc2626;color:white;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700">${(u.nombre || '?')[0].toUpperCase()}</div>
-              <div>
-                <div style="font-size:15px;font-weight:600">${escapeHtml(u.nombre || 'Usuario eliminado')}</div>
-                <div style="font-size:12px;color:var(--text-light)">${escapeHtml(u.email || 'Sin email')} ${u.telefono ? '· ' + u.telefono : ''}</div>
-              </div>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center">
-              <span class="status-badge" style="background:${v.activo ? '#fef2f2' : '#f0fdf4'};color:${v.activo ? '#991b1b' : '#166534'}">${v.activo ? '🔴 Activo' : '🟢 Desactivado'}</span>
-              ${v.activo ? `<button class="btn btn-outline" style="padding:5px 12px;font-size:12px;border-color:#16a34a;color:#16a34a" onclick="desvetarDesdeLista('${v._id}')">Desvetar</button>` : ''}
-            </div>
-          </div>
-          <div style="font-size:13px;color:var(--text-light);margin-bottom:8px"><strong>Razón:</strong> ${escapeHtml(v.razon || 'Sin razón')}</div>
-          ${v.detalles ? `<div style="font-size:12px;color:var(--text-light);margin-bottom:8px">${escapeHtml(v.detalles)}</div>` : ''}
-          <div style="font-size:11px;color:var(--text-light)">Vetado por: ${escapeHtml(admin.nombre || 'Admin')} · ${new Date(v.createdAt).toLocaleDateString('es-MX')}</div>
-          ${aliases.length > 0 ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"><div style="font-size:12px;font-weight:600;color:var(--text-light);margin-bottom:6px">🔗 Aliases vinculados (${aliases.length})</div>${aliases.map(a => `<div style="font-size:12px;color:var(--text-light);padding:4px 0">· ${escapeHtml(a.email || 'Sin email')}</div>`).join('')}</div>` : ''}
-        </div>`;
-    }).join('');
-  } catch (error) {
-    lista.innerHTML = '<div style="padding:40px;text-align:center;color:#c62828">Error al cargar</div>';
+
+    const token = localStorage.getItem('accessToken');
+    const res = await fetch(`/api/admin/vetados/exportar?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` }, credentials: 'include' });
+    if (!res.ok) { const d = await res.json(); dsToast({ title: 'Error', message: d.error || 'No se pudo exportar', type: 'error' }); return; }
+    const blob = await res.blob(); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `vetados-${Date.now()}.xlsx`; a.click();
+    URL.revokeObjectURL(url);
+    dsToast({ title: 'Exportado', message: 'Excel descargado correctamente.', type: 'success' });
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo generar el Excel', type: 'error' });
   }
 };
 
-window.desvetarDesdeLista = async (id) => {
-  const ok = await dsConfirm({ title: '¿Desvetar usuario?', message: 'El usuario podrá volver a usar la plataforma.', confirmText: 'Desvetar' });
+// ==========================================
+// CREAR VETADO (desde el drawer de Usuarios)
+// ==========================================
+let usuarioAVetarId = null;
+
+window.abrirModalVetar = (id) => {
+  usuarioAVetarId = id;
+  document.getElementById('vetar-razon').value = '';
+  document.getElementById('vetar-detalles').value = '';
+  document.getElementById('modal-vetar').style.display = 'flex';
+};
+
+window.confirmarVetar = async () => {
+  const razon = document.getElementById('vetar-razon').value.trim();
+  if (!razon) { dsToast({ title: 'Falta la razón', message: 'Escribe la razón del vetado.', type: 'error' }); return; }
+  const detalles = document.getElementById('vetar-detalles').value.trim();
+
+  const data = await api.post(`/admin/vetados/${usuarioAVetarId}`, { razon, detalles });
+  if (data.ok) {
+    dsToast({ title: 'Usuario vetado', message: 'La cuenta fue suspendida y registrada como vetada.', type: 'success' });
+    document.getElementById('modal-vetar').style.display = 'none';
+    cargarUsuarios();
+  } else {
+    dsToast({ title: 'No se pudo vetar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
+};
+
+// ==========================================
+// DRAWER LATERAL — MÓDULO "USUARIOS VETADOS"
+// ==========================================
+window.abrirDrawerVetado = async (id) => {
+  const v = vetMod.data.find(x => x._id === id);
+  const content = document.getElementById('drawer-vet-content');
+  if (!content || !v) return;
+  renderDrawerVetado(v);
+  document.getElementById('drawer-vet').classList.add('abierto');
+  document.getElementById('drawer-vet-overlay').classList.add('abierto');
+};
+
+const renderDrawerVetado = (v, candidatosHtml) => {
+  const content = document.getElementById('drawer-vet-content');
+  const u = v.usuario || {};
+  const admin = v.admin || {};
+  const aliases = v.aliases || [];
+
+  content.innerHTML = `
+    <div style="padding:24px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+        <div style="width:54px;height:54px;border-radius:50%;background:#dc2626;color:white;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700">${(u.nombre || '?')[0].toUpperCase()}</div>
+        <div>
+          <h2 style="font-size:19px;font-weight:700">${escapeHtml(u.nombre || 'Usuario eliminado')}</h2>
+          <div style="font-size:13px;color:var(--text-light)">${escapeHtml(u.email || 'Sin email')}${u.telefono ? ' · ' + u.telefono : ''}</div>
+          <span class="status-badge" style="background:${v.activo ? '#fef2f2' : '#f0fdf4'};color:${v.activo ? '#991b1b' : '#166534'};margin-top:6px;display:inline-block">${v.activo ? '🔴 Activo' : '🟢 Desactivado'}</span>
+        </div>
+      </div>
+
+      <div style="padding:16px;background:#f8f9fa;border-radius:10px;border:1px solid #e5e7eb;margin-bottom:20px;font-size:13px;line-height:1.8">
+        <div><b>Razón:</b> ${escapeHtml(v.razon || '—')}</div>
+        ${v.detalles ? `<div><b>Detalles:</b> ${escapeHtml(v.detalles)}</div>` : ''}
+        <div><b>Vetado por:</b> ${escapeHtml(admin.nombre || 'Admin')}</div>
+        <div><b>Fecha:</b> ${new Date(v.createdAt).toLocaleString('es-MX')}</div>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <label style="font-size:12px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em">🔗 Aliases vinculados (${aliases.length})</label>
+          <button class="btn btn-outline admin-mini-btn" onclick="buscarPosiblesAlias('${v._id}')">Buscar posibles alias</button>
+        </div>
+        ${aliases.length > 0 ? aliases.map(a => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f8f9fa;border-radius:8px;margin-bottom:6px;font-size:13px">
+            <span>${escapeHtml(a.email || 'Sin email')}${a.telefono ? ' · ' + a.telefono : ''}</span>
+            <button class="btn btn-outline admin-mini-btn" style="border-color:#c62828;color:#c62828" onclick="desvincularAliasDrawer('${v.usuario?._id}', '${a.usuarioId?._id || a.usuarioId}')">Desvincular</button>
+          </div>`).join('') : '<div style="font-size:13px;color:var(--text-light)">Sin aliases vinculados.</div>'}
+        <div id="vet-candidatos-alias" style="margin-top:10px">${candidatosHtml || ''}</div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="cerrarDrawerVetado()">Cerrar</button>
+        ${v.activo ? `<button class="btn btn-primary" style="padding:9px 18px;font-size:13px" onclick="desvetarDesdeDrawer('${v.usuario?._id}')">Desvetar</button>` : ''}
+      </div>
+    </div>`;
+};
+
+window.buscarPosiblesAlias = async (vetadoId) => {
+  const v = vetMod.data.find(x => x._id === vetadoId);
+  if (!v || !v.usuario?._id) return;
+  const cont = document.getElementById('vet-candidatos-alias');
+  if (cont) cont.innerHTML = '<div style="font-size:12px;color:var(--text-light)">Buscando...</div>';
+  const data = await api.get(`/admin/vetados/${v.usuario._id}/aliases/buscar`);
+  if (!data.ok || !data.candidatos?.length) {
+    if (cont) cont.innerHTML = '<div style="font-size:12px;color:var(--text-light)">No se encontraron coincidencias por teléfono o nombre.</div>';
+    return;
+  }
+  const html = data.candidatos.map(c => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;margin-bottom:6px;font-size:13px">
+      <span>${escapeHtml(c.nombre)} · ${escapeHtml(c.email)} <span style="color:var(--text-light)">(${escapeHtml(c.matchRazon || 'posible coincidencia')})</span></span>
+      <button class="btn btn-primary admin-mini-btn" onclick="vincularAliasDrawer('${vetadoId}', '${v.usuario._id}', '${c._id}')">Vincular</button>
+    </div>`).join('');
+  if (cont) cont.innerHTML = html;
+};
+
+window.vincularAliasDrawer = async (vetadoId, usuarioId, aliasId) => {
+  const data = await api.post(`/admin/vetados/${usuarioId}/aliases`, { aliasId });
+  if (data.ok) {
+    dsToast({ title: 'Alias vinculado', message: 'La cuenta alias fue suspendida.', type: 'success' });
+    await cargarVetados();
+    const actualizado = vetMod.data.find(x => x._id === vetadoId);
+    if (actualizado) renderDrawerVetado(actualizado);
+  } else {
+    dsToast({ title: 'No se pudo vincular', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
+};
+
+window.desvincularAliasDrawer = async (vetadoUsuarioId, aliasId) => {
+  const data = await api.post(`/admin/vetados/alias/${aliasId}/desvincular`, { vetadoId: vetadoUsuarioId });
+  if (data.ok) {
+    dsToast({ title: 'Alias desvinculado', message: '', type: 'success' });
+    await cargarVetados();
+  } else {
+    dsToast({ title: 'No se pudo desvincular', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
+};
+
+window.desvetarDesdeDrawer = async (usuarioId) => {
+  const ok = await dsConfirm({ title: '¿Desvetar usuario?', message: 'El usuario y sus aliases vinculados podrán volver a usar la plataforma.', confirmText: 'Desvetar' });
   if (!ok) return;
-  try {
-    const data = await api.post(`/admin/vetados/${id}/desvetar`);
-    if (data.ok) { dsToast({ title: 'Usuario desvetado', type: 'success' }); cargarVetados(); }
-    else { dsToast({ title: 'Error', message: data.error || 'No se pudo desvetar', type: 'error' }); }
-  } catch (e) { dsToast({ title: 'Error de conexión', type: 'error' }); }
+  const data = await api.post(`/admin/vetados/${usuarioId}/desvetar`);
+  if (data.ok) {
+    dsToast({ title: 'Usuario desvetado', type: 'success' });
+    cerrarDrawerVetado();
+    cargarVetados();
+  } else {
+    dsToast({ title: 'Error', message: data.error || 'No se pudo desvetar', type: 'error' });
+  }
+};
+
+window.cerrarDrawerVetado = () => {
+  document.getElementById('drawer-vet').classList.remove('abierto');
+  document.getElementById('drawer-vet-overlay').classList.remove('abierto');
 };
 
 // ==========================================

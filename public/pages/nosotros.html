@@ -117,7 +117,7 @@
   <!-- CTA -->
   <section style="background:linear-gradient(135deg,#0f1923,#1a472a);padding:80px 0;text-align:center">
     <div class="container">
-      <h2 style="font-size:40px;color:white;margin-bottom:16px">¿Listo para encontrar tu propiedad ideal?</h2>
+      <h2 id="scroll-a-cta" style="font-size:40px;color:white;margin-bottom:16px">¿Listo para encontrar tu propiedad ideal?</h2>
       <p style="color:rgba(255,255,255,0.7);font-size:18px;margin-bottom:40px">Únete a miles de personas que ya confían en Vive Más Inmobiliaria.</p>
       <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
         <a href="catalogo.html" class="btn btn-accent" style="padding:16px 32px;font-size:16px">Ver propiedades</a>
@@ -171,6 +171,18 @@ const cargarEstados = async () => {
 
 document.addEventListener('DOMContentLoaded', cargarEstados);
 </script>
+// Hacer scroll automático si venimos del index
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.location.hash === '#scroll-a-cta') {
+        setTimeout(() => {
+          const cta = document.getElementById('scroll-a-cta');
+          if (cta) {
+            cta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 500); // Esperar medio segundo a que cargue la página
+      }
+    });
+  </script>
 <script src="../js/chatbot.js"></script>
 </body>
 </html>

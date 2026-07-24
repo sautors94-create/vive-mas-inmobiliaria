@@ -115,7 +115,7 @@
             <li style="font-size:14px;color:rgba(255,255,255,0.8)">✓ Gestoría completa</li>
             <li style="font-size:14px;color:rgba(255,255,255,0.8)">✓ Atención prioritaria 24/7</li>
           </ul>
-          <a href="registro.html" class="btn btn-accent" style="margin-top:24px;display:inline-flex">Contratar ahora</a>
+          <a href="registro.html" class="btn btn-accent" style="margin-top:24px;display:inline-flex">Proximamente</a>
         </div>
 
       </div>
@@ -143,6 +143,55 @@
 
   <script src="../js/api.js"></script>
   <script src="../js/auth.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const mensajeAuto = localStorage.getItem('msg_max_automatico');
+      
+      if (mensajeAuto) {
+        // Limpiar el mensaje para que no se repita
+        localStorage.removeItem('msg_max_automatico');
+        
+        // Esperar 1 segundo a que la página y el script del chat carguen completamente
+        setTimeout(() => {
+          
+          // 1. ABRIR EL CHAT usando la función exacta de tu botón
+          if (typeof chatbots !== 'undefined' && chatbots['servicios'] && typeof chatbots['servicios'].toggle === 'function') {
+            chatbots['servicios'].toggle();
+          } else {
+            // Método de emergencia por si el objeto tarda en cargar
+            document.getElementById('chatbot-servicios-btn')?.click();
+          }
+
+          // 2. ESCRIBIR Y ENVIAR EL MENSAJE
+          // Esperar 600ms a que la ventanita se abra con su animación
+          setTimeout(() => {
+            // Buscar la cajita de texto (probablemente tiene un ID como chatbot-servicios-input)
+            const inputChat = document.querySelector('#chatbot-servicios-input') || 
+                             document.querySelector('textarea[placeholder*="mensaje" i]') || 
+                             document.querySelector('input[placeholder*="mensaje" i]') ||
+                             document.querySelector('.chat-input') ||
+                             document.querySelector('textarea');
+            
+            if (inputChat) {
+              // Poner el texto
+              inputChat.value = mensajeAuto;
+              inputChat.focus();
+              
+              // Simular que el usuario presionó "Enter" para enviar
+              inputChat.dispatchEvent(new KeyboardEvent('keydown', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true
+              }));
+            }
+          }, 600);
+          
+        }, 1000);
+      }
+    });
+  </script>
   <script src="../js/chatbot.js"></script>
 </body>
 </html>

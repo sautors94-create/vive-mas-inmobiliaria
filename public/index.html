@@ -1,182 +1,182 @@
-Popover Operación <!DOCTYPE html>
-<html lang="es">
-<head>
-<script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vive Más Inmobiliaria</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
+  Popover Operación <!DOCTYPE html>
+  <html lang="es">
+  <head>
+  <script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vive Más Inmobiliaria</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body>
 
-  <!-- NAVBAR -->
-  <nav class="navbar">
-    <div class="container nav-content">
-      <a href="/" class="logo">
-        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
-        <span class="logo-sub">Inmobiliaria</span>
-      </a>
-      <ul class="nav-links">
-        <li><a href="/" class="active">Inicio</a></li>
-        <li><a href="pages/catalogo.html">Catálogo</a></li>
-        <li><a href="pages/servicios.html">Servicios</a></li>
-        <li><a href="pages/nosotros.html">Nosotros</a></li>
-      </ul>
-      <div class="nav-actions">
-        <a href="pages/login.html" class="btn btn-outline" id="btn-login">Iniciar sesión</a>
-        <a href="pages/registro.html" class="btn btn-primary">Publicar</a>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <div class="container nav-content">
+        <a href="/" class="logo">
+          <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+          <span class="logo-sub">Inmobiliaria</span>
+        </a>
+        <ul class="nav-links">
+          <li><a href="/" class="active">Inicio</a></li>
+          <li><a href="pages/catalogo.html">Catálogo</a></li>
+          <li><a href="pages/servicios.html">Servicios</a></li>
+          <li><a href="pages/nosotros.html">Nosotros</a></li>
+        </ul>
+        <div class="nav-actions">
+          <a href="pages/login.html" class="btn btn-outline" id="btn-login">Iniciar sesión</a>
+          <a href="pages/registro.html" class="btn btn-primary">Publicar</a>
+        </div>
+        <button class="nav-toggle" id="nav-toggle">&#9776;</button>
       </div>
-      <button class="nav-toggle" id="nav-toggle">&#9776;</button>
-    </div>
-  </nav>
+    </nav>
 
-  <!-- HERO -->
-  <section class="hero">
-    <div class="container">
-      <div class="hero-content">
-        <h1>Encuentra tu hogar <span class="highlight">ideal</span></h1>
-        <p>Renta, compra o administra propiedades en todo México con la plataforma más confiable del mercado.</p>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <h1>Encuentra tu hogar <span class="highlight">ideal</span></h1>
+          <p>Renta, compra o administra propiedades en todo México con la plataforma más confiable del mercado.</p>
 
-<!-- PREMIUM SEARCH BAR - AIRBNB STYLE -->
-        <div class="search-bar" id="search-bar">
-          <!-- Campo Ubicación -->
-          <div class="search-bar-field" data-popover="popover-ubicacion">
-            <label>📍 Ubicación</label>
-            <span id="label-ubicacion">¿Dónde buscas?</span>
-          </div>
-          <!-- Campo Operación -->
-          <div class="search-bar-field" data-popover="popover-operacion">
-            <label>🏠 Operación</label>
-            <span id="label-operacion">Renta o Venta</span>
-          </div>
-          <!-- Campo Tipo -->
-          <div class="search-bar-field" data-popover="popover-tipo">
-            <label>🏡 Tipo</label>
-            <span id="label-tipo">Tipo de propiedad</span>
-          </div>
-          <!-- Campo Precio -->
-          <div class="search-bar-field" data-popover="popover-precio">
-            <label>💰 Precio</label>
-            <span id="label-precio">Cualquier precio</span>
-          </div>
-          <!-- Botón Buscar -->
-          <button class="search-bar-btn" onclick="buscar()">Buscar</button>
-        </div>
-
-        <!-- Chips activos -->
-        <div class="active-chips" id="active-chips"></div>
-
-        <!-- Popover Overlay -->
-        <div class="popover-overlay" id="popover-overlay" onclick="closeAllPopovers()"></div>
-
-        <!-- Popover Ubicación -->
-        <div class="popover" id="popover-ubicacion">
-          <div class="popover-header">
-            <h4>📍 Ubicación</h4>
-            <button class="popover-close" onclick="closeAllPopovers()">×</button>
-          </div>
-          <input type="text" class="popover-search" placeholder="Buscar estado..." id="search-estado" oninput="filterEstados(this.value)">
-          <div class="popover-options" id="opciones-estado">
-            <div class="popover-option" data-value="Ciudad de Mexico" onclick="toggleOption(this, 'estado')">Ciudad de México</div>
-            <div class="popover-option" data-value="Jalisco" onclick="toggleOption(this, 'estado')">Jalisco</div>
-            <div class="popover-option" data-value="Nuevo Leon" onclick="toggleOption(this, 'estado')">Nuevo León</div>
-            <div class="popover-option" data-value="Puebla" onclick="toggleOption(this, 'estado')">Puebla</div>
-            <div class="popover-option" data-value="Guanajuato" onclick="toggleOption(this, 'estado')">Guanajuato</div>
-            <div class="popover-option" data-value="Queretaro" onclick="toggleOption(this, 'estado')">Querétaro</div>
-            <div class="popover-option" data-value="Yucatan" onclick="toggleOption(this, 'estado')">Yucatán</div>
-            <div class="popover-option" data-value="Oaxaca" onclick="toggleOption(this, 'estado')">Oaxaca</div>
-          </div>
-        </div>
-
-        <!-- Popover Operación -->
-        <div class="popover" id="popover-operacion">
-          <div class="popover-header">
-            <h4>🏠 Operación</h4>
-            <button class="popover-close" onclick="closeAllPopovers()">×</button>
-          </div>
-          <div class="checkbox-group-custom">
-            <div class="checkbox-option" data-value="renta" onclick="toggleCheckbox(this, 'operacion')">Renta</div>
-            <div class="checkbox-option" data-value="venta" onclick="toggleCheckbox(this, 'operacion')">Venta</div>
-          </div>
-        </div>
-
-        <!-- Popover Tipo -->
-        <div class="popover" id="popover-tipo">
-          <div class="popover-header">
-            <h4>🏡 Tipo de propiedad</h4>
-            <button class="popover-close" onclick="closeAllPopovers()">×</button>
-          </div>
-          <div class="checkbox-group-custom">
-            <div class="checkbox-option" data-value="casa" onclick="toggleCheckbox(this, 'tipo')">🏠 Casa</div>
-            <div class="checkbox-option" data-value="departamento" onclick="toggleCheckbox(this, 'tipo')">🏢 Departamento</div>
-            <div class="checkbox-option" data-value="terreno" onclick="toggleCheckbox(this, 'tipo')">📐 Terreno</div>
-            <div class="checkbox-option" data-value="local" onclick="toggleCheckbox(this, 'tipo')">🏪 Local</div>
-          </div>
-        </div>
-
-        <!-- Popover Precio -->
-        <div class="popover" id="popover-precio">
-          <div class="popover-header">
-            <h4>💰 Rango de Precio</h4>
-            <button class="popover-close" onclick="closeAllPopovers()">×</button>
-          </div>
-          <div class="range-slider-container">
-            <div class="range-slider-labels">
-              <span class="range-slider-label" id="precio-min-label">$0</span>
-              <span class="range-slider-label" id="precio-max-label">$100M</span>
+  <!-- PREMIUM SEARCH BAR - AIRBNB STYLE -->
+          <div class="search-bar" id="search-bar">
+            <!-- Campo Ubicación -->
+            <div class="search-bar-field" data-popover="popover-ubicacion">
+              <label>📍 Ubicación</label>
+              <span id="label-ubicacion">¿Dónde buscas?</span>
             </div>
-            <div class="dual-range-slider">
-              <div class="dual-range-track"></div>
-              <div class="dual-range-fill" id="precio-fill" style="left:0%;width:100%"></div>
-              <input type="range" class="dual-range-input" id="precio-min" min="0" max="100000000" step="50000" value="0" oninput="updateDualRange('precio')">
-              <input type="range" class="dual-range-input" id="precio-max" min="0" max="100000000" step="50000" value="100000000" oninput="updateDualRange('precio')">
+            <!-- Campo Operación -->
+            <div class="search-bar-field" data-popover="popover-operacion">
+              <label>🏠 Operación</label>
+              <span id="label-operacion">Renta o Venta</span>
             </div>
-            <div class="range-slider-inputs">
-              <input type="number" class="range-slider-input" id="precio-min-input" placeholder="Mín $" oninput="syncDualRange('min', 'precio')">
-              <input type="number" class="range-slider-input" id="precio-max-input" placeholder="Máx $" oninput="syncDualRange('max', 'precio')">
+            <!-- Campo Tipo -->
+            <div class="search-bar-field" data-popover="popover-tipo">
+              <label>🏡 Tipo</label>
+              <span id="label-tipo">Tipo de propiedad</span>
+            </div>
+            <!-- Campo Precio -->
+            <div class="search-bar-field" data-popover="popover-precio">
+              <label>💰 Precio</label>
+              <span id="label-precio">Cualquier precio</span>
+            </div>
+            <!-- Botón Buscar -->
+            <button class="search-bar-btn" onclick="buscar()">Buscar</button>
+          </div>
+
+          <!-- Chips activos -->
+          <div class="active-chips" id="active-chips"></div>
+
+          <!-- Popover Overlay -->
+          <div class="popover-overlay" id="popover-overlay" onclick="closeAllPopovers()"></div>
+
+          <!-- Popover Ubicación -->
+          <div class="popover" id="popover-ubicacion">
+            <div class="popover-header">
+              <h4>📍 Ubicación</h4>
+              <button class="popover-close" onclick="closeAllPopovers()">×</button>
+            </div>
+            <input type="text" class="popover-search" placeholder="Buscar estado..." id="search-estado" oninput="filterEstados(this.value)">
+            <div class="popover-options" id="opciones-estado">
+              <div class="popover-option" data-value="Ciudad de Mexico" onclick="toggleOption(this, 'estado')">Ciudad de México</div>
+              <div class="popover-option" data-value="Jalisco" onclick="toggleOption(this, 'estado')">Jalisco</div>
+              <div class="popover-option" data-value="Nuevo Leon" onclick="toggleOption(this, 'estado')">Nuevo León</div>
+              <div class="popover-option" data-value="Puebla" onclick="toggleOption(this, 'estado')">Puebla</div>
+              <div class="popover-option" data-value="Guanajuato" onclick="toggleOption(this, 'estado')">Guanajuato</div>
+              <div class="popover-option" data-value="Queretaro" onclick="toggleOption(this, 'estado')">Querétaro</div>
+              <div class="popover-option" data-value="Yucatan" onclick="toggleOption(this, 'estado')">Yucatán</div>
+              <div class="popover-option" data-value="Oaxaca" onclick="toggleOption(this, 'estado')">Oaxaca</div>
             </div>
           </div>
+
+          <!-- Popover Operación -->
+          <div class="popover" id="popover-operacion">
+            <div class="popover-header">
+              <h4>🏠 Operación</h4>
+              <button class="popover-close" onclick="closeAllPopovers()">×</button>
+            </div>
+            <div class="checkbox-group-custom">
+              <div class="checkbox-option" data-value="renta" onclick="toggleCheckbox(this, 'operacion')">Renta</div>
+              <div class="checkbox-option" data-value="venta" onclick="toggleCheckbox(this, 'operacion')">Venta</div>
+            </div>
+          </div>
+
+          <!-- Popover Tipo -->
+          <div class="popover" id="popover-tipo">
+            <div class="popover-header">
+              <h4>🏡 Tipo de propiedad</h4>
+              <button class="popover-close" onclick="closeAllPopovers()">×</button>
+            </div>
+            <div class="checkbox-group-custom">
+              <div class="checkbox-option" data-value="casa" onclick="toggleCheckbox(this, 'tipo')">🏠 Casa</div>
+              <div class="checkbox-option" data-value="departamento" onclick="toggleCheckbox(this, 'tipo')">🏢 Departamento</div>
+              <div class="checkbox-option" data-value="terreno" onclick="toggleCheckbox(this, 'tipo')">📐 Terreno</div>
+              <div class="checkbox-option" data-value="local" onclick="toggleCheckbox(this, 'tipo')">🏪 Local</div>
+            </div>
+          </div>
+
+          <!-- Popover Precio -->
+          <div class="popover" id="popover-precio">
+            <div class="popover-header">
+              <h4>💰 Rango de Precio</h4>
+              <button class="popover-close" onclick="closeAllPopovers()">×</button>
+            </div>
+            <div class="range-slider-container">
+              <div class="range-slider-labels">
+                <span class="range-slider-label" id="precio-min-label">$0</span>
+                <span class="range-slider-label" id="precio-max-label">$100M</span>
+              </div>
+              <div class="dual-range-slider">
+                <div class="dual-range-track"></div>
+                <div class="dual-range-fill" id="precio-fill" style="left:0%;width:100%"></div>
+                <input type="range" class="dual-range-input" id="precio-min" min="0" max="100000000" step="50000" value="0" oninput="updateDualRange('precio')">
+                <input type="range" class="dual-range-input" id="precio-max" min="0" max="100000000" step="50000" value="100000000" oninput="updateDualRange('precio')">
+              </div>
+              <div class="range-slider-inputs">
+                <input type="number" class="range-slider-input" id="precio-min-input" placeholder="Mín $" oninput="syncDualRange('min', 'precio')">
+                <input type="number" class="range-slider-input" id="precio-max-input" placeholder="Máx $" oninput="syncDualRange('max', 'precio')">
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- PROPIEDADES DESTACADAS -->
-  <section class="section">
-    <div class="container">
-      <div class="section-header">
-        <h2>Propiedades destacadas</h2>
-        <a href="pages/catalogo.html" class="ver-mas">Ver todas →</a>
+    <!-- PROPIEDADES DESTACADAS -->
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2>Propiedades destacadas</h2>
+          <a href="pages/catalogo.html" class="ver-mas">Ver todas →</a>
+        </div>
+        <div class="properties-grid" id="propiedades-grid">
+          <div class="loading">Cargando propiedades...</div>
+        </div>
       </div>
-      <div class="properties-grid" id="propiedades-grid">
-        <div class="loading">Cargando propiedades...</div>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- SERVICIOS RESUMEN -->
+            <!-- SERVICIOS RESUMEN -->
   <section class="section section-dark">
     <div class="container">
       <h2 class="text-center">¿Qué hacemos por ti?</h2>
       <div class="services-grid">
-        <div class="service-card">
+        <div class="service-card" style="cursor: pointer;" onclick="irARentaVenta()">
           <div class="service-icon">🏠</div>
           <h3>Renta y Venta</h3>
           <p>Conectamos propietarios con inquilinos y compradores de forma segura y eficiente.</p>
         </div>
-        <div class="service-card">
+        <div class="service-card" style="cursor: pointer;" onclick="abrirMaxConMensaje('Hola, me gustaría recibir información sobre el servicio de Pago de Servicios.')">
           <div class="service-icon">⚡</div>
           <h3>Pago de Servicios</h3>
           <p>Gestionamos luz, agua, predial y todos los servicios de tu propiedad.</p>
         </div>
-        <div class="service-card">
+        <div class="service-card" style="cursor: pointer;" onclick="abrirMaxConMensaje('Hola, me interesa obtener más información sobre el servicio de Administración de propiedades.')">
           <div class="service-icon">🏢</div>
           <h3>Administración</h3>
           <p>Administramos edificios, condominios y residenciales con profesionalismo.</p>
         </div>
-        <div class="service-card">
+        <div class="service-card" style="cursor: pointer;" onclick="abrirMaxConMensaje('Hola, necesito cotizar un servicio de Mantenimiento para mi propiedad.')">
           <div class="service-icon">🔧</div>
           <h3>Mantenimiento</h3>
           <p>Coordinamos reparaciones y mantenimiento preventivo de todo tipo.</p>
@@ -185,28 +185,40 @@ Popover Operación <!DOCTYPE html>
     </div>
   </section>
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="container footer-content">
-      <div class="footer-brand">
-        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
-        <p>La plataforma inmobiliaria más confiable de México.</p>
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="container footer-content">
+        <div class="footer-brand">
+          <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+          <p>La plataforma inmobiliaria más confiable de México.</p>
+        </div>
+        <div class="footer-links">
+          <a href="pages/catalogo.html">Catálogo</a>
+          <a href="pages/servicios.html">Servicios</a>
+          <a href="pages/nosotros.html">Nosotros</a>
+          <a href="pages/terminos.html">Términos y condiciones</a>
+        </div>
       </div>
-      <div class="footer-links">
-        <a href="pages/catalogo.html">Catálogo</a>
-        <a href="pages/servicios.html">Servicios</a>
-        <a href="pages/nosotros.html">Nosotros</a>
-        <a href="pages/terminos.html">Términos y condiciones</a>
+      <div class="footer-bottom">
+        <p>© 2024 Vive Más Inmobiliaria. Todos los derechos reservados.</p>
       </div>
-    </div>
-    <div class="footer-bottom">
-      <p>© 2024 Vive Más Inmobiliaria. Todos los derechos reservados.</p>
-    </div>
-  </footer>
+    </footer>
 
-  <script src="js/api.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/main.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+    // 1. Renta y venta
+    const irARentaVenta = () => {
+      window.location.href = 'pages/nosotros.html#scroll-a-cta';
+    };
+
+    // 2. Pago, Admin y Mantenimiento
+    const abrirMaxConMensaje = (texto) => {
+      localStorage.setItem('msg_max_automatico', texto);
+      window.location.href = 'pages/servicios.html';
+    };
+  </script>
   <script src="js/chatbot.js"></script>
-</body>
-</html> 
+  </body>
+  </html> 

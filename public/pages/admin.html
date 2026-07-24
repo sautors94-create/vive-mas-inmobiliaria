@@ -181,7 +181,7 @@
             <option value="bloqueada">Bloqueadas</option>
           </select>
           <input type="text" id="filtro-ciudad" class="form-input" placeholder="Ciudad..." style="width:140px;padding:8px 12px;font-size:13px" oninput="cargarTodasPropiedades()">
-          <select id="filtro-plan" class="filter-select" style="width:auto" onchange="cargarTodasPropiedades()">
+          <select id="filtro-plan-prop" class="filter-select" style="width:auto" onchange="cargarTodasPropiedades()">
             <option value="">Todos los planes</option>
             <option value="gratuito">Gratuito</option>
             <option value="basico">Básico</option>
@@ -297,14 +297,28 @@
 
       <!-- USUARIOS -->
       <section id="sec-usuarios" class="dash-section" style="display:none">
-        <div class="dash-section-header">
-          <h2>Usuarios registrados</h2>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="btn btn-outline" onclick="descargarPlantillaUsuarios()" style="padding:8px 16px;font-size:13px">📥 Descargar plantilla</button>
-            <button class="btn btn-primary" onclick="mostrarModalImportar()" style="padding:8px 16px;font-size:13px">📤 Importar usuarios</button>
+        <div class="mod-header">
+          <div>
+            <h2>Usuarios registrados</h2>
+            <div class="mod-header-sub">Panel &gt; Usuarios · <span id="usr-mod-updated" class="mod-updated"></span></div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" onclick="descargarPlantillaUsuarios()" style="padding:8px 16px;font-size:13px">📥 Plantilla</button>
+            <button class="btn btn-outline" onclick="mostrarModalImportar()" style="padding:8px 16px;font-size:13px">📤 Importar</button>
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarUsuarios()">↻ Actualizar</button>
+            <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="exportarUsuariosExcel()">⬇ Exportar Excel</button>
           </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+
+        <div class="mod-kpis" id="usr-mod-kpis">
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Total</div></div>
+        </div>
+
+        <div class="mod-trend">
+          <div id="usr-mod-tendencia"></div>
+        </div>
+
+        <div class="mod-filters">
           <input type="text" id="search-usuarios" class="form-input" placeholder="Buscar usuario..." style="width:200px;padding:8px 12px;font-size:13px" oninput="cargarUsuarios()">
           <select id="filtro-plan" class="filter-select" style="width:auto" onchange="cargarUsuarios()">
             <option value="">Todos los planes</option>
@@ -318,10 +332,32 @@
             <option value="suspendido">Suspendidos</option>
           </select>
         </div>
-        <div id="usuarios-lista" class="usuarios-lista">
-          <div class="loading">Cargando...</div>
+
+        <div style="overflow-x:auto">
+          <table class="admin-table" id="usr-mod-tabla">
+            <thead>
+              <tr>
+                <th class="sortable" onclick="ordenarUsuarios('nombre')">Nombre</th>
+                <th class="sortable" onclick="ordenarUsuarios('email')">Email</th>
+                <th class="sortable" onclick="ordenarUsuarios('plan')">Plan</th>
+                <th class="sortable" onclick="ordenarUsuarios('status')">Estado</th>
+                <th class="sortable" onclick="ordenarUsuarios('fecha')">Registro</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="usr-mod-tbody">
+              <tr><td colspan="6" class="loading">Cargando...</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
+
+      <!-- DRAWER LATERAL DE USUARIO -->
+      <div id="drawer-usr-overlay" onclick="cerrarDrawerUsuario()"></div>
+      <div id="drawer-usr">
+        <button class="drawer-close-btn" onclick="cerrarDrawerUsuario()">✕</button>
+        <div id="drawer-usr-content"></div>
+      </div>
 
       <!-- TEMAS -->
       <section id="sec-temas" class="dash-section" style="display:none">
@@ -497,10 +533,26 @@
 
       <!-- USUARIOS VETADOS -->
       <section id="sec-bloqueos" class="dash-section" style="display:none">
-        <div class="dash-section-header">
-          <h2>Usuarios vetados</h2>
+        <div class="mod-header">
+          <div>
+            <h2>Usuarios vetados</h2>
+            <div class="mod-header-sub">Panel &gt; Bloqueados · <span id="vet-mod-updated" class="mod-updated"></span></div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarVetados()">↻ Actualizar</button>
+            <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="exportarVetadosExcel()">⬇ Exportar Excel</button>
+          </div>
         </div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+
+        <div class="mod-kpis" id="vet-mod-kpis">
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Total</div></div>
+        </div>
+
+        <div class="mod-trend">
+          <div id="vet-mod-tendencia"></div>
+        </div>
+
+        <div class="mod-filters">
           <input type="text" id="vetado-search" class="form-input" placeholder="Buscar por razón..." style="width:220px;padding:8px 12px;font-size:13px" oninput="cargarVetados()">
           <select id="vetado-filtro" class="filter-select" style="width:auto" onchange="cargarVetados()">
             <option value="">Todos</option>
@@ -508,10 +560,32 @@
             <option value="false">Desactivados</option>
           </select>
         </div>
-        <div id="vetados-lista" class="leads-lista">
-          <div class="loading">Cargando...</div>
+
+        <div style="overflow-x:auto">
+          <table class="admin-table" id="vet-mod-tabla">
+            <thead>
+              <tr>
+                <th class="sortable" onclick="ordenarVetados('usuario')">Usuario</th>
+                <th class="sortable" onclick="ordenarVetados('razon')">Razón</th>
+                <th class="sortable" onclick="ordenarVetados('aliases')">Aliases</th>
+                <th class="sortable" onclick="ordenarVetados('status')">Estado</th>
+                <th class="sortable" onclick="ordenarVetados('fecha')">Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="vet-mod-tbody">
+              <tr><td colspan="6" class="loading">Cargando...</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
+
+      <!-- DRAWER LATERAL DE VETADO -->
+      <div id="drawer-vet-overlay" onclick="cerrarDrawerVetado()"></div>
+      <div id="drawer-vet">
+        <button class="drawer-close-btn" onclick="cerrarDrawerVetado()">✕</button>
+        <div id="drawer-vet-content"></div>
+      </div>
 
       <!-- MONITOREO DE CHATS -->
       <section id="sec-monitoreo" class="dash-section" style="display:none">
@@ -538,6 +612,25 @@
       </section>
 
     </main>
+  </div>
+
+  <!-- MODAL VETAR USUARIO -->
+  <div id="modal-vetar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:white;border-radius:16px;padding:32px;max-width:480px;width:90%">
+      <h3 style="margin-bottom:16px">Vetar usuario</h3>
+      <div class="form-grupo" style="margin-bottom:12px">
+        <label>Razón (obligatoria)</label>
+        <input type="text" id="vetar-razon" class="form-input" placeholder="Ej. Fraude, estafa, spam...">
+      </div>
+      <div class="form-grupo">
+        <label>Detalles adicionales</label>
+        <textarea id="vetar-detalles" class="form-input" rows="3" placeholder="Contexto, evidencia, evento relacionado..."></textarea>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:16px">
+        <button class="btn btn-primary" onclick="confirmarVetar()" style="flex:1">Vetar usuario</button>
+        <button class="btn btn-outline" onclick="document.getElementById('modal-vetar').style.display='none'" style="flex:1">Cancelar</button>
+      </div>
+    </div>
   </div>
 
   <!-- MODAL RECHAZO -->
@@ -624,31 +717,6 @@
   </div>
 
   <!-- MODAL VETAR USUARIO -->
-  <div id="modal-vetar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:10000;align-items:center;justify-content:center">
-    <div style="background:white;border-radius:18px;max-width:500px;width:92%;padding:28px;box-shadow:0 25px 60px rgba(0,0,0,0.35)">
-      <h3 style="font-size:18px;font-weight:700;margin-bottom:4px">🛡️ Vetar usuario</h3>
-      <p style="font-size:13px;color:var(--text-light);margin-bottom:20px">El usuario será suspendido y no podrá enviar ni recibir mensajes.</p>
-      <div style="margin-bottom:16px">
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Razón del vetado *</label>
-        <input type="text" id="vetar-razon" class="form-input" placeholder="Ej: Estafa, pago fuera de plataforma, acoso...">
-      </div>
-      <div style="margin-bottom:20px">
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Detalles adicionales</label>
-        <textarea id="vetar-detalles" class="form-input" rows="3" placeholder="Información extra sobre el caso..."></textarea>
-      </div>
-      <div id="vetar-alias-section" style="display:none;margin-bottom:20px;padding:14px;background:#fef3c7;border:1px solid #fde68a;border-radius:10px">
-        <div style="font-size:13px;font-weight:600;color:#92400e;margin-bottom:8px">🔗 Cuentas vinculadas como alias</div>
-        <div id="vetar-aliases-lista" style="font-size:13px;color:var(--text-light)"></div>
-        <input type="text" id="vetar-alias-id" class="form-input" placeholder="ID del usuario a vincular" style="margin-top:8px;font-size:13px">
-        <button class="btn btn-outline" style="margin-top:8px;padding:6px 14px;font-size:12px;border-color:#92400e;color:#92400e" onclick="agregarAliasVetado()">+ Vincular alias</button>
-      </div>
-      <div style="display:flex;gap:10px">
-        <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('modal-vetar').style.display='none'">Cancelar</button>
-        <button class="btn btn-primary" style="flex:1;background:#dc2626;border-color:#dc2626" id="btn-confirmar-vetar" onclick="confirmarVetado()">Vetar usuario</button>
-      </div>
-    </div>
-  </div>
-
   <!-- MODAL ACLARACIÓN PAGO -->
   <div id="modal-aclaracion-pago" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center">
     <div style="background:white;border-radius:16px;padding:28px;max-width:440px;width:90%">
