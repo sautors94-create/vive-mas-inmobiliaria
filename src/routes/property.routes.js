@@ -8,6 +8,8 @@ const {
   detallePropiedad,
   editarPropiedad,
   eliminarPropiedad,
+  pausarPropiedad,
+  reactivarPropiedad,
   misPropiedades,
   subirFotos
 } = require('../controllers/property.controller');
@@ -17,6 +19,8 @@ router.get('/mis-propiedades', authMiddleware, misPropiedades);
 router.get('/:id', detallePropiedad);
 router.post('/', authMiddleware, crearPropiedad);
 router.put('/:id', authMiddleware, editarPropiedad);
+router.patch('/:id/pausar', authMiddleware, pausarPropiedad);
+router.patch('/:id/reactivar', authMiddleware, reactivarPropiedad);
 router.delete('/:id', authMiddleware, eliminarPropiedad);
 router.post('/:id/fotos', authMiddleware, upload.array('fotos', 15), subirFotos);
 router.get('/estados/disponibles', async (req, res) => {

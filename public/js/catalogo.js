@@ -24,21 +24,20 @@ const formatPrecioCorto = (valor) => {
 };
 
 const obtenerFiltros = () => {
-  const params = new URLSearchParams(window.location.search);
   const f = filtrosActuales;
   return {
-    operacion: f.operacion || params.get('operacion') || '',
-    tipo: f.tipo || params.get('tipo') || '',
-    estado: f.estado || params.get('estado') || '',
-    ciudad: f.ciudad || params.get('ciudad') || '',
+    operacion: f.operacion || '',
+    tipo: f.tipo || '',
+    estado: f.estado || '',
+    ciudad: f.ciudad || '',
     // precioMin solo se manda si es mayor a 0
-    precioMin: (f.precioMin > 0 ? f.precioMin : '') || params.get('precioMin') || '',
+    precioMin: f.precioMin > 0 ? f.precioMin : '',
     // precioMax solo se manda si es menor al máximo absoluto
-    precioMax: (f.precioMax < 100000000 ? f.precioMax : '') || params.get('precioMax') || '',
-    recamaras: f.recamaras || params.get('recamaras') || '',
-    banos: f.banos || params.get('banos') || '',
-    m2Min: (f.m2Min > 0 ? f.m2Min : '') || params.get('m2Min') || '',
-    m2Max: (f.m2Max < 1000 ? f.m2Max : '') || params.get('m2Max') || '',
+    precioMax: f.precioMax < 100000000 ? f.precioMax : '',
+    recamaras: f.recamaras || '',
+    banos: f.banos || '',
+    m2Min: f.m2Min > 0 ? f.m2Min : '',
+    m2Max: f.m2Max < 1000 ? f.m2Max : '',
     orden: f.orden || '-createdAt',
     pagina: paginaActual,
     limite: 15
@@ -403,6 +402,7 @@ const quitarValorFiltro = (tipo, valor) => {
   }
 
   ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras'].forEach(actualizarChipLabel);
+  window.history.replaceState({}, document.title, window.location.pathname);
   aplicarFiltros();
 };
 

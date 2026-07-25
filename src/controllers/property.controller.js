@@ -167,6 +167,44 @@ const eliminarPropiedad = async (req, res) => {
   }
 };
 
+const pausarPropiedad = async (req, res) => {
+  try {
+    const propiedad = await Property.findById(req.params.id);
+    if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
+    if (propiedad.propietario.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes permiso para pausar esta propiedad' });
+    }
+    if (propiedad.status !== 'aprobada') {
+      return res.status(400).json({ error: 'Solo puedes pausar una propiedad aprobada' });
+    }
+    const actualizada = await Property.findByIdAndUpdate(req.params.id, { status: 'pausada' }, { new: true });
+    res.json({ ok: true, mensaje: 'Propiedad pausada. Ya no aparece en el catálogo público.', propiedad: actualizada });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const reactivarPropiedad = async (req, res) => {
+  try {
+    const propiedad = await Property.findById(req.params.id);
+    if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
+    if (propiedad.propietario.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes permiso para reactivar esta propiedad' });
+    }
+    if (propiedad.status !== 'pausada') {
+      return res.status(400).json({ error: 'Solo puedes reactivar una propiedad pausada' });
+    }
+    const actualizada = await Property.findByIdAndUpdate(
+      req.params.id,
+      { status: 'revision', motivo_rechazo: null },
+      { new: true }
+    );
+    res.json({ ok: true, mensaje: 'Propiedad enviada a revisión para volver a publicarse.', propiedad: actualizada });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const misPropiedades = async (req, res) => {
   try {
     const propiedades = await Property.find({ propietario: req.user.id })
@@ -197,4 +235,4 @@ const subirFotos = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-module.exports = { crearPropiedad, listarPropiedades, detallePropiedad, editarPropiedad, eliminarPropiedad, misPropiedades, subirFotos };
+module.exports = { crearPropiedad, listarPropiedades, detallePropiedad, editarPropiedad, eliminarPropiedad, pausarPropiedad, reactivarPropiedad, misPropiedades, subirFotos };

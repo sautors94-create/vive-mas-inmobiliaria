@@ -700,14 +700,52 @@ const cargarMisPropiedades = async () => {
             <b>Motivo de rechazo:</b> ${p.motivo_rechazo ? escapeHtmlLocal(p.motivo_rechazo) : 'No especificado.'}
             ${p.permiteEdicion === false ? '<div style="margin-top:4px">Esta propiedad no se puede editar. Solo puedes eliminarla.</div>' : ''}
           </div>` : ''}
+        ${p.status === 'pausada' ? `
+          <div style="margin-top:8px;padding:10px 12px;background:#fff8e1;border:1px solid #f5d98a;border-radius:10px;font-size:12px;color:#7a5c00">
+            Pausada por ti. No aparece en el catálogo público. Al reactivarla, pasará de nuevo por revisión del admin antes de publicarse.
+          </div>` : ''}
       </div>
       <div class="prop-admin-actions">
         <span class="status-badge status-${p.status}">${p.status}</span>
         <button class="btn btn-outline" onclick="window.location='propiedad.html?id=${p._id}'">Ver</button>
         ${p.status !== 'aprobada' && (p.status !== 'rechazada' || p.permiteEdicion !== false) ? `<button class="btn btn-outline" onclick="editarPropiedad('${p._id}')">Editar</button>` : ''}
+        ${p.status === 'aprobada' ? `<button class="btn btn-outline" onclick="pausarMiPropiedad('${p._id}')">⏸️ Pausar</button>` : ''}
+        ${p.status === 'pausada' ? `<button class="btn btn-primary" onclick="reactivarMiPropiedad('${p._id}')">▶️ Reactivar</button>` : ''}
         <button class="btn btn-outline btn-del-prop" onclick="eliminarMiPropiedad('${p._id}','${p.titulo.replace(/'/g,"\\'")}')">🗑️</button>
       </div>
     </div>`).join('');
+};
+
+const pausarMiPropiedad = async (id) => {
+  const ok = await dsConfirm({
+    title: '¿Pausar esta propiedad?',
+    message: 'Dejará de aparecer en el catálogo público de inmediato. Podrás reactivarla cuando quieras.',
+    confirmText: 'Sí, pausar'
+  });
+  if (!ok) return;
+  const data = await api.patch(`/propiedades/${id}/pausar`);
+  if (data.ok) {
+    dsToast({ title: 'Propiedad pausada', message: data.mensaje, type: 'success' });
+    cargarMisPropiedades();
+  } else {
+    dsToast({ title: 'No se pudo pausar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
+};
+
+const reactivarMiPropiedad = async (id) => {
+  const ok = await dsConfirm({
+    title: '¿Reactivar esta propiedad?',
+    message: 'Se enviará a revisión del admin antes de volver a publicarse en el catálogo.',
+    confirmText: 'Sí, reactivar'
+  });
+  if (!ok) return;
+  const data = await api.patch(`/propiedades/${id}/reactivar`);
+  if (data.ok) {
+    dsToast({ title: 'Enviada a revisión', message: data.mensaje, type: 'success' });
+    cargarMisPropiedades();
+  } else {
+    dsToast({ title: 'No se pudo reactivar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
 };
 
 const editarPropiedad = (id) => {
