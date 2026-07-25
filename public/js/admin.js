@@ -946,35 +946,65 @@ const aplicarTema = async (nombreTema) => {
   }
 };
 
+let destMod = { propiedades: [], destacadasIds: [] };
+
 const cargarDestacadas = async () => {
-  const lista = document.getElementById('destacadas-lista');
   const dataProps = await api.get('/admin/propiedades?status=aprobada');
   const dataConf = await api.get('/site/destacadas');
-  const destacadasIds = (dataConf.destacadas || []).map(d => d._id);
-  if (!dataProps.propiedades || dataProps.propiedades.length === 0) {
-    lista.innerHTML = '<div class="loading">No hay propiedades aprobadas.</div>';
+  destMod.destacadasIds = (dataConf.destacadas || []).map(d => d._id);
+  destMod.propiedades = dataProps.propiedades || [];
+
+  const kpisEl = document.getElementById('dest-mod-kpis');
+  if (kpisEl) {
+    const kpis = [
+      { num: destMod.destacadasIds.length, label: 'Destacadas actuales' },
+      { num: destMod.propiedades.length, label: 'Propiedades aprobadas' },
+      { num: Math.max(0, 8 - destMod.destacadasIds.length), label: 'Cupo recomendado restante (máx. 8)' }
+    ];
+    kpisEl.innerHTML = kpis.map(k => `<div class="mod-kpi-card"><div class="mod-kpi-num">${k.num}</div><div class="mod-kpi-label">${k.label}</div></div>`).join('');
+  }
+
+  renderDestModTabla();
+};
+
+const renderDestModTabla = () => {
+  const tbody = document.getElementById('dest-mod-tbody');
+  if (!tbody) return;
+  const search = (document.getElementById('dest-search')?.value || '').toLowerCase();
+  const filtro = document.getElementById('dest-filtro')?.value || '';
+
+  let filas = destMod.propiedades.filter(p => {
+    const esDestacada = destMod.destacadasIds.includes(p._id);
+    if (filtro === 'destacadas' && !esDestacada) return false;
+    if (filtro === 'no-destacadas' && esDestacada) return false;
+    if (search && !p.titulo?.toLowerCase().includes(search) && !p.ubicacion?.ciudad?.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (filas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">No hay propiedades aprobadas con esos filtros.</td></tr>';
     return;
   }
-  lista.innerHTML = dataProps.propiedades.map(p => {
-    const esDestacada = destacadasIds.includes(p._id);
+
+  tbody.innerHTML = filas.map(p => {
+    const esDestacada = destMod.destacadasIds.includes(p._id);
+    const foto = p.fotos && p.fotos.length > 0
+      ? `<img src="${p.fotos[0]}" style="width:44px;height:44px;object-fit:cover;border-radius:8px">`
+      : `<div style="width:44px;height:44px;background:#f3f4f6;border-radius:8px"></div>`;
     return `
-      <div class="prop-admin-card">
-        <div class="prop-admin-img">
-          ${p.fotos && p.fotos.length > 0
-            ? `<img src="${p.fotos[0]}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`
-            : 'Sin foto'}
-        </div>
-        <div class="prop-admin-info">
-          <div class="prop-admin-titulo">${p.titulo}</div>
-          <div class="prop-admin-meta">${p.ubicacion.ciudad}, ${p.ubicacion.estado} · ${formatPrecio(p.precio)}</div>
-        </div>
-        <div class="prop-admin-actions">
-          <span class="status-badge ${esDestacada ? 'status-aprobada' : 'status-revision'}">${esDestacada ? '⭐ Destacada' : 'Normal'}</span>
-          <button class="btn ${esDestacada ? 'btn-outline' : 'btn-primary'}" style="padding:6px 14px;font-size:13px" onclick="toggleDestacada('${p._id}', ${esDestacada})">
-            ${esDestacada ? 'Quitar' : '⭐ Destacar'}
-          </button>
-        </div>
-      </div>`;
+    <tr>
+      <td>${foto}</td>
+      <td>${escapeHtml(p.titulo || 'Sin título')}</td>
+      <td>${escapeHtml(p.ubicacion?.ciudad || '—')}</td>
+      <td>${formatPrecio(p.precio)}</td>
+      <td><span class="plan-badge plan-${p.propietario?.plan || 'gratuito'}">${p.propietario?.plan || 'gratuito'}</span></td>
+      <td><span class="status-badge ${esDestacada ? 'status-aprobada' : 'status-revision'}">${esDestacada ? '⭐ Destacada' : 'Normal'}</span></td>
+      <td>
+        <button class="btn ${esDestacada ? 'btn-outline' : 'btn-primary'} admin-mini-btn" onclick="toggleDestacada('${p._id}', ${esDestacada})">
+          ${esDestacada ? 'Quitar' : '⭐ Destacar'}
+        </button>
+      </td>
+    </tr>`;
   }).join('');
 };
 

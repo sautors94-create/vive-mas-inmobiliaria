@@ -492,11 +492,46 @@
 
       <!-- DESTACADAS -->
       <section id="sec-destacadas" class="dash-section" style="display:none">
-        <div class="dash-section-header">
-          <h2>Propiedades destacadas en inicio</h2>
+        <div class="mod-header">
+          <div>
+            <h2>Propiedades destacadas en inicio</h2>
+            <div class="mod-header-sub">Panel &gt; Destacadas · Se muestran en el home en el orden en que las agregues</div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarDestacadas()">↻ Actualizar</button>
+          </div>
         </div>
-        <div id="destacadas-lista" class="mis-props-grid">
-          <div class="loading">Cargando...</div>
+
+        <div class="mod-kpis" id="dest-mod-kpis" style="grid-template-columns:repeat(3,1fr)">
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Destacadas actuales</div></div>
+        </div>
+
+        <div class="mod-filters">
+          <input type="text" id="dest-search" class="form-input" placeholder="Buscar propiedad..." style="width:220px;padding:8px 12px;font-size:13px" oninput="renderDestModTabla()">
+          <select id="dest-filtro" class="filter-select" style="width:auto" onchange="renderDestModTabla()">
+            <option value="">Todas</option>
+            <option value="destacadas">Solo destacadas</option>
+            <option value="no-destacadas">Solo sin destacar</option>
+          </select>
+        </div>
+
+        <div style="overflow-x:auto">
+          <table class="admin-table" id="dest-mod-tabla">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Título</th>
+                <th>Ciudad</th>
+                <th>Precio</th>
+                <th>Plan</th>
+                <th>Estado</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="dest-mod-tbody">
+              <tr><td colspan="7" class="loading">Cargando...</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
