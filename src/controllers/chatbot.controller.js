@@ -1,5 +1,5 @@
 const Groq = require('groq-sdk');
-const Lead = require('../models/lead');
+const Lead = require('../models/Lead');
 
 // ✅ CORRECCIÓN 5: Validar API key al iniciar
 if (!process.env.GROQ_API_KEY) {
