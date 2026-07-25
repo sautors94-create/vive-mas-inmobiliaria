@@ -1412,7 +1412,23 @@ window.cargarPagosAdmin = async () => {
     if (search) params.append('search', search);
     if (plan) params.append('plan', plan);
     if (estatus) params.append('estatus', estatus);
-    const data = await api.get(`/admin/pagos?${params.toString()}`);
+
+    const [data, dataStats] = await Promise.all([
+      api.get(`/admin/pagos?${params.toString()}`),
+      api.get('/admin/pagos/stats')
+    ]);
+
+    renderPagoModKpis(dataStats);
+    if (window.adminCharts) {
+      window.adminCharts.renderBarTrend(document.getElementById('pago-mod-tendencia'), {
+        labels: (dataStats.tendencia || []).map(d => new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'short' })),
+        series: [{ name: 'Ingresos por día (MXN)', values: (dataStats.tendencia || []).map(d => d.count), color: 'var(--primary)' }]
+      });
+    }
+
+    const updEl = document.getElementById('pago-mod-updated');
+    if (updEl) updEl.textContent = `Actualizado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+
     if (!data.ok || !data.pagos || !data.pagos.length) {
       tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--text-light)">No se encontraron pagos.</td></tr>';
       return;
@@ -1434,6 +1450,40 @@ window.cargarPagosAdmin = async () => {
     }).join('');
   } catch (error) {
     tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:#c62828">Error al conectar con el servidor.</td></tr>';
+  }
+};
+
+const renderPagoModKpis = (s) => {
+  const el = document.getElementById('pago-mod-kpis');
+  if (!el || !s.ok) return;
+  const kpis = [
+    { num: `$${(s.ingresosMes || 0).toLocaleString('es-MX')}`, label: 'Ingresos (30d)' },
+    { num: s.completados, label: 'Completados' },
+    { num: s.pendientes, label: 'Pendientes' },
+    { num: s.reembolsados, label: 'Reembolsados' }
+  ];
+  el.innerHTML = kpis.map(k => `<div class="mod-kpi-card"><div class="mod-kpi-num" style="font-size:20px">${k.num}</div><div class="mod-kpi-label">${k.label}</div></div>`).join('');
+};
+
+const exportarPagosExcel = async () => {
+  try {
+    const search = document.getElementById('pago-filtro-search')?.value || '';
+    const plan = document.getElementById('pago-filtro-plan')?.value || '';
+    const estatus = document.getElementById('pago-filtro-estatus')?.value || '';
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (plan) params.append('plan', plan);
+    if (estatus) params.append('estatus', estatus);
+
+    const token = localStorage.getItem('accessToken');
+    const res = await fetch(`/api/admin/pagos/exportar?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` }, credentials: 'include' });
+    if (!res.ok) { const d = await res.json(); dsToast({ title: 'Error', message: d.error || 'No se pudo exportar', type: 'error' }); return; }
+    const blob = await res.blob(); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `pagos-${Date.now()}.xlsx`; a.click();
+    URL.revokeObjectURL(url);
+    dsToast({ title: 'Exportado', message: 'Excel descargado correctamente.', type: 'success' });
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo generar el Excel', type: 'error' });
   }
 };
 

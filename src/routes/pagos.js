@@ -241,6 +241,88 @@ const webhookStripe = async (req, res) => {
 const authMiddlewareAdmin = require('../middleware/auth.middleware');
 const requireRole = require('../middleware/role.middleware');
 
+// KPIs para el módulo "Pagos y Conciliación" del panel admin
+router.get('/admin/pagos/stats', authMiddlewareAdmin, requireRole('admin'), async (req, res) => {
+  try {
+    const ahora = new Date();
+    const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+    const inicioMes = new Date(inicioHoy); inicioMes.setDate(inicioMes.getDate() - 30);
+
+    const [completados, pendientes, reembolsados, ingresosMes] = await Promise.all([
+      Pago.countDocuments({ estatus: 'completado' }),
+      Pago.countDocuments({ estatus: 'pendiente' }),
+      Pago.countDocuments({ estatus: 'reembolsado' }),
+      Pago.aggregate([
+        { $match: { estatus: 'completado', createdAt: { $gte: inicioMes } } },
+        { $group: { _id: null, total: { $sum: '$monto' } } }
+      ])
+    ]);
+
+    const tendencia = [];
+    for (let i = 6; i >= 0; i--) {
+      const inicio = new Date(inicioHoy); inicio.setDate(inicio.getDate() - i);
+      const fin = new Date(inicio); fin.setDate(fin.getDate() + 1);
+      const agg = await Pago.aggregate([
+        { $match: { estatus: 'completado', createdAt: { $gte: inicio, $lt: fin } } },
+        { $group: { _id: null, total: { $sum: '$monto' } } }
+      ]);
+      tendencia.push({ fecha: inicio.toISOString().slice(0, 10), count: agg[0]?.total || 0 });
+    }
+
+    res.json({
+      ok: true,
+      completados,
+      pendientes,
+      reembolsados,
+      ingresosMes: ingresosMes[0]?.total || 0,
+      tendencia
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: 'Error al obtener estadísticas de pagos' });
+  }
+});
+
+// Exportar pagos filtrados a Excel
+router.get('/admin/pagos/exportar', authMiddlewareAdmin, requireRole('admin'), async (req, res) => {
+  try {
+    const { search, plan, estatus } = req.query;
+    const filtro = {};
+    if (search) filtro.$or = [
+      { usuario_email: { $regex: search, $options: 'i' } },
+      { stripe_session_id: { $regex: search, $options: 'i' } }
+    ];
+    if (plan) filtro.plan_contratado = plan;
+    if (estatus) filtro.estatus = estatus;
+
+    const pagos = await Pago.find(filtro).sort({ createdAt: -1 });
+    if (pagos.length === 0) {
+      return res.status(404).json({ error: 'No hay pagos para exportar con esos filtros' });
+    }
+
+    const XLSX = require('xlsx');
+    const datos = pagos.map(p => ({
+      'Fecha': new Date(p.createdAt).toLocaleString('es-MX'),
+      'Email': p.usuario_email || '',
+      'Plan': p.plan_contratado,
+      'Monto': p.monto,
+      'Estado': p.estatus,
+      'Stripe Session ID': p.stripe_session_id || '',
+      'Notas admin': p.notas_admin || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(datos);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Pagos');
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=pagos-${Date.now()}.xlsx`);
+    res.send(buffer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/admin/pagos', authMiddlewareAdmin, requireRole('admin'), async (req, res) => {
   try {
     const { search, plan, estatus, page = 1, limit = 20 } = req.query;

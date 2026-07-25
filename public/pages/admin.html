@@ -502,9 +502,25 @@
 
       <!-- PAGOS Y CONCILIACIÓN -->
       <section id="sec-pagos" class="dash-section" style="display:none">
-        <div class="dash-section-header">
-          <h2>Pagos y Conciliación</h2>
+        <div class="mod-header">
+          <div>
+            <h2>Pagos y Conciliación</h2>
+            <div class="mod-header-sub">Panel &gt; Pagos · <span id="pago-mod-updated" class="mod-updated"></span></div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarPagosAdmin()">↻ Actualizar</button>
+            <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="exportarPagosExcel()">⬇ Exportar Excel</button>
+          </div>
         </div>
+
+        <div class="mod-kpis" id="pago-mod-kpis">
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Completados</div></div>
+        </div>
+
+        <div class="mod-trend">
+          <div id="pago-mod-tendencia"></div>
+        </div>
+
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
           <input type="text" id="pago-filtro-search" class="form-input" placeholder="Buscar por email o ID..." style="width:220px;padding:8px 12px;font-size:13px" oninput="cargarPagosAdmin()">
           <select id="pago-filtro-plan" class="filter-select" style="width:auto" onchange="cargarPagosAdmin()">
