@@ -202,9 +202,19 @@ const crearCardPropiedad = (p) => {
     ? `<img src="${p.fotos[0]}" alt="${p.titulo}">`
     : `<div style="height:200px;background:#f0f4f0;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:13px;">Sin fotografías</div>`;
 
+  const enComparador = typeof comparadorTieneId === 'function' && comparadorTieneId(p._id);
+
   return `
     <div class="property-card" onclick="window.location=window.location.pathname.includes('/pages/') ? 'propiedad.html?id=${p._id}' : 'pages/propiedad.html?id=${p._id}'">
-      <div class="property-img">${foto}</div>
+      <div class="property-img">
+        ${foto}
+        ${typeof comparadorToggle === 'function' ? `
+          <label data-comparador-id="${p._id}" class="comparador-check${enComparador ? ' activo' : ''}" onclick="event.stopPropagation()" style="position:absolute;top:10px;left:10px;background:rgba(255,255,255,0.95);padding:5px 10px;border-radius:8px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:5px;cursor:pointer;z-index:2">
+            <input type="checkbox" ${enComparador ? 'checked' : ''} onchange="comparadorToggle('${p._id}', event)" style="cursor:pointer">
+            Comparar
+          </label>
+        ` : ''}
+      </div>
       <div class="property-body">
         <div class="property-tags">
           <span class="tag tag-${p.operacion}">${p.operacion}</span>

@@ -312,6 +312,12 @@ h1, h2, h3, h4 {
   justify-content: center;
   color: var(--text-light);
   font-size: 14px;
+  position: relative;
+}
+
+.comparador-check.activo {
+  background: var(--primary) !important;
+  color: white;
 }
 
 .property-img img {

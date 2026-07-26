@@ -84,6 +84,10 @@ const cargarPropiedad = async () => {
           </div>
           <div class="propiedad-precio-grande">${formatPrecio(p.precio)}</div>
           <div class="propiedad-operacion">Precio de ${p.operacion === 'renta' ? 'renta mensual' : 'venta'}</div>
+          <label data-comparador-id="${p._id}" class="comparador-check${typeof comparadorTieneId === 'function' && comparadorTieneId(p._id) ? ' activo' : ''}" style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;width:fit-content">
+            <input type="checkbox" ${typeof comparadorTieneId === 'function' && comparadorTieneId(p._id) ? 'checked' : ''} onchange="comparadorToggle('${p._id}', event)" style="cursor:pointer">
+            ⚖️ Agregar a comparación
+          </label>
 
           <div class="caracteristicas-grid">
             ${p.caracteristicas.recamaras ? `<div class="caract-item"><div class="caract-valor">${p.caracteristicas.recamaras}</div><div class="caract-label">Recámaras</div></div>` : ''}

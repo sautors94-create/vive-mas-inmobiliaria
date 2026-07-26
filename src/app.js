@@ -49,7 +49,8 @@ const contactLimiter = rateLimit({
 const postLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 10,
-  message: { error: 'Has publicado muchas propiedades. Intenta de nuevo en una hora.' }
+  message: { error: 'Has publicado muchas propiedades. Intenta de nuevo en una hora.' },
+  skip: (req) => req.method === 'GET' // el catálogo público hace GET y no debe contar contra este límite
 });
 
 // NOTA: El chatbot (Max/Vivi) tiene SU PROPIO rate limiter adentro 
