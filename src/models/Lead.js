@@ -26,4 +26,5 @@ leadSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('Lead', leadSchema);
+// ✅ CORRECCIÓN: Evita el error "Cannot overwrite 'Lead' model once compiled" con Nodemon
+module.exports = mongoose.models.Lead || mongoose.model('Lead', leadSchema);

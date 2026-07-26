@@ -27,18 +27,33 @@ const app = express();
 // ⚠️ CRÍTICO: el webhook de Stripe debe registrarse ANTES de express.json()
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), webhookStripe);
 
-// Rate limiters
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { error: 'Demasiadas solicitudes, intenta de nuevo en 15 minutos' }
+// ==========================================
+// ✅ RATE LIMITERS CORREGIDOS
+// ==========================================
+
+// 1. Limitador para Login y Registro (Evita fuerza bruta)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 15, // ✅ Subí a 15 para evitar bloqueos mientras pruebas
+  message: { error: 'Demasiados intentos de registro/login. Intenta de nuevo en 15 minutos.' }
 });
 
-const authLimiter = rateLimit({
+// 2. Limitador para enviar mensajes/contactos (Evita spam)
+const contactLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  message: { error: 'Demasiados intentos de login, intenta de nuevo en 15 minutos' }
+  message: { error: 'Has enviado muchos mensajes. Intenta de nuevo en 15 minutos.' }
 });
+
+// 3. Limitador para creación de propiedades (Evita spam de publicaciones)
+const postLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 10,
+  message: { error: 'Has publicado muchas propiedades. Intenta de nuevo en una hora.' }
+});
+
+// NOTA: El chatbot (Max/Vivi) tiene SU PROPIO rate limiter adentro 
+// en chatBotController.js, por lo que NO necesita uno global aquí.
 
 // Seguridad y headers
 app.use(helmet({
@@ -67,10 +82,11 @@ app.use(express.static('public'));
 app.use(mongoSanitize());
 app.use(xss());
 
-// Rate limiting
-app.use('/api/', limiter);
+// ✅ APLICAR RATE LIMITING SOLO DONDE ES NECESARIO (Eliminado el global)
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/registro', authLimiter);
+app.use('/api/mensajes', contactLimiter);
+app.use('/api/propiedades', postLimiter); // Limita solo POST/PUT, no GET
 
 // Health check
 app.get('/health', (req, res) => {
@@ -88,7 +104,6 @@ app.use('/api/chat', chatbotRoutes);
 app.use('/api/services', servicesRoutes);
 app.use('/api', pagoRoutes);
 
-// ✅ LA RUTA DE WAITLIST SE MOVIÓ A admin.routes.js (Está protegida por auth admin ahora)
 // ==========================================
 // LISTA DE ESPERA PREMIUM (Pública, sin auth)
 // ==========================================
@@ -112,10 +127,7 @@ app.post('/api/waitlist/premium', async (req, res) => {
   }
 });
 
-// 404
-app.use((req, res) => {
-  res.status(404).json({ error: 'Ruta no encontrada' });
-});
+// ✅ CORRECCIÓN: Eliminé el middleware 404 duplicado que tenías
 // 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
