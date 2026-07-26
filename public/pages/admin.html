@@ -703,6 +703,21 @@
     </main>
   </div>
 
+  <!-- MODAL RECHAZAR KYC -->
+  <div id="modal-rechazar-kyc" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:white;border-radius:16px;padding:32px;max-width:480px;width:90%">
+      <h3 style="margin-bottom:16px">Rechazar verificación KYC</h3>
+      <div class="form-grupo">
+        <label>Motivo (obligatorio)</label>
+        <input type="text" id="kyc-rechazo-motivo" class="form-input" placeholder="Ej. Foto ilegible, documento vencido, datos no coinciden...">
+      </div>
+      <div style="display:flex;gap:12px;margin-top:16px">
+        <button class="btn btn-primary" onclick="confirmarRechazoKyc()" style="flex:1;background:#c62828;border-color:#c62828">Rechazar verificación</button>
+        <button class="btn btn-outline" onclick="document.getElementById('modal-rechazar-kyc').style.display='none'" style="flex:1">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL VETAR USUARIO -->
   <div id="modal-vetar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
     <div style="background:white;border-radius:16px;padding:32px;max-width:480px;width:90%">
@@ -805,7 +820,6 @@
     </div>
   </div>
 
-  <!-- MODAL VETAR USUARIO -->
   <!-- MODAL ACLARACIÓN PAGO -->
   <div id="modal-aclaracion-pago" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center">
     <div style="background:white;border-radius:16px;padding:28px;max-width:440px;width:90%">

@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema({
     ineFrenteUrl: { type: String, default: null },
     ineReversoUrl: { type: String, default: null },
     status: { type: String, enum: ['pendiente', 'en_revision', 'aprobado', 'rechazado'], default: 'pendiente' },
+    motivoRechazo: { type: String, default: null },
     updatedAt: { type: Date, default: null },
   },
   verificado: { type: Boolean, default: false },

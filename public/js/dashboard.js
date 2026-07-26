@@ -987,6 +987,74 @@ const cargarLeadsUsuario = async () => {
   }).join('');
 };
 
+const renderKycCuenta = (u) => {
+  const kyc = u.kyc || { status: 'pendiente' };
+
+  if (kyc.status === 'aprobado') {
+    return `
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:16px;padding:20px 24px;margin-bottom:24px">
+        <h3 style="font-size:15px;color:#166534;margin-bottom:4px">🪪 Identidad verificada ✓</h3>
+        <p style="font-size:13px;color:#166534">Tu cuenta cuenta con la insignia de verificado. Esto genera más confianza con otros usuarios.</p>
+      </div>`;
+  }
+
+  if (kyc.status === 'en_revision') {
+    return `
+      <div style="background:#fff8e1;border:1px solid #f5d98a;border-radius:16px;padding:20px 24px;margin-bottom:24px">
+        <h3 style="font-size:15px;color:#7a5c00;margin-bottom:4px">🪪 Verificación en revisión</h3>
+        <p style="font-size:13px;color:#7a5c00">Recibimos tus documentos. Un administrador los revisará pronto.</p>
+      </div>`;
+  }
+
+  const motivoRechazo = kyc.status === 'rechazado' && kyc.motivoRechazo
+    ? `<div style="margin-bottom:14px;padding:10px 12px;background:#fdecea;border:1px solid #f5c2c0;border-radius:10px;font-size:12px;color:#7a2a27"><b>Motivo del rechazo anterior:</b> ${escapeHtmlLocal(kyc.motivoRechazo)}</div>`
+    : '';
+
+  return `
+    <div style="background:var(--bg-secondary);border-radius:16px;padding:24px;border:1px solid var(--border);margin-bottom:24px">
+      <h3 style="font-size:16px;margin-bottom:6px;font-family:'Bricolage Grotesque',sans-serif">🪪 Verificación de identidad (KYC)</h3>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Verifica tu identidad con tu INE para obtener la insignia de verificado y generar más confianza al publicar o responder mensajes.</p>
+      ${motivoRechazo}
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px">
+        <div class="form-grupo"><label>RFC</label><input type="text" id="kyc-rfc" class="form-input" value="${u.rfc || ''}" placeholder="Tu RFC" maxlength="13"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px">
+        <div class="form-grupo"><label>INE (frente)</label><input type="file" id="kyc-ine-frente" accept="image/*" class="form-input"></div>
+        <div class="form-grupo"><label>INE (reverso)</label><input type="file" id="kyc-ine-reverso" accept="image/*" class="form-input"></div>
+      </div>
+      <button class="btn btn-primary" style="padding:10px 24px;font-size:14px" onclick="enviarKyc()">Enviar a verificación</button>
+      <div id="kyc-msg" style="display:none;margin-top:12px"></div>
+    </div>`;
+};
+
+const enviarKyc = async () => {
+  const rfc = document.getElementById('kyc-rfc').value.trim();
+  const frente = document.getElementById('kyc-ine-frente').files[0];
+  const reverso = document.getElementById('kyc-ine-reverso').files[0];
+  const msgEl = document.getElementById('kyc-msg');
+
+  if (!rfc) { dsToast({ title: 'Falta el RFC', message: 'Escribe tu RFC para continuar.', type: 'error' }); return; }
+  if (!frente || !reverso) { dsToast({ title: 'Faltan documentos', message: 'Sube la foto del frente y el reverso de tu INE.', type: 'error' }); return; }
+
+  const formData = new FormData();
+  formData.append('rfc', rfc);
+  formData.append('ineFrente', frente);
+  formData.append('ineReverso', reverso);
+
+  const data = await api.postForm('/auth/kyc', formData);
+  if (data.ok) {
+    dsToast({ title: 'Documentos enviados', message: data.mensaje || 'Tu verificación está en revisión.', type: 'success' });
+    user.kyc = { status: 'en_revision' };
+    user.rfc = rfc;
+    localStorage.setItem('user', JSON.stringify(user));
+    const box = document.getElementById('kyc-cuenta-box');
+    if (box) box.innerHTML = renderKycCuenta(user);
+  } else {
+    if (msgEl) { msgEl.style.display = 'block'; msgEl.style.color = '#c62828'; msgEl.textContent = data.error || 'No se pudo enviar la verificación.'; }
+    dsToast({ title: 'No se pudo enviar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
+};
+
 const cargarCuenta = () => {
   const info = document.getElementById('cuenta-info');
   if (!user) return;
@@ -1112,6 +1180,8 @@ const cargarCuenta = () => {
     </div>
 
     ${planManagementHTML}
+
+    <div id="kyc-cuenta-box">${renderKycCuenta(user)}</div>
 
     <div style="background:var(--bg-secondary);border-radius:16px;padding:24px;border:1px solid var(--border);margin-bottom:24px">
       <h3 style="font-size:16px;margin-bottom:16px;font-family:'Bricolage Grotesque',sans-serif">🔔 Preferencias de notificaciones</h3>

@@ -776,6 +776,71 @@ const exportarUsuariosExcel = async () => {
 // ==========================================
 // DRAWER LATERAL — MÓDULO "USUARIOS"
 // ==========================================
+const renderKycDrawer = (u) => {
+  const kyc = u.kyc || { status: 'pendiente' };
+  const colores = {
+    pendiente: { bg: '#f8f9fa', border: '#e5e7eb', text: 'var(--text-light)', label: 'Sin verificar' },
+    en_revision: { bg: '#fff8e1', border: '#f5d98a', text: '#7a5c00', label: 'En revisión' },
+    aprobado: { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534', label: 'Aprobado' },
+    rechazado: { bg: '#fdecea', border: '#f5c2c0', text: '#7a2a27', label: 'Rechazado' }
+  };
+  const c = colores[kyc.status] || colores.pendiente;
+
+  const documentos = (kyc.status === 'en_revision' || kyc.status === 'aprobado' || kyc.status === 'rechazado') && kyc.ineFrenteUrl
+    ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <a href="${kyc.ineFrenteUrl}" target="_blank"><img src="${kyc.ineFrenteUrl}" style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid ${c.border}"></a>
+        <a href="${kyc.ineReversoUrl}" target="_blank"><img src="${kyc.ineReversoUrl}" style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid ${c.border}"></a>
+      </div>`
+    : '';
+
+  return `
+      <div style="padding:16px;background:${c.bg};border:1px solid ${c.border};border-radius:10px;margin-bottom:20px;font-size:13px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <b style="color:${c.text}">🪪 Verificación KYC: ${c.label}</b>
+        </div>
+        ${u.rfc ? `<div style="margin-top:6px;color:${c.text}">RFC: ${escapeHtml(u.rfc)}</div>` : ''}
+        ${kyc.status === 'rechazado' && kyc.motivoRechazo ? `<div style="margin-top:6px;color:${c.text}"><b>Motivo:</b> ${escapeHtml(kyc.motivoRechazo)}</div>` : ''}
+        ${documentos}
+        ${kyc.status === 'en_revision' ? `
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-primary admin-mini-btn" onclick="aprobarKyc('${u._id}')">✓ Aprobar</button>
+            <button class="btn btn-outline admin-mini-btn" style="border-color:#c62828;color:#c62828" onclick="rechazarKyc('${u._id}')">Rechazar</button>
+          </div>` : ''}
+      </div>`;
+};
+
+window.aprobarKyc = async (id) => {
+  const data = await api.patch(`/admin/usuarios/${id}/kyc`, { aprobado: true });
+  if (data.ok) {
+    dsToast({ title: 'Verificación aprobada', type: 'success' });
+    cerrarDrawerUsuario();
+    cargarUsuarios();
+  } else {
+    dsToast({ title: 'Error', message: data.error || 'No se pudo aprobar', type: 'error' });
+  }
+};
+
+window.rechazarKyc = (id) => {
+  usuarioKycARechazar = id;
+  document.getElementById('kyc-rechazo-motivo').value = '';
+  document.getElementById('modal-rechazar-kyc').style.display = 'flex';
+};
+
+window.confirmarRechazoKyc = async () => {
+  const motivo = document.getElementById('kyc-rechazo-motivo').value.trim();
+  if (!motivo) { dsToast({ title: 'Falta el motivo', message: 'Escribe por qué se rechaza la verificación.', type: 'error' }); return; }
+
+  const data = await api.patch(`/admin/usuarios/${usuarioKycARechazar}/kyc`, { aprobado: false, motivo });
+  if (data.ok) {
+    dsToast({ title: 'Verificación rechazada', type: 'success' });
+    document.getElementById('modal-rechazar-kyc').style.display = 'none';
+    cerrarDrawerUsuario();
+    cargarUsuarios();
+  } else {
+    dsToast({ title: 'Error', message: data.error || 'No se pudo rechazar', type: 'error' });
+  }
+};
+
 window.abrirDrawerUsuario = (id) => {
   const u = usrMod.data.find(x => x._id === id);
   const content = document.getElementById('drawer-usr-content');
@@ -802,6 +867,8 @@ window.abrirDrawerUsuario = (id) => {
         <div><b>Registrado:</b> ${new Date(u.createdAt).toLocaleString('es-MX')}</div>
         ${u.planFechaFin ? `<div><b>Plan vence:</b> ${new Date(u.planFechaFin).toLocaleDateString('es-MX')}</div>` : ''}
       </div>
+
+      ${renderKycDrawer(u)}
 
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="cerrarDrawerUsuario()">Cerrar</button>
@@ -1775,6 +1842,7 @@ const exportarVetadosExcel = async () => {
 // CREAR VETADO (desde el drawer de Usuarios)
 // ==========================================
 let usuarioAVetarId = null;
+let usuarioKycARechazar = null;
 
 window.abrirModalVetar = (id) => {
   usuarioAVetarId = id;

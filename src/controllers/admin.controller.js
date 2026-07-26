@@ -2,6 +2,35 @@ const User = require('../models/User');
 const Property = require('../models/Property');
 const Lead = require('../models/Lead');
 
+// Aprobar o rechazar la verificación KYC de un usuario
+const revisarKyc = async (req, res) => {
+  try {
+    const { aprobado, motivo } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (!user.kyc || user.kyc.status !== 'en_revision') {
+      return res.status(400).json({ error: 'Este usuario no tiene una verificación pendiente de revisión' });
+    }
+
+    if (aprobado) {
+      user.kyc.status = 'aprobado';
+      user.kyc.motivoRechazo = null;
+      user.verificado = true;
+    } else {
+      if (!motivo) return res.status(400).json({ error: 'Debes indicar el motivo del rechazo' });
+      user.kyc.status = 'rechazado';
+      user.kyc.motivoRechazo = motivo;
+      user.verificado = false;
+    }
+    user.kyc.updatedAt = new Date();
+    await user.save();
+
+    res.json({ ok: true, mensaje: aprobado ? 'Verificación aprobada.' : 'Verificación rechazada.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getUsuarios = async (req, res) => {
   try {
     const { plan, role, status, search, fechaDesde, fechaHasta } = req.query;
@@ -1136,6 +1165,7 @@ const buscarAliases = async (req, res) => {
 
 module.exports = { 
   getUsuarios, 
+  revisarKyc,
   getUsuariosStats,
   exportarUsuariosExcel,
   cambiarPlan, 

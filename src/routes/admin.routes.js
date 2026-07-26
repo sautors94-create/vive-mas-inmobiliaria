@@ -7,6 +7,7 @@ const Waitlist = require('../models/Waitlist');
 
 const {
   getUsuarios,
+  revisarKyc,
   getUsuariosStats,
   exportarUsuariosExcel,
   cambiarPlan,
@@ -70,6 +71,7 @@ router.delete('/leads/:id', eliminarLead);
 router.get('/usuarios/stats', getUsuariosStats);
 router.get('/usuarios/exportar', exportarUsuariosExcel);
 router.get('/usuarios', getUsuarios);
+router.patch('/usuarios/:id/kyc', revisarKyc);
 router.post('/usuarios/masivo', upload.single('archivo'), crearUsuariosMasivo);
 router.get('/usuarios/plantilla', descargarPlantillaUsuarios);
 router.patch('/usuarios/:id/plan', cambiarPlan);
