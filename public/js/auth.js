@@ -14,6 +14,7 @@ const auth = {
     return user && user.role === 'admin';
   },
   save: (accessToken, user) => {
+    user.twoFactorEnabled = user.twoFactorEnabled || false; // ← ÚNICA LÍNEA NUEVA
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('user', JSON.stringify(user));
   },
@@ -21,7 +22,6 @@ const auth = {
     try {
       await api.post('/auth/logout', {});
     } catch (e) {
-      // Si la petición falla (red, servidor caído, etc.) igual cerramos sesión localmente
     } finally {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
@@ -53,10 +53,9 @@ const togglePassword = (inputId) => {
   }
 };
 
-// Premium SVG Icons - Lucide style
 const PREMIUM_ICONS = {
   eye: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
-  eyeOff: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.13 13.13 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.26 13.26 0 0 0 2 12s3 7 10 7a13.12 13.12 0 0 0 5.24-1.56M21.32 2.68a13.14 13.14 0 0 0-1.66 2.68c0 7 2 9.68 2 9.68s-2.56-2.68-2.56-9.68"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+  eyeOff: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.13 13.13 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.26 13.26 0 0 0 2 12s3 7 10 7a13.12 13.12 0 0 0 5.24-1.56"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
 };
 
 const getBasePath = () => {
@@ -76,26 +75,19 @@ const actualizarNavbar = () => {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Si hay token guardado, verificar que sigue siendo válido contra el backend.
-  // Si no lo es (expiró, fue revocado, etc.), limpiar sesión automáticamente.
   if (auth.isLoggedIn()) {
     const esPaginaProtegida = window.location.pathname.includes('dashboard') ||
                                window.location.pathname.includes('admin');
     try {
       const data = await api.get('/auth/perfil');
       if (!data || data.error) {
-        // Token inválido: limpiar sesión silenciosamente
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
-        // Solo redirigir si estamos en una página que requiere auth
         if (esPaginaProtegida) window.location.href = '/';
       } else {
-        // Token válido: actualizar datos del usuario en localStorage por si cambiaron
         if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
       }
-    } catch (e) {
-      // Error de red — no limpiar sesión para no afectar usuarios offline
-    }
+    } catch (e) {}
   }
 
   actualizarNavbar();

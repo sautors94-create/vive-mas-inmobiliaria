@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verificación en dos pasos — Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body>
+
+  <div class="auth-layout">
+
+    <div class="auth-brand">
+      <a href="/" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+      </a>
+      <h2>Seguridad adicional</h2>
+      <p>Tu cuenta tiene una capa extra de protección que tú activaste.</p>
+      <div class="auth-features">
+        <div class="auth-feature">✓ Autenticación en dos pasos habilitada</div>
+        <div class="auth-feature">✓ Solo tú tienes acceso al código</div>
+        <div class="auth-feature">✓ Puedes desactivarla cuando quieras</div>
+      </div>
+    </div>
+
+    <div class="auth-form-panel">
+      <div class="auth-form-box" style="text-align:center">
+
+        <div style="width:64px;height:64px;border-radius:16px;background:var(--primary-light,#e0f2fe);color:var(--primary,#0ea5e9);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+        </div>
+
+        <h1>Verificación en dos pasos</h1>
+        <p style="font-size:14px;color:#71717a;line-height:1.6;margin:0 0 8px">
+          Abre <strong>Google Authenticator</strong> en tu teléfono e ingresa el código de 6 dígitos.
+        </p>
+        <p style="font-size:13px;color:#a1a1aa;margin:0 0 28px" id="cuenta-mostrada"></p>
+
+        <div id="error-msg" class="alert alert-error" style="display:none;text-align:left"></div>
+
+        <form id="form-2fa">
+          <div class="form-grupo">
+            <label for="codigo-2fa">Código de verificación</label>
+            <input
+              type="text"
+              id="codigo-2fa"
+              class="form-input"
+              placeholder="000000"
+              maxlength="6"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              autocomplete="one-time-code"
+              style="text-align:center;font-size:24px;letter-spacing:8px;font-weight:600;padding:16px 14px"
+              required
+            >
+          </div>
+
+          <button type="submit" id="btn-verificar" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px;margin-top:8px">
+            Verificar
+          </button>
+        </form>
+
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e4e4e7">
+          <p style="font-size:13px;color:#a1a1aa;margin:0 0 4px">¿Perdiste acceso a tu authenticator?</p>
+          <a href="recuperar-2fa.html" style="font-size:13px;color:var(--primary,#0ea5e9);text-decoration:none">Usar código de recuperación</a>
+        </div>
+
+        <div style="margin-top:12px">
+          <a href="login.html" style="font-size:14px;color:#71717a;text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            Volver al inicio de sesión
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    const tempToken = sessionStorage.getItem('vm_2fa_token');
+    const email2fa  = sessionStorage.getItem('vm_2fa_email');
+
+    if (!tempToken) {
+      window.location.href = 'login.html';
+    }
+
+    if (email2fa) {
+      const partes = email2fa.split('@');
+      const oculto = partes[0].length > 2
+        ? partes[0][0] + '***' + partes[0].slice(-1)
+        : '***';
+      document.getElementById('cuenta-mostrada').textContent = oculto + '@' + partes[1];
+    }
+
+    const codigoInput = document.getElementById('codigo-2fa');
+    const errorMsg    = document.getElementById('error-msg');
+    const btnVerificar = document.getElementById('btn-verificar');
+
+    codigoInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+      errorMsg.style.display = 'none';
+    });
+
+    codigoInput.addEventListener('input', () => {
+      if (codigoInput.value.length === 6) {
+        document.getElementById('form-2fa').dispatchEvent(new Event('submit'));
+      }
+    });
+
+    document.getElementById('form-2fa').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const codigo = codigoInput.value.trim();
+
+      if (codigo.length !== 6) {
+        errorMsg.textContent = 'Ingresa los 6 dígitos del código.';
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      btnVerificar.textContent = 'Verificando...';
+      btnVerificar.disabled = true;
+
+      const data = await api.post('/auth/verificar-2fa', {
+        tempToken,
+        code: codigo
+      });
+
+      if (data.ok) {
+        sessionStorage.removeItem('vm_2fa_token');
+        sessionStorage.removeItem('vm_2fa_email');
+        auth.save(data.accessToken, data.user);
+        window.location.href = data.user.role === 'admin' ? 'admin.html' : 'dashboard.html';
+      } else {
+        errorMsg.textContent = data.error || 'Código inválido. Intenta de nuevo.';
+        errorMsg.style.display = 'block';
+        btnVerificar.textContent = 'Verificar';
+        btnVerificar.disabled = false;
+        codigoInput.value = '';
+        codigoInput.focus();
+      }
+    });
+
+    codigoInput.focus();
+  </script>
+<script>window.SOLO_SOPORTE = true;</script>
+<script src="../js/chatbot.js"></script>
+</body>
+</html>

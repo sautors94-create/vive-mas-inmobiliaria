@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Código de recuperación — Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body>
+
+  <div class="auth-layout">
+
+    <div class="auth-brand">
+      <a href="/" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+      </a>
+      <h2>Acceso de emergencia</h2>
+      <p>Si activaste 2FA y perdiste acceso, usa un código de recuperación.</p>
+      <div class="auth-features">
+        <div class="auth-feature">✓ Cada código sirve una sola vez</div>
+        <div class="auth-feature">✓ Se generaron cuando activaste 2FA</div>
+        <div class="auth-feature">✓ Desactivará 2FA por seguridad</div>
+      </div>
+    </div>
+
+    <div class="auth-form-panel">
+      <div class="auth-form-box">
+
+        <h1>Código de recuperación</h1>
+        <p class="auth-subtitle"><a href="verificar-2fa.html">Volver a verificación 2FA</a></p>
+
+        <div id="error-msg" class="alert alert-error" style="display:none"></div>
+
+        <p style="font-size:14px;color:#71717a;line-height:1.6;margin:0 0 24px">
+          Ingresa uno de los códigos de recuperación que se te mostraron cuando activaste la autenticación en dos pasos.
+        </p>
+
+        <form id="form-recuperacion">
+          <div class="form-grupo">
+            <label for="codigo-recuperacion">Código de recuperación</label>
+            <input
+              type="text"
+              id="codigo-recuperacion"
+              class="form-input"
+              placeholder="xxxxx-xxxxx"
+              autocomplete="off"
+              style="font-family:monospace;font-size:16px;letter-spacing:2px"
+              required
+            >
+          </div>
+
+          <button type="submit" id="btn-recuperar" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px;margin-top:8px">
+            Usar código de recuperación
+          </button>
+        </form>
+
+        <div style="margin-top:20px;padding:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:12px">
+          <p style="font-size:13px;color:#92400e;margin:0;line-height:1.5">
+            <strong>Nota:</strong> Al usar un código de recuperación, la autenticación en dos pasos se desactivará. Podrás volver a activarla desde tu perfil cuando quieras.
+          </p>
+        </div>
+
+        <div style="margin-top:16px">
+          <a href="login.html" style="font-size:14px;color:#71717a;text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            Volver al inicio de sesión
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    const tempToken = sessionStorage.getItem('vm_2fa_token');
+
+    if (!tempToken) {
+      window.location.href = 'login.html';
+    }
+
+    const codigoInput = document.getElementById('codigo-recuperacion');
+    const errorMsg    = document.getElementById('error-msg');
+    const btnRecuperar = document.getElementById('btn-recuperar');
+
+    codigoInput.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5, 10);
+      e.target.value = v;
+      errorMsg.style.display = 'none';
+    });
+
+    document.getElementById('form-recuperacion').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const codigo = codigoInput.value.trim();
+
+      if (codigo.replace('-', '').length < 10) {
+        errorMsg.textContent = 'Ingresa el código completo (10 caracteres).';
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      btnRecuperar.textContent = 'Verificando...';
+      btnRecuperar.disabled = true;
+
+      const data = await api.post('/auth/2fa/recuperar', {
+        tempToken,
+        recoveryCode: codigo
+      });
+
+      if (data.ok) {
+        sessionStorage.removeItem('vm_2fa_token');
+        sessionStorage.removeItem('vm_2fa_email');
+        auth.save(data.accessToken, data.user);
+        window.location.href = data.user.role === 'admin' ? 'admin.html' : 'dashboard.html';
+      } else {
+        errorMsg.textContent = data.error || 'Código inválido o ya usado.';
+        errorMsg.style.display = 'block';
+        btnRecuperar.textContent = 'Usar código de recuperación';
+        btnRecuperar.disabled = false;
+        codigoInput.value = '';
+        codigoInput.focus();
+      }
+    });
+
+    codigoInput.focus();
+  </script>
+<script>window.SOLO_SOPORTE = true;</script>
+<script src="../js/chatbot.js"></script>
+</body>
+</html>

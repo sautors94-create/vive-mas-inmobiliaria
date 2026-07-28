@@ -40,7 +40,7 @@
             <input type="text" id="identificador" class="form-input" placeholder="tu@correo.com o 5512345678" autocomplete="username">
           </div>
 
-<div class="form-grupo">
+          <div class="form-grupo">
             <label for="password">Contraseña</label>
             <div class="password-input-wrapper">
               <input type="password" id="password" class="form-input" placeholder="••••••••" autocomplete="current-password">
@@ -49,6 +49,10 @@
                 <span class="sr-only">Mostrar contraseña</span>
               </button>
             </div>
+          </div>
+
+          <div style="text-align:right;margin:-4px 0 8px">
+            <a href="recuperar.html" style="font-size:13px;color:var(--primary,#0ea5e9);text-decoration:none">¿Olvidaste tu contraseña?</a>
           </div>
 
           <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px;margin-top:8px">
@@ -88,7 +92,6 @@
       btn.textContent = 'Iniciando sesión...';
       btn.disabled = true;
 
-      // Mostrar mensaje si la sesión expiró (manejado por api.js)
       const expired = localStorage.getItem('vm_session_expired') === '1';
       if (expired) {
         try { localStorage.removeItem('vm_session_expired'); } catch (e) {}
@@ -104,7 +107,6 @@
 
       if (data.ok) {
         auth.save(data.accessToken, data.user);
-        // Redirigir inteligentemente (si venía de guardar un favorito, regresa ahí)
         const redireccion = localStorage.getItem('redireccion_favorito') || (data.user.role === 'admin' ? 'admin.html' : 'dashboard.html');
         localStorage.removeItem('redireccion_favorito');
         window.location.href = redireccion;

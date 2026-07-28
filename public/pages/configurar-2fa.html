@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurar autenticación en dos pasos — Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family+Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body>
+
+  <div class="auth-layout">
+
+    <div class="auth-brand">
+      <a href="/" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+      </a>
+      <h2>Seguridad de tu cuenta</h2>
+      <p>Potencia la protección de tu cuenta, es completamente opcional.</p>
+      <div class="auth-features">
+        <div class="auth-feature">✓ Protección adicional (opcional)</div>
+        <div class="auth-feature">✓ Funciona sin conexión a internet</div>
+        <div class="auth-feature">✓ Puedes desactivarla cuando quieras</div>
+      </div>
+    </div>
+
+    <div class="auth-form-panel">
+      <div class="auth-form-box">
+
+        <!-- ═══ PASO 1: Escanear QR ═══ -->
+        <div id="paso-qr">
+          <h1>Activar autenticación en dos pasos</h1>
+          <p class="auth-subtitle">
+            <a href="dashboard.html">Ahora no, volver a mi cuenta</a>
+          </p>
+
+          <div id="error-msg" class="alert alert-error" style="display:none"></div>
+
+          <div style="font-size:14px;color:#71717a;line-height:1.7;margin:0 0 24px">
+            <strong style="color:#3f3f46">Paso 1:</strong> Escanea este código QR con la app <strong>Google Authenticator</strong> (disponible gratis en iOS y Android).
+          </div>
+
+          <div style="display:flex;justify-content:center;margin:0 0 8px">
+            <div id="qr-contenedor" style="width:200px;height:200px;border:2px dashed #e4e4e7;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#a1a1aa;font-size:13px">
+              Cargando...
+            </div>
+          </div>
+
+          <details style="margin:0 0 24px;cursor:pointer">
+            <summary style="font-size:13px;color:var(--primary,#0ea5e9);outline:none">No puedo escanear el código</summary>
+            <div style="margin-top:8px;padding:10px 14px;background:#f4f4f5;border-radius:8px;font-family:monospace;font-size:14px;letter-spacing:2px;word-break:break-all;color:#3f3f46;user-select:all" id="secret-manual">
+              Cargando...
+            </div>
+            <p style="font-size:12px;color:#a1a1aa;margin:8px 0 0">Ingresa esta clave manualmente en la app.</p>
+          </details>
+
+          <div style="font-size:14px;color:#71717a;line-height:1.7;margin:0 0 24px;padding:14px;background:#fafafa;border-radius:12px;border:1px solid #e4e4e7">
+            <strong style="color:#3f3f46">Paso 2:</strong> Ingresa el código de 6 dígitos que aparece en la app para confirmar que todo funciona correctamente.
+          </div>
+
+          <form id="form-confirmar">
+            <div class="form-grupo">
+              <label for="codigo-confirmacion">Código de verificación</label>
+              <input
+                type="text"
+                id="codigo-confirmacion"
+                class="form-input"
+                placeholder="000000"
+                maxlength="6"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                autocomplete="one-time-code"
+                style="text-align:center;font-size:22px;letter-spacing:8px;font-weight:600;padding:14px"
+                required
+              >
+            </div>
+
+            <button type="submit" id="btn-confirmar" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px;margin-top:8px">
+              Activar autenticación en dos pasos
+            </button>
+          </form>
+
+          <p style="font-size:12px;color:#a1a1aa;text-align:center;margin:16px 0 0;line-height:1.5">
+            Esto es completamente opcional. Tu cuenta funciona normalmente sin esta configuración.
+          </p>
+        </div>
+
+        <!-- ═══ PASO 2: Mostrar códigos de recuperación ═══ -->
+        <div id="paso-recuperacion" style="display:none;text-align:center">
+          <div style="width:64px;height:64px;border-radius:50%;background:#f0fdf4;border:2px solid #bbf7d0;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:#16a34a">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+
+          <h1 style="margin-bottom:8px">Autenticación en dos pasos activada</h1>
+          <p style="font-size:14px;color:#71717a;line-height:1.6;margin:0 0 8px">
+            A partir de ahora se te pedirá un código al iniciar sesión. Puedes desactivarlo cuando quieras desde tu perfil.
+          </p>
+          <p style="font-size:14px;color:#71717a;line-height:1.6;margin:0 0 24px">
+            <strong>Guarda estos códigos de recuperación</strong> en un lugar seguro. Los necesitarás si pierdes acceso a tu authenticator.
+          </p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left;margin:0 0 12px" id="codigos-recuperacion"></div>
+
+          <button type="button" id="btn-copiar" class="btn btn-outline" style="width:100%;padding:12px;font-size:14px;margin-bottom:8px">
+            Copiar todos los códigos
+          </button>
+
+          <p id="copiado-msg" style="font-size:13px;color:#16a34a;display:none;margin:0 0 16px">¡Copiados al portapapeles!</p>
+
+          <a href="dashboard.html" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px;text-align:center;display:block">
+            Ir a mi cuenta
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    if (!auth.isLoggedIn()) {
+      window.location.href = 'login.html';
+    }
+
+    const pasoQR           = document.getElementById('paso-qr');
+    const pasoRecuperacion = document.getElementById('paso-recuperacion');
+    const qrContenedor     = document.getElementById('qr-contenedor');
+    const secretManual     = document.getElementById('secret-manual');
+    const codigoInput      = document.getElementById('codigo-confirmacion');
+    const errorMsg         = document.getElementById('error-msg');
+    const btnConfirmar     = document.getElementById('btn-confirmar');
+    const codigosDiv       = document.getElementById('codigos-recuperacion');
+
+    codigoInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+      errorMsg.style.display = 'none';
+    });
+
+    async function cargarQR() {
+      const data = await api.get('/auth/2fa/setup');
+
+      if (data.ok) {
+        const secret = data.secret;
+        const email  = data.email || auth.getUser().email;
+        const otpauth = 'otpauth://totp/ViveMas:' + encodeURIComponent(email)
+          + '?secret=' + secret
+          + '&issuer=ViveMas'
+          + '&algorithm=SHA1'
+          + '&digits=6'
+          + '&period=30';
+
+        qrContenedor.innerHTML = '';
+        qrContenedor.style.border = 'none';
+        qrContenedor.style.padding = '12px';
+        qrContenedor.style.background = '#fff';
+        const img = document.createElement('img');
+        img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(otpauth);
+        img.alt = 'Código QR para Google Authenticator';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.borderRadius = '8px';
+        qrContenedor.appendChild(img);
+
+        secretManual.textContent = secret;
+        window._2faSecret = secret;
+      } else {
+        qrContenedor.innerHTML = 'Error al generar';
+        errorMsg.textContent = data.error || 'No se pudo generar el código QR.';
+        errorMsg.style.display = 'block';
+      }
+    }
+
+    cargarQR();
+
+    document.getElementById('form-confirmar').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const codigo = codigoInput.value.trim();
+
+      if (codigo.length !== 6) {
+        errorMsg.textContent = 'Ingresa los 6 dígitos.';
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      btnConfirmar.textContent = 'Verificando...';
+      btnConfirmar.disabled = true;
+
+      const data = await api.post('/auth/2fa/confirmar', {
+        secret: window._2faSecret,
+        code: codigo
+      });
+
+      if (data.ok) {
+        mostrarCodigos(data.recoveryCodes || []);
+      } else {
+        errorMsg.textContent = data.error || 'Código inválido. Asegúrate de que la app esté sincronizada.';
+        errorMsg.style.display = 'block';
+        btnConfirmar.textContent = 'Activar autenticación en dos pasos';
+        btnConfirmar.disabled = false;
+        codigoInput.value = '';
+        codigoInput.focus();
+      }
+    });
+
+    function mostrarCodigos(codes) {
+      pasoQR.style.display = 'none';
+      pasoRecuperacion.style.display = 'block';
+      codigosDiv.innerHTML = '';
+
+      codes.forEach((codigo) => {
+        const div = document.createElement('div');
+        div.style.cssText = 'padding:8px 12px;background:#f4f4f5;border-radius:8px;font-family:monospace;font-size:13px;letter-spacing:1px;color:#3f3f46;user-select:all';
+        div.textContent = codigo;
+        codigosDiv.appendChild(div);
+      });
+
+      window._recoveryCodes = codes;
+    }
+
+    document.getElementById('btn-copiar').addEventListener('click', () => {
+      const texto = window._recoveryCodes.join('\n');
+      navigator.clipboard.writeText(texto).then(() => {
+        document.getElementById('copiado-msg').style.display = 'block';
+        document.getElementById('btn-copiar').textContent = '¡Copiados!';
+        setTimeout(() => {
+          document.getElementById('copiado-msg').style.display = 'none';
+          document.getElementById('btn-copiar').textContent = 'Copiar todos los códigos';
+        }, 2500);
+      });
+    });
+  </script>
+<script>window.SOLO_SOPORTE = true;</script>
+<script src="../js/chatbot.js"></script>
+</body>
+</html>

@@ -1212,15 +1212,6 @@ const cargarCuenta = () => {
       <button class="btn btn-primary" style="margin-top:20px;padding:10px 24px;font-size:14px" onclick="guardarNotificaciones()">Guardar preferencias</button>
       <div id="notif-msg" style="display:none;margin-top:12px"></div>
     </div>
-        <div style="margin-top:28px;padding-top:24px;border-top:1px solid var(--border)">
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
-        <div style="width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:${!!user.twoFactorEnabled ? '#f0fdf4' : 'var(--bg-secondary)'}">🛡️</div>
-        <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:16px;font-family:'Bricolage Grotesque',sans-serif">Autenticación en dos pasos</div><div style="font-size:13px;color:var(--text-light);margin-top:2px">Código adicional al iniciar sesión (opcional)</div></div>
-        <span style="font-size:12px;padding:4px 10px;border-radius:6px;font-weight:600;white-space:nowrap;background:${!!user.twoFactorEnabled ? '#f0fdf4' : 'var(--bg-secondary)'};color:${!!user.twoFactorEnabled ? '#16a34a' : 'var(--text-light)'};border:1px solid ${!!user.twoFactorEnabled ? '#bbf7d0' : 'var(--border)'}">${!!user.twoFactorEnabled ? 'Activa' : 'Inactiva'}</span>
-      </div>
-      <div style="padding:14px 16px;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;font-size:13px;color:var(--text-light);line-height:1.6">${!!user.twoFactorEnabled ? 'Tu cuenta tiene autenticación en dos pasos activada. Cada vez que inicies sesión se te pedirá un código de Google Authenticator.' : 'Activa la autenticación en dos pasos para añadir una capa extra de seguridad a tu cuenta. Es completamente opcional y puedes desactivarla cuando quieras.'}</div>
-      <div id="accion-2fa">${!!user.twoFactorEnabled ? '<button class="btn btn-outline" style="width:100%;padding:12px;font-size:14px" onclick="window._2faDesactivar()">Desactivar autenticación en dos pasos</button>' : '<a href="configurar-2fa.html" class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;text-align:center;display:block;text-decoration:none">Activar autenticación en dos pasos</a>'}</div>
-    </div>
     <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>
   `;
 };
@@ -1727,6 +1718,70 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarResumenUsuario();
   }, 300);
 });
+
+// ==========================================
+// MI CUENTA (con 2FA integrado)
+// ==========================================
+const cargarCuenta = () => {
+  const contenedor = document.getElementById('cuenta-info');
+  if (!contenedor) return;
+
+  const user = auth.getUser();
+  if (!user) { contenedor.innerHTML = '<div class="loading">Error al cargar datos</div>'; return; }
+
+  const t2fa = !!user.twoFactorEnabled;
+
+  contenedor.innerHTML =
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:0">' +
+
+      '<div class="form-grupo"><label>Nombre completo</label>' +
+        '<input type="text" class="form-input" value="' + (user.nombre || '').replace(/"/g, '&quot;') + '" disabled style="background:var(--bg-secondary)">' +
+      '</div>' +
+
+      '<div class="form-grupo"><label>Correo electrónico</label>' +
+        '<input type="text" class="form-input" value="' + (user.email || '').replace(/"/g, '&quot;') + '" disabled style="background:var(--bg-secondary)">' +
+      '</div>' +
+
+      '<div class="form-grupo"><label>Teléfono</label>' +
+        '<input type="text" class="form-input" value="' + (user.telefono || '').replace(/"/g, '&quot;') + '" disabled style="background:var(--bg-secondary)">' +
+      '</div>' +
+
+      '<div class="form-grupo"><label>Plan actual</label>' +
+        '<input type="text" class="form-input" value="' + (user.plan || 'Gratuito') + '" disabled style="background:var(--bg-secondary);text-transform:capitalize;font-weight:600;color:var(--primary)">' +
+      '</div>' +
+
+    '</div>' +
+
+    '<div style="margin-top:28px;padding-top:24px;border-top:1px solid var(--border)">' +
+      '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">' +
+        '<div style="width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:' + (t2fa ? '#f0fdf4' : 'var(--bg-secondary)') + '">🛡️</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:700;font-size:16px;font-family:\'Bricolage Grotesque\',sans-serif">Autenticación en dos pasos</div>' +
+          '<div style="font-size:13px;color:var(--text-light);margin-top:2px">Código adicional al iniciar sesión (opcional)</div>' +
+        '</div>' +
+        '<span style="font-size:12px;padding:4px 10px;border-radius:6px;font-weight:600;white-space:nowrap;' +
+          'background:' + (t2fa ? '#f0fdf4' : 'var(--bg-secondary)') + ';' +
+          'color:' + (t2fa ? '#16a34a' : 'var(--text-light)') + ';' +
+          'border:1px solid ' + (t2fa ? '#bbf7d0' : 'var(--border)') + '">' +
+          (t2fa ? 'Activa' : 'Inactiva') +
+        '</span>' +
+      '</div>' +
+
+      '<div style="padding:14px 16px;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;font-size:13px;color:var(--text-light);line-height:1.6">' +
+        (t2fa
+          ? 'Tu cuenta tiene autenticación en dos pasos activada. Cada vez que inicies sesión se te pedirá un código de Google Authenticator.'
+          : 'Activa la autenticación en dos pasos para añadir una capa extra de seguridad a tu cuenta. Es completamente opcional y puedes desactivarla cuando quieras.') +
+      '</div>' +
+
+      '<div id="accion-2fa">' +
+        (t2fa
+          ? '<button class="btn btn-outline" style="width:100%;padding:12px;font-size:14px" onclick="window._2faDesactivar()">Desactivar autenticación en dos pasos</button>'
+          : '<a href="configurar-2fa.html" class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;text-align:center;display:block;text-decoration:none">Activar autenticación en dos pasos</a>') +
+      '</div>' +
+
+    '</div>';
+};
+
 // ==========================================
 // DESACTIVAR 2FA
 // ==========================================
@@ -1734,9 +1789,16 @@ window._2faDesactivar = () => {
   if (document.getElementById('confirm-2fa-off')) return;
   const accion = document.getElementById('accion-2fa');
   if (!accion) return;
+
   accion.innerHTML =
-    '<div id="confirm-2fa-off" style="padding:14px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;margin-bottom:12px"><div style="font-size:14px;font-weight:600;color:#991b1b;margin-bottom:4px">¿Desactivar autenticación en dos pasos?</div><div style="font-size:13px;color:#b91c1c;line-height:1.5">Tu cuenta quedará menos protegida. Podrás volver a activarla cuando quieras.</div></div>' +
-    '<div style="display:flex;gap:10px"><button class="btn btn-outline" style="flex:1;padding:12px;font-size:14px" onclick="window._2faRender()">Cancelar</button><button class="btn" id="btn-2fa-confirm-off" style="flex:1;padding:12px;font-size:14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer" onclick="window._2faConfirmarDesactivar()">Sí, desactivar</button></div>';
+    '<div id="confirm-2fa-off" style="padding:14px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;margin-bottom:12px">' +
+      '<div style="font-size:14px;font-weight:600;color:#991b1b;margin-bottom:4px">¿Desactivar autenticación en dos pasos?</div>' +
+      '<div style="font-size:13px;color:#b91c1c;line-height:1.5">Tu cuenta quedará menos protegida. Podrás volver a activarla cuando quieras.</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:10px">' +
+      '<button class="btn btn-outline" style="flex:1;padding:12px;font-size:14px" onclick="window._2faRender()">Cancelar</button>' +
+      '<button class="btn" id="btn-2fa-confirm-off" style="flex:1;padding:12px;font-size:14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer" onclick="window._2faConfirmarDesactivar()">Sí, desactivar</button>' +
+    '</div>';
 };
 
 window._2faConfirmarDesactivar = async () => {
@@ -1744,6 +1806,7 @@ window._2faConfirmarDesactivar = async () => {
   if (!btn) return;
   btn.textContent = 'Desactivando...';
   btn.disabled = true;
+
   try {
     const data = await api.post('/auth/2fa/desactivar', {});
     if (data.ok) {
@@ -1752,13 +1815,17 @@ window._2faConfirmarDesactivar = async () => {
       cargarCuenta();
       if (typeof dsToast === 'function') dsToast({ title: '2FA desactivada', message: 'La autenticación en dos pasos se ha desactivado.', type: 'success' });
     } else {
-      btn.textContent = 'Sí, desactivar'; btn.disabled = false;
+      btn.textContent = 'Sí, desactivar';
+      btn.disabled = false;
       if (typeof dsToast === 'function') dsToast({ title: 'Error', message: data.error || 'No se pudo desactivar.', type: 'error' });
     }
   } catch (e) {
-    btn.textContent = 'Sí, desactivar'; btn.disabled = false;
+    btn.textContent = 'Sí, desactivar';
+    btn.disabled = false;
     if (typeof dsToast === 'function') dsToast({ title: 'Error de conexión', message: 'Intenta de nuevo.', type: 'error' });
   }
 };
 
-window._2faRender = () => { cargarCuenta(); };
+window._2faRender = () => {
+  cargarCuenta();
+};

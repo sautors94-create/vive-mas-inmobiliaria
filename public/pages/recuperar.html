@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recuperar contraseña — Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body>
+
+  <div class="auth-layout">
+
+    <div class="auth-brand">
+      <a href="/" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+      </a>
+      <h2>Recupera tu acceso</h2>
+      <p>Te ayudaremos a restablecer tu contraseña de forma rápida y segura.</p>
+      <div class="auth-features">
+        <div class="auth-feature">✓ Enlace seguro de un solo uso</div>
+        <div class="auth-feature">✓ Válido por 30 minutos</div>
+        <div class="auth-feature">✓ Sin necesidad de contactar soporte</div>
+      </div>
+    </div>
+
+    <div class="auth-form-panel">
+      <div class="auth-form-box">
+
+        <!-- Estado 1: Formulario -->
+        <div id="paso-formulario">
+          <h1>Restablecer contraseña</h1>
+          <p class="auth-subtitle"><a href="login.html">Iniciar sesión</a></p>
+
+          <div id="error-msg" class="alert alert-error" style="display:none"></div>
+
+          <p style="font-size:14px;color:#71717a;line-height:1.6;margin:0 0 24px">
+            Ingresa el correo electrónico de tu cuenta y te enviaremos un enlace para crear una nueva contraseña.
+          </p>
+
+          <form id="recovery-form">
+            <div class="form-grupo">
+              <label for="email">Correo electrónico</label>
+              <input type="email" id="email" class="form-input" placeholder="tu@correo.com" autocomplete="email" required>
+            </div>
+
+            <button type="submit" id="btn-enviar" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px;margin-top:8px">
+              Enviar enlace de recuperación
+            </button>
+          </form>
+
+          <div class="auth-divider">o</div>
+
+          <a href="registro.html" class="btn btn-outline" style="width:100%;padding:14px;font-size:15px;text-align:center">
+            Crear cuenta nueva
+          </a>
+        </div>
+
+        <!-- Estado 2: Éxito -->
+        <div id="paso-exito" style="display:none;text-align:center">
+          <div style="width:64px;height:64px;border-radius:50%;background:#f0fdf4;border:2px solid #bbf7d0;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:#16a34a">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+
+          <h1 style="margin-bottom:8px">¡Enlace enviado!</h1>
+
+          <p style="font-size:14px;color:#71717a;line-height:1.6;margin:0 0 6px">
+            Revisa tu bandeja de entrada en
+          </p>
+          <p style="font-size:15px;font-weight:600;color:var(--primary,#0ea5e9);margin:0 0 20px" id="correo-enviado"></p>
+
+          <p style="font-size:13px;color:#a1a1aa;line-height:1.5;margin:0 0 28px">
+            El enlace expira en 30 minutos. Si no lo encuentras, revisa tu carpeta de spam o correo no deseado.
+          </p>
+
+          <button type="button" id="btn-reenviar" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px">
+            Reenviar enlace
+          </button>
+
+          <div style="margin-top:16px">
+            <a href="login.html" style="font-size:14px;color:#71717a;text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+              Volver al inicio de sesión
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    const formulario  = document.getElementById('recovery-form');
+    const pasoForm    = document.getElementById('paso-formulario');
+    const pasoExito   = document.getElementById('paso-exito');
+    const emailInput  = document.getElementById('email');
+    const errorMsg    = document.getElementById('error-msg');
+    const btnEnviar   = document.getElementById('btn-enviar');
+    const correoMostrado = document.getElementById('correo-enviado');
+    const btnReenviar = document.getElementById('btn-reenviar');
+
+    // Si viene desde login con email pre-llenado
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('email')) {
+      emailInput.value = params.get('email');
+    }
+
+    async function enviarEnlace() {
+      const email = emailInput.value.trim();
+      errorMsg.style.display = 'none';
+
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errorMsg.textContent = 'Ingresa un correo electrónico válido.';
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      btnEnviar.textContent = 'Enviando...';
+      btnEnviar.disabled = true;
+
+      const data = await api.post('/auth/recuperar', { email });
+
+      if (data.ok) {
+        correoMostrado.textContent = email;
+        pasoForm.style.display = 'none';
+        pasoExito.style.display = 'block';
+      } else {
+        errorMsg.textContent = data.error || 'No se pudo enviar el enlace. Intenta de nuevo.';
+        errorMsg.style.display = 'block';
+        btnEnviar.textContent = 'Enviar enlace de recuperación';
+        btnEnviar.disabled = false;
+      }
+    }
+
+    formulario.addEventListener('submit', (e) => {
+      e.preventDefault();
+      enviarEnlace();
+    });
+
+    // Reenviar: vuelve al formulario con el email ya lleno
+    btnReenviar.addEventListener('click', () => {
+      pasoExito.style.display = 'none';
+      pasoForm.style.display = 'block';
+      btnEnviar.textContent = 'Enviar enlace de recuperación';
+      btnEnviar.disabled = false;
+      errorMsg.style.display = 'none';
+      emailInput.focus();
+    });
+  </script>
+<script>window.SOLO_SOPORTE = true;</script>
+<script src="../js/chatbot.js"></script>
+</body>
+</html>

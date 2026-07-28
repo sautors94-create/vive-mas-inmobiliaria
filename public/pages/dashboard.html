@@ -38,12 +38,10 @@
 
             <div class="ds-topbar-right">
         
-        <!-- BOTÓN IZQUIERDO: IR AL RESUMEN EJECUTIVO -->
         <button id="ds-notif-btn" class="ds-icon-btn" type="button" aria-label="Ir al Resumen Ejecutivo" onclick="mostrarSeccion('resumen')" style="cursor:pointer; border-radius: 8px; padding: 6px; display: flex; align-items: center; gap: 8px; background: var(--bg-secondary); border: 1px solid var(--border);">
           <span class="li-icon" data-lucide="dashboard" style="width:20px;height:20px;color:var(--primary)"></span>
         </button>
 
-        <!-- BOTÓN DERECHO: MENÚ DE USUARIO (COMO ESTABA ANTES) -->
         <div id="ds-avatar-wrap" style="position:relative">
           <div id="ds-avatar-btn" class="ds-avatar">
             <span id="ds-avatar-bg" class="badge" aria-hidden="true"><span id="ds-user-initials">U</span></span>
@@ -130,9 +128,7 @@
     <span class="badge-premium" id="resume-plan-pill" style="display:none">Plan: —</span>
   </div>
   
-  <!-- WRAPPER PARA BLUR -->
   <div class="resumen-wrapper" id="resumen-ejecutivo-wrapper">
-    <!-- CONTENIDO REAL -->
     <div class="resumen-content" id="resume-content">
       <div class="stats-grid" style="margin-bottom:18px" id="resume-stats-grid">
         <div class="stat-card ds-skeleton" style="height:104px"></div>
@@ -153,7 +149,6 @@
         </div>
       </div>
       
-      <!-- SECCIÓN DE PROPIEDADES DEBAJO DEL RESUMEN -->
       <div style="margin-top: 32px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <h3 style="font-size:18px;margin:0;font-family:'Bricolage Grotesque',sans-serif">Mis publicaciones</h3>
@@ -165,7 +160,6 @@
       </div>
     </div>
     
-    <!-- CAPA DE BLOQUEO GRATUITO -->
     <div class="lock-overlay">
       <h3>🔒 Función Premium</h3>
       <p>Desbloquea el análisis completo de tus propiedades y métricas avanzadas.</p>
@@ -216,7 +210,6 @@
           </div>
 
           <div class="publicar-steps-content">
-            <!-- STEP 1: Datos básicos -->
             <div class="publicar-step-content" data-step-content="1" style="display:block">
               <div class="form-grid">
                 <div class="form-grupo" style="grid-column:1/-1">
@@ -256,7 +249,6 @@
               </div>
             </div>
 
-            <!-- STEP 2: Descripción -->
             <div class="publicar-step-content" data-step-content="2" style="display:none">
               <div class="form-grid">
                 <div class="form-grupo" style="grid-column:1/-1">
@@ -266,7 +258,6 @@
               </div>
             </div>
 
-            <!-- STEP 3: Ubicación -->
             <div class="publicar-step-content" data-step-content="3" style="display:none">
               <div class="form-grid">
                 <div class="form-grupo" style="grid-column:1/-1">
@@ -308,7 +299,6 @@
               </div>
             </div>
 
-            <!-- STEP 4: Mapa -->
             <div class="publicar-step-content" data-step-content="4" style="display:none">
               <div class="form-grid">
                 <div class="form-grupo" style="grid-column:1/-1">
@@ -325,7 +315,6 @@
               </div>
             </div>
 
-            <!-- STEP 5: Características -->
             <div class="publicar-step-content" data-step-content="5" style="display:none">
               <div class="form-grid">
                 <div class="form-grupo" style="grid-column:1/-1"><label>Recámaras <span id="label-recamaras" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-recamaras-slider" min="0" max="20" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('recamaras')"><input type="number" id="p-recamaras" class="form-input" value="0" min="0" max="20" style="width:80px;text-align:center" oninput="syncCaracteristica('recamaras','input')"></div></div>
@@ -336,7 +325,6 @@
               </div>
             </div>
 
-            <!-- STEP 6: Fotos -->
             <div class="publicar-step-content" data-step-content="6" style="display:none">
               <div class="form-grid">
                 <div class="form-grupo" style="grid-column:1/-1">
@@ -361,7 +349,6 @@
               </div>
             </div>
 
-            <!-- STEP 7: Resumen final -->
             <div class="publicar-step-content" data-step-content="7" style="display:none">
               <div class="form-grid">
                 <div class="form-grupo" style="grid-column:1/-1">
@@ -504,7 +491,6 @@
 </div>
 
 <script>
-  // Mostrar botón solo si es la primera vez
   if (!localStorage.getItem('tutorial_visto')) {
     document.getElementById('tutorial-btn').style.display = 'block';
   }
@@ -515,7 +501,7 @@
 
   const cerrarTutorial = () => {
     document.getElementById('tutorial-modal').style.display = 'none';
-    document.getElementById('tutorial-btn').style.display = 'none'; // Esconde el botón para siempre
+    document.getElementById('tutorial-btn').style.display = 'none';
     localStorage.setItem('tutorial_visto', 'true');
   };
 </script>
