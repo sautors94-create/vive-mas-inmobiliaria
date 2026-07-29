@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+
+// ✅ TODAS LAS IMPORTACIONES JUNTAS ARRIBA (Sin esto, falla el "before initialization")
 const { 
   registro, 
   login, 
@@ -9,6 +11,8 @@ const {
   refreshToken, 
   verificarCodigo, 
   reenviarCodigo, 
+  solicitarRecuperacion, 
+  restablecerPassword, // <--- Aquí está la función
   actualizarNotificaciones, 
   actualizarPerfil, 
   subirKyc,
@@ -18,17 +22,33 @@ const {
   cancelarSuscripcion,
   reactivarSuscripcion,
   autorizarCargoRecurrente,
-  revocarCargoRecurrente
+  revocarCargoRecurrente,
+  verificar2FA,
+  recuperar2FA
 } = require('../controllers/auth.controller');
+
 const authMiddleware = require('../middleware/auth.middleware');
 const { upload } = require('../config/cloudinary');
 
+// ==========================================
+// RUTAS PÚBLICAS (No requieren estar logueado)
+// ==========================================
 router.post('/registro', registro);
 router.post('/login', login);
 router.post('/logout', logout);
 router.post('/refresh', refreshToken);
 router.post('/verificar', verificarCodigo);
 router.post('/reenviar-codigo', reenviarCodigo);
+router.post('/recuperar', solicitarRecuperacion); // Olvidé mi contraseña (envía email)
+router.post('/reset-password', restablecerPassword); // Crear nueva contraseña
+
+// ✅ 2FA: verificar código y usar código de recuperación (NO requieren auth completo — usan tempToken)
+router.post('/verificar-2fa', verificar2FA);
+router.post('/2fa/recuperar', recuperar2FA);
+
+// ==========================================
+// RUTAS PROTEGIDAS (Requieren token válido)
+// ==========================================
 router.get('/perfil', authMiddleware, perfil);
 router.get('/leads', authMiddleware, misLeads);
 router.patch('/notificaciones', authMiddleware, actualizarNotificaciones);
@@ -53,6 +73,11 @@ router.post('/reactivar-suscripcion', authMiddleware, reactivarSuscripcion);
 router.post('/autorizar-cargo-recurrente', authMiddleware, autorizarCargoRecurrente);
 router.post('/revocar-cargo-recurrente', authMiddleware, revocarCargoRecurrente);
 
+// ✅ 2FA: setup, confirmar, desactivar (requieren auth)
+router.get('/2fa/setup', authMiddleware, iniciarSetup2FA);
+router.post('/2fa/confirmar', authMiddleware, confirmar2FA);
+router.post('/2fa/desactivar', authMiddleware, desactivar2FA);
+
 // KYC
 router.post(
   '/kyc',
@@ -74,15 +99,5 @@ router.post(
   },
   subirKyc
 );
-
-// ✅ 2FA: setup, confirmar, desactivar (requieren auth)
-router.get('/2fa/setup', authMiddleware, iniciarSetup2FA);
-router.post('/2fa/confirmar', authMiddleware, confirmar2FA);
-router.post('/2fa/desactivar', authMiddleware, desactivar2FA);
-
-// ✅ 2FA: verificar código y usar código de recuperación (NO requieren auth completo — usan tempToken)
-const { verificar2FA, recuperar2FA } = require('../controllers/auth.controller');
-router.post('/verificar-2fa', verificar2FA);
-router.post('/2fa/recuperar', recuperar2FA);
 
 module.exports = router;

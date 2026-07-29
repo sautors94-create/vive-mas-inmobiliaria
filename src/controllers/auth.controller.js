@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 const { TOTP, Secret } = require('otpauth');
 const Stripe = require('stripe');
 const { subirACloudinary } = require('../config/cloudinary');
-const { generarCodigo, enviarCodigoVerificacion, enviarBienvenida } = require('../utils/email');
+const { generarCodigo, enviarCodigoVerificacion, enviarBienvenida, enviarEnlaceRecuperacion, enviarAlerta2FADesactivado } = require('../utils/email');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -116,6 +116,76 @@ const reenviarCodigo = async (req, res) => {
   }
 };
 
+// ==========================================
+// ✅ RECUPERAR CONTRASEÑA (Olvidé mi password)
+// ==========================================
+const solicitarRecuperacion = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'El correo es requerido' });
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    
+    // Por seguridad, siempre respondemos lo mismo para no revelar si el correo existe o no
+    if (!user) {
+      return res.json({ ok: true, mensaje: 'Si el correo está registrado, se envió un enlace.' });
+    }
+
+    // Generar token temporal de 30 minutos para cambiar la contraseña
+    const resetToken = jwt.sign(
+      { id: user._id, type: 'password_reset' },
+      process.env.JWT_SECRET,
+      { expiresIn: '30m' }
+    );
+
+    // Enviamos el correo real
+    await enviarEnlaceRecuperacion(user.email, user.nombre, resetToken);
+
+    res.json({ ok: true, mensaje: 'Si el correo está registrado, se envió un enlace.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al procesar la solicitud.' });
+  }
+};
+// ==========================================
+// ✅ NUEVA: EJECUTAR EL CAMBIO DE CONTRASEÑA
+// ==========================================
+const restablecerPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Faltan datos' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    // Verificar que el token sea válido y sea de tipo 'password_reset'
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.type !== 'password_reset') {
+      return res.status(400).json({ error: 'Token inválido' });
+    }
+
+    // Buscar usuario
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Cambiar la contraseña
+    user.password = newPassword;
+    await user.save(); // El pre('save') del modelo se encargará de hashearla
+
+    res.json({ ok: true, mensaje: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(400).json({ error: 'El enlace ha expirado. Solicita uno nuevo.' });
+    }
+    res.status(500).json({ error: 'Error al restablecer la contraseña' });
+  }
+};
+
 const login = async (req, res) => {
   try {
     const { email, telefono, password } = req.body;
@@ -125,12 +195,15 @@ const login = async (req, res) => {
       return res.status(400).json({ error: 'Debes enviar correo o teléfono y contraseña' });
     }
     const criterio = emailLimpio ? { email: emailLimpio } : { telefono: telefonoLimpio };
-    const user = await User.findOne(criterio).select('+password twoFactorEnabled twoFactorSecret');
+    
+    // ✅ CORREGIDO: Solo se incluye +password. Los demás campos vienen por defecto.
+    const user = await User.findOne(criterio).select('+password');
+    
     if (!user) return res.status(401).json({ error: 'Credenciales incorrectas' });
     const passwordOk = await user.compararPassword(password);
     if (!passwordOk) return res.status(401).json({ error: 'Credenciales incorrectas' });
     if (user.status === 'suspendido') return res.status(403).json({ error: 'Cuenta suspendida' });
-    if (user.status === 'bloqueado') return res.status(403). json({ error: 'Cuenta bloqueado. Contacta soporte.' });
+    if (user.status === 'bloqueado') return res.status(403).json({ error: 'Cuenta bloqueado. Contacta soporte.' });
     if (!user.verificado) return res.status(403).json({ error: 'Debes verificar tu cuenta antes de continuar', requiereVerificacion: true, email });
     
     // ✅ Establecer última actividad al hacer login
@@ -238,13 +311,13 @@ const verificar2FA = async (req, res) => {
       return res.status(400).json({ error: 'Faltan datos' });
     }
 
-    // Verificar que el token sea temporal de 2FA
     const decoded = verificarTempToken(tempToken);
     if (!decoded) {
       return res.status(401).json({ error: 'Sesión inválida o expirada. Intenta de nuevo.' });
     }
 
-    const user = await User.findById(decoded.userId).select('+password twoFactorSecret twoFactorEnabled twoFactorRecoveryCodes');
+    const user = await User.findById(decoded.userId);
+    
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -253,7 +326,6 @@ const verificar2FA = async (req, res) => {
       return res.status(400).json({ error: 'La autenticación en dos pasos no está activada en tu cuenta' });
     }
 
-    // Verificar código TOTP (tolera 1 periodo de desfase de reloj)
     const totp = new TOTP({
       issuer: 'ViveMas',
       label: user.email,
@@ -268,7 +340,6 @@ const verificar2FA = async (req, res) => {
       return res.status(400).json({ error: 'Código inválido. Asegúrate de que la app esté sincronizada.' });
     }
 
-    // Código válido — dar acceso completo
     const { accessToken, refreshToken } = generarTokens(user);
     res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.json({ ok: true, accessToken, user });
@@ -288,13 +359,13 @@ const recuperar2FA = async (req, res) => {
       return res.status(400).json({ error: 'Faltan datos' });
     }
 
-    // Verificar que el token sea temporal de 2FA
     const decoded = verificarTempToken(tempToken);
     if (!decoded) {
       return res.status(401).json({ error: 'Sesión inválida o expirada. Intenta de nuevo.' });
     }
 
-    const user = await User.findById(decoded.userId).select('+password twoFactorEnabled twoFactorRecoveryCodes');
+    const user = await User.findById(decoded.userId);
+    
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -303,8 +374,7 @@ const recuperar2FA = async (req, res) => {
       return res.status(400).json({ error: 'La autenticación en dos pasos no está activa en tu cuenta.' });
     }
 
-    // Buscar el código entre los hasheados
-    const codigoLimpio = recoveryCode.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    const codigoLimpio = recoveryCode.trim().toUpperCase();
     let codigoEncontrado = false;
 
     for (const hashAlmacenado of user.twoFactorRecoveryCodes) {
@@ -319,19 +389,14 @@ const recuperar2FA = async (req, res) => {
       return res.status(400).json({ error: 'Código de recuperación inválido o ya fue usado.' });
     }
 
-    // Código válido — desactivar 2FA y dar acceso completo
     user.twoFactorEnabled = false;
     user.twoFactorSecret = null;
-    user.twoFactorRecoveryCodes = user.twoFactorRecoveryCodes.filter((_, idx) => {
-      // Eliminar el código usado (no podemos eliminarlo de verdad porque los índices cambiarían,
-      // lo marcamos como string vacío para que no se pueda volver a usar
-      return true; // mantenemos todos pero solo descartamos el usado
-    });
-    // Simplificación: solo vaciamos el array ya que de todas formas se desactiva
     user.twoFactorRecoveryCodes = [];
     await user.save();
 
-    // Dar acceso completo
+    // ✅ Enviar alerta de seguridad por correo
+    await enviarAlerta2FADesactivado(user.email, user.nombre);
+
     const { accessToken, refreshToken } = generarTokens(user);
     res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
 
@@ -491,6 +556,7 @@ const actualizarPerfil = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 // ==========================================
 // CANCELACIÓN DE SUSCRIPCIÓN (LeyMex)
 // ==========================================
@@ -682,6 +748,8 @@ module.exports = {
   refreshToken, 
   verificarCodigo, 
   reenviarCodigo, 
+  solicitarRecuperacion, 
+  restablecerPassword, 
   actualizarNotificaciones, 
   actualizarPerfil, 
   subirKyc,
@@ -692,7 +760,6 @@ module.exports = {
   reactivarSuscripcion,
   autorizarCargoRecurrente,
   revocarCargoRecurrente,
-  // ✅ 2FA: verificar código y recuperación
   verificar2FA,
   recuperar2FA
 };

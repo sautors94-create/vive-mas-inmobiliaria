@@ -118,6 +118,7 @@ const enviarBienvenida = async (email, nombre, plan) => {
     html,
   });
 };
+
 const enviarNotificacionMensaje = async (emailPropietario, nombrePropietario, nombreInteresado, tituloPropiedad, mensaje) => {
   const html = `
     <!DOCTYPE html>
@@ -187,4 +188,125 @@ const enviarNotificacionMensaje = async (emailPropietario, nombrePropietario, no
     html,
   });
 };
-module.exports = { generarCodigo, enviarCodigoVerificacion, enviarBienvenida, enviarNotificacionMensaje };
+
+// ==========================================
+// ✅ NUEVA: RECUPERAR CONTRASEÑA
+// ==========================================
+const enviarEnlaceRecuperacion = async (email, nombre, token) => {
+  const enlace = `${process.env.APP_URL || 'http://localhost:3000'}/pages/nueva-contrasena.html?token=${token}`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
+        .container { max-width: 560px; margin: 40px auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .header { background: linear-gradient(135deg, #0f1923, #1a472a); padding: 40px; text-align: center; }
+        .logo { font-size: 28px; font-weight: 700; color: white; }
+        .logo span { color: #f4a261; }
+        .body { padding: 40px; }
+        .greeting { font-size: 18px; color: #1a1a2e; margin-bottom: 16px; }
+        .text { font-size: 15px; color: #6b7280; line-height: 1.6; margin-bottom: 32px; }
+        .btn { display: block; background: #1a472a; color: white; padding: 16px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; text-align: center; margin-bottom: 32px; }
+        .warning { font-size: 13px; color: #6b7280; background: #f8f9fa; border-radius: 8px; padding: 16px; text-align: center; }
+        .footer { background: #f8f9fa; padding: 24px 40px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">Vive<span>Más</span> Inmobiliaria</div>
+        </div>
+        <div class="body">
+          <div class="greeting">Hola, ${nombre} 🔑</div>
+          <div class="text">Recibimos una solicitud para restablecer la contraseña de tu cuenta. Haz clic en el siguiente botón para crear una nueva contraseña. Este enlace es válido por 30 minutos:</div>
+          <a href="${enlace}" class="btn">Restablecer mi contraseña</a>
+          <div class="warning">
+            Si no solicitaste este cambio, puedes ignorar este correo de forma segura. Tu contraseña actual no sufrirá ningún cambio.
+          </div>
+        </div>
+        <div class="footer">
+          © 2024 Vive Más Inmobiliaria · México<br>
+          Este es un correo automático, no respondas a este mensaje.
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: `🔑 Restablecer contraseña — Vive Más Inmobiliaria`,
+    html,
+  });
+};
+
+// ==========================================
+// ✅ NUEVA: ALERTA 2FA DESACTIVADO
+// ==========================================
+const enviarAlerta2FADesactivado = async (email, nombre) => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
+        .container { max-width: 560px; margin: 40px auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .header { background: linear-gradient(135deg, #0f1923, #7f1d1d); padding: 40px; text-align: center; }
+        .logo { font-size: 28px; font-weight: 700; color: white; }
+        .logo span { color: #f4a261; }
+        .body { padding: 40px; }
+        .greeting { font-size: 18px; color: #7f1d1d; margin-bottom: 16px; font-weight: 600; }
+        .text { font-size: 15px; color: #6b7280; line-height: 1.6; margin-bottom: 24px; }
+        .alerta-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 32px; text-align: center; }
+        .alerta-text { font-size: 15px; color: #991b1b; font-weight: 600; }
+        .btn { display: block; background: #1a472a; color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px; text-align: center; }
+        .footer { background: #f8f9fa; padding: 24px 40px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">Vive<span>Más</span> Inmobiliaria</div>
+        </div>
+        <div class="body">
+          <div class="greeting">⚠️ Alerta de Seguridad</div>
+          <div class="text">Hola, <strong>${nombre}</strong>. Se ha utilizado un <strong>código de recuperación</strong> para iniciar sesión en tu cuenta.</div>
+          
+          <div class="alerta-box">
+            <div class="alerta-text">La Autenticación en Dos Pasos (2FA) ha sido desactivada automáticamente.</div>
+          </div>
+
+          <div class="text" style="margin-bottom: 32px;">Si tú no realizaste esta acción, tu cuenta podría estar comprometida. Te recomendamos cambiar tu contraseña inmediatamente y volver a activar el 2FA desde tu panel de usuario.</div>
+
+          <a href="${process.env.APP_URL || 'http://localhost:3000'}/pages/dashboard.html" class="btn">Ir a mi panel de seguridad</a>
+        </div>
+        <div class="footer">
+          © 2024 Vive Más Inmobiliaria · México<br>
+          Este es un correo automático de seguridad.
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: `⚠️ Alerta de Seguridad: 2FA desactivado — Vive Más`,
+    html,
+  });
+};
+
+module.exports = { 
+  generarCodigo, 
+  enviarCodigoVerificacion, 
+  enviarBienvenida, 
+  enviarNotificacionMensaje,
+  enviarEnlaceRecuperacion,       
+  enviarAlerta2FADesactivado     
+};

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nueva contraseña — Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body>
+
+  <div class="auth-layout">
+
+    <div class="auth-brand">
+      <a href="/" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+      </a>
+      <h2>Casi listo</h2>
+      <p>Crea tu nueva contraseña para volver a acceder a tu cuenta.</p>
+      <div class="auth-features">
+        <div class="auth-feature">✓ Debe tener al menos 6 caracteres</div>
+        <div class="auth-feature">✓ Recomendamos usar letras y números</div>
+      </div>
+    </div>
+
+    <div class="auth-form-panel">
+      <div class="auth-form-box">
+
+        <!-- Estado 1: Formulario -->
+        <div id="paso-formulario">
+          <h1>Nueva contraseña</h1>
+          <p class="auth-subtitle"><a href="login.html">Volver al inicio de sesión</a></p>
+
+          <div id="error-msg" class="alert alert-error" style="display:none"></div>
+
+          <form id="reset-form">
+            <div class="form-grupo">
+              <label for="password">Nueva contraseña</label>
+              <input type="password" id="password" class="form-input" placeholder="Mínimo 6 caracteres" required>
+            </div>
+
+            <div class="form-grupo">
+              <label for="confirm-password">Confirmar contraseña</label>
+              <input type="password" id="confirm-password" class="form-input" placeholder="Repite tu contraseña" required>
+            </div>
+
+            <button type="submit" id="btn-cambiar" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px;margin-top:8px">
+              Cambiar contraseña
+            </button>
+          </form>
+        </div>
+
+        <!-- Estado 2: Éxito -->
+        <div id="paso-exito" style="display:none;text-align:center">
+          <div style="width:64px;height:64px;border-radius:50%;background:#f0fdf4;border:2px solid #bbf7d0;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:#16a34a">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+
+          <h1 style="margin-bottom:8px">¡Contraseña actualizada!</h1>
+          <p style="font-size:14px;color:#71717a;line-height:1.6;margin:0 0 28px">
+            Tu contraseña ha sido cambiada exitosamente. Ya puedes iniciar sesión con tu nueva clave.
+          </p>
+
+          <a href="login.html" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px;text-align:center;display:block">
+            Ir a iniciar sesión
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    // Obtener el token de la URL
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    // Si no hay token, redirigir al login
+    if (!token) {
+      window.location.href = 'login.html';
+    }
+
+    const pasoForm = document.getElementById('paso-formulario');
+    const pasoExito = document.getElementById('paso-exito');
+    const errorMsg = document.getElementById('error-msg');
+    const btnCambiar = document.getElementById('btn-cambiar');
+
+    document.getElementById('reset-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+
+      errorMsg.style.display = 'none';
+
+      if (password.length < 6) {
+        errorMsg.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        errorMsg.textContent = 'Las contraseñas no coinciden.';
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      btnCambiar.textContent = 'Guardando...';
+      btnCambiar.disabled = true;
+
+      const data = await api.post('/auth/reset-password', {
+        token: token,
+        newPassword: password
+      });
+
+      if (data.ok) {
+        pasoForm.style.display = 'none';
+        pasoExito.style.display = 'block';
+      } else {
+        errorMsg.textContent = data.error || 'No se pudo cambiar la contraseña. El enlace podría haber expirado.';
+        errorMsg.style.display = 'block';
+        btnCambiar.textContent = 'Cambiar contraseña';
+        btnCambiar.disabled = false;
+      }
+    });
+  </script>
+<script>window.SOLO_SOPORTE = true;</script>
+<script src="../js/chatbot.js"></script>
+</body>
+</html>

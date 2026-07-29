@@ -4,7 +4,16 @@ const bcrypt = require('bcryptjs');
 const userSchema = new mongoose.Schema({
   nombre: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-  password: { type: String, required: true, minlength: 6 },
+  
+  // ✅ CORREGIDO: Se agregó "select: false" para que Mongoose no lo traiga por defecto
+  // y permita usar el "+password" de forma segura en el login y desactivar2FA
+  password: { 
+    type: String, 
+    required: true, 
+    minlength: 6, 
+    select: false 
+  },
+  
   role: { type: String, enum: ['user', 'admin', 'services', 'basico_plus'], default: 'user' },
   plan: { type: String, enum: ['gratuito', 'basico', 'premium'], default: 'gratuito' },
   planFechaFin: { type: Date, default: null },

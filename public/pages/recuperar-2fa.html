@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Código de recuperación — Vive Más Inmobiliaria</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family+Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
   <link rel="stylesheet" href="../css/auth.css">
 </head>
@@ -46,8 +46,9 @@
               type="text"
               id="codigo-recuperacion"
               class="form-input"
-              placeholder="xxxxx-xxxxx"
+              placeholder="XXXX-XXXX"
               autocomplete="off"
+              maxlength="9"
               style="font-family:monospace;font-size:16px;letter-spacing:2px"
               required
             >
@@ -76,11 +77,18 @@
   </div>
 
   <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  
   <script>
+    console.log("1. Script de recuperación cargado correctamente");
+
     const tempToken = sessionStorage.getItem('vm_2fa_token');
 
     if (!tempToken) {
+      console.error("2. ERROR: No se encontró tempToken en sessionStorage, redirigiendo a login...");
       window.location.href = 'login.html';
+    } else {
+      console.log("2. tempToken encontrado, continuando...");
     }
 
     const codigoInput = document.getElementById('codigo-recuperacion');
@@ -89,41 +97,54 @@
 
     codigoInput.addEventListener('input', (e) => {
       let v = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-      if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5, 10);
+      if (v.length > 4) v = v.slice(0, 4) + '-' + v.slice(4, 8);
       e.target.value = v;
       errorMsg.style.display = 'none';
     });
 
     document.getElementById('form-recuperacion').addEventListener('submit', async (e) => {
       e.preventDefault();
+      console.log("3. Formulario enviado. Código:", codigoInput.value.trim());
+
       const codigo = codigoInput.value.trim();
 
-      if (codigo.replace('-', '').length < 10) {
-        errorMsg.textContent = 'Ingresa el código completo (10 caracteres).';
+      if (codigo.replace('-', '').length < 8) {
+        errorMsg.textContent = 'Ingresa el código completo (8 caracteres).';
         errorMsg.style.display = 'block';
         return;
       }
 
       btnRecuperar.textContent = 'Verificando...';
       btnRecuperar.disabled = true;
+      console.log("4. Llamando a la API...");
 
-      const data = await api.post('/auth/2fa/recuperar', {
-        tempToken,
-        recoveryCode: codigo
-      });
+      try {
+        const data = await api.post('/auth/2fa/recuperar', {
+          tempToken,
+          recoveryCode: codigo
+        });
 
-      if (data.ok) {
-        sessionStorage.removeItem('vm_2fa_token');
-        sessionStorage.removeItem('vm_2fa_email');
-        auth.save(data.accessToken, data.user);
-        window.location.href = data.user.role === 'admin' ? 'admin.html' : 'dashboard.html';
-      } else {
-        errorMsg.textContent = data.error || 'Código inválido o ya usado.';
-        errorMsg.style.display = 'block';
-        btnRecuperar.textContent = 'Usar código de recuperación';
-        btnRecuperar.disabled = false;
-        codigoInput.value = '';
-        codigoInput.focus();
+        console.log("5. Respuesta del servidor:", data);
+
+        if (data.ok) {
+          sessionStorage.removeItem('vm_2fa_token');
+          sessionStorage.removeItem('vm_2fa_email');
+          auth.save(data.accessToken, data.user);
+          window.location.href = data.user.role === 'admin' ? 'admin.html' : 'dashboard.html';
+        } else {
+          errorMsg.textContent = data.error || 'Código inválido o ya usado.';
+          errorMsg.style.display = 'block';
+          btnRecuperar.textContent = 'Usar código de recuperación';
+          btnRecuperar.disabled = false;
+          codigoInput.value = '';
+          codigoInput.focus();
+        }
+      } catch (error) {
+         console.error("6. Error en la petición HTTP:", error);
+         errorMsg.textContent = 'Error de conexión. Intenta de nuevo.';
+         errorMsg.style.display = 'block';
+         btnRecuperar.textContent = 'Usar código de recuperación';
+         btnRecuperar.disabled = false;
       }
     });
 

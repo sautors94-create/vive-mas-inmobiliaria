@@ -1727,25 +1727,46 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarResumenUsuario();
   }, 300);
 });
-// ==========================================
-// DESACTIVAR 2FA
-// ==========================================
 window._2faDesactivar = () => {
   if (document.getElementById('confirm-2fa-off')) return;
   const accion = document.getElementById('accion-2fa');
   if (!accion) return;
   accion.innerHTML =
-    '<div id="confirm-2fa-off" style="padding:14px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;margin-bottom:12px"><div style="font-size:14px;font-weight:600;color:#991b1b;margin-bottom:4px">¿Desactivar autenticación en dos pasos?</div><div style="font-size:13px;color:#b91c1c;line-height:1.5">Tu cuenta quedará menos protegida. Podrás volver a activarla cuando quieras.</div></div>' +
-    '<div style="display:flex;gap:10px"><button class="btn btn-outline" style="flex:1;padding:12px;font-size:14px" onclick="window._2faRender()">Cancelar</button><button class="btn" id="btn-2fa-confirm-off" style="flex:1;padding:12px;font-size:14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer" onclick="window._2faConfirmarDesactivar()">Sí, desactivar</button></div>';
+    '<div id="confirm-2fa-off" style="padding:14px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;margin-bottom:12px">' +
+      '<div style="font-size:14px;font-weight:600;color:#991b1b;margin-bottom:4px">¿Desactivar autenticación en dos pasos?</div>' +
+      '<div style="font-size:13px;color:#b91c1c;line-height:1.5;margin-bottom:12px">Tu cuenta quedará menos protegida. Podrás volver a activarla cuando quieras.</div>' +
+      '<div style="margin-bottom:12px">' +
+        '<label style="font-size:13px;font-weight:500;color:#374151;display:block;margin-bottom:4px">Ingresa tu contraseña para confirmar:</label>' +
+        '<input type="password" id="ds-2fa-password-input" class="form-input" placeholder="Tu contraseña" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box" autocomplete="current-password">' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:10px">' +
+      '<button class="btn btn-outline" style="flex:1;padding:12px;font-size:14px" onclick="window._2faRender()">Cancelar</button>' +
+      '<button class="btn" id="btn-2fa-confirm-off" style="flex:1;padding:12px;font-size:14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer" onclick="window._2faConfirmarDesactivar()">Sí, desactivar</button>' +
+    '</div>';
 };
 
 window._2faConfirmarDesactivar = async () => {
   const btn = document.getElementById('btn-2fa-confirm-off');
   if (!btn) return;
+  
+  // Obtener la contraseña que el usuario escribió
+  const passwordInput = document.getElementById('ds-2fa-password-input');
+  const password = passwordInput ? passwordInput.value.trim() : '';
+
+  // Validar que no esté vacía
+  if (!password) {
+    btn.textContent = 'Sí, desactivar';
+    btn.disabled = false;
+    if (typeof dsToast === 'function') dsToast({ title: 'Contraseña requerida', message: 'Debes escribir tu contraseña para continuar.', type: 'error' });
+    return;
+  }
+
   btn.textContent = 'Desactivando...';
   btn.disabled = true;
   try {
-    const data = await api.post('/auth/2fa/desactivar', {});
+    // Enviar la contraseña al backend
+    const data = await api.post('/auth/2fa/desactivar', { password: password });
     if (data.ok) {
       const user = auth.getUser();
       if (user) { user.twoFactorEnabled = false; localStorage.setItem('user', JSON.stringify(user)); }
