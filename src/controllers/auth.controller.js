@@ -2,6 +2,9 @@ const User = require('../models/User');
 const Lead = require('../models/Lead');
 const Message = require('../models/Message');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const { TOTP, Secret } = require('otpauth');
 const Stripe = require('stripe');
 const { subirACloudinary } = require('../config/cloudinary');
 const { generarCodigo, enviarCodigoVerificacion, enviarBienvenida } = require('../utils/email');
@@ -20,6 +23,26 @@ const generarTokens = (user) => {
     { expiresIn: '7d' }
   );
   return { accessToken, refreshToken };
+};
+
+// ✅ 2FA: Token temporal (5 min) para el paso intermedio entre login y verificación
+const generarTempToken = (userId) => {
+  return jwt.sign(
+    { userId, type: '2fa_temp' },
+    process.env.JWT_SECRET,
+    { expiresIn: '5m' }
+  );
+};
+
+// ✅ 2FA: Verificar token temporal (no requiere auth completo)
+const verificarTempToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.type !== '2fa_temp') return null;
+    return decoded;
+  } catch (e) {
+    return null;
+  }
 };
 
 const registro = async (req, res) => {
@@ -102,17 +125,26 @@ const login = async (req, res) => {
       return res.status(400).json({ error: 'Debes enviar correo o teléfono y contraseña' });
     }
     const criterio = emailLimpio ? { email: emailLimpio } : { telefono: telefonoLimpio };
-    const user = await User.findOne(criterio).select('+password');
+    const user = await User.findOne(criterio).select('+password twoFactorEnabled twoFactorSecret');
     if (!user) return res.status(401).json({ error: 'Credenciales incorrectas' });
     const passwordOk = await user.compararPassword(password);
     if (!passwordOk) return res.status(401).json({ error: 'Credenciales incorrectas' });
     if (user.status === 'suspendido') return res.status(403).json({ error: 'Cuenta suspendida' });
-    if (user.status === 'bloqueado') return res.status(403).json({ error: 'Cuenta bloqueado. Contacta soporte.' });
+    if (user.status === 'bloqueado') return res.status(403). json({ error: 'Cuenta bloqueado. Contacta soporte.' });
     if (!user.verificado) return res.status(403).json({ error: 'Debes verificar tu cuenta antes de continuar', requiereVerificacion: true, email });
     
     // ✅ Establecer última actividad al hacer login
     user.ultimaActividad = new Date();
     await user.save();
+
+    // ✅ 2FA: Si tiene autenticación en dos pasos activada, pedir código antes de dar acceso
+    if (user.twoFactorEnabled) {
+      const tempToken = generarTempToken(user._id);
+      return res.json({
+        requiere2FA: true,
+        tempToken
+      });
+    }
     
     const { accessToken, refreshToken } = generarTokens(user);
     res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
@@ -158,13 +190,11 @@ const refreshToken = async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
     if (user.status === 'suspendido') return res.status(403).json({ error: 'Cuenta suspendida' });
     
-    // ✅ Verificar inactividad (15 minutos)
     const ahora = new Date();
     const diferencia = ahora - user.ultimaActividad;
     const quinceMinutos = 15 * 60 * 1000;
     
     if (diferencia > quinceMinutos) {
-      // ✅ Limpiar cookie y rechazar
       res.clearCookie('refreshToken');
       return res.status(401).json({ 
         error: 'Sesión expirada por inactividad',
@@ -172,7 +202,6 @@ const refreshToken = async (req, res) => {
       });
     }
     
-    // ✅ Actualizar última actividad
     user.ultimaActividad = ahora;
     await user.save();
     
@@ -193,6 +222,211 @@ const actualizarNotificaciones = async (req, res) => {
       { new: true }
     );
     res.json({ ok: true, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ==========================================
+// ✅ 2FA: Verificar código al hacer login (NO requiere authMiddleware)
+// ==========================================
+const verificar2FA = async (req, res) => {
+  try {
+    const { tempToken, code } = req.body;
+
+    if (!tempToken || !code) {
+      return res.status(400).json({ error: 'Faltan datos' });
+    }
+
+    // Verificar que el token sea temporal de 2FA
+    const decoded = verificarTempToken(tempToken);
+    if (!decoded) {
+      return res.status(401).json({ error: 'Sesión inválida o expirada. Intenta de nuevo.' });
+    }
+
+    const user = await User.findById(decoded.userId).select('+password twoFactorSecret twoFactorEnabled twoFactorRecoveryCodes');
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    if (!user.twoFactorEnabled || !user.twoFactorSecret) {
+      return res.status(400).json({ error: 'La autenticación en dos pasos no está activada en tu cuenta' });
+    }
+
+    // Verificar código TOTP (tolera 1 periodo de desfase de reloj)
+    const totp = new TOTP({
+      issuer: 'ViveMas',
+      label: user.email,
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret: Secret.fromBase32(user.twoFactorSecret)
+    });
+
+    const delta = totp.validate({ token: String(code).trim(), window: 1 });
+    if (delta === null) {
+      return res.status(400).json({ error: 'Código inválido. Asegúrate de que la app esté sincronizada.' });
+    }
+
+    // Código válido — dar acceso completo
+    const { accessToken, refreshToken } = generarTokens(user);
+    res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.json({ ok: true, accessToken, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ==========================================
+// ✅ 2FA: Usar código de recuperación (NO requiere authMiddleware)
+// ==========================================
+const recuperar2FA = async (req, res) => {
+  try {
+    const { tempToken, recoveryCode } = req.body;
+
+    if (!tempToken || !recoveryCode) {
+      return res.status(400).json({ error: 'Faltan datos' });
+    }
+
+    // Verificar que el token sea temporal de 2FA
+    const decoded = verificarTempToken(tempToken);
+    if (!decoded) {
+      return res.status(401).json({ error: 'Sesión inválida o expirada. Intenta de nuevo.' });
+    }
+
+    const user = await User.findById(decoded.userId).select('+password twoFactorEnabled twoFactorRecoveryCodes');
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    if (!user.twoFactorEnabled) {
+      return res.status(400).json({ error: 'La autenticación en dos pasos no está activa en tu cuenta.' });
+    }
+
+    // Buscar el código entre los hasheados
+    const codigoLimpio = recoveryCode.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    let codigoEncontrado = false;
+
+    for (const hashAlmacenado of user.twoFactorRecoveryCodes) {
+      const coincide = await bcrypt.compare(codigoLimpio, hashAlmacenado);
+      if (coincide) {
+        codigoEncontrado = true;
+        break;
+      }
+    }
+
+    if (!codigoEncontrado) {
+      return res.status(400).json({ error: 'Código de recuperación inválido o ya fue usado.' });
+    }
+
+    // Código válido — desactivar 2FA y dar acceso completo
+    user.twoFactorEnabled = false;
+    user.twoFactorSecret = null;
+    user.twoFactorRecoveryCodes = user.twoFactorRecoveryCodes.filter((_, idx) => {
+      // Eliminar el código usado (no podemos eliminarlo de verdad porque los índices cambiarían,
+      // lo marcamos como string vacío para que no se pueda volver a usar
+      return true; // mantenemos todos pero solo descartamos el usado
+    });
+    // Simplificación: solo vaciamos el array ya que de todas formas se desactiva
+    user.twoFactorRecoveryCodes = [];
+    await user.save();
+
+    // Dar acceso completo
+    const { accessToken, refreshToken } = generarTokens(user);
+    res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
+
+    console.log(`🔐 Acceso por código de recuperación: ${user.email}`);
+
+    res.json({ ok: true, accessToken, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ==========================================
+// AUTENTICACIÓN EN DOS PASOS (2FA - TOTP)
+// ==========================================
+
+const generarCodigosRecuperacion = (cantidad = 8) => {
+  const codigos = [];
+  for (let i = 0; i < cantidad; i++) {
+    const raw = crypto.randomBytes(5).toString('hex').toUpperCase().slice(0, 8);
+    codigos.push(`${raw.slice(0, 4)}-${raw.slice(4)}`);
+  }
+  return codigos;
+};
+
+const iniciarSetup2FA = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (user.twoFactorEnabled) {
+      return res.status(400).json({ error: 'Ya tienes la autenticación en dos pasos activada' });
+    }
+
+    const secret = new Secret({ size: 20 }).base32;
+    res.json({ ok: true, secret, email: user.email });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const confirmar2FA = async (req, res) => {
+  try {
+    const { secret, code } = req.body;
+    if (!secret || !code) return res.status(400).json({ error: 'Faltan datos' });
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (user.twoFactorEnabled) {
+      return res.status(400).json({ error: 'Ya tienes la autenticación en dos pasos activada' });
+    }
+
+    const totp = new TOTP({
+      issuer: 'ViveMas',
+      label: user.email,
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret: Secret.fromBase32(secret)
+    });
+
+    const delta = totp.validate({ token: String(code).trim(), window: 1 });
+    if (delta === null) {
+      return res.status(400).json({ error: 'Código inválido. Asegúrate de que la app esté sincronizada.' });
+    }
+
+    const codigosRecuperacion = generarCodigosRecuperacion();
+    const codigosHasheados = await Promise.all(codigosRecuperacion.map(c => bcrypt.hash(c, 10)));
+
+    user.twoFactorEnabled = true;
+    user.twoFactorSecret = secret;
+    user.twoFactorRecoveryCodes = codigosHasheados;
+    await user.save();
+
+    res.json({ ok: true, recoveryCodes: codigosRecuperacion });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const desactivar2FA = async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ error: 'Debes ingresar tu contraseña para desactivar la autenticación en dos pasos' });
+
+    const user = await User.findById(req.user.id).select('+password');
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const passwordOk = await user.compararPassword(password);
+    if (!passwordOk) return res.status(401).json({ error: 'Contraseña incorrecta' });
+
+    user.twoFactorEnabled = false;
+    user.twoFactorSecret = null;
+    user.twoFactorRecoveryCodes = [];
+    await user.save();
+
+    res.json({ ok: true, mensaje: 'Autenticación en dos pasos desactivada.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -275,7 +509,6 @@ const cancelarSuscripcion = async (req, res) => {
       return res.status(400).json({ error: 'Tu suscripción ya está cancelada. Se mantiene activa hasta la fecha de vencimiento.' });
     }
 
-    // Si tiene suscripción en Stripe, marcar cancel_at_period_end
     if (user.stripeSubscriptionId) {
       try {
         await stripe.subscriptions.update(user.stripeSubscriptionId, {
@@ -284,11 +517,9 @@ const cancelarSuscripcion = async (req, res) => {
         console.log(`⏳ Stripe: cancel_at_period_end activado para ${user.email}`);
       } catch (stripeErr) {
         console.warn(`⚠️ No se pudo actualizar en Stripe: ${stripeErr.message}`);
-        // Continuamos aunque falle Stripe — lo manejamos por BD
       }
     }
 
-    // Actualizar en BD
     user.planCancelado = true;
     user.cargoRecurrenteAutorizado = false;
     user.fechaCancelacion = new Date();
@@ -316,12 +547,10 @@ const reactivarSuscripcion = async (req, res) => {
       return res.status(400).json({ error: 'Tu suscripción no está cancelada.' });
     }
 
-    // Verificar que aún no haya vencido
     if (user.planFechaFin && new Date() > user.planFechaFin) {
       return res.status(400).json({ error: 'Tu plan ya venció. Contrata un nuevo plan desde tu panel.' });
     }
 
-    // Si tiene suscripción en Stripe, quitar cancel_at_period_end
     if (user.stripeSubscriptionId) {
       try {
         await stripe.subscriptions.update(user.stripeSubscriptionId, {
@@ -333,7 +562,6 @@ const reactivarSuscripcion = async (req, res) => {
       }
     }
 
-    // Actualizar en BD
     user.planCancelado = false;
     user.fechaCancelacion = null;
     if (user.planPeriodo === 'mensual') {
@@ -375,7 +603,6 @@ const autorizarCargoRecurrente = async (req, res) => {
       return res.status(400).json({ error: 'Tienes la suscripción cancelada. Reactiva tu plan primero.' });
     }
 
-    // Si tiene suscripción en Stripe, asegurarnos de que no esté cancelada
     if (user.stripeSubscriptionId) {
       try {
         const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
@@ -389,7 +616,6 @@ const autorizarCargoRecurrente = async (req, res) => {
       }
     }
 
-    // Guardar evidencia legal del consentimiento
     user.cargoRecurrenteAutorizado = true;
     user.cargoRecurrenteFecha = new Date();
     user.cargoRecurrenteIP = req.ip || req.headers['x-forwarded-for'] || 'no_disponible';
@@ -419,7 +645,6 @@ const revocarCargoRecurrente = async (req, res) => {
       return res.status(400).json({ error: 'No tienes cargo recurrente autorizado.' });
     }
 
-    // Si tiene suscripción en Stripe, marcar cancel_at_period_end
     if (user.stripeSubscriptionId) {
       try {
         await stripe.subscriptions.update(user.stripeSubscriptionId, {
@@ -431,10 +656,8 @@ const revocarCargoRecurrente = async (req, res) => {
       }
     }
 
-    // Guardar evidencia de revocación
     user.cargoRecurrenteAutorizado = false;
     user.cargoRecurrenteRevocadoFecha = new Date();
-    // No borramos cargoRecurrenteFecha ni IP — es evidencia histórica legal
     await user.save();
 
     console.log(`🔓 Cargo recurrente revocado por ${user.email}`);
@@ -449,6 +672,7 @@ const revocarCargoRecurrente = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 module.exports = { 
   registro, 
   login, 
@@ -461,8 +685,14 @@ module.exports = {
   actualizarNotificaciones, 
   actualizarPerfil, 
   subirKyc,
+  iniciarSetup2FA,
+  confirmar2FA,
+  desactivar2FA,
   cancelarSuscripcion,
   reactivarSuscripcion,
   autorizarCargoRecurrente,
-  revocarCargoRecurrente
+  revocarCargoRecurrente,
+  // ✅ 2FA: verificar código y recuperación
+  verificar2FA,
+  recuperar2FA
 };

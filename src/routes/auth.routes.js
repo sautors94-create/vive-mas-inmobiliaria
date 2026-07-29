@@ -12,6 +12,9 @@ const {
   actualizarNotificaciones, 
   actualizarPerfil, 
   subirKyc,
+  iniciarSetup2FA,
+  confirmar2FA,
+  desactivar2FA,
   cancelarSuscripcion,
   reactivarSuscripcion,
   autorizarCargoRecurrente,
@@ -71,5 +74,15 @@ router.post(
   },
   subirKyc
 );
+
+// ✅ 2FA: setup, confirmar, desactivar (requieren auth)
+router.get('/2fa/setup', authMiddleware, iniciarSetup2FA);
+router.post('/2fa/confirmar', authMiddleware, confirmar2FA);
+router.post('/2fa/desactivar', authMiddleware, desactivar2FA);
+
+// ✅ 2FA: verificar código y usar código de recuperación (NO requieren auth completo — usan tempToken)
+const { verificar2FA, recuperar2FA } = require('../controllers/auth.controller');
+router.post('/verificar-2fa', verificar2FA);
+router.post('/2fa/recuperar', recuperar2FA);
 
 module.exports = router;

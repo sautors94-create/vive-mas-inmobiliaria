@@ -29,7 +29,11 @@ const userSchema = new mongoose.Schema({
     motivoRechazo: { type: String, default: null },
     updatedAt: { type: Date, default: null },
   },
+  twoFactorEnabled: { type: Boolean, default: false },
+  twoFactorSecret: { type: String, default: null },
+  twoFactorRecoveryCodes: [{ type: String }],
   verificado: { type: Boolean, default: false },
+  identidadVerificada: { type: Boolean, default: false },
   codigoVerificacion: { type: String, default: null },
   codigoExpira: { type: Date, default: null },
   metodoVerificacion: { type: String, enum: ['email', 'sms'], default: 'email' },
@@ -59,6 +63,8 @@ userSchema.methods.toJSON = function() {
   delete user.codigoVerificacion;
   delete user.cargoRecurrenteIP;
   delete user.cargoRecurrenteUserAgent;
+  delete user.twoFactorSecret;
+  delete user.twoFactorRecoveryCodes;
   return user;
 };
 

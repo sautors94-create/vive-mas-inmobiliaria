@@ -855,7 +855,7 @@ window.abrirDrawerUsuario = (id) => {
           <div style="display:flex;gap:8px;margin-top:6px">
             <span class="plan-badge plan-${u.plan}">${u.plan}</span>
             <span class="status-badge status-${u.status}">${u.status}</span>
-            ${u.verificado ? '<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">✓ Verificado</span>' : ''}
+            ${u.identidadVerificada ? '<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">✓ Identidad verificada</span>' : ''}
           </div>
         </div>
       </div>
@@ -1650,7 +1650,7 @@ const construirDetallePropiedad = (p, botonesHtml) => {
             <div style="display:flex;gap:6px;margin-top:4px">
               <span class="plan-badge plan-${propietario?.plan || 'gratuito'}">${propietario?.plan || 'gratuito'}</span>
               <span class="status-badge status-${propietario?.status || 'activo'}">${propietario?.status || 'activo'}</span>
-              ${propietario?.verificado ? '<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">✓ Verificado</span>' : ''}
+              ${propietario?.identidadVerificada ? '<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">✓ Identidad verificada</span>' : ''}
             </div>
           </div>
         </div>

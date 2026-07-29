@@ -15,12 +15,12 @@ const revisarKyc = async (req, res) => {
     if (aprobado) {
       user.kyc.status = 'aprobado';
       user.kyc.motivoRechazo = null;
-      user.verificado = true;
+      user.identidadVerificada = true;
     } else {
       if (!motivo) return res.status(400).json({ error: 'Debes indicar el motivo del rechazo' });
       user.kyc.status = 'rechazado';
       user.kyc.motivoRechazo = motivo;
-      user.verificado = false;
+      user.identidadVerificada = false;
     }
     user.kyc.updatedAt = new Date();
     await user.save();

@@ -194,7 +194,15 @@
         code: codigo
       });
 
-      if (data.ok) {
+            if (data.ok) {
+        // Actualizar localStorage inmediatamente para que Mi cuenta refleje el cambio
+        try {
+          const userActual = auth.getUser();
+          if (userActual) {
+            userActual.twoFactorEnabled = true;
+            localStorage.setItem('user', JSON.stringify(userActual));
+          }
+        } catch(e) {}
         mostrarCodigos(data.recoveryCodes || []);
       } else {
         errorMsg.textContent = data.error || 'Código inválido. Asegúrate de que la app esté sincronizada.';

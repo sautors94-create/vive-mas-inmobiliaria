@@ -110,6 +110,10 @@
         const redireccion = localStorage.getItem('redireccion_favorito') || (data.user.role === 'admin' ? 'admin.html' : 'dashboard.html');
         localStorage.removeItem('redireccion_favorito');
         window.location.href = redireccion;
+      } else if (data.requiere2FA) {
+        sessionStorage.setItem('vm_2fa_token', data.tempToken);
+        sessionStorage.setItem('vm_2fa_email', data.email || identificador);
+        window.location.href = 'verificar-2fa.html';
       } else if (data.requiereVerificacion) {
         window.location.href = `verificar.html?email=${encodeURIComponent(data.email || identificador)}`;
       } else {
