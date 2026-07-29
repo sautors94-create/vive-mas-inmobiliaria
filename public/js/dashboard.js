@@ -668,33 +668,235 @@ window.initFotosPublicar = () => {
 
 const escapeHtmlLocal = (str) => String(str ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+// ==========================================
+// MIS PROPIEDADES — WORKSPACE DE PUBLICACIONES
+// ==========================================
+let misPropsData = [];
+let misPropsFiltradas = [];
+const LIMITE_PLAN_MIS_PROPS = { gratuito: 3, basico: 15, basico_plus: Infinity, premium: Infinity };
+
+const hacetiempo = (fecha) => {
+  if (!fecha) return '';
+  const diffMs = Date.now() - new Date(fecha).getTime();
+  const min = Math.floor(diffMs / 60000);
+  if (min < 1) return 'justo ahora';
+  if (min < 60) return `hace ${min} min`;
+  const hrs = Math.floor(min / 60);
+  if (hrs < 24) return `hace ${hrs} h`;
+  const dias = Math.floor(hrs / 24);
+  if (dias < 30) return `hace ${dias} día${dias === 1 ? '' : 's'}`;
+  const meses = Math.floor(dias / 30);
+  return `hace ${meses} mes${meses === 1 ? '' : 'es'}`;
+};
+
+const mpwStatusLabel = { revision: 'En revisión', aprobada: 'Activa', rechazada: 'Rechazada', pausada: 'Pausada', bloqueada: 'Bloqueada' };
+
 const cargarMisPropiedades = async () => {
   const container = document.getElementById('mis-props-container');
-  const data = await api.get('/propiedades/mis-propiedades');
-  console.log('Respuesta de Mis Propiedades:', data); 
+  if (!container) return;
+  container.innerHTML = `<div class="mpw-skeleton">${'<div class="mpw-skeleton-card"><div class="mpw-skeleton-line" style="height:120px;border-radius:10px"></div><div class="mpw-skeleton-line" style="width:70%"></div><div class="mpw-skeleton-line" style="width:40%"></div></div>'.repeat(3)}</div>`;
+  try {
+    const data = await api.get('/propiedades/mis-propiedades');
+    misPropsData = data.propiedades || [];
+    renderMisPropsWorkspace();
+  } catch (error) {
+    container.innerHTML = `<div class="loading" style="color:red">Error al cargar tus propiedades.</div>`;
+  }
+};
 
-  if (!data.propiedades || data.propiedades.length === 0) {
+const renderMisPropsWorkspace = () => {
+  const user = (typeof auth !== 'undefined' && auth.getUser) ? (auth.getUser() || {}) : {};
+  const isBasicoPlus = user.role === 'basico_plus';
+  const plan = isBasicoPlus ? 'basico_plus' : (user.plan || 'gratuito');
+  const planLabel = isBasicoPlus ? 'Básico Plus' : plan;
+  const limite = LIMITE_PLAN_MIS_PROPS[plan] ?? 3;
+  const total = misPropsData.length;
+  const activas = misPropsData.filter(p => p.status === 'aprobada').length;
+  const revision = misPropsData.filter(p => p.status === 'revision').length;
+  const pausadas = misPropsData.filter(p => p.status === 'pausada').length;
+  const rechazadas = misPropsData.filter(p => p.status === 'rechazada').length;
+  const nuevasSemana = misPropsData.filter(p => p.createdAt && (Date.now() - new Date(p.createdAt).getTime()) < 7 * 86400000).length;
+  const sinActividad40d = misPropsData.filter(p => p.status === 'aprobada' && p.updatedAt && (Date.now() - new Date(p.updatedAt).getTime()) > 40 * 86400000);
+
+  const barra = document.getElementById('mpw-plan-bar-fill');
+  const barraLabel = document.getElementById('mpw-plan-bar-label');
+  if (barra) {
+    const pct = limite === Infinity ? 0 : Math.min(100, Math.round((total / limite) * 100));
+    barra.style.width = limite === Infinity ? '100%' : `${pct}%`;
+    barra.classList.toggle('mpw-bar-warn', limite !== Infinity && pct >= 80);
+  }
+  if (barraLabel) {
+    barraLabel.textContent = limite === Infinity
+      ? `Plan ${planLabel} · publicaciones ilimitadas · ${total} publicadas`
+      : `Plan ${planLabel} · ${total} de ${limite} publicaciones usadas`;
+  }
+
+  const health = document.getElementById('mpw-health');
+  if (health) {
+    let nivel = 'good', titulo = 'Todo en orden', desc = 'Tus publicaciones están al día.';
+    if (total === 0) {
+      nivel = 'warn'; titulo = 'Aún no tienes publicaciones'; desc = 'Publica tu primera propiedad para empezar a recibir clientes.';
+    } else if (rechazadas > 0 || sinActividad40d.length > 0) {
+      nivel = 'warn';
+      const partes = [];
+      if (rechazadas > 0) partes.push(`${rechazadas} propiedad${rechazadas === 1 ? '' : 'es'} rechazada${rechazadas === 1 ? '' : 's'} pendiente${rechazadas === 1 ? '' : 's'} de corregir`);
+      if (sinActividad40d.length > 0) partes.push(`${sinActividad40d.length} activa${sinActividad40d.length === 1 ? '' : 's'} sin cambios hace más de 40 días`);
+      titulo = 'Necesita atención';
+      desc = partes.join(' · ');
+    } else if (activas > 0) {
+      titulo = 'Buen ritmo'; desc = `${activas} propiedad${activas === 1 ? '' : 'es'} activa${activas === 1 ? '' : 's'} en el catálogo público.`;
+    }
+    health.className = `mpw-health mpw-health-${nivel}`;
+    health.innerHTML = `<div class="mpw-health-icon">${nivel === 'warn' ? '⚠️' : '✓'}</div><div><div class="mpw-health-title">${titulo}</div><div class="mpw-health-desc">${desc}</div></div>`;
+  }
+
+  const kpis = document.getElementById('mpw-kpis');
+  if (kpis) {
+    kpis.innerHTML = [
+      { label: 'Activas', num: activas, delta: nuevasSemana > 0 ? `+${nuevasSemana} esta semana` : null },
+      { label: 'En revisión', num: revision, delta: null },
+      { label: 'Pausadas', num: pausadas, delta: null },
+      { label: 'Rechazadas', num: rechazadas, delta: null, warn: rechazadas > 0 },
+    ].map(k => `<div class="mpw-kpi-card"><div class="mpw-kpi-num">${k.num}</div><div class="mpw-kpi-label">${k.label}</div>${k.delta ? `<div class="mpw-kpi-delta up">${k.delta}</div>` : ''}${k.warn ? '<div class="mpw-kpi-delta down">Revisar motivo</div>' : ''}</div>`).join('');
+  }
+
+  const insightsWrap = document.getElementById('mpw-insights');
+  if (insightsWrap) {
+    const insights = [];
+    if (limite !== Infinity && total >= limite) {
+      insights.push({ icon: '📈', text: `Alcanzaste el límite de tu plan ${planLabel} (${total}/${limite}). Sube de plan para publicar más propiedades.` });
+    } else if (limite !== Infinity && total >= limite * 0.8) {
+      insights.push({ icon: '📈', text: `Estás cerca del límite de tu plan: ${total} de ${limite} publicaciones usadas.` });
+    }
+    if (sinActividad40d.length > 0) {
+      insights.push({ icon: '🕐', text: `${sinActividad40d.length} propiedad${sinActividad40d.length === 1 ? '' : 'es'} activa${sinActividad40d.length === 1 ? '' : 's'} sin actualizarse hace más de 40 días. Actualizar fotos o precio puede ayudar a que se vean más recientes.` });
+    }
+    if (rechazadas > 0) {
+      insights.push({ icon: '✏️', text: `Tienes ${rechazadas} propiedad${rechazadas === 1 ? '' : 'es'} rechazada${rechazadas === 1 ? '' : 's'}. Revisa el motivo y corrígela${rechazadas === 1 ? '' : 'n'} para volver a enviarla${rechazadas === 1 ? '' : 's'} a revisión.` });
+    }
+    insightsWrap.style.display = insights.length ? '' : 'none';
+    insightsWrap.innerHTML = insights.map(i => `<div class="mpw-insight-card"><span class="mpw-insight-icon">${i.icon}</span><span>${i.text}</span></div>`).join('');
+  }
+
+  const feed = document.getElementById('mpw-feed-list');
+  if (feed) {
+    const eventos = misPropsData.map(p => ({
+      fecha: p.updatedAt || p.createdAt,
+      texto: p.status === 'rechazada' ? `"${escapeHtmlLocal(p.titulo)}" fue rechazada` :
+             p.status === 'pausada' ? `"${escapeHtmlLocal(p.titulo)}" está pausada` :
+             p.status === 'aprobada' ? `"${escapeHtmlLocal(p.titulo)}" está activa` :
+             `"${escapeHtmlLocal(p.titulo)}" en revisión`,
+    })).filter(e => e.fecha).sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 8);
+    feed.innerHTML = eventos.length
+      ? eventos.map(e => `<div class="mpw-feed-item"><span class="mpw-feed-dot"></span><div><div class="mpw-feed-text">${e.texto}</div><div class="mpw-feed-time">${hacetiempo(e.fecha)}</div></div></div>`).join('')
+      : '<div class="mpw-feed-empty">Sin actividad todavía.</div>';
+  }
+
+  poblarFiltrosCiudadMisProps();
+  aplicarFiltrosMisProps();
+};
+
+const poblarFiltrosCiudadMisProps = () => {
+  const sel = document.getElementById('mpw-filtro-ciudad');
+  if (!sel) return;
+  const actual = sel.value;
+  const ciudades = [...new Set(misPropsData.map(p => p.ubicacion?.ciudad).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Todas las ciudades</option>' + ciudades.map(c => `<option value="${c}">${c}</option>`).join('');
+  if (ciudades.includes(actual)) sel.value = actual;
+};
+
+window.aplicarFiltrosMisProps = () => {
+  const q = (document.getElementById('mpw-filtro-buscar')?.value || '').toLowerCase().trim();
+  const estado = document.getElementById('mpw-filtro-estado')?.value || '';
+  const tipo = document.getElementById('mpw-filtro-tipo')?.value || '';
+  const operacion = document.getElementById('mpw-filtro-operacion')?.value || '';
+  const ciudad = document.getElementById('mpw-filtro-ciudad')?.value || '';
+
+  misPropsFiltradas = misPropsData.filter(p => {
+    if (q && !(p.titulo || '').toLowerCase().includes(q)) return false;
+    if (estado && p.status !== estado) return false;
+    if (tipo && p.tipo !== tipo) return false;
+    if (operacion && p.operacion !== operacion) return false;
+    if (ciudad && p.ubicacion?.ciudad !== ciudad) return false;
+    return true;
+  });
+
+  renderChipsFiltrosMisProps({ q, estado, tipo, operacion, ciudad });
+  renderizarMisProps();
+};
+
+const renderChipsFiltrosMisProps = (f) => {
+  const wrap = document.getElementById('mpw-filtros-activos');
+  if (!wrap) return;
+  const chips = [];
+  if (f.q) chips.push(`Búsqueda: "${f.q}"`);
+  if (f.estado) chips.push(mpwStatusLabel[f.estado] || f.estado);
+  if (f.tipo) chips.push(f.tipo);
+  if (f.operacion) chips.push(f.operacion);
+  if (f.ciudad) chips.push(f.ciudad);
+  wrap.innerHTML = chips.length
+    ? chips.map(c => `<span class="mpw-chip">${c}</span>`).join('') + `<button type="button" class="mpw-chip mpw-chip-clear" onclick="limpiarFiltrosMisProps()">✕ Limpiar todo</button>`
+    : '';
+};
+
+window.limpiarFiltrosMisProps = () => {
+  ['mpw-filtro-buscar', 'mpw-filtro-estado', 'mpw-filtro-tipo', 'mpw-filtro-operacion', 'mpw-filtro-ciudad'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  window.aplicarFiltrosMisProps();
+};
+
+window.cambiarVistaMisProps = (vista) => {
+  const container = document.getElementById('mis-props-container');
+  const btnGrid = document.getElementById('view-grid-btn');
+  const btnLista = document.getElementById('view-list-btn');
+  if (!container) return;
+  btnGrid?.classList.toggle('active', vista === 'grid');
+  btnLista?.classList.toggle('active', vista === 'tabla');
+  container.dataset.vista = vista;
+  renderizarMisProps();
+};
+
+const renderizarMisProps = () => {
+  const container = document.getElementById('mis-props-container');
+  if (!container) return;
+  const vista = container.dataset.vista || 'grid';
+
+  if (misPropsData.length === 0) {
     container.innerHTML = `
-      <div style="text-align:center;padding:60px;color:var(--text-light)">
-        <div style="font-size:48px;margin-bottom:16px">🏠</div>
-        <p style="font-size:16px;margin-bottom:16px">Aún no tienes propiedades publicadas</p>
+      <div class="mpw-empty">
+        <div class="mpw-empty-icon">🏡</div>
+        <p class="mpw-empty-title">Aún no tienes publicaciones</p>
+        <p class="mpw-empty-desc">Publica tu primera propiedad para empezar a recibir clientes.</p>
         <button class="btn btn-primary" onclick="mostrarSeccion('nueva-propiedad')">Publicar mi primera propiedad</button>
       </div>`;
     return;
   }
+  if (misPropsFiltradas.length === 0) {
+    container.innerHTML = `<div class="mpw-empty"><div class="mpw-empty-icon">🔍</div><p class="mpw-empty-title">Sin resultados</p><p class="mpw-empty-desc">Ningún resultado coincide con estos filtros.</p><button class="btn btn-outline" onclick="limpiarFiltrosMisProps()">Limpiar filtros</button></div>`;
+    return;
+  }
 
-  const esGrid = container.classList.contains('mis-props-view-grid');
-  container.innerHTML = data.propiedades.map(p => `
-    <div class="prop-admin-card ${esGrid ? '' : 'prop-admin-card-list'}">
-      <div class="prop-admin-img">
+  container.innerHTML = vista === 'tabla' ? renderTablaMisProps(misPropsFiltradas) : misPropsFiltradas.map(p => cardMisProps(p)).join('');
+};
+
+const accionesMisProps = (p) => `
+  ${p.status !== 'aprobada' && (p.status !== 'rechazada' || p.permiteEdicion !== false) ? `<button class="btn btn-outline" onclick="editarPropiedad('${p._id}')">Editar</button>` : ''}
+  ${p.status === 'aprobada' ? `<button class="btn btn-outline" onclick="pausarMiPropiedad('${p._id}')">⏸️ Pausar</button>` : ''}
+  ${p.status === 'pausada' ? `<button class="btn btn-primary" onclick="reactivarMiPropiedad('${p._id}')">▶️ Reactivar</button>` : ''}
+  <button class="btn btn-outline btn-del-prop" onclick="eliminarMiPropiedad('${p._id}','${(p.titulo || '').replace(/'/g, "\\'")}')">🗑️</button>`;
+
+const cardMisProps = (p) => `
+    <div class="prop-admin-card">
+      <div class="prop-admin-img" onclick="abrirDrawerMiPropiedad('${p._id}')" style="cursor:pointer">
         ${p.fotos && p.fotos.length > 0
           ? `<img src="${p.fotos[0]}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`
           : 'Sin foto'}
       </div>
       <div class="prop-admin-info">
-        <div class="prop-admin-titulo" title="${p.titulo}">${p.titulo}</div>
+        <div class="prop-admin-titulo" title="${p.titulo}" onclick="abrirDrawerMiPropiedad('${p._id}')" style="cursor:pointer">${p.titulo}</div>
         <div class="prop-admin-meta">${p.ubicacion?.ciudad || ''}, ${p.ubicacion?.estado || ''} · ${formatPrecio(p.precio)}</div>
-        ${!esGrid ? `<div class="prop-admin-meta" style="margin-top:6px">Estado: <b style="color:var(--text)">${p.status}</b></div>` : ''}
         ${p.status === 'rechazada' ? `
           <div style="margin-top:8px;padding:10px 12px;background:#fdecea;border:1px solid #f5c2c0;border-radius:10px;font-size:12px;color:#7a2a27">
             <b>Motivo de rechazo:</b> ${p.motivo_rechazo ? escapeHtmlLocal(p.motivo_rechazo) : 'No especificado.'}
@@ -706,14 +908,91 @@ const cargarMisPropiedades = async () => {
           </div>` : ''}
       </div>
       <div class="prop-admin-actions">
-        <span class="status-badge status-${p.status}">${p.status}</span>
+        <span class="status-badge status-${p.status}">${mpwStatusLabel[p.status] || p.status}</span>
         <button class="btn btn-outline" onclick="window.location='propiedad.html?id=${p._id}'">Ver</button>
-        ${p.status !== 'aprobada' && (p.status !== 'rechazada' || p.permiteEdicion !== false) ? `<button class="btn btn-outline" onclick="editarPropiedad('${p._id}')">Editar</button>` : ''}
-        ${p.status === 'aprobada' ? `<button class="btn btn-outline" onclick="pausarMiPropiedad('${p._id}')">⏸️ Pausar</button>` : ''}
-        ${p.status === 'pausada' ? `<button class="btn btn-primary" onclick="reactivarMiPropiedad('${p._id}')">▶️ Reactivar</button>` : ''}
-        <button class="btn btn-outline btn-del-prop" onclick="eliminarMiPropiedad('${p._id}','${p.titulo.replace(/'/g,"\\'")}')">🗑️</button>
+        ${accionesMisProps(p)}
       </div>
-    </div>`).join('');
+    </div>`;
+
+const renderTablaMisProps = (lista) => `
+  <table class="mpw-table">
+    <thead><tr><th></th><th>Propiedad</th><th>Ciudad</th><th>Precio</th><th>Estado</th><th>Actualizada</th><th></th></tr></thead>
+    <tbody>
+      ${lista.map(p => `
+        <tr class="mpw-table-row" onclick="abrirDrawerMiPropiedad('${p._id}')">
+          <td class="mpw-table-thumb">${p.fotos && p.fotos.length > 0 ? `<img src="${p.fotos[0]}">` : '<div class="mpw-table-noimg"></div>'}</td>
+          <td class="mpw-table-titulo">${escapeHtmlLocal(p.titulo)}</td>
+          <td>${escapeHtmlLocal(p.ubicacion?.ciudad || '—')}</td>
+          <td>${formatPrecio(p.precio)}</td>
+          <td><span class="status-badge status-${p.status}">${mpwStatusLabel[p.status] || p.status}</span></td>
+          <td class="mpw-table-time">${hacetiempo(p.updatedAt || p.createdAt)}</td>
+          <td class="mpw-table-actions" onclick="event.stopPropagation()">
+            <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="window.location='propiedad.html?id=${p._id}'">Ver</button>
+            ${accionesMisProps(p)}
+          </td>
+        </tr>`).join('')}
+    </tbody>
+  </table>`;
+
+// Drawer de detalle
+window.abrirDrawerMiPropiedad = (id) => {
+  const p = misPropsData.find(x => x._id === id);
+  if (!p) return;
+  let drawer = document.getElementById('mpw-drawer');
+  if (!drawer) {
+    drawer = document.createElement('div');
+    drawer.id = 'mpw-drawer';
+    document.body.appendChild(drawer);
+  }
+  drawer.innerHTML = `
+    <div class="mpw-drawer-overlay" onclick="cerrarDrawerMiPropiedad()"></div>
+    <div class="mpw-drawer-panel">
+      <div class="mpw-drawer-head">
+        ${p.fotos && p.fotos.length > 0 ? `<img src="${p.fotos[0]}" class="mpw-drawer-img">` : ''}
+        <button class="mpw-drawer-close" onclick="cerrarDrawerMiPropiedad()">✕</button>
+        <div class="mpw-drawer-headtext">
+          <div class="mpw-drawer-titulo">${escapeHtmlLocal(p.titulo)}</div>
+          <span class="status-badge status-${p.status}">${mpwStatusLabel[p.status] || p.status}</span>
+        </div>
+      </div>
+      <div class="mpw-drawer-tabs">
+        <button type="button" class="mpw-drawer-tab active" data-tab="resumen" onclick="mpwDrawerTab('resumen')">Resumen</button>
+        <button type="button" class="mpw-drawer-tab" data-tab="actividad" onclick="mpwDrawerTab('actividad')">Actividad</button>
+        <button type="button" class="mpw-drawer-tab" data-tab="rendimiento" onclick="mpwDrawerTab('rendimiento')">Rendimiento</button>
+        <button type="button" class="mpw-drawer-tab" data-tab="config" onclick="mpwDrawerTab('config')">Configuración</button>
+      </div>
+      <div class="mpw-drawer-panel-content" data-tab-content="resumen">
+        <div class="mpw-drawer-row"><span>Precio</span><b>${formatPrecio(p.precio)}</b></div>
+        <div class="mpw-drawer-row"><span>Operación</span><b>${escapeHtmlLocal(p.operacion || '—')}</b></div>
+        <div class="mpw-drawer-row"><span>Tipo</span><b>${escapeHtmlLocal(p.tipo || '—')}</b></div>
+        <div class="mpw-drawer-row"><span>Ubicación</span><b>${escapeHtmlLocal(p.ubicacion?.ciudad || '')}, ${escapeHtmlLocal(p.ubicacion?.estado || '')}</b></div>
+        ${p.caracteristicas ? `<div class="mpw-drawer-row"><span>Recámaras / Baños / m²</span><b>${p.caracteristicas.recamaras || 0} / ${p.caracteristicas.banos || 0} / ${p.caracteristicas.m2 || 0}</b></div>` : ''}
+        <div class="mpw-drawer-desc">${escapeHtmlLocal(p.descripcion || '')}</div>
+        ${p.status === 'rechazada' && p.motivo_rechazo ? `<div class="mpw-drawer-alert">Motivo de rechazo: ${escapeHtmlLocal(p.motivo_rechazo)}</div>` : ''}
+      </div>
+      <div class="mpw-drawer-panel-content" data-tab-content="actividad" style="display:none">
+        <div class="mpw-drawer-row"><span>Publicada</span><b>${p.createdAt ? new Date(p.createdAt).toLocaleDateString('es-MX') : '—'}</b></div>
+        <div class="mpw-drawer-row"><span>Última actualización</span><b>${p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('es-MX') : '—'}</b></div>
+        <div class="mpw-drawer-row"><span>Estado actual</span><b>${mpwStatusLabel[p.status] || p.status}</b></div>
+      </div>
+      <div class="mpw-drawer-panel-content" data-tab-content="rendimiento" style="display:none">
+        <div class="mpw-drawer-soon">📊 Las métricas de vistas y leads por propiedad llegarán próximamente.</div>
+      </div>
+      <div class="mpw-drawer-panel-content" data-tab-content="config" style="display:none">
+        <div class="mpw-drawer-actions">
+          <button class="btn btn-outline" onclick="window.location='propiedad.html?id=${p._id}'">Ver publicación</button>
+          ${accionesMisProps(p)}
+        </div>
+      </div>
+    </div>`;
+  drawer.classList.add('mpw-drawer-open');
+};
+window.mpwDrawerTab = (tab) => {
+  document.querySelectorAll('.mpw-drawer-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.mpw-drawer-panel-content').forEach(c => c.style.display = c.dataset.tabContent === tab ? '' : 'none');
+};
+window.cerrarDrawerMiPropiedad = () => {
+  document.getElementById('mpw-drawer')?.classList.remove('mpw-drawer-open');
 };
 
 const pausarMiPropiedad = async (id) => {
@@ -1657,67 +1936,6 @@ caracteristicas: {
       btn.disabled = false;
     }
     showToast({ title: 'Error', message: errorEl.textContent, type: 'error' });
-  }
-};
-
-// ==========================================
-// MIS PROPIEDADES (GRID / LISTA)
-// ==========================================
-let misPropsData = [];
-
-window.cambiarVistaMisProps = (vista) => {
-  const container = document.getElementById('mis-props-container');
-  const btnGrid = document.getElementById('view-grid-btn');
-  const btnLista = document.getElementById('view-list-btn');
-  if (!container) return;
-
-  btnGrid.classList.remove('active');
-  btnLista.classList.remove('active');
-
-  if (vista === 'grid') {
-    container.className = 'mis-props-grid mis-props-view-grid';
-    btnGrid.classList.add('active');
-  } else {
-    container.className = 'mis-props-grid mis-props-view-list';
-    btnLista.classList.add('active');
-  }
-  renderizarMisProps();
-};
-
-const renderizarMisProps = () => {
-  const container = document.getElementById('mis-props-container');
-  if (!container) return;
-  const isGrid = container.classList.contains('mis-props-view-grid');
-
-  if (misPropsData.length === 0) {
-    container.innerHTML = '<div class="loading" style="color:var(--text-light)">No tienes propiedades publicadas aún.</div>';
-    return;
-  }
-
-  if (isGrid) {
-    container.innerHTML = misPropsData.map(p => crearCardPropiedad(p)).join('');
-  } else {
-    container.innerHTML = misPropsData.map(p => {
-      const foto = p.fotos && p.fotos.length > 0 ? `<img src="${p.fotos[0]}" alt="${p.titulo}" class="prop-admin-img">` : `<div class="prop-admin-img">Sin foto</div>`;
-      return `<div class="prop-admin-card">${foto}<div class="prop-admin-info"><div class="prop-admin-titulo">${p.titulo}</div><div class="prop-admin-meta"><span class="status-badge status-${p.estatus || 'nuevo'}">${p.estatus || 'nuevo'}</span> · ${p.ubicacion?.ciudad || ''}, ${p.ubicacion?.estado || ''} · <strong>${formatPrecio(p.precio)}</strong></div></div><div class="prop-admin-actions"><button class="btn btn-outline" style="padding:6px 12px;font-size:12px" onclick="window.location='propiedad.html?id=${p._id}'">Ver</button></div></div>`;
-    }).join('');
-  }
-};
-
-window.cargarMisPropiedades = async () => {
-  const container = document.getElementById('mis-props-container');
-  if (!container) return;
-  container.innerHTML = '<div class="loading">Cargando tus propiedades...</div>';
-  try {
-    const data = await api.get('/propiedades/mias');
-    if (data.ok && data.propiedades) {
-      misPropsData = data.propiedades;
-      renderizarMisProps();
-    } else {
-      container.innerHTML = '<div class="loading" style="color:var(--text-light)">No tienes propiedades publicadas aún.</div>';
-    }
-  } catch (error) {
-    container.innerHTML = '<div class="loading" style="color:red">Error al cargar propiedades.</div>';
   }
 };
 

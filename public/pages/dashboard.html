@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="../css/design-system.css">
   <link rel="stylesheet" href="../css/dashboard-premium.css">
   <link rel="stylesheet" href="../css/dashboard.css">
+  <link rel="stylesheet" href="../css/mis-propiedades-workspace.css">
   <link rel="stylesheet" href="../css/topbar-premium.css">
 </head>
 <body>
@@ -169,19 +170,76 @@
 </section>
 
       <!-- MIS PROPIEDADES -->
-      <section id="sec-mis-propiedades" class="dash-section" style="display:none">
-        <div class="dash-section-header">
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <h2 style="margin:0">Mis propiedades</h2>
-            <div class="view-toggle" style="display:flex;gap:8px;align-items:center">
-              <button type="button" id="view-grid-btn" class="btn btn-outline active" style="padding:8px 14px;font-size:13px" onclick="cambiarVistaMisProps('grid')">Grid</button>
-              <button type="button" id="view-list-btn" class="btn btn-outline" style="padding:8px 14px;font-size:13px" onclick="cambiarVistaMisProps('lista')">Lista</button>
+      <section id="sec-mis-propiedades" class="dash-section mpw" style="display:none">
+        <div class="mpw-header">
+          <div class="mpw-header-top">
+            <div>
+              <h2 class="mpw-title">Mis publicaciones</h2>
+              <p class="mpw-subtitle">Gestiona y analiza todas tus propiedades desde un solo lugar.</p>
+            </div>
+            <div class="mpw-header-actions">
+              <button type="button" class="btn btn-outline" onclick="cargarMisPropiedades()">Actualizar</button>
+              <button class="btn btn-primary" onclick="mostrarSeccion('nueva-propiedad')">+ Nueva publicación</button>
             </div>
           </div>
-          <button class="btn btn-primary" onclick="mostrarSeccion('nueva-propiedad')">+ Nueva publicación</button>
+          <div class="mpw-plan-bar">
+            <div class="mpw-plan-bar-track"><div id="mpw-plan-bar-fill" class="mpw-plan-bar-fill" style="width:0%"></div></div>
+            <div id="mpw-plan-bar-label" class="mpw-plan-bar-label">Cargando plan...</div>
+          </div>
         </div>
-        <div id="mis-props-container" class="mis-props-grid mis-props-view-grid">
-          <div class="loading">Cargando tus propiedades...</div>
+
+        <div id="mpw-health" class="mpw-health"></div>
+
+        <div id="mpw-kpis" class="mpw-kpis"></div>
+
+        <div id="mpw-insights" class="mpw-insights" style="display:none"></div>
+
+        <div class="mpw-body">
+          <div class="mpw-main">
+            <div class="mpw-filters">
+              <div class="mpw-filters-row">
+                <input type="text" id="mpw-filtro-buscar" class="form-input mpw-filtro-buscar" placeholder="Buscar por título..." oninput="aplicarFiltrosMisProps()">
+                <select id="mpw-filtro-estado" class="form-input" onchange="aplicarFiltrosMisProps()">
+                  <option value="">Todos los estados</option>
+                  <option value="aprobada">Activa</option>
+                  <option value="revision">En revisión</option>
+                  <option value="pausada">Pausada</option>
+                  <option value="rechazada">Rechazada</option>
+                </select>
+                <select id="mpw-filtro-tipo" class="form-input" onchange="aplicarFiltrosMisProps()">
+                  <option value="">Todos los tipos</option>
+                  <option value="casa">Casa</option>
+                  <option value="departamento">Departamento</option>
+                  <option value="terreno">Terreno</option>
+                  <option value="local">Local comercial</option>
+                </select>
+                <select id="mpw-filtro-operacion" class="form-input" onchange="aplicarFiltrosMisProps()">
+                  <option value="">Renta o venta</option>
+                  <option value="renta">Renta</option>
+                  <option value="venta">Venta</option>
+                </select>
+                <select id="mpw-filtro-ciudad" class="form-input" onchange="aplicarFiltrosMisProps()">
+                  <option value="">Todas las ciudades</option>
+                </select>
+                <div class="view-toggle" style="display:flex;gap:8px;align-items:center">
+                  <button type="button" id="view-grid-btn" class="btn btn-outline active" style="padding:8px 14px;font-size:13px" onclick="cambiarVistaMisProps('grid')">Grid</button>
+                  <button type="button" id="view-list-btn" class="btn btn-outline" style="padding:8px 14px;font-size:13px" onclick="cambiarVistaMisProps('tabla')">Tabla</button>
+                </div>
+              </div>
+              <div id="mpw-filtros-activos" class="mpw-filtros-activos"></div>
+            </div>
+
+            <div id="mis-props-container" class="mis-props-grid mis-props-view-grid" data-vista="grid">
+              <div class="loading">Cargando tus propiedades...</div>
+            </div>
+          </div>
+
+          <aside class="mpw-sidebar">
+            <div class="mpw-feed">
+              <div class="mpw-feed-title">Actividad reciente</div>
+              <div id="mpw-feed-list" class="mpw-feed-list"></div>
+            </div>
+          </aside>
         </div>
       </section>
 
