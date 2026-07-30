@@ -582,6 +582,12 @@
         </div>
       </section>
 
+      <div id="drawer-pago-overlay" onclick="cerrarDrawerPago()"></div>
+      <div id="drawer-pago">
+        <button class="drawer-close-btn" onclick="cerrarDrawerPago()">✕</button>
+        <div id="drawer-pago-content"></div>
+      </div>
+
       <!-- USUARIOS VETADOS -->
       <section id="sec-bloqueos" class="dash-section" style="display:none">
         <div class="mod-header">
@@ -817,19 +823,6 @@
     <div style="background:white;border-radius:18px;max-width:640px;width:92%;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,0.35);position:relative">
       <button onclick="document.getElementById('modal-preview-prop').style.display='none'" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:#666;z-index:1">✕</button>
       <div id="preview-prop-content" style="padding:0"></div>
-    </div>
-  </div>
-
-  <!-- MODAL ACLARACIÓN PAGO -->
-  <div id="modal-aclaracion-pago" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center">
-    <div style="background:white;border-radius:16px;padding:28px;max-width:440px;width:90%">
-      <h3 style="margin-bottom:12px">📝 Nota de aclaración</h3>
-      <div style="font-size:12px;color:var(--text-light);margin-bottom:12px">Pago: <span id="aclaracion-id"></span></div>
-      <textarea id="aclaracion-texto" class="form-input" rows="4" placeholder="Agregar nota de conciliación..."></textarea>
-      <div style="display:flex;gap:10px;margin-top:14px">
-        <button class="btn btn-primary" style="flex:1" onclick="guardarAclaracion()">Guardar</button>
-        <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('modal-aclaracion-pago').style.display='none'">Cerrar</button>
-      </div>
     </div>
   </div>
 

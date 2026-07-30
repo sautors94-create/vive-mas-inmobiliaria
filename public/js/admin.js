@@ -1495,8 +1495,7 @@ const descargarPlantillaUsuarios = async () => {
 };
 
 // ==================== MÓDULO DE PAGOS Y CONCILIACIÓN ====================
-let pagoEnEdicionId = null;
-
+let pagoModData = [];
 window.cargarPagosAdmin = async () => {
   const tbody = document.getElementById('pagos-admin-tbody');
   if (!tbody) return;
@@ -1526,22 +1525,22 @@ window.cargarPagosAdmin = async () => {
     const updEl = document.getElementById('pago-mod-updated');
     if (updEl) updEl.textContent = `Actualizado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
 
+    pagoModData = data.pagos || [];
     if (!data.ok || !data.pagos || !data.pagos.length) {
       tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--text-light)">No se encontraron pagos.</td></tr>';
       return;
     }
     tbody.innerHTML = data.pagos.map(p => {
       const fecha = new Date(p.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
-      const notaSegura = (p.notas_admin || '').replace(/'/g, "\\'");
-      return `<tr>
+      return `<tr onclick="abrirDrawerPago('${p._id}')" style="cursor:pointer">
         <td>${fecha}</td>
         <td><div style="font-weight:600">${p.usuario_email || 'N/A'}</div><div style="font-size:11px;color:var(--text-light)">ID: ${p.stripe_session_id?.substring(0, 15)}...</div></td>
         <td style="text-transform:capitalize">${p.plan_contratado}</td>
         <td style="font-weight:700">$${p.monto} MXN</td>
         <td><span class="badge-estatus badge-${p.estatus}">${p.estatus}</span></td>
-        <td><div style="display:flex;gap:6px;">
+        <td onclick="event.stopPropagation()"><div style="display:flex;gap:6px;">
           <button class="btn btn-outline" style="padding:4px 10px;font-size:11px" onclick="window.open('https://dashboard.stripe.com/payments/${p.stripe_session_id}', '_blank')">🔍 Stripe</button>
-          <button class="btn btn-outline" style="padding:4px 10px;font-size:11px" onclick="abrirModalAclaracion('${p._id}', '${p.stripe_session_id}', '${notaSegura}')">📝 Nota</button>
+          <button class="btn btn-outline" style="padding:4px 10px;font-size:11px" onclick="abrirDrawerPago('${p._id}')">Ver</button>
         </div></td>
       </tr>`;
     }).join('');
@@ -1584,21 +1583,87 @@ const exportarPagosExcel = async () => {
   }
 };
 
-window.abrirModalAclaracion = (id, stripeId, notaActual) => {
-  pagoEnEdicionId = id;
-  document.getElementById('aclaracion-id').textContent = stripeId;
-  document.getElementById('aclaracion-texto').value = notaActual;
-  document.getElementById('modal-aclaracion-pago').style.display = 'flex';
+window.abrirDrawerPago = (id) => {
+  const p = pagoModData.find(x => x._id === id);
+  if (!p) return;
+  renderDrawerPago(p);
+  document.getElementById('drawer-pago').classList.add('abierto');
+  document.getElementById('drawer-pago-overlay').classList.add('abierto');
 };
 
-window.guardarAclaracion = async () => {
-  const texto = document.getElementById('aclaracion-texto').value;
+window.cerrarDrawerPago = () => {
+  document.getElementById('drawer-pago')?.classList.remove('abierto');
+  document.getElementById('drawer-pago-overlay')?.classList.remove('abierto');
+};
+
+const renderDrawerPago = (p) => {
+  const content = document.getElementById('drawer-pago-content');
+  if (!content) return;
+  const fecha = new Date(p.fecha || p.createdAt).toLocaleString('es-MX');
+  content.innerHTML = `
+    <div style="padding:24px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+        <div style="width:54px;height:54px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700">${(p.usuario_email || '?')[0].toUpperCase()}</div>
+        <div>
+          <h2 style="font-size:19px;font-weight:700">${escapeHtml(p.usuario_email || 'N/A')}</h2>
+          <div style="font-size:13px;color:var(--text-light)">${fecha}</div>
+          <span class="badge-estatus badge-${p.estatus}" style="margin-top:6px;display:inline-block">${p.estatus}</span>
+        </div>
+      </div>
+
+      <div style="padding:16px;background:#f8f9fa;border-radius:10px;border:1px solid #e5e7eb;margin-bottom:20px;font-size:13px;line-height:1.8">
+        <div><b>Plan:</b> <span style="text-transform:capitalize">${escapeHtml(p.plan_contratado || '—')}</span></div>
+        <div><b>Monto:</b> $${p.monto} MXN</div>
+        <div><b>Stripe Session ID:</b> ${escapeHtml(p.stripe_session_id || '—')}</div>
+        <button class="btn btn-outline admin-mini-btn" style="margin-top:8px" onclick="window.open('https://dashboard.stripe.com/payments/${p.stripe_session_id}', '_blank')">🔍 Ver en Stripe</button>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <label style="font-size:12px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em">Cambiar estado</label>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          ${['completado', 'pendiente', 'reembolsado'].map(e => `<button class="btn ${p.estatus === e ? 'btn-primary' : 'btn-outline'}" style="padding:6px 14px;font-size:12px;text-transform:capitalize" onclick="cambiarEstatusPago('${p._id}','${e}')">${e}</button>`).join('')}
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <label style="font-size:12px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em">Nota de conciliación</label>
+        <textarea id="drawer-pago-nota" class="form-input" rows="4" style="margin-top:8px" placeholder="Agregar nota de conciliación...">${escapeHtml(p.notas_admin || '')}</textarea>
+        <button class="btn btn-primary" style="margin-top:8px" onclick="guardarNotaPago('${p._id}')">Guardar nota</button>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="cerrarDrawerPago()">Cerrar</button>
+      </div>
+    </div>`;
+};
+
+window.cambiarEstatusPago = async (id, estatus) => {
   try {
-    const data = await api.patch(`/admin/pagos/${pagoEnEdicionId}`, { notas_admin: texto });
+    const data = await api.patch(`/admin/pagos/${id}`, { estatus });
+    if (data.ok) {
+      dsToast({ title: 'Actualizado', message: `Estado cambiado a ${estatus}.`, type: 'success' });
+      const p = pagoModData.find(x => x._id === id);
+      if (p) p.estatus = estatus;
+      renderDrawerPago(p);
+      cargarPagosAdmin();
+    } else {
+      dsToast({ title: 'Error', message: data.error || 'No se pudo actualizar.', type: 'error' });
+    }
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo actualizar.', type: 'error' });
+  }
+};
+
+window.guardarNotaPago = async (id) => {
+  const texto = document.getElementById('drawer-pago-nota')?.value || '';
+  try {
+    const data = await api.patch(`/admin/pagos/${id}`, { notas_admin: texto });
     if (data.ok) {
       dsToast({ title: 'Guardado', message: 'Nota agregada al pago.', type: 'success' });
-      document.getElementById('modal-aclaracion-pago').style.display = 'none';
-      cargarPagosAdmin();
+      const p = pagoModData.find(x => x._id === id);
+      if (p) p.notas_admin = texto;
+    } else {
+      dsToast({ title: 'Error', message: data.error || 'No se pudo guardar.', type: 'error' });
     }
   } catch (e) {
     dsToast({ title: 'Error', message: 'No se pudo guardar.', type: 'error' });
