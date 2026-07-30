@@ -519,6 +519,31 @@ const enviarMensajePropiedad = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Purga mensajes con más de 6 meses de antigüedad. No toca los marcados para
+// revisión de riesgo ni los de riesgo medio/alto/crítico, para no perder
+// evidencia de moderación. Usada por el cron automático en app.js y por el
+// endpoint manual de admin.
+const purgarMensajesAntiguos = async () => {
+  const limite = new Date();
+  limite.setMonth(limite.getMonth() - 6);
+  const resultado = await Message.deleteMany({
+    createdAt: { $lt: limite },
+    riesgoRevision: { $ne: true },
+    riesgo: { $in: ['bajo', null] },
+  });
+  return resultado.deletedCount;
+};
+
+const purgarMensajesAdmin = async (req, res) => {
+  try {
+    const deletedCount = await purgarMensajesAntiguos();
+    res.json({ ok: true, deletedCount });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+};
+
 module.exports = {
   enviarMensaje,
   misConversaciones,
@@ -529,5 +554,7 @@ module.exports = {
   marcarMensajeRevisado,
   getRiesgoStats,
   exportarMensajesRiesgoExcel,
-  enviarMensajePropiedad
+  enviarMensajePropiedad,
+  purgarMensajesAntiguos,
+  purgarMensajesAdmin,
 };

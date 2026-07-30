@@ -142,9 +142,34 @@
 
       <!-- EN REVISIÓN -->
       <section id="sec-revision" class="dash-section" style="display:none">
-        <div class="dash-section-header">
-          <h2>Propiedades en revisión</h2>
+        <div class="mod-header">
+          <div>
+            <h2>Propiedades en revisión</h2>
+            <div class="mod-header-sub">Panel &gt; Revisión · <span id="rev-mod-updated" class="mod-updated"></span></div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarRevision()">↻ Actualizar</button>
+          </div>
         </div>
+
+        <div class="mod-kpis" id="rev-mod-kpis"></div>
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+          <input type="text" id="rev-filtro-search" class="form-input" placeholder="Buscar título o ciudad..." style="width:220px;padding:8px 12px;font-size:13px" oninput="cargarRevision()">
+          <select id="rev-filtro-tipo" class="filter-select" style="width:auto" onchange="cargarRevision()">
+            <option value="">Todos los tipos</option>
+            <option value="casa">Casa</option>
+            <option value="departamento">Departamento</option>
+            <option value="terreno">Terreno</option>
+            <option value="local">Local comercial</option>
+          </select>
+          <input type="text" id="rev-filtro-ciudad" class="form-input" placeholder="Ciudad..." style="width:160px;padding:8px 12px;font-size:13px" oninput="cargarRevision()">
+          <select id="rev-filtro-orden" class="filter-select" style="width:auto" onchange="cargarRevision()">
+            <option value="antigua">Más antigua primero</option>
+            <option value="reciente">Más reciente primero</option>
+          </select>
+        </div>
+
         <div id="revision-lista" class="mis-props-grid">
           <div class="loading">Cargando...</div>
         </div>
@@ -653,6 +678,7 @@
           </div>
           <div class="mod-header-actions">
             <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarMonitoreo()">↻ Actualizar</button>
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="purgarMensajesAntiguosAdmin()">🗑️ Purgar mensajes +6 meses</button>
             <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="exportarMonitoreoExcel()">⬇ Exportar Excel</button>
           </div>
         </div>
@@ -660,6 +686,8 @@
         <div class="mod-kpis" id="mon-mod-kpis">
           <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Pendientes</div></div>
         </div>
+
+        <div style="font-size:12px;color:var(--text-light);margin:-8px 0 14px">Los mensajes con más de 6 meses se eliminan automáticamente todos los días; los marcados para revisión de riesgo o de riesgo medio/alto/crítico nunca se purgan.</div>
 
         <div class="mod-trend">
           <div id="mon-mod-tendencia"></div>

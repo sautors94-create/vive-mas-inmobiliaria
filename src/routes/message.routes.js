@@ -12,7 +12,8 @@ const {
   marcarMensajeRevisado,
   getRiesgoStats,
   exportarMensajesRiesgoExcel,
-  enviarMensajePropiedad
+  enviarMensajePropiedad,
+  purgarMensajesAdmin
 } = require('../controllers/message.controller');
 
 router.use(authMiddleware);
@@ -31,5 +32,6 @@ router.get('/admin/riesgo/stats', requireRole('admin'), getRiesgoStats);
 router.get('/admin/riesgo/exportar', requireRole('admin'), exportarMensajesRiesgoExcel);
 router.get('/admin/riesgo', requireRole('admin'), mensajesConRiesgo);
 router.patch('/admin/:id/revisado', requireRole('admin'), marcarMensajeRevisado);
+router.post('/admin/purgar', requireRole('admin'), purgarMensajesAdmin);
 
 module.exports = router;

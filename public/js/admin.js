@@ -139,9 +139,29 @@ const irAFiltradoUsuarios = (plan) => {
 
 const cargarRevision = async () => {
   const lista = document.getElementById('revision-lista');
-  const data = await api.get('/admin/propiedades?status=revision');
-  if (!data.propiedades || data.propiedades.length === 0) {
-    lista.innerHTML = '<div class="loading">No hay propiedades en revisión.</div>';
+  const search = document.getElementById('rev-filtro-search')?.value || '';
+  const tipo = document.getElementById('rev-filtro-tipo')?.value || '';
+  const ciudad = document.getElementById('rev-filtro-ciudad')?.value || '';
+  const orden = document.getElementById('rev-filtro-orden')?.value || 'antigua';
+
+  const params = new URLSearchParams({ status: 'revision' });
+  if (search) params.append('search', search);
+  if (tipo) params.append('tipo', tipo);
+  if (ciudad) params.append('ciudad', ciudad);
+
+  const data = await api.get(`/admin/propiedades?${params.toString()}`);
+  let propiedades = data.propiedades || [];
+  propiedades.sort((a, b) => orden === 'antigua'
+    ? new Date(a.createdAt) - new Date(b.createdAt)
+    : new Date(b.createdAt) - new Date(a.createdAt));
+
+  const updEl = document.getElementById('rev-mod-updated');
+  if (updEl) updEl.textContent = `Actualizado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+
+  renderRevModKpis(propiedades);
+
+  if (propiedades.length === 0) {
+    lista.innerHTML = '<div class="loading" style="color:var(--text-light)">No hay propiedades en revisión.</div>';
     return;
   }
 
@@ -153,35 +173,34 @@ const cargarRevision = async () => {
           <div class="th-location">Ubicación</div>
           <div class="th-price">Precio</div>
           <div class="th-owner">Propietario</div>
-          <div class="th-status">Status</div>
+          <div class="th-status">Esperando</div>
           <div class="th-actions">Acciones</div>
         </div>
         <div class="admin-table-body">
-          ${data.propiedades.map(p => {
+          ${propiedades.map(p => {
             const foto = (p.fotos && p.fotos.length > 0) ? p.fotos[0] : null;
             const propietario = p.propietario?.nombre || '—';
             const ciudad = p.ubicacion?.ciudad || '—';
             const estado = p.ubicacion?.estado || '—';
-            const motivo = p.motivo_rechazo ? `<div class="admin-table-reason">Motivo: ${escapeHtml(p.motivo_rechazo)}</div>` : '';
+            const dias = Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000);
 
             return `
-              <div class="tr" role="row">
+              <div class="tr" role="row" onclick="abrirDrawerPropiedad('${p._id}')" style="cursor:pointer">
                 <div class="td th-avatar" data-label="Propiedad">
                   <div class="prop-avatar">
                     ${foto ? `<img src="${foto}" alt="${escapeHtml(p.titulo)}" />` : `<div class="prop-avatar-placeholder">${escapeHtml((p.titulo || '?').charAt(0).toUpperCase())}</div>`}
                   </div>
                   <div class="prop-title">${escapeHtml(p.titulo || 'Sin título')}</div>
-                  ${motivo}
+                  ${(p.fotos || []).length < 3 ? '<div style="font-size:11px;color:#e65100;margin-top:2px">⚠️ Menos de 3 fotos</div>' : ''}
                 </div>
                 <div class="td th-location" data-label="Ubicación">${escapeHtml(ciudad)}, ${escapeHtml(estado)}</div>
                 <div class="td th-price" data-label="Precio">${formatPrecio(p.precio)}</div>
                 <div class="td th-owner" data-label="Propietario">${escapeHtml(propietario)}</div>
-                <div class="td th-status" data-label="Status">
-                  <span class="status-badge status-${p.status}">${escapeHtml(p.status)}</span>
+                <div class="td th-status" data-label="Esperando">
+                  <span class="status-badge ${dias >= 3 ? 'status-rechazada' : 'status-revision'}">${dias === 0 ? 'Hoy' : `${dias} día${dias === 1 ? '' : 's'}`}</span>
                 </div>
-                <div class="td th-actions" data-label="Acciones">
+                <div class="td th-actions" data-label="Acciones" onclick="event.stopPropagation()">
                   <div class="admin-actions-row">
-                    <button class="btn btn-outline admin-mini-btn" style="border-color:#0369a1;color:#0369a1" onclick="verPropiedadPreview('${p._id}')">👁 Preview</button>
                     <button class="btn btn-primary admin-mini-btn" onclick="aprobarPropiedad('${p._id}')">Aprobar</button>
                     <button class="btn btn-outline admin-mini-btn" style="border-color:#e65100;color:#e65100" onclick="abrirModalRechazo('${p._id}')">Rechazar</button>
                     <button class="btn btn-outline admin-mini-btn" onclick="bloquearPropiedad('${p._id}')">Bloquear</button>
@@ -195,6 +214,23 @@ const cargarRevision = async () => {
       </div>
     </div>
   `;
+};
+
+const renderRevModKpis = (propiedades) => {
+  const el = document.getElementById('rev-mod-kpis');
+  if (!el) return;
+  const total = propiedades.length;
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const nuevasHoy = propiedades.filter(p => new Date(p.createdAt) >= hoy).length;
+  const masAntigua = total > 0 ? Math.max(...propiedades.map(p => Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000))) : 0;
+  const fotosIncompletas = propiedades.filter(p => (p.fotos || []).length < 3).length;
+  const kpis = [
+    { num: total, label: 'Pendientes' },
+    { num: nuevasHoy, label: 'Nuevas hoy' },
+    { num: total ? `${masAntigua}d` : '—', label: 'Más antigua en cola' },
+    { num: fotosIncompletas, label: 'Con menos de 3 fotos' },
+  ];
+  el.innerHTML = kpis.map(k => `<div class="mod-kpi-card"><div class="mod-kpi-num">${k.num}</div><div class="mod-kpi-label">${k.label}</div></div>`).join('');
 };
 
 const escapeHtml = (str) => {
@@ -2163,6 +2199,21 @@ const exportarMonitoreoExcel = async () => {
     dsToast({ title: 'Exportado', message: 'Excel descargado correctamente.', type: 'success' });
   } catch (e) {
     dsToast({ title: 'Error', message: 'No se pudo generar el Excel', type: 'error' });
+  }
+};
+
+window.purgarMensajesAntiguosAdmin = async () => {
+  if (!confirm('¿Eliminar ahora todos los mensajes con más de 6 meses (excepto los marcados para revisión de riesgo)? Esta acción no se puede deshacer.')) return;
+  try {
+    const data = await api.post('/mensajes/admin/purgar', {});
+    if (data.ok) {
+      dsToast({ title: 'Purga completada', message: `${data.deletedCount} mensaje(s) eliminado(s).`, type: 'success' });
+      cargarMonitoreo();
+    } else {
+      dsToast({ title: 'Error', message: data.error || 'No se pudo purgar.', type: 'error' });
+    }
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo purgar.', type: 'error' });
   }
 };
 
