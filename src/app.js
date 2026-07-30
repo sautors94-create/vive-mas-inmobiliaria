@@ -139,6 +139,24 @@ app.use((req, res) => {
 // ==========================================
 const User = require('./models/User');
 const Property = require('./models/Property');
+const { purgarMensajesAntiguos } = require('./controllers/message.controller');
+
+const ejecutarPurgaMensajes = async () => {
+  try {
+    const deletedCount = await purgarMensajesAntiguos();
+    if (deletedCount > 0) {
+      console.log(`🗑️ Purga de mensajes: ${deletedCount} mensaje(s) de más de 6 meses eliminados.`);
+    }
+  } catch (error) {
+    console.error('❌ Error en purga de mensajes antiguos:', error.message);
+  }
+};
+
+// Ejecutar una vez al arrancar
+setTimeout(ejecutarPurgaMensajes, 15000);
+
+// Luego una vez al día
+setInterval(ejecutarPurgaMensajes, 24 * 60 * 60 * 1000);
 
 const bajarPlanesVencidos = async () => {
   try {

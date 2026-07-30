@@ -8,8 +8,24 @@ const { TOTP, Secret } = require('otpauth');
 const Stripe = require('stripe');
 const { subirACloudinary } = require('../config/cloudinary');
 const { generarCodigo, enviarCodigoVerificacion, enviarBienvenida, enviarEnlaceRecuperacion, enviarAlerta2FADesactivado } = require('../utils/email');
+const { enviarCodigoSMS } = require('../utils/sms');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+
+// Envía el código de verificación por el canal elegido por el usuario.
+// Si eligió SMS pero Twilio todavía no está configurado (o falla el envío),
+// hace fallback a email para no dejar a nadie sin poder verificar su cuenta.
+const enviarCodigoPorCanal = async (user, codigo) => {
+  if (user.metodoVerificacion === 'sms' && user.telefono) {
+    const resultado = await enviarCodigoSMS(user.telefono, codigo);
+    if (resultado.ok) return { ok: true, canal: 'sms' };
+    // Fallback a email
+    await enviarCodigoVerificacion(user.email, user.nombre, codigo);
+    return { ok: true, canal: 'email', fallback: true };
+  }
+  await enviarCodigoVerificacion(user.email, user.nombre, codigo);
+  return { ok: true, canal: 'email' };
+};
 
 const generarTokens = (user) => {
   const accessToken = jwt.sign(
@@ -63,11 +79,9 @@ const registro = async (req, res) => {
       verificado: false
     });
 
-    await enviarCodigoVerificacion(email, nombre, codigo);
-
-    const { accessToken, refreshToken } = generarTokens(user);
+    const envio = await enviarCodigoPorCanal(user, codigo);
     res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
-    res.status(201).json({ ok: true, accessToken, user, requiereVerificacion: true });
+    res.status(201).json({ ok: true, accessToken, user, requiereVerificacion: true, canalVerificacion: envio.canal });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -109,7 +123,7 @@ const reenviarCodigo = async (req, res) => {
     user.codigoVerificacion = codigo;
     user.codigoExpira = expira;
     await user.save();
-    await enviarCodigoVerificacion(email, user.nombre, codigo);
+    await enviarCodigoPorCanal(user, codigo);
     res.json({ ok: true, mensaje: 'Código reenviado exitosamente' });
   } catch (error) {
     res.status(500).json({ error: error.message });
