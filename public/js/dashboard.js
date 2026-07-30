@@ -750,6 +750,10 @@ const renderMisPropsWorkspace = () => {
     health.innerHTML = `<div class="mpw-health-icon">${nivel === 'warn' ? '⚠️' : '✓'}</div><div><div class="mpw-health-title">${titulo}</div><div class="mpw-health-desc">${desc}</div></div>`;
   }
 
+  const totalVistas = misPropsData.reduce((sum, p) => sum + (p.vistas || 0), 0);
+  const totalLeads = misPropsData.reduce((sum, p) => sum + (p.leadsCount || 0), 0);
+  const conversion = totalVistas > 0 ? ((totalLeads / totalVistas) * 100).toFixed(1) : null;
+
   const kpis = document.getElementById('mpw-kpis');
   if (kpis) {
     kpis.innerHTML = [
@@ -757,6 +761,8 @@ const renderMisPropsWorkspace = () => {
       { label: 'En revisión', num: revision, delta: null },
       { label: 'Pausadas', num: pausadas, delta: null },
       { label: 'Rechazadas', num: rechazadas, delta: null, warn: rechazadas > 0 },
+      { label: 'Vistas totales', num: totalVistas, delta: null },
+      { label: 'Leads (conversaciones)', num: totalLeads, delta: conversion !== null ? `${conversion}% conversión` : null },
     ].map(k => `<div class="mpw-kpi-card"><div class="mpw-kpi-num">${k.num}</div><div class="mpw-kpi-label">${k.label}</div>${k.delta ? `<div class="mpw-kpi-delta up">${k.delta}</div>` : ''}${k.warn ? '<div class="mpw-kpi-delta down">Revisar motivo</div>' : ''}</div>`).join('');
   }
 
@@ -773,6 +779,19 @@ const renderMisPropsWorkspace = () => {
     }
     if (rechazadas > 0) {
       insights.push({ icon: '✏️', text: `Tienes ${rechazadas} propiedad${rechazadas === 1 ? '' : 'es'} rechazada${rechazadas === 1 ? '' : 's'}. Revisa el motivo y corrígela${rechazadas === 1 ? '' : 'n'} para volver a enviarla${rechazadas === 1 ? '' : 's'} a revisión.` });
+    }
+    const activasConVistas = misPropsData.filter(p => p.status === 'aprobada' && p.vistas > 0);
+    if (activasConVistas.length > 1) {
+      const promedioVistas = activasConVistas.reduce((s, p) => s + p.vistas, 0) / activasConVistas.length;
+      const top = activasConVistas.reduce((a, b) => (b.vistas > a.vistas ? b : a));
+      if (top.vistas > promedioVistas * 1.3) {
+        const pct = Math.round((top.vistas / promedioVistas - 1) * 100);
+        insights.push({ icon: '👁️', text: `"${escapeHtmlLocal(top.titulo)}" recibió ${top.vistas} vistas, ${pct}% más que el promedio de tus otras publicaciones activas.` });
+      }
+    }
+    const activasSinVistas = misPropsData.filter(p => p.status === 'aprobada' && !p.vistas && p.createdAt && (Date.now() - new Date(p.createdAt).getTime()) > 7 * 86400000);
+    if (activasSinVistas.length > 0) {
+      insights.push({ icon: '📉', text: `${activasSinVistas.length} propiedad${activasSinVistas.length === 1 ? '' : 'es'} activa${activasSinVistas.length === 1 ? '' : 's'} sin vistas después de más de una semana publicada${activasSinVistas.length === 1 ? '' : 's'}. Revisar título, fotos o precio puede ayudar.` });
     }
     insightsWrap.style.display = insights.length ? '' : 'none';
     insightsWrap.innerHTML = insights.map(i => `<div class="mpw-insight-card"><span class="mpw-insight-icon">${i.icon}</span><span>${i.text}</span></div>`).join('');
@@ -897,6 +916,7 @@ const cardMisProps = (p) => `
       <div class="prop-admin-info">
         <div class="prop-admin-titulo" title="${p.titulo}" onclick="abrirDrawerMiPropiedad('${p._id}')" style="cursor:pointer">${p.titulo}</div>
         <div class="prop-admin-meta">${p.ubicacion?.ciudad || ''}, ${p.ubicacion?.estado || ''} · ${formatPrecio(p.precio)}</div>
+        ${(p.vistas || p.leadsCount) ? `<div class="prop-admin-meta" style="margin-top:4px">👁️ ${p.vistas || 0} vistas · 💬 ${p.leadsCount || 0} leads</div>` : ''}
         ${p.status === 'rechazada' ? `
           <div style="margin-top:8px;padding:10px 12px;background:#fdecea;border:1px solid #f5c2c0;border-radius:10px;font-size:12px;color:#7a2a27">
             <b>Motivo de rechazo:</b> ${p.motivo_rechazo ? escapeHtmlLocal(p.motivo_rechazo) : 'No especificado.'}
@@ -916,7 +936,7 @@ const cardMisProps = (p) => `
 
 const renderTablaMisProps = (lista) => `
   <table class="mpw-table">
-    <thead><tr><th></th><th>Propiedad</th><th>Ciudad</th><th>Precio</th><th>Estado</th><th>Actualizada</th><th></th></tr></thead>
+    <thead><tr><th></th><th>Propiedad</th><th>Ciudad</th><th>Precio</th><th>Estado</th><th>Vistas</th><th>Leads</th><th>Actualizada</th><th></th></tr></thead>
     <tbody>
       ${lista.map(p => `
         <tr class="mpw-table-row" onclick="abrirDrawerMiPropiedad('${p._id}')">
@@ -925,6 +945,8 @@ const renderTablaMisProps = (lista) => `
           <td>${escapeHtmlLocal(p.ubicacion?.ciudad || '—')}</td>
           <td>${formatPrecio(p.precio)}</td>
           <td><span class="status-badge status-${p.status}">${mpwStatusLabel[p.status] || p.status}</span></td>
+          <td>${p.vistas || 0}</td>
+          <td>${p.leadsCount || 0}</td>
           <td class="mpw-table-time">${hacetiempo(p.updatedAt || p.createdAt)}</td>
           <td class="mpw-table-actions" onclick="event.stopPropagation()">
             <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="window.location='propiedad.html?id=${p._id}'">Ver</button>
@@ -976,7 +998,9 @@ window.abrirDrawerMiPropiedad = (id) => {
         <div class="mpw-drawer-row"><span>Estado actual</span><b>${mpwStatusLabel[p.status] || p.status}</b></div>
       </div>
       <div class="mpw-drawer-panel-content" data-tab-content="rendimiento" style="display:none">
-        <div class="mpw-drawer-soon">📊 Las métricas de vistas y leads por propiedad llegarán próximamente.</div>
+        <div class="mpw-drawer-row"><span>Vistas</span><b>${p.vistas || 0}</b></div>
+        <div class="mpw-drawer-row"><span>Leads (conversaciones)</span><b>${p.leadsCount || 0}</b></div>
+        <div class="mpw-drawer-row"><span>Conversión</span><b>${p.vistas ? ((p.leadsCount || 0) / p.vistas * 100).toFixed(1) + '%' : '—'}</b></div>
       </div>
       <div class="mpw-drawer-panel-content" data-tab-content="config" style="display:none">
         <div class="mpw-drawer-actions">

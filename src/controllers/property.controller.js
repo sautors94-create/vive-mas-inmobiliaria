@@ -1,5 +1,6 @@
 const { subirACloudinary } = require('../config/cloudinary');
 const Property = require('../models/Property');
+const Message = require('../models/Message');
 
 const LIMITE_POR_PLAN = {
   gratuito: 3,
@@ -129,6 +130,9 @@ const detallePropiedad = async (req, res) => {
     if (propiedad.status !== 'aprobada') return res.status(403).json({ error: 'Propiedad no disponible' });
     // 'pausada' se oculta automáticamente porque solo se consultan propiedades con status 'aprobada'
 
+    // Contador de vistas real (no bloqueante, no afecta el tiempo de respuesta)
+    Property.updateOne({ _id: propiedad._id }, { $inc: { vistas: 1 } }).catch(() => {});
+
     res.json({ ok: true, propiedad });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -209,7 +213,23 @@ const misPropiedades = async (req, res) => {
   try {
     const propiedades = await Property.find({ propietario: req.user.id })
       .sort({ createdAt: -1 });
-    res.json({ ok: true, total: propiedades.length, propiedades });
+
+    const ids = propiedades.map(p => p._id);
+    const leadsAgg = await Message.aggregate([
+      { $match: { propiedad: { $in: ids } } },
+      { $group: { _id: { propiedad: '$propiedad', conversacionId: '$conversacionId' } } },
+      { $group: { _id: '$_id.propiedad', leads: { $sum: 1 } } },
+    ]);
+    const leadsMap = {};
+    leadsAgg.forEach(l => { leadsMap[l._id.toString()] = l.leads; });
+
+    const propiedadesConDatos = propiedades.map(p => {
+      const obj = p.toObject();
+      obj.leadsCount = leadsMap[p._id.toString()] || 0;
+      return obj;
+    });
+
+    res.json({ ok: true, total: propiedades.length, propiedades: propiedadesConDatos });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
