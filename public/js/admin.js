@@ -647,6 +647,7 @@ const aprobarPropiedad = async (id) => {
 const abrirModalRechazo = (id) => {
   propiedadArechazar = id;
   document.getElementById('motivo-rechazo').value = '';
+  document.getElementById('permite-edicion-rechazo').checked = true;
   document.getElementById('modal-rechazo').style.display = 'flex';
 };
 
@@ -657,8 +658,9 @@ const cerrarModal = () => {
 
 const confirmarRechazo = async () => {
   const motivo = document.getElementById('motivo-rechazo').value.trim();
+  const permiteEdicion = document.getElementById('permite-edicion-rechazo').checked;
   if (!motivo) { dsToast({ title: 'Falta el motivo', message: 'Escribe el motivo del rechazo antes de continuar.', type: 'error' }); return; }
-  const data = await api.patch(`/admin/propiedades/${propiedadArechazar}/rechazar`, { motivo });
+  const data = await api.patch(`/admin/propiedades/${propiedadArechazar}/rechazar`, { motivo, permiteEdicion });
   if (data.ok) {
     dsToast({ title: 'Propiedad rechazada', message: 'Se notificó el motivo al propietario.', type: 'info' });
     cerrarModal(); cargarRevision(); cargarDashboard();

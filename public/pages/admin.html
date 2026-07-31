@@ -776,6 +776,11 @@
     <div style="background:white;border-radius:16px;padding:32px;max-width:480px;width:90%">
       <h3 style="margin-bottom:16px">Motivo de rechazo</h3>
       <textarea id="motivo-rechazo" class="form-input" rows="4" placeholder="Explica el motivo del rechazo..."></textarea>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13px;color:var(--text)">
+        <input type="checkbox" id="permite-edicion-rechazo" checked>
+        Permitir que el propietario edite y vuelva a enviar la propiedad
+      </label>
+      <div style="font-size:11.5px;color:var(--text-light);margin-top:4px">Si lo desmarcas, el propietario solo podrá eliminar la publicación, no corregirla.</div>
       <div style="display:flex;gap:12px;margin-top:16px">
         <button class="btn btn-primary" onclick="confirmarRechazo()" style="flex:1">Confirmar rechazo</button>
         <button class="btn btn-outline" onclick="cerrarModal()" style="flex:1">Cancelar</button>

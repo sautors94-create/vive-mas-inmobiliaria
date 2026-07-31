@@ -8,6 +8,7 @@ const propertySchema = new mongoose.Schema({
   tipo: { type: String, enum: ['casa', 'departamento', 'terreno', 'local'], required: true },
   status: { type: String, enum: ['revision', 'aprobada', 'rechazada', 'bloqueada', 'pausada'], default: 'revision' },
   motivo_rechazo: { type: String, default: null },
+  permiteEdicion: { type: Boolean, default: true },
   fotos: [{ type: String }],
   ubicacion: {
     estado: { type: String, required: true },

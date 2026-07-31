@@ -523,7 +523,7 @@ const aprobarPropiedad = async (req, res) => {
 
 const rechazarPropiedad = async (req, res) => {
   try {
-    const { motivo } = req.body;
+    const { motivo, permiteEdicion } = req.body;
     if (!motivo) return res.status(400).json({ error: 'Debes indicar el motivo de rechazo' });
 
     const propiedad = await Property.findById(req.params.id).populate('propietario', 'nombre notificaciones');
@@ -531,7 +531,7 @@ const rechazarPropiedad = async (req, res) => {
 
     const updated = await Property.findByIdAndUpdate(
       req.params.id,
-      { status: 'rechazada', motivo_rechazo: motivo },
+      { status: 'rechazada', motivo_rechazo: motivo, permiteEdicion: permiteEdicion !== false },
       { new: true }
     );
 
