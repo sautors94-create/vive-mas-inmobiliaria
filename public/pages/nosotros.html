@@ -33,7 +33,7 @@
   </nav>
 
   <!-- HERO -->
-  <div style="background:linear-gradient(135deg,#0f1923 0%,#1a472a 100%);padding:120px 0 60px;color:white">
+  <div style="background:linear-gradient(135deg,var(--bg-dark) 0%,var(--primary) 100%);padding:120px 0 60px;color:white">
     <div class="container">
       <h1 style="font-size:48px;margin-bottom:16px">Quiénes somos</h1>
       <p style="color:rgba(255,255,255,0.7);font-size:18px;max-width:600px">Una empresa mexicana comprometida con hacer más accesible y transparente el mercado inmobiliario nacional.</p>
@@ -115,7 +115,7 @@
 </section>
 
   <!-- CTA -->
-  <section style="background:linear-gradient(135deg,#0f1923,#1a472a);padding:80px 0;text-align:center">
+  <section style="background:linear-gradient(135deg,var(--bg-dark),var(--primary));padding:80px 0;text-align:center">
     <div class="container">
       <h2 id="scroll-a-cta" style="font-size:40px;color:white;margin-bottom:16px">¿Listo para encontrar tu propiedad ideal?</h2>
       <p style="color:rgba(255,255,255,0.7);font-size:18px;margin-bottom:40px">Únete a miles de personas que ya confían en Vive Más Inmobiliaria.</p>
@@ -159,7 +159,7 @@ const cargarEstados = async () => {
     grid.innerHTML = data.estados.map(e => `
       <a href="catalogo.html?estado=${encodeURIComponent(e._id)}"
         style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:20px;padding:10px 20px;font-size:14px;color:var(--text);text-decoration:none;transition:all 0.2s;display:flex;align-items:center;gap:8px"
-        onmouseover="this.style.background='#f0f7f4';this.style.borderColor='#1a472a';this.style.color='#1a472a'"
+        onmouseover="this.style.background='#f0f7f4';this.style.borderColor='var(--primary)';this.style.color='var(--primary)'"
         onmouseout="this.style.background='var(--bg-secondary)';this.style.borderColor='var(--border)';this.style.color='var(--text)'">
         📍 ${e._id}
         <span style="background:var(--primary);color:white;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600">${e.total}</span>

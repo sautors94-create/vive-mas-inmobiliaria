@@ -34,7 +34,7 @@ const crearPropiedad = async (req, res) => {
     const pesoMap = { 
       gratuito: 0, 
       basico: 1, 
-      basico_plus: 1, // ✅ AGREGADO para que no dé undefined
+      basico_plus: 3, // Plan Gratuito Ilimitado: prioridad máxima, por encima de Premium
       premium: 2 
     };
     

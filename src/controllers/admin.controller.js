@@ -126,10 +126,29 @@ const exportarUsuariosExcel = async (req, res) => {
 const cambiarPlan = async (req, res) => {
   try {
     const { plan } = req.body;
-    const planesValidos = ['gratuito', 'basico', 'premium'];
+    const planesValidos = ['gratuito', 'basico', 'premium', 'ilimitado'];
     if (!planesValidos.includes(plan)) return res.status(400).json({ error: 'Plan no válido' });
-    const usuario = await User.findByIdAndUpdate(req.params.id, { plan }, { new: true });
-    if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const usuarioActual = await User.findById(req.params.id);
+    if (!usuarioActual) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    // "ilimitado" (Plan Gratuito Ilimitado) es un plan especial que solo un admin puede
+    // asignar: internamente es plan=gratuito + role=basico_plus, lo que le da propiedades
+    // ilimitadas, mensajes ilimitados y prioridad máxima en destacadas/catálogo — sin costo.
+    let update;
+    if (plan === 'ilimitado') {
+      update = { plan: 'gratuito', role: 'basico_plus' };
+    } else {
+      update = { plan };
+      if (usuarioActual.role === 'basico_plus') update.role = 'user';
+    }
+
+    const usuario = await User.findByIdAndUpdate(req.params.id, update, { new: true });
+
+    const pesoMap = { gratuito: 0, basico: 1, basico_plus: 3, premium: 2 };
+    const pesoEfectivo = pesoMap[usuario.role === 'basico_plus' ? 'basico_plus' : usuario.plan] ?? 0;
+    await Property.updateMany({ propietario: usuario._id }, { $set: { planPeso: pesoEfectivo } });
+
     res.json({ ok: true, usuario });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -671,7 +690,7 @@ const crearUsuariosMasivo = async (req, res) => {
     // Opciones del frontend
     const planForzar = req.body.planForzar || '';
     const forzarDuplicados = req.body.forzarDuplicados === 'true';
-    const planesValidos = ['gratuito', 'basico', 'premium'];
+    const planesValidos = ['gratuito', 'basico', 'premium', 'ilimitado'];
 
     const resultado = {
       exito: [],
@@ -778,12 +797,14 @@ const crearUsuariosMasivo = async (req, res) => {
       const passwordTemporal = Math.random().toString(36).slice(-8);
 
       try {
+        const esIlimitado = plan === 'ilimitado';
         await User.create({
           nombre,
           email,
           telefono,
           password: passwordTemporal,
-          plan,
+          plan: esIlimitado ? 'gratuito' : plan,
+          role: esIlimitado ? 'basico_plus' : 'user',
           verificado: true,
           status: 'activo'
         });

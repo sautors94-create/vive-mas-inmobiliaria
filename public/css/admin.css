@@ -144,6 +144,7 @@
 .plan-gratuito { background: #f3f4f6; color: #6b7280; }
 .plan-basico { background: #dbeafe; color: #1d4ed8; }
 .plan-premium { background: #fef3c7; color: #d97706; }
+.plan-ilimitado { background: #fce7f3; color: #be185d; }
 .temas-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));

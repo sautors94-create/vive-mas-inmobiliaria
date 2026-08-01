@@ -780,7 +780,7 @@ const renderUsrModTabla = () => {
     <tr onclick="abrirDrawerUsuario('${u._id}')">
       <td>${escapeHtml(u.nombre)}</td>
       <td>${escapeHtml(u.email)}</td>
-      <td><span class="plan-badge plan-${u.plan}">${u.plan}</span></td>
+      <td><span class="plan-badge plan-${u.role === 'basico_plus' ? 'ilimitado' : u.plan}">${u.role === 'basico_plus' ? '🎁 ilimitado' : u.plan}</span></td>
       <td><span class="status-badge status-${u.status}">${u.status}</span></td>
       <td>${new Date(u.createdAt).toLocaleDateString('es-MX')}</td>
       <td onclick="event.stopPropagation()">
@@ -891,7 +891,7 @@ window.abrirDrawerUsuario = (id) => {
         <div>
           <h2 style="font-size:19px;font-weight:700">${escapeHtml(u.nombre)}</h2>
           <div style="display:flex;gap:8px;margin-top:6px">
-            <span class="plan-badge plan-${u.plan}">${u.plan}</span>
+            <span class="plan-badge plan-${u.role === 'basico_plus' ? 'ilimitado' : u.plan}">${u.role === 'basico_plus' ? '🎁 ilimitado' : u.plan}</span>
             <span class="status-badge status-${u.status}">${u.status}</span>
             ${u.identidadVerificada ? '<span class="status-badge" style="background:#eff6ff;color:#1d4ed8">✓ Identidad verificada</span>' : ''}
           </div>
@@ -910,7 +910,7 @@ window.abrirDrawerUsuario = (id) => {
 
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="cerrarDrawerUsuario()">Cerrar</button>
-        <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="seleccionarPlan('${u._id}', '${u.plan}')">Cambiar plan</button>
+        <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="seleccionarPlan('${u._id}', '${u.role === 'basico_plus' ? 'ilimitado' : u.plan}')">Cambiar plan</button>
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:${u.status === 'activo' ? '#e65100' : '#2e7d32'};color:${u.status === 'activo' ? '#e65100' : '#2e7d32'}" onclick="cerrarDrawerUsuario();suspenderUsuario('${u._id}')">${u.status === 'activo' ? 'Suspender' : 'Activar'}</button>
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:#dc2626;color:#dc2626" onclick="cerrarDrawerUsuario();abrirModalVetar('${u._id}')">🛡️ Vetar</button>
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:#c62828;color:#c62828" onclick="cerrarDrawerUsuario();eliminarUsuario('${u._id}', '${(u.nombre || '').replace(/'/g, "\\'")}')">Eliminar</button>
@@ -958,7 +958,8 @@ const seleccionarPlan = (id, planActual) => {
   const planes = [
     { valor: 'gratuito', etiqueta: 'Gratuito' },
     { valor: 'basico', etiqueta: 'Básico' },
-    { valor: 'premium', etiqueta: 'Premium' }
+    { valor: 'premium', etiqueta: 'Premium' },
+    { valor: 'ilimitado', etiqueta: '🎁 Gratuito Ilimitado (solo admin)' }
   ];
 
   const overlay = document.createElement('div');

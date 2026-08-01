@@ -85,7 +85,7 @@ const enviarMensaje = async (req, res) => {
       const propiedad = await Property.findById(propId);
       if (propiedad && propiedad.propietario.toString() === req.user.id) {
         const user = await User.findById(req.user.id);
-        const esGratuito = (user.plan || 'gratuito').toLowerCase() === 'gratuito';
+        const esGratuito = (user.plan || 'gratuito').toLowerCase() === 'gratuito' && user.role !== 'basico_plus';
 
         if (esGratuito) {
           // Contar respuestas previas del vendedor en esta conversación
@@ -472,7 +472,7 @@ const enviarMensajePropiedad = async (req, res) => {
 
     // Restricción gratuito respondiendo como vendedor
     const user = await User.findById(req.user.id);
-    if ((user.plan || 'gratuito').toLowerCase() === 'gratuito') {
+    if ((user.plan || 'gratuito').toLowerCase() === 'gratuito' && user.role !== 'basico_plus') {
       const respuestas = await Message.countDocuments({ conversacionId, remitente: req.user.id });
       if (respuestas >= 1) {
         return res.status(403).json({
