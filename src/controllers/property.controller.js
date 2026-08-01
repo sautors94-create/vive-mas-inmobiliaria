@@ -1,6 +1,7 @@
 const { subirACloudinary } = require('../config/cloudinary');
 const Property = require('../models/Property');
 const Message = require('../models/Message');
+const User = require('../models/User');
 
 const LIMITE_POR_PLAN = {
   gratuito: 3,
@@ -255,4 +256,31 @@ const subirFotos = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-module.exports = { crearPropiedad, listarPropiedades, detallePropiedad, editarPropiedad, eliminarPropiedad, pausarPropiedad, reactivarPropiedad, misPropiedades, subirFotos };
+const registrarBusqueda = async (req, res) => {
+  try {
+    const { estado, ciudad, operacion, tipo, precioMax } = req.body;
+    // Evitar guardar búsquedas totalmente vacías (sin ningún criterio real)
+    if (!estado && !ciudad && !operacion && !tipo && !precioMax) {
+      return res.json({ ok: true, ignorada: true });
+    }
+
+    const nueva = { estado: estado || '', ciudad: ciudad || '', operacion: operacion || '', tipo: tipo || '', precioMax: precioMax || null, fecha: new Date() };
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    // Quitar una búsqueda previa idéntica (para no duplicar) y agregar la nueva al frente
+    user.busquedasRecientes = (user.busquedasRecientes || []).filter(b =>
+      !(b.estado === nueva.estado && b.ciudad === nueva.ciudad && b.operacion === nueva.operacion && b.tipo === nueva.tipo && b.precioMax === nueva.precioMax)
+    );
+    user.busquedasRecientes.unshift(nueva);
+    user.busquedasRecientes = user.busquedasRecientes.slice(0, 5);
+    await user.save();
+
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { crearPropiedad, listarPropiedades, detallePropiedad, editarPropiedad, eliminarPropiedad, pausarPropiedad, reactivarPropiedad, misPropiedades, subirFotos, registrarBusqueda };

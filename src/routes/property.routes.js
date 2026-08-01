@@ -11,11 +11,13 @@ const {
   pausarPropiedad,
   reactivarPropiedad,
   misPropiedades,
-  subirFotos
+  subirFotos,
+  registrarBusqueda
 } = require('../controllers/property.controller');
 
 router.get('/', listarPropiedades);
 router.get('/mis-propiedades', authMiddleware, misPropiedades);
+router.post('/registrar-busqueda', authMiddleware, registrarBusqueda);
 router.get('/:id', detallePropiedad);
 router.post('/', authMiddleware, crearPropiedad);
 router.put('/:id', authMiddleware, editarPropiedad);

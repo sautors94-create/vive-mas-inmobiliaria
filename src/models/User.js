@@ -53,6 +53,14 @@ const userSchema = new mongoose.Schema({
     novedades: { type: Boolean, default: false },
     cargoRecurrente: { type: Boolean, default: true },
   },
+  busquedasRecientes: [{
+    estado: { type: String, default: '' },
+    ciudad: { type: String, default: '' },
+    operacion: { type: String, default: '' },
+    tipo: { type: String, default: '' },
+    precioMax: { type: Number, default: null },
+    fecha: { type: Date, default: Date.now },
+  }],
   ultimaActividad: { type: Date, default: Date.now },
 }, { timestamps: true });
 

@@ -134,6 +134,26 @@ const irPagina = (pagina) => {
 const aplicarFiltros = () => {
   paginaActual = 1;
   cargarPropiedades();
+  registrarBusquedaReciente();
+};
+
+let _busquedaRecienteTimeout = null;
+const registrarBusquedaReciente = () => {
+  if (typeof auth === 'undefined' || !auth.isLoggedIn || !auth.isLoggedIn()) return;
+  clearTimeout(_busquedaRecienteTimeout);
+  _busquedaRecienteTimeout = setTimeout(async () => {
+    const f = filtrosActuales;
+    if (!f.estado && !f.ciudad && !f.operacion && !f.tipo && (!f.precioMax || f.precioMax >= 100000000)) return;
+    try {
+      await api.post('/propiedades/registrar-busqueda', {
+        estado: f.estado || '',
+        ciudad: f.ciudad || '',
+        operacion: f.operacion || '',
+        tipo: f.tipo || '',
+        precioMax: (f.precioMax && f.precioMax < 100000000) ? f.precioMax : null
+      });
+    } catch (e) { /* silencioso: no es crítico para la navegación del catálogo */ }
+  }, 1200);
 };
 
 // ===========================================

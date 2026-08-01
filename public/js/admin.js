@@ -24,6 +24,7 @@ const mostrarSeccion = (seccion) => {
   if (seccion === 'destacadas') cargarDestacadas();
   if (seccion === 'bloqueos') cargarVetados();
   if (seccion === 'monitoreo') cargarMonitoreo();
+  if (seccion === 'novedades') cargarNovedades();
 };
 
 const cargarDashboard = async () => {
@@ -2217,6 +2218,111 @@ window.purgarMensajesAntiguosAdmin = async () => {
     }
   } catch (e) {
     dsToast({ title: 'Error', message: 'No se pudo purgar.', type: 'error' });
+  }
+};
+
+// ==========================================
+// MÓDULO "NOVEDADES"
+// ==========================================
+let novedadesModData = [];
+
+window.cargarNovedades = async () => {
+  const lista = document.getElementById('nov-lista');
+  if (!lista) return;
+  lista.innerHTML = '<div class="loading">Cargando novedades...</div>';
+  try {
+    const [dataNov, dataStats] = await Promise.all([
+      api.get('/admin/novedades'),
+      api.get('/admin/novedades/stats')
+    ]);
+
+    const kpisEl = document.getElementById('nov-mod-kpis');
+    if (kpisEl && dataStats.ok) {
+      kpisEl.innerHTML = `
+        <div class="mod-kpi-card"><div class="mod-kpi-num">${dataStats.totalNovedades}</div><div class="mod-kpi-label">Novedades publicadas</div></div>
+        <div class="mod-kpi-card"><div class="mod-kpi-num">${dataStats.totalEnviadas}</div><div class="mod-kpi-label">Enviadas por correo</div></div>
+        <div class="mod-kpi-card"><div class="mod-kpi-num">${dataStats.totalSuscritos}</div><div class="mod-kpi-label">Usuarios suscritos</div></div>
+      `;
+      const countEl = document.getElementById('nov-suscritos-count');
+      if (countEl) countEl.textContent = dataStats.totalSuscritos;
+    }
+
+    novedadesModData = dataNov.novedades || [];
+    if (!novedadesModData.length) {
+      lista.innerHTML = '<div class="loading" style="color:var(--text-light)">Aún no has publicado ninguna novedad.</div>';
+      return;
+    }
+
+    lista.innerHTML = novedadesModData.map(n => `
+      <div style="background:white;border:1px solid var(--border);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div>
+            <div style="font-weight:700;font-size:15px">${escapeHtml(n.titulo)}</div>
+            <div style="font-size:12px;color:var(--text-light);margin-top:2px">
+              ${new Date(n.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })} · por ${n.creadoPor?.nombre || 'Admin'}
+              ${n.correoEnviado ? ` · ✅ Enviada a ${n.destinatariosCorreo} usuario(s)` : ' · Sin enviar por correo'}
+            </div>
+          </div>
+          <button class="btn btn-outline admin-mini-btn" onclick="eliminarNovedadAdmin('${n._id}')">🗑️ Eliminar</button>
+        </div>
+        <div style="font-size:13px;color:var(--text);margin-top:10px;line-height:1.6;white-space:pre-wrap">${escapeHtml(n.mensaje)}</div>
+        ${n.link ? `<a href="${n.link}" target="_blank" style="font-size:12px;color:var(--primary);display:inline-block;margin-top:8px">🔗 ${n.link}</a>` : ''}
+      </div>
+    `).join('');
+  } catch (error) {
+    lista.innerHTML = '<div class="loading" style="color:red">Error al cargar novedades.</div>';
+  }
+};
+
+window.abrirFormNovedad = () => {
+  document.getElementById('nov-titulo').value = '';
+  document.getElementById('nov-mensaje').value = '';
+  document.getElementById('nov-link').value = '';
+  document.getElementById('nov-enviar-correo').checked = false;
+  document.getElementById('nov-form').style.display = 'block';
+};
+
+window.cerrarFormNovedad = () => {
+  document.getElementById('nov-form').style.display = 'none';
+};
+
+window.guardarNovedad = async () => {
+  const titulo = document.getElementById('nov-titulo').value.trim();
+  const mensaje = document.getElementById('nov-mensaje').value.trim();
+  const link = document.getElementById('nov-link').value.trim();
+  const enviarCorreoAhora = document.getElementById('nov-enviar-correo').checked;
+
+  if (!titulo || !mensaje) {
+    dsToast({ title: 'Faltan datos', message: 'Título y mensaje son obligatorios.', type: 'error' });
+    return;
+  }
+
+  try {
+    const data = await api.post('/admin/novedades', { titulo, mensaje, link: link || null, enviarCorreoAhora });
+    if (data.ok) {
+      dsToast({ title: 'Novedad publicada', message: enviarCorreoAhora ? `Enviada a ${data.novedad.destinatariosCorreo} usuario(s).` : 'Se guardó sin enviar por correo.', type: 'success' });
+      cerrarFormNovedad();
+      cargarNovedades();
+    } else {
+      dsToast({ title: 'Error', message: data.error || 'No se pudo publicar.', type: 'error' });
+    }
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo publicar la novedad.', type: 'error' });
+  }
+};
+
+window.eliminarNovedadAdmin = async (id) => {
+  if (!confirm('¿Eliminar esta novedad? El correo ya enviado no se puede revocar, solo se borra el registro.')) return;
+  try {
+    const data = await api.delete(`/admin/novedades/${id}`);
+    if (data.ok) {
+      dsToast({ title: 'Eliminada', message: 'Novedad eliminada.', type: 'info' });
+      cargarNovedades();
+    } else {
+      dsToast({ title: 'Error', message: data.error || 'No se pudo eliminar.', type: 'error' });
+    }
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo eliminar.', type: 'error' });
   }
 };
 

@@ -302,11 +302,127 @@ const enviarAlerta2FADesactivado = async (email, nombre) => {
   });
 };
 
+// ==========================================
+// NOVEDAD / CAMPAÑA (enviada por el admin a todos los suscritos)
+// ==========================================
+const enviarNovedad = async (email, nombre, novedad) => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
+        .container { max-width: 560px; margin: 40px auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .header { background: linear-gradient(135deg, #0f1923, #1a472a); padding: 40px; text-align: center; }
+        .logo { font-size: 28px; font-weight: 700; color: white; }
+        .logo span { color: #f4a261; }
+        .body { padding: 40px; }
+        .greeting { font-size: 18px; color: #1a1a2e; margin-bottom: 16px; font-weight: 600; }
+        .titulo { font-size: 20px; font-weight: 700; color: #1a472a; margin-bottom: 12px; }
+        .text { font-size: 15px; color: #6b7280; line-height: 1.6; margin-bottom: 24px; white-space: pre-wrap; }
+        ${novedad.imagen ? '.imagen { width: 100%; border-radius: 10px; margin-bottom: 24px; }' : ''}
+        .btn { display: inline-block; background: #1a472a; color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px; }
+        .footer { background: #f8f9fa; padding: 24px 40px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">Vive<span>Más</span> Inmobiliaria</div>
+        </div>
+        <div class="body">
+          <div class="greeting">¡Hola, ${nombre}! 👋</div>
+          ${novedad.imagen ? `<img src="${novedad.imagen}" class="imagen">` : ''}
+          <div class="titulo">${novedad.titulo}</div>
+          <div class="text">${novedad.mensaje}</div>
+          ${novedad.link ? `<div style="text-align:center"><a href="${novedad.link}" class="btn">Ver más</a></div>` : ''}
+        </div>
+        <div class="footer">
+          © 2024 Vive Más Inmobiliaria · México<br>
+          Recibiste este correo porque tienes activadas las notificaciones de novedades y promociones. Puedes desactivarlas desde tu panel de usuario.
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: `📰 ${novedad.titulo} — Vive Más Inmobiliaria`,
+    html,
+  });
+};
+
+// ==========================================
+// COINCIDENCIA DE BÚSQUEDA (nueva propiedad que coincide con una búsqueda reciente)
+// ==========================================
+const enviarCoincidenciaBusqueda = async (email, nombre, propiedad) => {
+  const url = `${process.env.APP_URL || 'http://localhost:3000'}/pages/propiedad.html?id=${propiedad._id}`;
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
+        .container { max-width: 560px; margin: 40px auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .header { background: linear-gradient(135deg, #0f1923, #1a472a); padding: 40px; text-align: center; }
+        .logo { font-size: 28px; font-weight: 700; color: white; }
+        .logo span { color: #f4a261; }
+        .body { padding: 40px; }
+        .greeting { font-size: 18px; color: #1a1a2e; margin-bottom: 16px; font-weight: 600; }
+        .text { font-size: 15px; color: #6b7280; line-height: 1.6; margin-bottom: 24px; }
+        .propiedad-box { background: #f8f9fa; border-radius: 8px; padding: 16px; margin-bottom: 24px; border: 1px solid #e5e7eb; }
+        ${propiedad.fotos && propiedad.fotos[0] ? '.foto { width: 100%; border-radius: 8px; margin-bottom: 12px; }' : ''}
+        .propiedad-titulo { font-size: 16px; font-weight: 600; color: #1a1a2e; }
+        .propiedad-precio { font-size: 18px; font-weight: 700; color: #1a472a; margin-top: 4px; }
+        .btn { display: inline-block; background: #1a472a; color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px; }
+        .footer { background: #f8f9fa; padding: 24px 40px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">Vive<span>Más</span> Inmobiliaria</div>
+        </div>
+        <div class="body">
+          <div class="greeting">¡Hola, ${nombre}! 👋</div>
+          <div class="text">Encontramos una nueva propiedad que coincide con una de tus búsquedas recientes.</div>
+          <div class="propiedad-box">
+            ${propiedad.fotos && propiedad.fotos[0] ? `<img src="${propiedad.fotos[0]}" class="foto">` : ''}
+            <div class="propiedad-titulo">🏠 ${propiedad.titulo}</div>
+            <div class="propiedad-precio">$${Number(propiedad.precio).toLocaleString('es-MX')} MXN</div>
+          </div>
+          <div style="text-align:center">
+            <a href="${url}" class="btn">Ver propiedad</a>
+          </div>
+        </div>
+        <div class="footer">
+          © 2024 Vive Más Inmobiliaria · México<br>
+          Recibiste este correo porque tienes activadas las notificaciones de novedades y promociones. Puedes desactivarlas desde tu panel de usuario.
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: `🏠 Nueva propiedad que podría interesarte — ${propiedad.titulo}`,
+    html,
+  });
+};
+
 module.exports = { 
   generarCodigo, 
   enviarCodigoVerificacion, 
   enviarBienvenida, 
   enviarNotificacionMensaje,
   enviarEnlaceRecuperacion,       
-  enviarAlerta2FADesactivado     
+  enviarAlerta2FADesactivado,
+  enviarNovedad,
+  enviarCoincidenciaBusqueda
 };

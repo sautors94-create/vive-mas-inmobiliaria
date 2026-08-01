@@ -36,7 +36,12 @@ const {
   desvetarUsuario,
   vincularAlias,
   desvincularAlias,
-  buscarAliases
+  buscarAliases,
+  getNovedades,
+  getNovedadesStats,
+  crearNovedad,
+  eliminarNovedad,
+  actualizarNovedad
 } = require('../controllers/admin.controller');
 
 // ✅ Protección global: todas las rutas de aquí abajo requieren ser admin
@@ -92,6 +97,11 @@ router.delete('/propiedades/:id', eliminarPropiedad);
 router.get('/vetados/stats', getVetadosStats);
 router.get('/vetados/exportar', exportarVetadosExcel);
 router.get('/vetados', getUsuariosVetados);
+router.get('/novedades', getNovedades);
+router.get('/novedades/stats', getNovedadesStats);
+router.post('/novedades', crearNovedad);
+router.patch('/novedades/:id', actualizarNovedad);
+router.delete('/novedades/:id', eliminarNovedad);
 router.post('/vetados/:id', vetarUsuario);
 router.post('/vetados/:id/desvetar', desvetarUsuario);
 router.post('/vetados/:id/aliases', vincularAlias);

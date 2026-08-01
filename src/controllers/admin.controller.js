@@ -1,6 +1,38 @@
 const User = require('../models/User');
 const Property = require('../models/Property');
 const Lead = require('../models/Lead');
+const Novedad = require('../models/Novedad');
+const { enviarCoincidenciaBusqueda, enviarNovedad } = require('../utils/email');
+
+// Revisa las búsquedas recientes de todos los usuarios (con novedades activadas)
+// y les avisa por correo si la propiedad recién aprobada coincide con alguna.
+// Se ejecuta en segundo plano (no bloquea la respuesta de aprobación) y nunca
+// tumba el flujo de aprobación si algo falla.
+const notificarCoincidenciasBusqueda = async (propiedad) => {
+  try {
+    const candidatos = await User.find({
+      'notificaciones.novedades': true,
+      'busquedasRecientes.0': { $exists: true },
+      _id: { $ne: propiedad.propietario._id || propiedad.propietario },
+    }).select('nombre email busquedasRecientes');
+
+    for (const user of candidatos) {
+      const hayCoincidencia = user.busquedasRecientes.some(b => {
+        if (b.ciudad && b.ciudad !== propiedad.ubicacion?.ciudad) return false;
+        if (b.operacion && b.operacion !== propiedad.operacion) return false;
+        if (b.tipo && b.tipo !== propiedad.tipo) return false;
+        if (b.precioMax && propiedad.precio > b.precioMax) return false;
+        // Al menos un criterio real debe estar presente para evitar falsos positivos
+        return !!(b.ciudad || b.operacion || b.tipo || b.precioMax);
+      });
+      if (hayCoincidencia) {
+        enviarCoincidenciaBusqueda(user.email, user.nombre, propiedad).catch(e => console.error('❌ Error enviando coincidencia de búsqueda:', e.message));
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error al buscar coincidencias de búsqueda:', error.message);
+  }
+};
 
 // Aprobar o rechazar la verificación KYC de un usuario
 const revisarKyc = async (req, res) => {
@@ -533,6 +565,8 @@ const aprobarPropiedad = async (req, res) => {
 
     const msg = buildMensajeAprobacion({ nombre: propiedad.propietario.nombre, titulo: propiedad.titulo, status: 'autorizada' });
     await enviarMensajeInternoParaPropiedad({ req, propiedadId: req.params.id, mensaje: msg });
+
+    notificarCoincidenciasBusqueda({ ...updated.toObject(), propietario: propiedad.propietario }).catch(() => {});
 
     res.json({ ok: true, mensaje: 'Propiedad aprobada', propiedad: updated });
   } catch (error) {
@@ -1184,6 +1218,86 @@ const buscarAliases = async (req, res) => {
   }
 };
 
+// ==========================================
+// NOVEDADES / NOTICIAS GENERALES
+// ==========================================
+const getNovedades = async (req, res) => {
+  try {
+    const novedades = await Novedad.find().sort({ createdAt: -1 }).populate('creadoPor', 'nombre');
+    res.json({ ok: true, novedades });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getNovedadesStats = async (req, res) => {
+  try {
+    const totalNovedades = await Novedad.countDocuments();
+    const totalEnviadas = await Novedad.countDocuments({ correoEnviado: true });
+    const totalSuscritos = await User.countDocuments({ 'notificaciones.novedades': true });
+    res.json({ ok: true, totalNovedades, totalEnviadas, totalSuscritos });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const crearNovedad = async (req, res) => {
+  try {
+    const { titulo, mensaje, link, imagen, enviarCorreoAhora } = req.body;
+    if (!titulo || !mensaje) return res.status(400).json({ error: 'Título y mensaje son obligatorios' });
+
+    const novedad = await Novedad.create({
+      titulo, mensaje, link: link || null, imagen: imagen || null, creadoPor: req.user.id
+    });
+
+    if (enviarCorreoAhora) {
+      const suscritos = await User.find({ 'notificaciones.novedades': true }).select('nombre email');
+      let enviados = 0;
+      for (const u of suscritos) {
+        try {
+          await enviarNovedad(u.email, u.nombre, novedad);
+          enviados++;
+        } catch (e) {
+          console.error(`❌ Error enviando novedad a ${u.email}:`, e.message);
+        }
+      }
+      novedad.correoEnviado = true;
+      novedad.fechaEnvioCorreo = new Date();
+      novedad.destinatariosCorreo = enviados;
+      await novedad.save();
+    }
+
+    res.status(201).json({ ok: true, novedad });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const eliminarNovedad = async (req, res) => {
+  try {
+    const novedad = await Novedad.findByIdAndDelete(req.params.id);
+    if (!novedad) return res.status(404).json({ error: 'Novedad no encontrada' });
+    res.json({ ok: true, mensaje: 'Novedad eliminada' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const actualizarNovedad = async (req, res) => {
+  try {
+    const { titulo, mensaje, link, imagen, activa } = req.body;
+    const novedad = await Novedad.findByIdAndUpdate(
+      req.params.id,
+      { titulo, mensaje, link, imagen, activa },
+      { new: true, runValidators: true }
+    );
+    if (!novedad) return res.status(404).json({ error: 'Novedad no encontrada' });
+    res.json({ ok: true, novedad });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = { 
   getUsuarios, 
   revisarKyc,
@@ -1215,5 +1329,10 @@ module.exports = {
   desvetarUsuario,
   vincularAlias,
   desvincularAlias,
-  buscarAliases
+  buscarAliases,
+  getNovedades,
+  getNovedadesStats,
+  crearNovedad,
+  eliminarNovedad,
+  actualizarNovedad
 };

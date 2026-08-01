@@ -102,6 +102,7 @@
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('pagos')">💳 Pagos y Conciliación</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('bloqueos')">🛡️ Usuarios vetados</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('monitoreo')">🤖 Monitoreo de chats</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('novedades')">📰 Novedades</a>
       </nav>
     </aside>
 
@@ -727,8 +728,44 @@
         </div>
       </section>
 
-      <!-- DRAWER LATERAL DE MENSAJE DE RIESGO -->
-      <div id="drawer-mon-overlay" onclick="cerrarDrawerMonitoreo()"></div>
+      <!-- NOVEDADES / NOTICIAS GENERALES -->
+      <section id="sec-novedades" class="dash-section" style="display:none">
+        <div class="mod-header">
+          <div>
+            <h2>Novedades</h2>
+            <div class="mod-header-sub">Panel &gt; Novedades · Publica anuncios y campañas para todos los usuarios</div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarNovedades()">↻ Actualizar</button>
+            <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="abrirFormNovedad()">+ Nueva novedad</button>
+          </div>
+        </div>
+
+        <div class="mod-kpis" id="nov-mod-kpis">
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Novedades</div></div>
+        </div>
+
+        <div id="nov-form" style="display:none;background:white;border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px">
+          <h3 style="margin-bottom:14px;font-size:15px">Nueva novedad</h3>
+          <div style="display:grid;gap:12px">
+            <div class="form-grupo"><label>Título</label><input type="text" id="nov-titulo" class="form-input" placeholder="Ej. Nueva función de comparador de propiedades"></div>
+            <div class="form-grupo"><label>Mensaje</label><textarea id="nov-mensaje" class="form-input" rows="4" placeholder="Cuéntales a los usuarios qué hay de nuevo..."></textarea></div>
+            <div class="form-grupo"><label>Link (opcional)</label><input type="text" id="nov-link" class="form-input" placeholder="https://..."></div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)">
+              <input type="checkbox" id="nov-enviar-correo">
+              Enviar por correo ahora a todos los usuarios con notificaciones de novedades activadas (<span id="nov-suscritos-count">–</span> suscritos)
+            </label>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button class="btn btn-primary" onclick="guardarNovedad()">Publicar novedad</button>
+            <button class="btn btn-outline" onclick="cerrarFormNovedad()">Cancelar</button>
+          </div>
+        </div>
+
+        <div id="nov-lista" style="display:flex;flex-direction:column;gap:12px"></div>
+      </section>
+
+
       <div id="drawer-mon">
         <button class="drawer-close-btn" onclick="cerrarDrawerMonitoreo()">✕</button>
         <div id="drawer-mon-content"></div>
