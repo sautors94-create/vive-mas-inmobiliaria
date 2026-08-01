@@ -181,7 +181,10 @@ const api = {
     body: body instanceof FormData ? body : JSON.stringify(body)
   }),
 
-  delete: (endpoint) => peticion(endpoint, { method: 'DELETE' }),
+  delete: (endpoint, body) => peticion(endpoint, {
+    method: 'DELETE',
+    ...(body ? { body: JSON.stringify(body) } : {})
+  }),
 
   postForm: (endpoint, formData) => peticion(endpoint, {
     method: 'POST',

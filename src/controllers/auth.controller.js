@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Property = require('../models/Property');
 const Lead = require('../models/Lead');
 const Message = require('../models/Message');
 const jwt = require('jsonwebtoken');
@@ -753,6 +754,32 @@ const revocarCargoRecurrente = async (req, res) => {
   }
 };
 
+const eliminarMiCuenta = async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ error: 'Debes ingresar tu contraseña para confirmar.' });
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const coincide = await bcrypt.compare(password, user.password);
+    if (!coincide) return res.status(401).json({ error: 'Contraseña incorrecta.' });
+
+    if (user.role === 'admin') return res.status(403).json({ error: 'Las cuentas de administrador no se pueden eliminar desde aquí.' });
+
+    await Property.updateMany({ propietario: user._id }, { status: 'rechazada' });
+    await User.findByIdAndDelete(user._id);
+
+    console.log(`🗑️ Cuenta eliminada por el propio usuario: ${user.email}`);
+
+    res.clearCookie('refreshToken');
+    res.json({ ok: true, mensaje: 'Tu cuenta fue eliminada permanentemente.' });
+  } catch (error) {
+    console.error('❌ Error al eliminar cuenta:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = { 
   registro, 
   login, 
@@ -775,5 +802,6 @@ module.exports = {
   autorizarCargoRecurrente,
   revocarCargoRecurrente,
   verificar2FA,
-  recuperar2FA
+  recuperar2FA,
+  eliminarMiCuenta
 };

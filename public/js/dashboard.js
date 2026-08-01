@@ -1458,6 +1458,14 @@ const cargarCuenta = () => {
             Cancelar suscripción
           </button>
         `}
+
+        <div style="margin-top:28px;padding-top:24px;border-top:1px solid var(--border)">
+          <div style="font-weight:700;font-size:15px;color:#dc2626;margin-bottom:6px">Zona de peligro</div>
+          <div style="font-size:13px;color:var(--text-light);margin-bottom:14px;line-height:1.6">
+            Al eliminar tu cuenta se borrará tu perfil de forma permanente y tus publicaciones dejarán de estar disponibles en el catálogo. Esta acción no se puede deshacer.
+          </div>
+          <button class="btn btn-outline" style="border-color:#dc2626;color:#dc2626;padding:10px 20px;font-size:13px" onclick="mostrarModalEliminarCuenta()">Eliminar mi cuenta</button>
+        </div>
       </div>
     `;
   }
@@ -1527,6 +1535,131 @@ const cargarCuenta = () => {
     <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>
   `;
 };
+
+// ==========================================
+// MODAL GENÉRICO DE CONFIRMACIÓN (cancelar/reactivar plan, cargo recurrente, eliminar cuenta)
+// ==========================================
+let _confirmacionCuentaCallback = null;
+let _confirmacionCuentaRequierePassword = false;
+
+const mostrarModalConfirmarCuenta = ({ titulo, mensaje, requierePassword = false, textoBoton = 'Confirmar', colorBoton = null, onConfirmar }) => {
+  document.getElementById('mcc-titulo').textContent = titulo;
+  document.getElementById('mcc-mensaje').innerHTML = mensaje;
+  document.getElementById('mcc-password-wrap').style.display = requierePassword ? 'block' : 'none';
+  document.getElementById('mcc-password').value = '';
+  document.getElementById('mcc-error').style.display = 'none';
+  const btn = document.getElementById('mcc-confirmar');
+  btn.textContent = textoBoton;
+  btn.style.background = colorBoton || '';
+  btn.style.borderColor = colorBoton || '';
+  _confirmacionCuentaCallback = onConfirmar;
+  _confirmacionCuentaRequierePassword = requierePassword;
+  document.getElementById('modal-confirmar-cuenta').style.display = 'flex';
+};
+
+window.cerrarModalConfirmarCuenta = () => {
+  document.getElementById('modal-confirmar-cuenta').style.display = 'none';
+  _confirmacionCuentaCallback = null;
+};
+
+window.ejecutarConfirmacionCuenta = async () => {
+  if (!_confirmacionCuentaCallback) return;
+  const errorEl = document.getElementById('mcc-error');
+  errorEl.style.display = 'none';
+  const password = document.getElementById('mcc-password').value;
+  if (_confirmacionCuentaRequierePassword && !password) {
+    errorEl.textContent = 'Ingresa tu contraseña para continuar.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('mcc-confirmar');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Procesando...';
+  const resultado = await _confirmacionCuentaCallback(password);
+  btn.disabled = false;
+  btn.textContent = textoOriginal;
+  if (resultado && resultado.error) {
+    errorEl.textContent = resultado.error;
+    errorEl.style.display = 'block';
+  } else {
+    window.cerrarModalConfirmarCuenta();
+  }
+};
+
+window.mostrarModalCancelarPlan = () => {
+  mostrarModalConfirmarCuenta({
+    titulo: 'Cancelar suscripción',
+    mensaje: 'Tu plan se mantendrá activo hasta la fecha de vencimiento. Después de esa fecha, tu cuenta regresará al plan Gratuito automáticamente. No se realizarán más cargos. ¿Deseas continuar?',
+    textoBoton: 'Sí, cancelar suscripción',
+    colorBoton: '#dc2626',
+    onConfirmar: async () => {
+      const data = await api.post('/auth/cancelar-suscripcion', {});
+      if (data.ok) { dsToast({ title: 'Suscripción cancelada', message: 'Se mantendrá activa hasta la fecha de vencimiento.', type: 'info' }); cargarCuenta(); return {}; }
+      return { error: data.error || 'No se pudo cancelar.' };
+    }
+  });
+};
+
+window.reactivarSuscripcion = () => {
+  mostrarModalConfirmarCuenta({
+    titulo: 'Reactivar suscripción',
+    mensaje: 'Tu plan seguirá renovándose normalmente. ¿Deseas reactivarla?',
+    textoBoton: 'Sí, reactivar',
+    onConfirmar: async () => {
+      const data = await api.post('/auth/reactivar-suscripcion', {});
+      if (data.ok) { dsToast({ title: 'Suscripción reactivada', message: 'Tu plan seguirá renovándose normalmente.', type: 'success' }); cargarCuenta(); return {}; }
+      return { error: data.error || 'No se pudo reactivar.' };
+    }
+  });
+};
+
+window.mostrarModalAutorizacionCargo = () => {
+  mostrarModalConfirmarCuenta({
+    titulo: 'Autorizar cargo recurrente',
+    mensaje: 'Al autorizar, tu plan se renovará automáticamente al final de cada periodo. Recibirás una notificación mínimo 10 días hábiles antes de cada cargo. Puedes revocar esta autorización cuando quieras.',
+    textoBoton: 'Sí, autorizar',
+    onConfirmar: async () => {
+      const data = await api.post('/auth/autorizar-cargo-recurrente', {});
+      if (data.ok) { dsToast({ title: 'Cargo recurrente autorizado', message: 'Tu plan se renovará automáticamente.', type: 'success' }); cargarCuenta(); return {}; }
+      return { error: data.error || 'No se pudo autorizar.' };
+    }
+  });
+};
+
+window.mostrarModalRevocarCargo = () => {
+  mostrarModalConfirmarCuenta({
+    titulo: 'Revocar cargo recurrente',
+    mensaje: 'Tu plan no se renovará automáticamente. Al llegar la fecha de vencimiento, tu cuenta pasará al plan Gratuito. ¿Deseas continuar?',
+    textoBoton: 'Sí, revocar',
+    colorBoton: '#dc2626',
+    onConfirmar: async () => {
+      const data = await api.post('/auth/revocar-cargo-recurrente', {});
+      if (data.ok) { dsToast({ title: 'Cargo recurrente revocado', message: 'Tu plan sigue activo hasta su vencimiento.', type: 'info' }); cargarCuenta(); return {}; }
+      return { error: data.error || 'No se pudo revocar.' };
+    }
+  });
+};
+
+window.mostrarModalEliminarCuenta = () => {
+  mostrarModalConfirmarCuenta({
+    titulo: '⚠️ Eliminar mi cuenta',
+    mensaje: 'Esta acción es <b>permanente</b>. Se borrará tu perfil y tus publicaciones dejarán de estar disponibles en el catálogo. Ingresa tu contraseña para confirmar.',
+    requierePassword: true,
+    textoBoton: 'Eliminar cuenta permanentemente',
+    colorBoton: '#dc2626',
+    onConfirmar: async (password) => {
+      const data = await api.delete('/auth/cuenta', { password });
+      if (data.ok) {
+        dsToast({ title: 'Cuenta eliminada', message: 'Tu cuenta fue eliminada permanentemente.', type: 'info' });
+        setTimeout(() => { auth.logout(); }, 1200);
+        return {};
+      }
+      return { error: data.error || 'No se pudo eliminar la cuenta.' };
+    }
+  });
+};
+
 const guardarTelefono = async () => {
   const telefono = document.getElementById('cuenta-telefono')?.value.trim();
   if (!telefono || telefono.length < 10) {

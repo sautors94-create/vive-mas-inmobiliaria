@@ -24,7 +24,8 @@ const {
   autorizarCargoRecurrente,
   revocarCargoRecurrente,
   verificar2FA,
-  recuperar2FA
+  recuperar2FA,
+  eliminarMiCuenta
 } = require('../controllers/auth.controller');
 
 const authMiddleware = require('../middleware/auth.middleware');
@@ -72,6 +73,7 @@ router.post('/reactivar-suscripcion', authMiddleware, reactivarSuscripcion);
 // Cargo recurrente: autorizar, revocar (Ley Banxico)
 router.post('/autorizar-cargo-recurrente', authMiddleware, autorizarCargoRecurrente);
 router.post('/revocar-cargo-recurrente', authMiddleware, revocarCargoRecurrente);
+router.delete('/cuenta', authMiddleware, eliminarMiCuenta);
 
 // ✅ 2FA: setup, confirmar, desactivar (requieren auth)
 router.get('/2fa/setup', authMiddleware, iniciarSetup2FA);

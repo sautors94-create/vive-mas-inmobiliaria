@@ -1,0 +1,523 @@
+/* =====================================================
+   VIVE MÁS INMOBILIARIA
+   GLOBAL STYLE SYSTEM v1.0
+   Estilo general para toda la plataforma
+===================================================== */
+
+
+/* RESET */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+
+html{
+    scroll-behavior:smooth;
+}
+
+
+body{
+
+    font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+
+    background:#f7f9fc;
+
+    color:#202124;
+
+    line-height:1.7;
+
+}
+
+
+/* VARIABLES DE MARCA */
+
+:root{
+
+    --primary:#153e75;
+
+    --secondary:#1e88e5;
+
+    --accent:#00a86b;
+
+    --dark:#102a43;
+
+    --text:#202124;
+
+    --light:#f7f9fc;
+
+    --white:#ffffff;
+
+    --border:#e5eaf2;
+
+    --shadow:
+    0 8px 25px rgba(0,0,0,.08);
+
+}
+
+
+
+/* CONTENEDORES */
+
+.container{
+
+    width:100%;
+
+    max-width:1200px;
+
+    margin:auto;
+
+    padding:50px 25px;
+
+}
+
+
+
+/* TITULOS */
+
+h1{
+
+    color:var(--primary);
+
+    font-size:44px;
+
+    line-height:1.2;
+
+    margin-bottom:20px;
+
+}
+
+
+
+h2{
+
+    color:var(--primary);
+
+    font-size:28px;
+
+    margin:35px 0 15px;
+
+    border-bottom:
+
+    2px solid var(--border);
+
+    padding-bottom:10px;
+
+}
+
+
+
+h3{
+
+    color:var(--secondary);
+
+    font-size:22px;
+
+}
+
+
+
+/* TEXTO */
+
+p{
+
+    margin:18px 0;
+
+}
+
+
+ul{
+
+    padding-left:25px;
+
+}
+
+
+li{
+
+    margin:10px 0;
+
+}
+
+
+
+/* TARJETAS GENERALES */
+
+.card,
+.box,
+.section,
+.panel{
+
+    background:var(--white);
+
+    border-radius:18px;
+
+    padding:30px;
+
+    margin-bottom:30px;
+
+    box-shadow:var(--shadow);
+
+}
+
+
+
+/* EFECTO TARJETAS */
+
+.card:hover,
+.section:hover{
+
+    transform:translateY(-4px);
+
+    transition:.25s;
+
+}
+
+
+
+/* HERO PRINCIPAL */
+
+.hero{
+
+    background:
+
+    linear-gradient(
+        135deg,
+        var(--primary),
+        var(--secondary)
+    );
+
+    color:white;
+
+    padding:60px 40px;
+
+    border-radius:25px;
+
+    margin-bottom:40px;
+
+}
+
+
+
+.hero h1{
+
+    color:white;
+
+    font-size:48px;
+
+}
+
+
+
+.hero p{
+
+    font-size:20px;
+
+}
+
+
+
+/* BOTONES */
+
+.btn,
+.button,
+button{
+
+    display:inline-block;
+
+    background:var(--primary);
+
+    color:white;
+
+    text-decoration:none;
+
+    padding:13px 28px;
+
+    border-radius:12px;
+
+    font-weight:700;
+
+    border:none;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+
+
+.btn:hover,
+.button:hover,
+button:hover{
+
+    background:var(--secondary);
+
+}
+
+
+
+/* BOTÓN VERDE */
+
+.btn-success{
+
+    background:var(--accent);
+
+}
+
+
+
+.btn-success:hover{
+
+    opacity:.85;
+
+}
+
+
+
+/* AVISOS */
+
+.alert{
+
+    padding:25px;
+
+    border-radius:15px;
+
+    margin:25px 0;
+
+}
+
+
+
+.alert-info{
+
+    background:#eef6ff;
+
+    border-left:
+
+    6px solid var(--secondary);
+
+}
+
+
+
+.alert-warning{
+
+    background:#fff8e1;
+
+    border-left:
+
+    6px solid #ffb300;
+
+}
+
+
+
+.alert-danger{
+
+    background:#fff0f0;
+
+    border-left:
+
+    6px solid #d32f2f;
+
+}
+
+
+
+.alert-success{
+
+    background:#edf9f1;
+
+    border-left:
+
+    6px solid var(--accent);
+
+}
+
+
+
+/* TABLAS */
+
+table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+    background:white;
+
+    border-radius:15px;
+
+    overflow:hidden;
+
+}
+
+
+
+th{
+
+    background:var(--primary);
+
+    color:white;
+
+    padding:15px;
+
+}
+
+
+
+td{
+
+    padding:15px;
+
+    border-bottom:
+
+    1px solid var(--border);
+
+}
+
+
+
+/* IMÁGENES */
+
+img{
+
+    max-width:100%;
+
+    height:auto;
+
+    border-radius:15px;
+
+}
+
+
+
+/* FORMULARIOS */
+
+input,
+textarea,
+select{
+
+    width:100%;
+
+    padding:14px;
+
+    border:
+
+    1px solid #ddd;
+
+    border-radius:10px;
+
+    font-size:16px;
+
+    margin-bottom:15px;
+
+}
+
+
+
+input:focus,
+textarea:focus,
+select:focus{
+
+    outline:none;
+
+    border-color:var(--secondary);
+
+}
+
+
+
+/* FOOTER */
+
+footer,
+.footer{
+
+    text-align:center;
+
+    padding:40px 20px;
+
+    color:#666;
+
+    font-size:14px;
+
+}
+
+
+
+/* BADGES */
+
+.badge{
+
+    display:inline-block;
+
+    background:#eaf3ff;
+
+    color:var(--primary);
+
+    padding:6px 15px;
+
+    border-radius:50px;
+
+    font-size:14px;
+
+    font-weight:700;
+
+}
+
+
+
+/* RESPONSIVE */
+
+@media(max-width:768px){
+
+
+.container{
+
+    padding:30px 15px;
+
+}
+
+
+h1{
+
+    font-size:34px;
+
+}
+
+
+.hero{
+
+    padding:35px 25px;
+
+}
+
+
+.hero h1{
+
+    font-size:36px;
+
+}
+
+
+.card,
+.box,
+.section{
+
+    padding:22px;
+
+}
+
+
+}
