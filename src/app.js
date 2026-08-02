@@ -19,6 +19,7 @@ const messageRoutes = require('./routes/message.routes');
 const siteconfigRoutes = require('./routes/siteconfig.routes');
 const chatbotRoutes = require('./routes/chatbot.routes');
 const servicesRoutes = require('./routes/services.routes');
+const reportRoutes = require('./routes/report.routes');
 const pagoRoutes = require('./routes/pagos');
 const { webhookStripe } = require('./routes/pagos');
 
@@ -103,6 +104,7 @@ app.use('/api/mensajes', messageRoutes);
 app.use('/api/site', siteconfigRoutes);
 app.use('/api/chat', chatbotRoutes);
 app.use('/api/services', servicesRoutes);
+app.use('/api/reportes', reportRoutes);
 app.use('/api', pagoRoutes);
 
 // ==========================================

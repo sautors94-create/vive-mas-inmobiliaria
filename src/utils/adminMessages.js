@@ -2,7 +2,7 @@ const Property = require('../models/Property');
 const User = require('../models/User');
 const Message = require('../models/Message');
 
-const POLITICAS_URL = '/terminos.html';
+const POLITICAS_URL = '/legal/normas-generales/terminos.html';
 
 const buildMensajeAprobacion = ({ nombre, titulo, status }) => {
   return `Hola ${nombre} 👋\n\nTu propiedad “${titulo}” fue autorizada (${status}).\n\nSi necesitas ajustar fotos o información, revisa nuestras políticas: ${POLITICAS_URL}`;

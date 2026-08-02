@@ -135,6 +135,9 @@ ${p.caracteristicas.banos ? `<div class="caract-item"><div class="caract-valor">
               <div id="favorito-login-hint" class="favorito-login-hint" aria-live="polite">
                 Inicia sesión para guardar esta propiedad en favoritos.
               </div>
+              <button class="btn btn-outline" style="width:100%;padding:10px;margin-top:8px;font-size:12.5px;color:#6b7280;border-color:#e5e7eb" onclick="typeof auth!=='undefined'&&auth.isLoggedIn&&auth.isLoggedIn()?mostrarModalReporte({tipo:'propiedad',propiedadId:'${p._id}'}):alert('Inicia sesión para reportar esta publicación.')">
+                🚩 Reportar publicación
+              </button>
               <div style="display:flex;align-items:center;gap:6px;margin-top:12px;padding:10px;background:var(--bg-secondary);border-radius:8px">
                 <span style="font-size:16px">🔒</span>
                 <span style="font-size:11px;color:var(--text-light)">Tus datos y los del propietario están protegidos. La comunicación es a través de Vive Más.</span>

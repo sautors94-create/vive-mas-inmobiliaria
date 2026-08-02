@@ -25,6 +25,7 @@ const mostrarSeccion = (seccion) => {
   if (seccion === 'bloqueos') cargarVetados();
   if (seccion === 'monitoreo') cargarMonitoreo();
   if (seccion === 'novedades') cargarNovedades();
+  if (seccion === 'reportes') cargarReportes();
 };
 
 const cargarDashboard = async () => {
@@ -2321,6 +2322,103 @@ window.eliminarNovedadAdmin = async (id) => {
     } else {
       dsToast({ title: 'Error', message: data.error || 'No se pudo eliminar.', type: 'error' });
     }
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo eliminar.', type: 'error' });
+  }
+};
+
+// ==========================================
+// MÓDULO "REPORTES"
+// ==========================================
+const REP_MOTIVO_LABEL = {
+  spam: 'Spam o publicidad', fraude: 'Posible fraude', contenido_inapropiado: 'Contenido inapropiado',
+  informacion_falsa: 'Información falsa', acoso: 'Acoso u hostigamiento', otro: 'Otro'
+};
+const REP_STATUS_LABEL = { pendiente: 'Pendiente', revisado: 'Revisado', descartado: 'Descartado' };
+
+window.cargarReportes = async () => {
+  const lista = document.getElementById('rep-lista');
+  if (!lista) return;
+  lista.innerHTML = '<div class="loading">Cargando reportes...</div>';
+  const status = document.getElementById('rep-filtro-status')?.value || '';
+  const tipo = document.getElementById('rep-filtro-tipo')?.value || '';
+  try {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (tipo) params.append('tipo', tipo);
+
+    const [dataRep, dataStats] = await Promise.all([
+      api.get(`/reportes/admin?${params.toString()}`),
+      api.get('/reportes/admin/stats')
+    ]);
+
+    const kpisEl = document.getElementById('rep-mod-kpis');
+    if (kpisEl && dataStats.ok) {
+      kpisEl.innerHTML = `
+        <div class="mod-kpi-card"><div class="mod-kpi-num">${dataStats.pendientes}</div><div class="mod-kpi-label">Pendientes</div></div>
+        <div class="mod-kpi-card"><div class="mod-kpi-num">${dataStats.revisados}</div><div class="mod-kpi-label">Revisados</div></div>
+        <div class="mod-kpi-card"><div class="mod-kpi-num">${dataStats.descartados}</div><div class="mod-kpi-label">Descartados</div></div>
+        <div class="mod-kpi-card"><div class="mod-kpi-num">${dataStats.totalPropiedad}</div><div class="mod-kpi-label">De publicaciones</div></div>
+        <div class="mod-kpi-card"><div class="mod-kpi-num">${dataStats.totalMensaje}</div><div class="mod-kpi-label">De conversaciones</div></div>
+      `;
+    }
+
+    const reportes = dataRep.reportes || [];
+    if (!reportes.length) {
+      lista.innerHTML = '<div class="loading" style="color:var(--text-light)">No hay reportes con estos filtros.</div>';
+      return;
+    }
+
+    lista.innerHTML = reportes.map(r => `
+      <div style="background:white;border:1px solid var(--border);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+          <div>
+            <span class="badge-estatus badge-${r.status === 'pendiente' ? 'pendiente' : r.status === 'revisado' ? 'completado' : 'reembolsado'}">${REP_STATUS_LABEL[r.status]}</span>
+            <span style="font-size:13px;font-weight:700;margin-left:8px">${r.tipo === 'propiedad' ? '🏠 Publicación' : '💬 Conversación'}: ${REP_MOTIVO_LABEL[r.motivo] || r.motivo}</span>
+            <div style="font-size:12px;color:var(--text-light);margin-top:4px">
+              ${new Date(r.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              · Reportado por ${escapeHtml(r.reportadoPor?.nombre || 'Usuario')} (${escapeHtml(r.reportadoPor?.email || '')})
+              ${r.propiedad ? ` · Propiedad: <b>${escapeHtml(r.propiedad.titulo)}</b>` : ''}
+              ${r.usuarioReportado ? ` · Reportado: ${escapeHtml(r.usuarioReportado.nombre || '')} (${escapeHtml(r.usuarioReportado.email || '')})` : ''}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            ${r.propiedad ? `<button class="btn btn-outline admin-mini-btn" onclick="window.open('propiedad.html?id=${r.propiedad._id}','_blank')">Ver publicación</button>` : ''}
+            ${r.status === 'pendiente' ? `
+              <button class="btn btn-outline admin-mini-btn" onclick="actualizarReporteAdmin('${r._id}','revisado')">✓ Marcar revisado</button>
+              <button class="btn btn-outline admin-mini-btn" onclick="actualizarReporteAdmin('${r._id}','descartado')">✕ Descartar</button>
+            ` : ''}
+            <button class="btn btn-outline admin-mini-btn" onclick="eliminarReporteAdmin('${r._id}')">🗑️</button>
+          </div>
+        </div>
+        ${r.detalle ? `<div style="font-size:13px;color:var(--text);margin-top:10px;padding:10px 12px;background:var(--bg-secondary);border-radius:8px">${escapeHtml(r.detalle)}</div>` : ''}
+      </div>
+    `).join('');
+  } catch (error) {
+    lista.innerHTML = '<div class="loading" style="color:red">Error al cargar reportes.</div>';
+  }
+};
+
+window.actualizarReporteAdmin = async (id, status) => {
+  try {
+    const data = await api.patch(`/reportes/admin/${id}`, { status });
+    if (data.ok) {
+      dsToast({ title: status === 'revisado' ? 'Marcado como revisado' : 'Descartado', message: '', type: 'success' });
+      cargarReportes();
+    } else {
+      dsToast({ title: 'Error', message: data.error || 'No se pudo actualizar.', type: 'error' });
+    }
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo actualizar.', type: 'error' });
+  }
+};
+
+window.eliminarReporteAdmin = async (id) => {
+  if (!confirm('¿Eliminar este reporte?')) return;
+  try {
+    const data = await api.delete(`/reportes/admin/${id}`);
+    if (data.ok) { dsToast({ title: 'Eliminado', message: '', type: 'info' }); cargarReportes(); }
+    else dsToast({ title: 'Error', message: data.error || 'No se pudo eliminar.', type: 'error' });
   } catch (e) {
     dsToast({ title: 'Error', message: 'No se pudo eliminar.', type: 'error' });
   }

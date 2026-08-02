@@ -179,7 +179,8 @@
           <div class="form-grupo">
             <label>Contraseña *</label>
             <div class="password-input-wrapper">
-              <input type="password" id="r-password" class="form-input" placeholder="Mínimo 6 caracteres">
+              <input type="password" id="r-password" class="form-input" placeholder="Mínimo 8 caracteres, con mayúscula, minúscula, número y símbolo" oninput="validarFortalezaPassword()">
+              <div id="password-fortaleza" style="font-size:12px;margin-top:6px;line-height:1.6"></div>
               <button type="button" class="password-toggle" onclick="togglePassword('r-password')" aria-label="Mostrar contraseña">
                 <span class="password-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>
                 <span class="sr-only">Mostrar contraseña</span>
@@ -213,7 +214,7 @@
         <div class="terminos-row">
           <input type="checkbox" id="r-terminos">
           <label for="r-terminos">
-            Acepto los <a href="terminos.html" target="_blank">Términos y condiciones</a> y la Política de Privacidad de Vive Más Inmobiliaria
+            Acepto los <a href="../legal/normas-generales/terminos.html" target="_blank">Términos y condiciones</a> y el <a href="../legal/normas-generales/privacidad.html" target="_blank">Aviso de Privacidad</a> de Vive Más Inmobiliaria
           </label>
         </div>
 
@@ -239,7 +240,7 @@
         <a href="catalogo.html">Catálogo</a>
         <a href="servicios.html">Servicios</a>
         <a href="nosotros.html">Nosotros</a>
-        <a href="terminos.html">Términos y condiciones</a>
+        <a href="../legal/normas-generales/terminos.html">Términos y condiciones</a>
       </div>
     </div>
     <div class="footer-bottom">
@@ -251,6 +252,29 @@
   <script src="../js/auth.js"></script>
   <script>
     if (auth.isLoggedIn()) window.location.href = auth.isAdmin() ? 'admin.html' : 'dashboard.html';
+
+    // ==========================================
+    // VALIDACIÓN DE CONTRASEÑA SEGURA
+    // ==========================================
+    const REQUISITOS_PASSWORD = [
+      { etiqueta: 'Mínimo 8 caracteres', test: (p) => p.length >= 8 },
+      { etiqueta: 'Una mayúscula', test: (p) => /[A-Z]/.test(p) },
+      { etiqueta: 'Una minúscula', test: (p) => /[a-z]/.test(p) },
+      { etiqueta: 'Un número', test: (p) => /\d/.test(p) },
+      { etiqueta: 'Un carácter especial', test: (p) => /[^A-Za-z0-9]/.test(p) },
+    ];
+
+    const validarFortalezaPassword = () => {
+      const password = document.getElementById('r-password').value;
+      const el = document.getElementById('password-fortaleza');
+      const resultados = REQUISITOS_PASSWORD.map(r => ({ ...r, ok: r.test(password) }));
+      if (el) {
+        el.innerHTML = password
+          ? resultados.map(r => `<span style="color:${r.ok ? '#16a34a' : '#9ca3af'};margin-right:10px">${r.ok ? '✓' : '○'} ${r.etiqueta}</span>`).join('')
+          : '';
+      }
+      return resultados.every(r => r.ok);
+    };
 
     // ==========================================
     // LÓGICA DE SELECCIÓN DE PLANES
@@ -461,8 +485,8 @@
         errorEl.style.display = 'block';
         return;
       }
-      if (password.length < 6) {
-        errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres';
+      if (!validarFortalezaPassword()) {
+        errorEl.textContent = 'La contraseña debe tener al menos 8 caracteres, con mayúsculas, minúsculas, números y un carácter especial.';
         errorEl.style.display = 'block';
         return;
       }

@@ -259,3 +259,110 @@ const cargarTemaDelSitio = async () => {
 };
 
 document.addEventListener('DOMContentLoaded', cargarTemaDelSitio);
+
+// ==========================================
+// AVISO DE COOKIES
+// ==========================================
+const COOKIES_CONSENT_KEY = 'vm_cookies_consentimiento';
+
+const mostrarBannerCookies = () => {
+  if (localStorage.getItem(COOKIES_CONSENT_KEY)) return;
+  if (document.getElementById('vm-cookies-banner')) return;
+
+  const enSubcarpeta = window.location.pathname.includes('/pages/');
+  const urlCookies = enSubcarpeta ? '../legal/normas-generales/cookies.html' : 'legal/normas-generales/cookies.html';
+  const urlPrivacidad = enSubcarpeta ? '../legal/normas-generales/privacidad.html' : 'legal/normas-generales/privacidad.html';
+
+  const banner = document.createElement('div');
+  banner.id = 'vm-cookies-banner';
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a1a2e;color:white;padding:18px 24px;z-index:99999;box-shadow:0 -4px 20px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;font-family:inherit';
+  banner.innerHTML = `
+    <span style="font-size:13.5px;line-height:1.5;max-width:640px">
+      🍪 Usamos cookies propias y de terceros para mejorar tu experiencia, analizar el uso del sitio y mostrarte contenido relevante.
+      Consulta nuestra <a href="${urlCookies}" target="_blank" style="color:#f4a261;text-decoration:underline">Política de Cookies</a>
+      y <a href="${urlPrivacidad}" target="_blank" style="color:#f4a261;text-decoration:underline">Aviso de Privacidad</a>.
+    </span>
+    <span style="display:flex;gap:10px;flex-shrink:0">
+      <button id="vm-cookies-rechazar" style="background:none;border:1px solid rgba(255,255,255,0.4);color:white;padding:9px 18px;border-radius:20px;font-size:13px;cursor:pointer">Rechazar</button>
+      <button id="vm-cookies-aceptar" style="background:#1a472a;border:none;color:white;padding:9px 20px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer">Aceptar todas</button>
+    </span>
+  `;
+  document.body.appendChild(banner);
+
+  const cerrarBanner = (valor) => {
+    localStorage.setItem(COOKIES_CONSENT_KEY, JSON.stringify({ valor, fecha: new Date().toISOString() }));
+    banner.remove();
+  };
+  document.getElementById('vm-cookies-aceptar').onclick = () => cerrarBanner('aceptado');
+  document.getElementById('vm-cookies-rechazar').onclick = () => cerrarBanner('rechazado');
+};
+
+document.addEventListener('DOMContentLoaded', mostrarBannerCookies);
+
+// ==========================================
+// MODAL DE REPORTE (propiedades y chats)
+// ==========================================
+const MOTIVOS_REPORTE = [
+  { valor: 'spam', etiqueta: 'Spam o publicidad no deseada' },
+  { valor: 'fraude', etiqueta: 'Posible fraude o estafa' },
+  { valor: 'contenido_inapropiado', etiqueta: 'Contenido inapropiado' },
+  { valor: 'informacion_falsa', etiqueta: 'Información falsa o engañosa' },
+  { valor: 'acoso', etiqueta: 'Acoso u hostigamiento' },
+  { valor: 'otro', etiqueta: 'Otro motivo' },
+];
+
+window.mostrarModalReporte = ({ tipo, propiedadId = null, conversacionId = null }) => {
+  let modal = document.getElementById('vm-reporte-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'vm-reporte-modal';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100000;align-items:center;justify-content:center';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="background:white;border-radius:16px;padding:28px;max-width:440px;width:90%">
+      <h3 style="margin-bottom:6px">🚩 Reportar ${tipo === 'propiedad' ? 'publicación' : 'conversación'}</h3>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Ayúdanos a mantener la comunidad segura. Tu reporte es confidencial.</p>
+      <div style="margin-bottom:12px">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Motivo</label>
+        <select id="vm-reporte-motivo" class="form-input" style="width:100%">
+          ${MOTIVOS_REPORTE.map(m => `<option value="${m.valor}">${m.etiqueta}</option>`).join('')}
+        </select>
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Detalles (opcional)</label>
+        <textarea id="vm-reporte-detalle" class="form-input" rows="3" style="width:100%" placeholder="Cuéntanos más sobre lo que pasó..."></textarea>
+      </div>
+      <div id="vm-reporte-error" style="display:none;font-size:12px;color:#dc2626;margin-bottom:10px"></div>
+      <div style="display:flex;gap:10px">
+        <button id="vm-reporte-enviar" class="btn btn-primary" style="flex:1">Enviar reporte</button>
+        <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('vm-reporte-modal').style.display='none'">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('vm-reporte-enviar').onclick = async () => {
+    const motivo = document.getElementById('vm-reporte-motivo').value;
+    const detalle = document.getElementById('vm-reporte-detalle').value.trim();
+    const errorEl = document.getElementById('vm-reporte-error');
+    const btn = document.getElementById('vm-reporte-enviar');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    try {
+      const data = await api.post('/reportes', { tipo, propiedadId, conversacionId, motivo, detalle: detalle || null });
+      if (data.ok) {
+        modal.style.display = 'none';
+        if (window.dsToast) dsToast({ title: 'Reporte enviado', message: 'Gracias, nuestro equipo lo revisará pronto.', type: 'success' });
+        else alert('Reporte enviado. Gracias.');
+      } else {
+        errorEl.textContent = data.error || 'No se pudo enviar el reporte.';
+        errorEl.style.display = 'block';
+      }
+    } catch (e) {
+      errorEl.textContent = 'No se pudo enviar el reporte. Intenta de nuevo.';
+      errorEl.style.display = 'block';
+    }
+    btn.disabled = false;
+    btn.textContent = 'Enviar reporte';
+  };
+  modal.style.display = 'flex';
+};

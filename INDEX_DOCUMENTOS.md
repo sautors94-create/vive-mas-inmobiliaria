@@ -1,9 +1,8 @@
 # Vive Más Inmobiliaria
 # Índice de Documentación Legal y Operativa
 
-Versión: 1.0  
-Fecha: Agosto 2026
-
+Versión: 3.0
+Fecha: Actualización de estructura de carpetas
 
 ---
 
@@ -13,6 +12,68 @@ Este archivo contiene el inventario general de documentos legales, políticas y 
 
 La documentación está diseñada para cubrir operación SaaS inmobiliaria, usuarios finales, empresas, pagos, seguridad, inteligencia artificial y cumplimiento digital.
 
+> **Nota de versión 3.0:** La documentación legal fue reorganizada en subcarpetas temáticas dentro de `public/legal/`. Los archivos duplicados `seguridad.html` y `politica-pagos.html` fueron movidos a `archivados/` como respaldo histórico. El CSS se centralizó en `public/css/`.
+
+
+---
+
+## 📁 Estructura de Carpetas
+
+```
+vive-mas-inmobiliaria/
+│
+├── INDEX_DOCUMENTOS.md
+│
+├── public/
+│   ├── css/
+│   │   ├── global.css          # Sistema de estilos global
+│   │   └── legal.css           # Estilos del centro legal
+│   │
+│   ├── legal/                  # Centro Legal
+│   │   ├── index.html          # Página principal del centro legal
+│   │   │
+│   │   ├── normas-generales/   # Documentos base
+│   │   │   ├── terminos.html
+│   │   │   ├── privacidad.html
+│   │   │   ├── cookies.html
+│   │   │   ├── aviso-legal-empresa.html
+│   │   │   └── propiedad-intelectual.html
+│   │   │
+│   │   ├── seguridad/          # Seguridad y confianza
+│   │   │   ├── seguridad-cuentas.html
+│   │   │   ├── politica-antifraude.html
+│   │   │   ├── politica-comunidad.html
+│   │   │   └── politica-de-verificacion-de-usuarios-y-propiedades.html
+│   │   │
+│   │   ├── comercial/          # Pagos y comercio
+│   │   │   ├── politica-de-pagos-y-procesadores.html
+│   │   │   ├── politica-devoluciones-cancelaciones.html
+│   │   │   ├── politica-de-publicidad-y-contenido-promocional.html
+│   │   │   └── publicacion-inmuebles.html
+│   │   │
+│   │   ├── plataforma/         # Operación y plataforma
+│   │   │   ├── politica-ia.html
+│   │   │   ├── politica-de-continuidad-y-respaldo.html
+│   │   │   ├── politica-de-documentos-y-firmas-digitales.html
+│   │   │   └── mensajeria.html
+│   │   │
+│   │   ├── b2b/                # Empresas y profesionales
+│   │   │   └── politica-de-privacidad-b2b.html
+│   │   │
+│   │   ├── acuerdos/           # Acuerdos profesionales
+│   │   │   ├── acuerdo-asesores-inmobiliarios.html
+│   │   │   ├── acuerdo-empresas-desarrolladores.html
+│   │   │   └── acuerdo-niveles-servicio-sla.html
+│   │   │
+│   │   └── archivados/         # Duplicados / respaldo histórico
+│   │       ├── seguridad.html          # Duplicado → seguridad/seguridad-cuentas.html
+│   │       └── politica-pagos.html     # Duplicado → comercial/politica-de-pagos-y-procesadores.html
+│   │
+│   └── pages/                  # Páginas de la aplicación
+│
+└── src/                        # Código de la aplicación
+```
+
 
 ---
 
@@ -20,7 +81,7 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 **Archivo:**
 
-`terminos.html`
+`public/legal/normas-generales/terminos.html`
 
 ## Contenido:
 
@@ -42,7 +103,7 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 **Archivo:**
 
-`privacidad.html`
+`public/legal/normas-generales/privacidad.html`
 
 ## Contenido:
 
@@ -63,7 +124,7 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 **Archivo:**
 
-`cookies.html`
+`public/legal/normas-generales/cookies.html`
 
 ## Contenido:
 
@@ -82,7 +143,7 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 **Archivo:**
 
-`politica-ia.html`
+`public/legal/plataforma/politica-ia.html`
 
 ## Contenido:
 
@@ -102,7 +163,7 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 **Archivo:**
 
-`propiedad-intelectual.html`
+`public/legal/normas-generales/propiedad-intelectual.html`
 
 ## Contenido:
 
@@ -121,7 +182,7 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 **Archivo:**
 
-`seguridad-cuentas.html`
+`public/legal/seguridad/seguridad-cuentas.html`
 
 ## Contenido:
 
@@ -136,11 +197,41 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 ---
 
+# 6b. Política de Seguridad Tecnológica (archivada)
+
+**Archivo:**
+
+`public/legal/archivados/seguridad.html`
+
+> ⚠️ Documento duplicado. La versión vigente es `public/legal/seguridad/seguridad-cuentas.html`. Se conserva en `archivados/` como respaldo histórico.
+
+## Contenido:
+
+- Alcance de la política de seguridad.
+- Protección de cuentas de usuario.
+- Buenas prácticas para usuarios.
+- Protección de infraestructura tecnológica.
+- Protección de información y bases de datos.
+- Seguridad de archivos y contenido multimedia.
+- Seguridad de proveedores externos.
+- Control de acceso interno.
+- Respaldos y continuidad operativa.
+- Prevención de fraude y abuso.
+- Monitoreo y detección de actividades inusuales.
+- Mantenimiento de seguridad.
+- Reporte responsable de vulnerabilidades.
+- Respuesta ante incidentes de seguridad.
+- Responsabilidad del usuario en seguridad.
+- Limitaciones de seguridad.
+
+
+---
+
 # 7. Política de Pagos y Procesadores
 
 **Archivo:**
 
-`politica-de-pagos-y-procesadores.html`
+`public/legal/comercial/politica-de-pagos-y-procesadores.html`
 
 ## Contenido:
 
@@ -158,11 +249,76 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 ---
 
+# 7b. Política de Pagos y Servicios Digitales (archivada)
+
+**Archivo:**
+
+`public/legal/archivados/politica-pagos.html`
+
+> ⚠️ Documento duplicado. La versión vigente es `public/legal/comercial/politica-de-pagos-y-procesadores.html`. Se conserva en `archivados/` como respaldo histórico.
+
+## Contenido:
+
+- Servicios gratuitos y de pago.
+- Planes y suscripciones.
+- Precios y cambios de tarifas.
+- Métodos de pago.
+- Proveedores externos de pago.
+- Pagos recurrentes y renovaciones automáticas.
+- Confirmación de pagos.
+- Facturación e impuestos.
+- Promociones y descuentos.
+- Pagos rechazados o problemas de cobro.
+- Prevención de fraude financiero.
+- Cancelación de servicios.
+- Reembolsos.
+- Disputas de pago y contracargos.
+- Suspensión por falta de pago.
+- Servicios digitales y disponibilidad.
+- Uso responsable de servicios de pago.
+
+
+---
+
+# 7c. Política de Devoluciones y Cancelaciones
+
+**Archivo:**
+
+`public/legal/comercial/politica-devoluciones-cancelaciones.html`
+
+## Contenido:
+
+- Condiciones de devolución.
+- Cancelación de servicios.
+- Reembolsos.
+- Derechos del consumidor.
+- Procedimientos de solicitud.
+
+
+---
+
+# 7d. Política de Publicidad y Contenido Promocional
+
+**Archivo:**
+
+`public/legal/comercial/politica-de-publicidad-y-contenido-promocional.html`
+
+## Contenido:
+
+- Publicidad destacada.
+- Contenido promocional.
+- Prácticas comerciales.
+- Veracidad publicitaria.
+- Restricciones de promoción.
+
+
+---
+
 # 8. Política de Documentos y Firmas Digitales
 
 **Archivo:**
 
-`politica-de-documentos-y-firmas-digitales.html`
+`public/legal/plataforma/politica-de-documentos-y-firmas-digitales.html`
 
 ## Contenido:
 
@@ -182,7 +338,7 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 **Archivo:**
 
-`politica-de-privacidad-b2b.html`
+`public/legal/b2b/politica-de-privacidad-b2b.html`
 
 ## Contenido:
 
@@ -203,7 +359,7 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 **Archivo:**
 
-`politica-de-continuidad-y-respaldo.html`
+`public/legal/plataforma/politica-de-continuidad-y-respaldo.html`
 
 ## Contenido:
 
@@ -223,7 +379,7 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 **Archivo:**
 
-`aviso-legal-empresa.html`
+`public/legal/normas-generales/aviso-legal-empresa.html`
 
 ## Contenido:
 
@@ -243,7 +399,7 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 **Archivo:**
 
-`politica-comunidad.html`
+`public/legal/seguridad/politica-comunidad.html`
 
 ## Contenido:
 
@@ -262,7 +418,7 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 **Archivo:**
 
-`publicacion-inmuebles.html`
+`public/legal/comercial/publicacion-inmuebles.html`
 
 ## Contenido:
 
@@ -281,7 +437,7 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 **Archivo:**
 
-`politica-antifraude.html`
+`public/legal/seguridad/politica-antifraude.html`
 
 ## Contenido:
 
@@ -295,11 +451,28 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 ---
 
+# 14b. Política de Verificación de Usuarios y Propiedades
+
+**Archivo:**
+
+`public/legal/seguridad/politica-de-verificacion-de-usuarios-y-propiedades.html`
+
+## Contenido:
+
+- Verificación de identidad.
+- Validación documental.
+- Procesos de aprobación.
+- Revisión de propiedades.
+- Seguridad en la verificación.
+
+
+---
+
 # 15. Política de Mensajería y Comunicaciones
 
 **Archivo:**
 
-`politica-mensajeria.html`
+`public/legal/plataforma/mensajeria.html`
 
 ## Contenido:
 
@@ -317,7 +490,7 @@ La documentación está diseñada para cubrir operación SaaS inmobiliaria, usua
 
 **Archivo:**
 
-`legal/index.html`
+`public/legal/index.html`
 
 ## Contenido:
 
@@ -332,15 +505,64 @@ Página principal de acceso a todas las políticas:
 - B2B.
 - Seguridad.
 - Aviso legal.
+- Acuerdos profesionales.
 
 
 ---
 
-# 17. Sistema de Estilos
+# 17. Acuerdos Profesionales
+
+## 17.1 Acuerdo de Asesores Inmobiliarios
+
+**Archivo:**
+
+`public/legal/acuerdos/acuerdo-asesores-inmobiliarios.html`
+
+### Contenido:
+
+- Condiciones para asesores.
+- Agentes y brokers.
+- Uso de la plataforma.
+- Responsabilidades profesionales.
+- Comisiones y honorarios.
+
+## 17.2 Acuerdo de Empresas y Desarrolladores
+
+**Archivo:**
+
+`public/legal/acuerdos/acuerdo-empresas-desarrolladores.html`
+
+### Contenido:
+
+- Constructoras.
+- Desarrolladores.
+- Inmobiliarias corporativas.
+- Publicaciones masivas.
+- Condiciones B2B.
+
+## 17.3 Acuerdo de Niveles de Servicio (SLA)
+
+**Archivo:**
+
+`public/legal/acuerdos/acuerdo-niveles-servicio-sla.html`
+
+### Contenido:
+
+- Niveles de servicio.
+- Disponibilidad.
+- Soporte técnico.
+- Tiempos de respuesta.
+- Compensaciones.
+- Mantenimiento.
+
+
+---
+
+# 18. Sistema de Estilos
 
 ## Archivo:
 
-`assets/css/global.css`
+`public/css/global.css`
 
 ## Contenido:
 
@@ -356,62 +578,32 @@ Página principal de acceso a todas las políticas:
 
 ---
 
-# 18. Estilo Servicios
+# 19. Estilo Legal
 
 ## Archivo:
 
-`servicios/servicios.css`
+`public/css/legal.css`
 
 ## Contenido:
 
-- Tarjetas de servicios.
-- Planes.
-- Secciones comerciales.
-- Botones.
-- Landing pages.
-- Diseño SaaS.
-
-
----
-
-# Estructura Recomendada
-
-```
-/vive-mas
-
-│
-├── INDEX_DOCUMENTOS.md
-│
-├── assets/
-│   └── css/
-│       └── global.css
-│
-├── legal/
-│   ├── index.html
-│   ├── terminos.html
-│   ├── privacidad.html
-│   ├── cookies.html
-│   └── aviso-legal-empresa.html
-│
-├── servicios/
-│   ├── servicios.css
-│   ├── venta.html
-│   └── renta.html
-│
-└── documentos/
-    └── politicas/
-```
+- Estilos específicos del centro legal.
+- Componentes de documentos legales.
+- Secciones de políticas.
 
 
 ---
 
 # Estado del Proyecto
 
-✅ Documentación legal base creada  
-✅ Centro legal preparado  
-✅ Sistema CSS global creado  
-✅ Políticas SaaS estructuradas  
-✅ Documentación empresarial B2B preparada  
+✅ Documentación legal base creada
+✅ Centro legal preparado con los 23 documentos
+✅ Documentos reorganizados en subcarpetas temáticas (`normas-generales/`, `seguridad/`, `comercial/`, `plataforma/`, `b2b/`, `acuerdos/`)
+✅ Duplicados archivados en `archivados/` (seguridad.html, politica-pagos.html)
+✅ Sistema CSS global centralizado en `public/css/`
+✅ Todas las referencias de páginas, API y mensajería actualizadas a rutas nuevas
+✅ Políticas SaaS estructuradas
+✅ Documentación empresarial B2B preparada
+✅ Acuerdos profesionales organizados en `public/legal/acuerdos/`
 ✅ Base para plataforma inmobiliaria digital
 
 
@@ -422,6 +614,6 @@ Página principal de acceso a todas las políticas:
 - Política de API y desarrolladores.
 - Política de proveedores externos.
 - Política de soporte técnico.
-- Acuerdo de nivel de servicio SLA empresarial.
-- Política de protección de datos ampliada.
 - Contrato de prestación de servicios SaaS.
+- Política de protección de datos ampliada.
+

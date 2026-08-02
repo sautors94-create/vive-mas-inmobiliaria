@@ -103,6 +103,7 @@
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('bloqueos')">🛡️ Usuarios vetados</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('monitoreo')">🤖 Monitoreo de chats</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('novedades')">📰 Novedades</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('reportes')">🚩 Reportes</a>
       </nav>
     </aside>
 
@@ -763,6 +764,39 @@
         </div>
 
         <div id="nov-lista" style="display:flex;flex-direction:column;gap:12px"></div>
+      </section>
+
+      <!-- REPORTES DE USUARIOS -->
+      <section id="sec-reportes" class="dash-section" style="display:none">
+        <div class="mod-header">
+          <div>
+            <h2>Reportes</h2>
+            <div class="mod-header-sub">Panel &gt; Reportes · Publicaciones y conversaciones reportadas por usuarios</div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarReportes()">↻ Actualizar</button>
+          </div>
+        </div>
+
+        <div class="mod-kpis" id="rep-mod-kpis">
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Pendientes</div></div>
+        </div>
+
+        <div class="mod-filters" style="display:flex;gap:10px;margin-bottom:16px">
+          <select id="rep-filtro-status" class="filter-select" style="width:auto" onchange="cargarReportes()">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="revisado">Revisados</option>
+            <option value="descartado">Descartados</option>
+          </select>
+          <select id="rep-filtro-tipo" class="filter-select" style="width:auto" onchange="cargarReportes()">
+            <option value="">Publicación y conversación</option>
+            <option value="propiedad">Publicaciones</option>
+            <option value="mensaje">Conversaciones</option>
+          </select>
+        </div>
+
+        <div id="rep-lista" style="display:flex;flex-direction:column;gap:12px"></div>
       </section>
 
 
