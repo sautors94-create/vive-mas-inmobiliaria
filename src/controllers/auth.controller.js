@@ -62,11 +62,19 @@ const verificarTempToken = (token) => {
   }
 };
 
+// Requiere mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+const validarPasswordSegura = (password) => PASSWORD_REGEX.test(password || '');
+
 const registro = async (req, res) => {
   try {
     const { nombre, email, password, telefono, plan, metodoVerificacion } = req.body;
     const existe = await User.findOne({ email });
     if (existe) return res.status(400).json({ error: 'El email ya está registrado' });
+
+    if (!validarPasswordSegura(password)) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y un carácter especial.' });
+    }
 
     const codigo = generarCodigo();
     const expira = new Date(Date.now() + 15 * 60 * 1000);
@@ -172,8 +180,8 @@ const restablecerPassword = async (req, res) => {
       return res.status(400).json({ error: 'Faltan datos' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    if (!validarPasswordSegura(newPassword)) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y un carácter especial.' });
     }
 
     // Verificar que el token sea válido y sea de tipo 'password_reset'

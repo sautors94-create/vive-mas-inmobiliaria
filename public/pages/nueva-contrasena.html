@@ -39,7 +39,8 @@
           <form id="reset-form">
             <div class="form-grupo">
               <label for="password">Nueva contraseña</label>
-              <input type="password" id="password" class="form-input" placeholder="Mínimo 6 caracteres" required>
+              <input type="password" id="password" class="form-input" placeholder="Mínimo 8 caracteres, con mayúscula, minúscula, número y símbolo" oninput="validarFortalezaPassword()" required>
+              <div id="password-fortaleza" style="font-size:12px;margin-top:6px;line-height:1.6"></div>
             </div>
 
             <div class="form-grupo">
@@ -75,6 +76,29 @@
 
   <script src="../js/api.js"></script>
   <script>
+    // ==========================================
+    // VALIDACIÓN DE CONTRASEÑA SEGURA
+    // ==========================================
+    const REQUISITOS_PASSWORD = [
+      { etiqueta: 'Mínimo 8 caracteres', test: (p) => p.length >= 8 },
+      { etiqueta: 'Una mayúscula', test: (p) => /[A-Z]/.test(p) },
+      { etiqueta: 'Una minúscula', test: (p) => /[a-z]/.test(p) },
+      { etiqueta: 'Un número', test: (p) => /\d/.test(p) },
+      { etiqueta: 'Un carácter especial', test: (p) => /[^A-Za-z0-9]/.test(p) },
+    ];
+
+    const validarFortalezaPassword = () => {
+      const password = document.getElementById('password').value;
+      const el = document.getElementById('password-fortaleza');
+      const resultados = REQUISITOS_PASSWORD.map(r => ({ ...r, ok: r.test(password) }));
+      if (el) {
+        el.innerHTML = password
+          ? resultados.map(r => `<span style="color:${r.ok ? '#16a34a' : '#9ca3af'};margin-right:10px">${r.ok ? '✓' : '○'} ${r.etiqueta}</span>`).join('')
+          : '';
+      }
+      return resultados.every(r => r.ok);
+    };
+
     // Obtener el token de la URL
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
@@ -97,8 +121,8 @@
 
       errorMsg.style.display = 'none';
 
-      if (password.length < 6) {
-        errorMsg.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+      if (!validarFortalezaPassword()) {
+        errorMsg.textContent = 'La contraseña debe tener al menos 8 caracteres, con mayúsculas, minúsculas, números y un carácter especial.';
         errorMsg.style.display = 'block';
         return;
       }
