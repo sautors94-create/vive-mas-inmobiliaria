@@ -103,6 +103,15 @@ ${p.caracteristicas.banos ? `<div class="caract-item"><div class="caract-valor">
           ${p.ubicacion.lat && p.ubicacion.lng ? `
             <div class="mapa-titulo">Ubicación</div>
             <div id="mapa"></div>
+            <div class="mapa-nota">🔒 Por privacidad mostramos la zona aproximada (±100 m).</div>
+            <div class="mapa-acciones">
+              <a class="btn btn-outline mapa-btn" href="https://www.google.com/maps?q=${p.ubicacion.lat},${p.ubicacion.lng}&z=16" target="_blank" rel="noopener">
+                📍 Ver en Google Maps
+              </a>
+              <a class="btn btn-outline mapa-btn" href="https://waze.com/ul?ll=${p.ubicacion.lat},${p.ubicacion.lng}&navigate=no" target="_blank" rel="noopener">
+                🧭 Ver en Waze
+              </a>
+            </div>
           ` : ''}
         </div>
 
@@ -163,9 +172,28 @@ ${p.caracteristicas.banos ? `<div class="caract-item"><div class="caract-valor">
 
   if (p.ubicacion.lat && p.ubicacion.lng) {
     setTimeout(() => {
-      const mapa = L.map('mapa').setView([p.ubicacion.lat, p.ubicacion.lng], 15);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
-      L.marker([p.ubicacion.lat, p.ubicacion.lng]).addTo(mapa).bindPopup(p.titulo).openPopup();
+const lat = Number(p.ubicacion.lat);
+      const lng = Number(p.ubicacion.lng);
+      const mapa = L.map('mapa').setView([lat, lng], 15);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 20
+      }).addTo(mapa);
+
+      // Por privacidad NO se muestra el punto exacto: solo un área aproximada de ±100 m
+      L.circle([lat, lng], {
+        radius: 100,
+        color: 'var(--primary, #1a472a)',
+        weight: 2,
+        fillColor: 'var(--primary, #1a472a)',
+        fillOpacity: 0.12
+      }).addTo(mapa).bindPopup(`${p.titulo} — zona aproximada (±100 m)`);
+
+      // Ajustar el zoom para que se vea el área de 100 m sin revelar el punto exacto
+      setTimeout(() => {
+        try { mapa.setZoom(16); } catch (e) {}
+      }, 50);
     }, 100);
   }
 };

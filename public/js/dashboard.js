@@ -32,6 +32,28 @@ const syncCaracteristica = (campo, origen = 'slider') => {
 };
 
 // ==================== AUTOCOMPLETE CP ====================
+// Normaliza texto ignorando acentos y mayúsculas para comparar estados
+const normalizarTexto = (s) => String(s || '')
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .trim();
+
+// Devuelve el option que coincida con el texto (ignora el option placeholder vacío)
+const seleccionarEstadoPorTexto = (select, texto) => {
+  if (!select || !texto) return;
+  const norm = normalizarTexto(texto);
+  const opciones = Array.from(select.options).filter(o => o.value && o.value.trim() !== '');
+  // Coincidencia exacta o parcial (primeras palabras)
+  const match = opciones.find(o =>
+    normalizarTexto(o.text) === norm ||
+    normalizarTexto(o.value) === norm ||
+    normalizarTexto(o.text).includes(norm) ||
+    norm.includes(normalizarTexto(o.text))
+  );
+  if (match) select.value = match.value;
+};
+
 const buscarPorCP = async (cp) => {
   if (!cp || cp.length < 5) return;
   try {
@@ -47,15 +69,9 @@ const buscarPorCP = async (cp) => {
     if (ciudad) ciudad.value = lugar['place name'] || '';
     if (colonia) colonia.value = lugar['place name'] || '';
     if (estadoLabel) estadoLabel.textContent = `✓ ${lugar['state']}`;
-    // Intentar seleccionar el estado en el select
-    if (estado) {
-      const opciones = Array.from(estado.options);
-      const match = opciones.find(o =>
-        o.value.toLowerCase().replace(/[áéíóú]/g, c => ({á:'a',é:'e',í:'i',ó:'o',ú:'u'}[c]))
-        === lugar['state abbreviation']?.toLowerCase() ||
-        o.text.toLowerCase().includes(lugar['state'].toLowerCase().substring(0, 6))
-      );
-      if (match) estado.value = match.value;
+    // Intentar seleccionar el estado en el select (solo si aún no está seleccionado)
+    if (estado && !estado.value) {
+      seleccionarEstadoPorTexto(estado, lugar['state'] || lugar['state abbreviation']);
     }
   } catch (e) {}
 };
@@ -403,9 +419,11 @@ const iniciarMapaPublicar = () => {
   if (mapaPublicar) { mapaPublicar.invalidateSize(); return; }
   setTimeout(() => {
     const centro = [19.4326, -99.1332];
-    mapaPublicar = L.map('mapa-publicar').setView(centro, 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
+mapaPublicar = L.map('mapa-publicar').setView(centro, 12);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      subdomains: 'abcd',
+      maxZoom: 20
     }).addTo(mapaPublicar);
     mapaPublicar.on('click', (e) => {
       const { lat, lng } = e.latlng;
@@ -439,13 +457,12 @@ const geocodificarCoordenadas = async (lat, lng) => {
       const estado = data.address.state || '';
       const ciudad = data.address.city || data.address.town || data.address.municipality || '';
       const colonia = data.address.suburb || data.address.neighbourhood || '';
-      const calle = data.address.road || '';
+const calle = data.address.road || '';
       const numero = data.address.house_number || '';
-      if (estado) {
-        const estadoSelect = document.getElementById('p-estado');
-        const opciones = [...estadoSelect.options];
-        const match = opciones.find(o => estado.toLowerCase().includes(o.value.toLowerCase()) || o.value.toLowerCase().includes(estado.toLowerCase().split(' ')[0]));
-        if (match) estadoSelect.value = match.value;
+      // Solo autocompletar el estado si aún no se ha seleccionado uno (evita borrar el que eligió el usuario)
+      const estadoSelect = document.getElementById('p-estado');
+      if (estado && estadoSelect && !estadoSelect.value) {
+        seleccionarEstadoPorTexto(estadoSelect, estado);
       }
       if (ciudad) document.getElementById('p-ciudad').value = ciudad;
       if (colonia) document.getElementById('p-colonia').value = colonia;
@@ -1264,19 +1281,8 @@ const verificarLimiteRespuestas = (msgs) => {
   else { document.getElementById('msg-limite-alcanzado').style.display = 'none'; document.getElementById('msg-chat-input-wrap').style.display = 'block'; }
 };
 
-const exportarMensajesExcel = async () => {
-  try {
-    const token = localStorage.getItem('accessToken');
-    const res = await fetch('/api/mensajes/exportar/excel', { headers: { Authorization: `Bearer ${token}` }, credentials: 'include' });
-    if (!res.ok) { const d = await res.json(); dsToast({ title: 'Error', message: d.error || 'No se pudo exportar', type: 'error' }); return; }
-    const blob = await res.blob(); const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `mensajes-${Date.now()}.xlsx`; a.click();
-    URL.revokeObjectURL(url);
-    dsToast({ title: 'Exportado', message: 'Excel descargado correctamente.', type: 'success' });
-  } catch (e) { dsToast({ title: 'Error', message: 'No se pudo generar el Excel', type: 'error' }); }
-};
-
 const autoResizeTextarea = (el) => { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; };
+
 
 const cargarLeadsUsuario = async () => {
   const lista = document.getElementById('leads-usuario-lista');

@@ -255,58 +255,7 @@ const conversacionPropiedad = async (req, res) => {
   }
 };
 
-// ==========================================
-// EXPORTAR MENSAJES A EXCEL
-// ==========================================
-const exportarMensajesExcel = async (req, res) => {
-  try {
-    const mensajes = await Message.find({
-      $or: [{ remitente: req.user.id }, { destinatario: req.user.id }]
-    })
-      .populate('remitente', 'nombre email')
-      .populate('destinatario', 'nombre email')
-      .populate('propiedad', 'titulo')
-      .sort({ createdAt: -1 });
 
-    if (mensajes.length === 0) {
-      return res.status(404).json({ error: 'No tienes mensajes para exportar' });
-    }
-
-    // Construir datos para Excel
-    const XLSX = require('xlsx');
-    const datos = mensajes.map(m => ({
-      'Fecha': new Date(m.createdAt).toLocaleString('es-MX'),
-      'Remitente': m.remitente?.nombre || 'Desconocido',
-      'Email Remitente': m.remitente?.email || '',
-      'Destinatario': m.destinatario?.nombre || 'Desconocido',
-      'Email Destinatario': m.destinatario?.email || '',
-      'Propiedad': m.propiedad?.titulo || 'Conversación directa',
-      'Mensaje': m.mensaje,
-      'Leído': m.leido ? 'Sí' : 'No',
-      'Nivel de Riesgo': m.riesgo || 'bajo',
-      'Flags de Riesgo': (m.riesgoFlags || []).join(', ') || 'Ninguno',
-      'Requiere Revisión': m.riesgoRevision ? 'Sí' : 'No'
-    }));
-
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(datos);
-
-    // Ajustar anchos de columna
-    ws['!cols'] = [
-      { wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 20 }, { wch: 25 },
-      { wch: 30 }, { wch: 60 }, { wch: 8 }, { wch: 15 }, { wch: 35 }, { wch: 15 }
-    ];
-
-    XLSX.utils.book_append_sheet(wb, ws, 'Mensajes');
-    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=mis-mensajes-${Date.now()}.xlsx`);
-    res.send(buffer);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
 
 // ==========================================
 // ADMIN: Monitoreo de mensajes con riesgo
@@ -549,7 +498,6 @@ module.exports = {
   misConversaciones,
   conversacionPorId,
   conversacionPropiedad,
-  exportarMensajesExcel,
   mensajesConRiesgo,
   marcarMensajeRevisado,
   getRiesgoStats,

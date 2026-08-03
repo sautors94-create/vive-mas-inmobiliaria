@@ -7,7 +7,6 @@ const {
   misConversaciones,
   conversacionPorId,
   conversacionPropiedad,
-  exportarMensajesExcel,
   mensajesConRiesgo,
   marcarMensajeRevisado,
   getRiesgoStats,
@@ -20,7 +19,6 @@ router.use(authMiddleware);
 
 // Rutas de usuario
 router.get('/', misConversaciones);
-router.get('/exportar/excel', exportarMensajesExcel);
 router.get('/conversacion/:conversacionId', conversacionPorId);
 router.get('/:id', conversacionPropiedad);
 router.post('/', enviarMensaje);
@@ -35,3 +33,4 @@ router.patch('/admin/:id/revisado', requireRole('admin'), marcarMensajeRevisado)
 router.post('/admin/purgar', requireRole('admin'), purgarMensajesAdmin);
 
 module.exports = router;
+
