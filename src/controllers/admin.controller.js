@@ -490,8 +490,9 @@ const { enviarNotificacionMensaje } = require('../utils/email');
 
 const enviarMensajeInternoParaPropiedad = async ({ req, propiedadId, mensaje }) => {
   const Message = require('../models/Message');
-  const propiedad = await Property.findById(propiedadId).populate('propietario', 'nombre notificaciones');
+  const propiedad = await Property.findById(propiedadId).populate('propietario', 'nombre notificaciones email');
   if (!propiedad) throw new Error('Propiedad no encontrada');
+  if (!propiedad.propietario) return; // cuenta del propietario ya no existe, nada que notificar
 
   const remitenteId = req.user.id;
   const destinatarioId = propiedad.propietario._id;
@@ -527,8 +528,11 @@ const enviarMensajeInternoParaPropiedad = async ({ req, propiedadId, mensaje }) 
 
 const aprobarPropiedad = async (req, res) => {
   try {
-    const propiedad = await Property.findById(req.params.id).populate('propietario', 'nombre notificaciones');
+    const propiedad = await Property.findById(req.params.id).populate('propietario', 'nombre notificaciones email');
     if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
+    if (!propiedad.propietario) {
+      return res.status(400).json({ error: 'Esta propiedad pertenece a una cuenta que ya fue eliminada y no se puede aprobar. Puedes eliminarla desde el módulo de Propiedades.' });
+    }
 
     if (propiedad.propietario._id.toString() === req.user.id) {
       return res.status(403).json({ 
@@ -570,6 +574,7 @@ const aprobarPropiedad = async (req, res) => {
 
     res.json({ ok: true, mensaje: 'Propiedad aprobada', propiedad: updated });
   } catch (error) {
+    console.error('❌ Error en aprobarPropiedad:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -579,8 +584,11 @@ const rechazarPropiedad = async (req, res) => {
     const { motivo, permiteEdicion } = req.body;
     if (!motivo) return res.status(400).json({ error: 'Debes indicar el motivo de rechazo' });
 
-    const propiedad = await Property.findById(req.params.id).populate('propietario', 'nombre notificaciones');
+    const propiedad = await Property.findById(req.params.id).populate('propietario', 'nombre notificaciones email');
     if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
+    if (!propiedad.propietario) {
+      return res.status(400).json({ error: 'Esta propiedad pertenece a una cuenta que ya fue eliminada y no se puede rechazar así. Puedes eliminarla desde el módulo de Propiedades.' });
+    }
 
     const updated = await Property.findByIdAndUpdate(
       req.params.id,
@@ -598,6 +606,7 @@ const rechazarPropiedad = async (req, res) => {
 
     res.json({ ok: true, mensaje: 'Propiedad rechazada', propiedad: updated });
   } catch (error) {
+    console.error('❌ Error en rechazarPropiedad:', error);
     res.status(500).json({ error: error.message });
   }
 };
