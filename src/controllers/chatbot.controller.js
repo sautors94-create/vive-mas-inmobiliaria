@@ -8,8 +8,9 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 /* ==========================================================
    CONFIGURACIONES DE MODELO
 ========================================================== */
-const CONFIG_VIVI = { model: "llama-3.3-70b-versatile", temperature: 0.5, top_p: 0.85, frequency_penalty: 0.5, presence_penalty: 0.2, max_tokens: 250 };
-const CONFIG_MAX = { model: "llama-3.3-70b-versatile", temperature: 0.6, top_p: 0.85, frequency_penalty: 0.4, presence_penalty: 0.1, max_tokens: 300 };
+// llama-3.3-70b-versatile fue dado de baja por Groq (agosto 2026). Migrado a su reemplazo recomendado.
+const CONFIG_VIVI = { model: "openai/gpt-oss-120b", temperature: 0.5, top_p: 0.85, frequency_penalty: 0.5, presence_penalty: 0.2, max_tokens: 250 };
+const CONFIG_MAX = { model: "openai/gpt-oss-120b", temperature: 0.6, top_p: 0.85, frequency_penalty: 0.4, presence_penalty: 0.1, max_tokens: 300 };
 
 /* ==========================================================
    SISTEMA DE LOGS ESTRUCTURADOS

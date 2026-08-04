@@ -3,6 +3,25 @@ const Property = require('../models/Property');
 const Lead = require('../models/Lead');
 const Novedad = require('../models/Novedad');
 const { enviarCoincidenciaBusqueda, enviarNovedad } = require('../utils/email');
+const { ejecutarModeracionCompleta } = require('./property.controller');
+
+const reanalizarPropiedadIA = async (req, res) => {
+  try {
+    const propiedad = await Property.findById(req.params.id);
+    if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
+    if (propiedad.status !== 'revision') {
+      return res.status(400).json({ error: 'Solo se pueden re-analizar propiedades que están en revisión. Si ya está aprobada o rechazada, cambia su estado primero.' });
+    }
+    if ((propiedad.fotos || []).length < 2) {
+      return res.status(400).json({ error: 'La propiedad necesita al menos 2 fotos para poder analizarse.' });
+    }
+    await ejecutarModeracionCompleta(propiedad._id);
+    const actualizada = await Property.findById(req.params.id);
+    res.json({ ok: true, propiedad: actualizada });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 // Revisa las búsquedas recientes de todos los usuarios (con novedades activadas)
 // y les avisa por correo si la propiedad recién aprobada coincide con alguna.
@@ -1343,5 +1362,6 @@ module.exports = {
   getNovedadesStats,
   crearNovedad,
   eliminarNovedad,
-  actualizarNovedad
+  actualizarNovedad,
+  reanalizarPropiedadIA
 };

@@ -1,4 +1,4 @@
-const Reporte = require('../models/Reporte');
+const Reporte = require('../models/reporte');
 const Property = require('../models/Property');
 const Message = require('../models/Message');
 

@@ -2,6 +2,8 @@ const { subirACloudinary } = require('../config/cloudinary');
 const Property = require('../models/Property');
 const Message = require('../models/Message');
 const User = require('../models/User');
+const { validarPropiedadBasico } = require('../utils/agenteValidacion');
+const { moderarPropiedadConIA } = require('../utils/agenteModeracion');
 
 const LIMITE_POR_PLAN = {
   gratuito: 3,
@@ -235,6 +237,67 @@ const misPropiedades = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const MIN_FOTOS_PARA_MODERAR = 2;
+
+// Orquesta los 2 agentes (Validación + Moderación IA) y aplica la decisión final.
+// Se ejecuta en segundo plano (fire-and-forget) tras subir fotos — nunca bloquea
+// la respuesta al usuario ni tumba el flujo de subida si algo falla.
+const ejecutarModeracionCompleta = async (propiedadId) => {
+  try {
+    const propiedad = await Property.findById(propiedadId);
+    if (!propiedad || propiedad.status !== 'revision') return; // ya fue movida por un admin, no pisar su decisión
+    if ((propiedad.fotos || []).length < MIN_FOTOS_PARA_MODERAR) return; // faltan fotos, esperar a que suba más
+
+    // Agente 1 — Validación (reglas, instantáneo)
+    const { issues: issuesAgente1, bloqueaAutomatico } = validarPropiedadBasico(propiedad);
+
+    // Historial del propietario, para dar contexto al Agente 2
+    const propietario = await User.findById(propiedad.propietario).select('createdAt');
+    const [aprobadas, rechazadas, bloqueadas] = await Promise.all([
+      Property.countDocuments({ propietario: propiedad.propietario, status: 'aprobada' }),
+      Property.countDocuments({ propietario: propiedad.propietario, status: 'rechazada' }),
+      Property.countDocuments({ propietario: propiedad.propietario, status: 'bloqueada' }),
+    ]);
+    const historialUsuario = {
+      antiguedad_cuenta_dias: propietario?.createdAt ? Math.floor((Date.now() - new Date(propietario.createdAt).getTime()) / 86400000) : null,
+      propiedades_aprobadas_previas: aprobadas,
+      propiedades_rechazadas_previas: rechazadas,
+      propiedades_bloqueadas_previas: bloqueadas,
+    };
+
+    // Agente 2 — Moderación IA (imágenes + decisión final)
+    const resultadoIA = await moderarPropiedadConIA({ propiedad, issuesAgente1, historialUsuario });
+
+    // El Agente 1 tiene poder de veto: si detectó algo determinista y grave
+    // (teléfono/URL/email literal en el texto), no dejamos que la IA lo apruebe.
+    const decisionFinal = bloqueaAutomatico ? 'BLOCKED_FOR_REVIEW' : resultadoIA.decision;
+
+    const todosLosIssues = [...issuesAgente1, ...(resultadoIA.issues || [])];
+
+    propiedad.moderacionIA = {
+      decision: decisionFinal,
+      confidence: resultadoIA.confidence ?? null,
+      riskScore: resultadoIA.risk_score ?? null,
+      riskLevel: resultadoIA.risk_level || (bloqueaAutomatico ? 'HIGH' : null),
+      summary: resultadoIA.summary || null,
+      issues: todosLosIssues,
+      analizadoEn: new Date(),
+      agentesEjecutados: ['validacion', 'moderacion'],
+    };
+
+    if (decisionFinal === 'APPROVED') {
+      propiedad.status = 'aprobada';
+    }
+    // Si es BLOCKED_FOR_REVIEW, se queda en 'revision' — el admin la ve en su cola,
+    // ahora con el análisis de la IA visible para entender por qué.
+
+    await propiedad.save();
+    console.log(`🤖 Moderación IA completada para "${propiedad.titulo}": ${decisionFinal}`);
+  } catch (error) {
+    console.error('❌ Error en ejecutarModeracionCompleta:', error.message);
+  }
+};
+
 const subirFotos = async (req, res) => {
   try {
     const propiedad = await Property.findById(req.params.id);
@@ -250,6 +313,9 @@ const subirFotos = async (req, res) => {
     );
     propiedad.fotos = [...propiedad.fotos, ...urls];
     await propiedad.save();
+
+    ejecutarModeracionCompleta(propiedad._id).catch(() => {});
+
     res.json({ ok: true, mensaje: `${urls.length} foto(s) subida(s)`, fotos: propiedad.fotos });
   } catch (error) {
     console.error('Error subirFotos:', error.message);
@@ -283,4 +349,4 @@ const registrarBusqueda = async (req, res) => {
   }
 };
 
-module.exports = { crearPropiedad, listarPropiedades, detallePropiedad, editarPropiedad, eliminarPropiedad, pausarPropiedad, reactivarPropiedad, misPropiedades, subirFotos, registrarBusqueda };
+module.exports = { crearPropiedad, listarPropiedades, detallePropiedad, editarPropiedad, eliminarPropiedad, pausarPropiedad, reactivarPropiedad, misPropiedades, subirFotos, registrarBusqueda, ejecutarModeracionCompleta };

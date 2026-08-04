@@ -41,7 +41,8 @@ const {
   getNovedadesStats,
   crearNovedad,
   eliminarNovedad,
-  actualizarNovedad
+  actualizarNovedad,
+  reanalizarPropiedadIA
 } = require('../controllers/admin.controller');
 
 // ✅ Protección global: todas las rutas de aquí abajo requieren ser admin
@@ -97,6 +98,7 @@ router.delete('/propiedades/:id', eliminarPropiedad);
 router.get('/vetados/stats', getVetadosStats);
 router.get('/vetados/exportar', exportarVetadosExcel);
 router.get('/vetados', getUsuariosVetados);
+router.post('/propiedades/:id/reanalizar', reanalizarPropiedadIA);
 router.get('/novedades', getNovedades);
 router.get('/novedades/stats', getNovedadesStats);
 router.post('/novedades', crearNovedad);

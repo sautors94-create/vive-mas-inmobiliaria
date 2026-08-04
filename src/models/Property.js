@@ -28,6 +28,21 @@ caracteristicas: {
   propietario: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   destacada: { type: Boolean, default: false },
   planPeso: { type: Number, default: 0 }, // 0=Gratuito, 1=Básico, 2=Premium
+  moderacionIA: {
+    decision: { type: String, enum: ['APPROVED', 'BLOCKED_FOR_REVIEW', null], default: null },
+    confidence: { type: Number, default: null },
+    riskScore: { type: Number, default: null },
+    riskLevel: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH', null], default: null },
+    summary: { type: String, default: null },
+    issues: [{
+      severity: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'] },
+      category: { type: String },
+      field: { type: String },
+      message: { type: String },
+    }],
+    analizadoEn: { type: Date, default: null },
+    agentesEjecutados: { type: [String], default: [] }, // ['validacion', 'moderacion']
+  },
   vistas: { type: Number, default: 0 },
 }, { timestamps: true });
 

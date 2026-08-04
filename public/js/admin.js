@@ -1739,6 +1739,7 @@ const construirDetallePropiedad = (p, botonesHtml) => {
         <div style="text-align:right"><div style="font-size:24px;font-weight:800;color:var(--primary)">${formatPrecio(p.precio)}</div></div>
       </div>
       ${p.motivo_rechazo ? `<div style="margin-bottom:16px;padding:12px 14px;background:#fdecea;border:1px solid #f5c2c0;border-radius:10px;font-size:13px;color:#7a2a27"><b>Motivo de rechazo:</b> ${escapeHtml(p.motivo_rechazo)}</div>` : ''}
+      ${construirBloqueModeracionIA(p)}
       ${p.descripcion ? `<div style="margin-bottom:20px;padding:16px;background:#f8f9fa;border-radius:10px;font-size:14px;line-height:1.7;color:#374151;white-space:pre-wrap">${escapeHtml(p.descripcion)}</div>` : ''}
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-bottom:20px">
         ${p.caracteristicas?.recamaras ? `<div style="text-align:center;padding:12px;background:#f0fdf4;border-radius:10px"><div style="font-size:20px">🛏️</div><div style="font-size:13px;font-weight:600">${p.caracteristicas.recamaras}</div><div style="font-size:11px;color:var(--text-light)">Recámaras</div></div>` : ''}
@@ -1763,6 +1764,50 @@ const construirDetallePropiedad = (p, botonesHtml) => {
       </div>
       <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;flex-wrap:wrap">${botonesHtml}</div>
     </div>`;
+};
+
+const MOD_IA_COLOR = { LOW: '#166534', MEDIUM: '#92400e', HIGH: '#991b1b' };
+const MOD_IA_BG = { LOW: '#f0fdf4', MEDIUM: '#fffbeb', HIGH: '#fef2f2' };
+
+const construirBloqueModeracionIA = (p) => {
+  const m = p.moderacionIA;
+  if (!m || !m.decision) {
+    return `
+      <div style="margin-bottom:16px;padding:14px 16px;background:#f8f9fa;border:1px dashed #d1d5db;border-radius:10px;font-size:13px;color:var(--text-light);display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <span>🤖 Esta propiedad aún no fue analizada por IA (probablemente le faltan fotos).</span>
+        ${(p.fotos?.length || 0) >= 2 ? `<button class="btn btn-outline admin-mini-btn" onclick="reanalizarPropiedadConIA('${p._id}')">Analizar ahora</button>` : ''}
+      </div>`;
+  }
+  const nivel = m.riskLevel || 'MEDIUM';
+  return `
+    <div style="margin-bottom:16px;padding:14px 16px;background:${MOD_IA_BG[nivel]};border:1px solid ${MOD_IA_COLOR[nivel]}22;border-radius:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:700;color:${MOD_IA_COLOR[nivel]}">
+          🤖 ${m.decision === 'APPROVED' ? '✅ Aprobada automáticamente por IA' : '⚠️ Enviada a revisión por IA'} · riesgo ${nivel.toLowerCase()}
+        </div>
+        <button class="btn btn-outline admin-mini-btn" onclick="reanalizarPropiedadConIA('${p._id}')">🔄 Re-analizar</button>
+      </div>
+      ${m.summary ? `<div style="font-size:13px;color:#374151;margin-bottom:8px">${escapeHtml(m.summary)}</div>` : ''}
+      ${(m.issues || []).length ? `<div style="display:flex;flex-direction:column;gap:4px">${m.issues.map(i => `<div style="font-size:12px;color:#4b5563">• <b>${escapeHtml(i.category || '')}</b>: ${escapeHtml(i.message || '')}</div>`).join('')}</div>` : ''}
+      <div style="font-size:11px;color:var(--text-light);margin-top:6px">Analizado ${m.analizadoEn ? new Date(m.analizadoEn).toLocaleString('es-MX') : ''} · confianza ${m.confidence != null ? Math.round(m.confidence * 100) + '%' : '—'}</div>
+    </div>`;
+};
+
+window.reanalizarPropiedadConIA = async (id) => {
+  const btn = event?.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Analizando...'; }
+  try {
+    const data = await api.post(`/admin/propiedades/${id}/reanalizar`, {});
+    if (data.ok) {
+      dsToast({ title: 'Análisis completado', message: `Decisión: ${data.propiedad.moderacionIA?.decision || '—'}`, type: 'success' });
+      verPropiedadPreview(id);
+      if (typeof cargarRevision === 'function') cargarRevision();
+    } else {
+      dsToast({ title: 'Error', message: data.error || 'No se pudo analizar.', type: 'error' });
+    }
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo analizar.', type: 'error' });
+  }
 };
 
 window.verPropiedadPreview = async (id) => {
