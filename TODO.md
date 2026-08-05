@@ -1,43 +1,24 @@
-# Plan de correcciones — COMPLETADO ✅
+# TODO — Mejora de Agentes de Validación y Moderación
 
-## 1. Mapa - Mostrar aproximación 100m + botones Google Maps/Waze ✅
+## Paso 1: Agentevalidacion.js
+- [x] Agregar regex de emojis (excesivos en título → MEDIUM).
+- [x] Agregar regex de lenguaje ofensivo (título/descripción → HIGH).
+- [x] Agregar validación de estacionamientos (rango razonable).
+- [x] Agregar validación de colonia/dirección con placeholders.
+- [x] Precio según operación (renta vs venta) con umbrales distintos.
+- [x] Aceptar opción `duplicado` para emitir issue de DUPLICATE.
 
-### Cambios realizados:
-- **public/js/propiedad.js** — El mapa en la vista de propiedad ahora:
-  - Muestra un círculo de 100m de radio en lugar del punto exacto (L.circle con radius: 100)
-  - Muestra nota de privacidad "Por privacidad mostramos la zona aproximada (±100 m)"
-  - Agrega botones "Ver en Google Maps" y "Ver en Waze" debajo del mapa
-- **public/css/propiedad.css** — Estilos `.mapa-nota`, `.mapa-acciones`, `.mapa-btn` ya presentes
+## Paso 2: Agentemoderacion.js
+- [x] Enriquecer `construirMensajeUsuario` con más datos (estacionamientos, colonia, direccion, cp, lat/lng, fecha publicación).
+- [x] Añadir normalización defensiva del JSON devuelto (asegurar `issues` array, clamp `risk_score`).
 
-### Archivos editados:
-- `public/js/propiedad.js`
-- `public/css/propiedad.css`
+## Paso 3: property.controller.js
+- [x] Agregar detección de duplicados (mismo usuario, mismo título y/o misma foto).
+- [x] Pasar `duplicado` a ambos agentes y agregar issue de DUPLICATE si aplica.
 
-## 2. Dashboard mensajes - Quitar función exportar ✅
+## Paso 4: Portabilidad de imports
+- [x] Corregir mayúsculas en los imports de property.controller.js (agenteValidacion → Agentevalidacion, agenteModeracion → Agentemoderacion).
 
-### Cambios realizados:
-- **public/js/dashboard.js** — Eliminada la función `exportarMensajesExcel`
-- **public/pages/dashboard.html** — Eliminado el botón "Exportar a Excel"
-- **src/routes/message.routes.js** — Eliminada la ruta `/exportar/excel` y la importación de `exportarMensajesExcel`
-- **src/controllers/message.controller.js** — Eliminada la función `exportarMensajesExcel` y su exportación
-
-### Archivos editados:
-- `public/js/dashboard.js`
-- `public/pages/dashboard.html`
-- `src/routes/message.routes.js`
-- `src/controllers/message.controller.js`
-
-## 3. Admin pagos - Más espacio ✅
-
-### Cambios realizados:
-- **public/css/admin.css** — Reglas `#sec-pagos` para mayor espaciado:
-  - `#sec-pagos .mod-header` con `margin-bottom: 28px`
-  - `#sec-pagos .mod-kpis` con `margin-bottom: 28px`
-  - Tabla `.data-table` con celdas más amplias (`padding: 14px 16px`)
-  - Badges de estatus con mejor padding
-- **public/pages/admin.html** — Espaciado inline en la sección de pagos (KPIs de 4 columnas con `gap:18px`, `margin-bottom:28px`)
-
-### Archivos editados:
-- `public/css/admin.css`
-- `public/pages/admin.html`
-
+## Seguimiento
+- [x] Pruebas de humo de las regex (node --check + node -e).
+- [x] Verificar que los archivos pasan la verificación de sintaxis.

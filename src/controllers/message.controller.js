@@ -64,7 +64,7 @@ const enviarMensaje = async (req, res) => {
 
     // Verificar que destinatario existe
     const destinoUser = await User.findById(destinatarioId);
-    if (!destinatarioId) return res.status(404).json({ error: 'Destinatario no encontrado' });
+    if (!destinoUser) return res.status(404).json({ error: 'Destinatario no encontrado' });
 
     // Verificar si está vetado (remitente O destinatario)
     const vetadoRemitente = await BannedUser.findOne({ usuario: req.user.id, activo: true });

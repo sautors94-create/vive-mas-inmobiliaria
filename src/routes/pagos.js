@@ -47,7 +47,7 @@ const webhookStripe = async (req, res) => {
           // Ajusta estos valores según tus precios reales en Stripe
           const montoCentavos = session.amount_total;
           let dias, periodo;
-          if (montoCentavos >= 900) { // ~$999 MXN anual
+          if (montoCentavos >= 50000) { // $99 MXN mensual = 9900¢, $999 MXN anual = 99900¢ — 50000¢ ($500) parte la diferencia
             dias = 365;
             periodo = 'anual';
           } else { // ~$99 MXN mensual
@@ -104,7 +104,7 @@ const webhookStripe = async (req, res) => {
           
           const montoCentavos = session.amount_total;
           let dias, periodo;
-          if (montoCentavos >= 900) {
+          if (montoCentavos >= 50000) {
             dias = 365;
             periodo = 'anual';
           } else {

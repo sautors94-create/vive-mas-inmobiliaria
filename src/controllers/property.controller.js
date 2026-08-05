@@ -2,8 +2,8 @@ const { subirACloudinary } = require('../config/cloudinary');
 const Property = require('../models/Property');
 const Message = require('../models/Message');
 const User = require('../models/User');
-const { validarPropiedadBasico } = require('../utils/agenteValidacion');
-const { moderarPropiedadConIA } = require('../utils/agenteModeracion');
+const { validarPropiedadBasico } = require('../utils/Agentevalidacion');
+const { moderarPropiedadConIA } = require('../utils/Agentemoderacion');
 
 const LIMITE_POR_PLAN = {
   gratuito: 3,

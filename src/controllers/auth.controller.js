@@ -89,6 +89,8 @@ const registro = async (req, res) => {
     });
 
     const envio = await enviarCodigoPorCanal(user, codigo);
+
+    const { accessToken, refreshToken } = generarTokens(user);
     res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.status(201).json({ ok: true, accessToken, user, requiereVerificacion: true, canalVerificacion: envio.canal });
   } catch (error) {

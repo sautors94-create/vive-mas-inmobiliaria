@@ -1,6 +1,6 @@
 const Groq = require('groq-sdk');
 const crypto = require('crypto'); 
-const Lead = require('../models/lead');
+const Lead = require('../models/Lead');
 
 if (!process.env.GROQ_API_KEY) throw new Error("❌ FATAL: Falta GROQ_API_KEY");
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });

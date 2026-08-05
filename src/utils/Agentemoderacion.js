@@ -47,9 +47,25 @@ const construirMensajeUsuario = ({ propiedad, issuesAgente1, historialUsuario })
     operacion: propiedad.operacion,
     tipo: propiedad.tipo,
     precio: propiedad.precio,
-    ubicacion: propiedad.ubicacion,
-    caracteristicas: propiedad.caracteristicas,
+    moneda: propiedad.moneda || 'MXN',
+    ubicacion: {
+      estado: propiedad.ubicacion?.estado,
+      ciudad: propiedad.ubicacion?.ciudad,
+      colonia: propiedad.ubicacion?.colonia,
+      direccion: propiedad.ubicacion?.direccion,
+      cp: propiedad.ubicacion?.cp,
+      lat: propiedad.ubicacion?.lat,
+      lng: propiedad.ubicacion?.lng,
+    },
+    caracteristicas: {
+      recamaras: propiedad.caracteristicas?.recamaras,
+      banos: propiedad.caracteristicas?.banos,
+      mediosBanos: propiedad.caracteristicas?.mediosBanos,
+      estacionamientos: propiedad.caracteristicas?.estacionamientos,
+      m2: propiedad.caracteristicas?.m2,
+    },
     cantidad_fotos: propiedad.fotos?.length || 0,
+    fecha_publicacion: propiedad.createdAt || null,
   };
   return `DATOS DE LA PROPIEDAD:\n${JSON.stringify(datos, null, 2)}\n\nISSUES DETECTADOS POR EL AGENTE DE VALIDACIÓN (reglas automáticas, no definitivos):\n${JSON.stringify(issuesAgente1, null, 2)}\n\nHISTORIAL DEL PROPIETARIO:\n${JSON.stringify(historialUsuario, null, 2)}\n\nAnaliza las imágenes adjuntas junto con estos datos y responde con el JSON de decisión.`;
 };
@@ -89,7 +105,18 @@ const moderarPropiedadConIA = async ({ propiedad, issuesAgente1, historialUsuari
     if (!['APPROVED', 'BLOCKED_FOR_REVIEW'].includes(parsed.decision)) {
       return respuestaPorDefectoAntesFallo('respuesta del modelo con formato inesperado');
     }
-    return parsed;
+
+    // Normalización defensiva: garantiza que la estructura interna siempre sea válida
+    // aunque el modelo omita campos o devuelva valores fuera de rango.
+    const normalized = {
+      decision: parsed.decision,
+      confidence: typeof parsed.confidence === 'number' ? Math.max(0, Math.min(1, parsed.confidence)) : 0,
+      risk_score: typeof parsed.risk_score === 'number' ? Math.max(0, Math.min(100, Math.round(parsed.risk_score))) : 0,
+      risk_level: ['LOW', 'MEDIUM', 'HIGH'].includes(parsed.risk_level) ? parsed.risk_level : 'MEDIUM',
+      summary: typeof parsed.summary === 'string' ? parsed.summary : '',
+      issues: Array.isArray(parsed.issues) ? parsed.issues.filter(i => i && typeof i === 'object') : [],
+    };
+    return normalized;
   } catch (error) {
     console.error('❌ Error en agente de moderación IA:', error.message);
     return respuestaPorDefectoAntesFallo('error técnico al analizar la propiedad');
