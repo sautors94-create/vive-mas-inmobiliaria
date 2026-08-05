@@ -4,13 +4,19 @@
 // Contiene las credenciales de la app, página de Facebook
 // e Instagram Business. Los valores se cargan desde variables
 // de entorno (.env) y se exponen de forma segura solo al backend.
+//
+// NOTA DE SEGURIDAD: los valores hardcodeados aquí son SOLO fallbacks de
+// desarrollo. En producción SIEMPRE se cargan desde variables de entorno.
+// Los tokens de prueba expiran y deben reemplazarse por tokens reales vía
+// OAuth (ver auth/metaOAuth.service.js).
 
 const metaConfig = {
   // ===== META APP =====
   appId: process.env.META_APP_ID || '1390074509739945',
   appSecret: process.env.META_APP_SECRET || '89ce28b8d2dcd27b5da3acca87f844',
   configId: process.env.META_CONFIG_ID || '888317470626511',
-  apiVersion: process.env.META_API_VERSION || 'v19.0',
+  // v25.0 es la versión vigente de la Graph API. Meta retiró v19.0 en mayo 2026.
+  apiVersion: process.env.META_API_VERSION || 'v25.0',
   redirectUri: process.env.META_REDIRECT_URI || 'https://somosvivemas.com/api/auth/meta/callback',
   scopes: (process.env.META_SCOPES || 'pages_show_list,pages_manage_posts,pages_read_engagement,business_management,instagram_basic,instagram_content_publish,public_profile')
     .split(',')
@@ -32,8 +38,8 @@ const metaConfig = {
   // ===== TOKENS DE PRUEBA (Graph API Explorer) =====
   // ⚠️ Solo para desarrollo. En producción se obtienen vía OAuth.
   testTokens: {
-    userAccessToken: process.env.META_TEST_USER_TOKEN || 'EAATwQZCFdR6kBSDU3xn33sBvM8DWzKEQNpGhnrq2zQyB06wO9FwnBYHPLfY2qLZBoB5NLoDzkrOvUxK9PbsrMdByntQpU6xAHnB9NMCMuGlCj1JeHwCwwaKMNHBgDWRkQdyzAcuA8eg6549tK4sQgeQJmmgrjZBBZAxZCrIdiGuASAAZAc13ZCqN8xZCZCMTMTZAh0HPcWj4wZCZCIX9zNzzicAS0yDTNt4VXCkvZCUlMuFeB6Jb6DdfKX45NFZCgZD',
-    pageAccessToken: process.env.META_TEST_PAGE_TOKEN || 'EAATwQZCFdR6kBSLiEgvay8M9jcfHd8zpbZB4gDY9xYVZBN8mcKh8a577pakqLOrS9GZBh9VCxaD8fzYKrNq1BJ723cxGHqn1OFgjA1sZCvB01c8Fh8mWdHilrKCXCg4mTZAZCR9YCTatvq3wiZAGD02dyQONM8QhGoQKCSgu5FSQpvlqiGeIeRqc7S7ZA2ovB0KUaC3loVqvw38AITYxnNKHrGOAqpWSqo1qeWPzLwPtCHFxwFRSg30lz8ipcEmM3',
+    userAccessToken: process.env.META_TEST_USER_TOKEN || '',
+    pageAccessToken: process.env.META_TEST_PAGE_TOKEN || '',
   },
 };
 

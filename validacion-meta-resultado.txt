@@ -1,0 +1,70 @@
+
+======================================================================
+VALIDADOR DE PUBLICACION EN META (Facebook/Instagram)
+======================================================================
+  Conectado a MongoDB
+
+======================================================================
+CONFIGURACION DE META
+======================================================================
+  App ID: 1390074509739945
+  API Version: v25.0
+  Base URL: https://graph.facebook.com/v25.0
+  Pagina FB: 1188953474308974 (Somos ViveMás Inmobiliaria)
+  IG Business: 17841443899594266 (@somos_vivemasinmobiliaria)
+
+======================================================================
+SOCIAL CONFIG EN BASE DE DATOS
+======================================================================
+  NO hay ninguna SocialConfig en la BD.
+     -> El flujo usaria el fallback metaConfig.testTokens.pageAccessToken.
+
+======================================================================
+TOKEN EFECTIVO QUE SE USARIA
+======================================================================
+  Origen: FALLBACK (testTokens)
+
+======================================================================
+PROBANDO TOKEN: FALLBACK (testTokens)
+======================================================================
+  Token vacio/ausente. No se puede validar.
+    -> Configura META_TEST_*_TOKEN en .env o conecta la cuenta via OAuth.
+
+======================================================================
+PROPIEDADES APROBADAS
+======================================================================
+  Aprobadas (muestra max 20): 20
+  Con al menos 1 foto: 20
+  Sin fotos: 0
+  * Hermosa terreno en Lomas del Valle | op:venta ->[IG] | foto:accesible
+     FB:pending | IG:pending
+  * Exclusivo local en Palmilla | op:renta ->[FB] | foto:accesible
+     FB:pending | IG:pending
+  * Exclusivo terreno en Zibatá | op:renta ->[FB] | foto:accesible
+     FB:pending | IG:pending
+  * Espacioso departamento en Félix Ireta | op:venta ->[IG] | foto:accesible
+     FB:pending | IG:pending
+  * Elegante casa en El Marqués | op:venta ->[IG] | foto:accesible
+     FB:pending | IG:pending
+  * Familiar local en Cumbres | op:renta ->[FB] | foto:accesible
+     FB:pending | IG:pending
+  * Hermosa casa en Los Arcos | op:venta ->[IG] | foto:accesible
+     FB:pending | IG:pending
+  * Impecable departamento en Colinas de San | op:venta ->[IG] | foto:accesible
+     FB:pending | IG:pending
+  * Amplio local en Pitic | op:venta ->[IG] | foto:accesible
+     FB:pending | IG:pending
+  * Exclusivo terreno en Fracc. La Herradura | op:renta ->[FB] | foto:accesible
+     FB:pending | IG:pending
+  Resumen fotos: 10 validas, 0 invalidas/sin foto
+
+======================================================================
+SIMULACION DE LA LOGICA DE PUBLICACION
+======================================================================
+  Renta (->Facebook):  -> renta => facebook | pasaria condiciones
+  Venta (->Instagram): -> venta => instagram | pasaria condiciones
+
+======================================================================
+DIAGNOSTICO COMPLETADO
+======================================================================
+  Resultado en: C:\Users\jul_s\OneDrive\Documentos\vive-mas-inmobiliaria\validacion-meta-resultado.txt
