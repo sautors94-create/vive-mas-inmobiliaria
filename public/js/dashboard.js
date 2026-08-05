@@ -998,6 +998,7 @@ window.abrirDrawerMiPropiedad = (id) => {
         <button type="button" class="mpw-drawer-tab active" data-tab="resumen" onclick="mpwDrawerTab('resumen')">Resumen</button>
         <button type="button" class="mpw-drawer-tab" data-tab="actividad" onclick="mpwDrawerTab('actividad')">Actividad</button>
         <button type="button" class="mpw-drawer-tab" data-tab="rendimiento" onclick="mpwDrawerTab('rendimiento')">Rendimiento</button>
+        <button type="button" class="mpw-drawer-tab" data-tab="redes" onclick="mpwDrawerTab('redes')">Redes Sociales</button>
         <button type="button" class="mpw-drawer-tab" data-tab="config" onclick="mpwDrawerTab('config')">Configuración</button>
       </div>
       <div class="mpw-drawer-panel-content" data-tab-content="resumen">
@@ -1019,6 +1020,9 @@ window.abrirDrawerMiPropiedad = (id) => {
         <div class="mpw-drawer-row"><span>Leads (conversaciones)</span><b>${p.leadsCount || 0}</b></div>
         <div class="mpw-drawer-row"><span>Conversión</span><b>${p.vistas ? ((p.leadsCount || 0) / p.vistas * 100).toFixed(1) + '%' : '—'}</b></div>
       </div>
+      <div class="mpw-drawer-panel-content" data-tab-content="redes" style="display:none">
+        ${renderRedesSociales(p)}
+      </div>
       <div class="mpw-drawer-panel-content" data-tab-content="config" style="display:none">
         <div class="mpw-drawer-actions">
           <button class="btn btn-outline" onclick="window.location='propiedad.html?id=${p._id}'">Ver publicación</button>
@@ -1034,6 +1038,92 @@ window.mpwDrawerTab = (tab) => {
 };
 window.cerrarDrawerMiPropiedad = () => {
   document.getElementById('mpw-drawer')?.classList.remove('mpw-drawer-open');
+};
+
+// ==========================================
+// REDES SOCIALES — ESTADO DE PUBLICACIÓN
+// ==========================================
+// Renderiza el estado de las publicaciones automáticas en redes
+// sociales para una propiedad (Facebook e Instagram).
+const renderRedesSociales = (p) => {
+  const sm = p.socialMedia || {};
+  const redes = [
+    { clave: 'facebook', nombre: 'Facebook', icono: '📘', color: '#1877f2' },
+    { clave: 'instagram', nombre: 'Instagram', icono: '📸', color: '#e4405f' },
+  ];
+
+  const cards = redes.map(r => {
+    const data = sm[r.clave] || {};
+    const estatus = data.status || 'pending';
+    const publicado = data.published === true || estatus === 'published';
+    const errorMsg = data.error?.message || '';
+
+    // Mapear estado a etiqueta y estilo
+    let label = 'Pendiente';
+    let className = 'mpw-social-status-pending';
+    if (estatus === 'publishing') { label = 'Publicando...'; className = 'mpw-social-status-publishing'; }
+    else if (publicado) { label = 'Publicado ✓'; className = 'mpw-social-status-published'; }
+    else if (estatus === 'failed') { label = 'Error al publicar'; className = 'mpw-social-status-failed'; }
+
+    const fechaPub = data.publishedAt ? new Date(data.publishedAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+
+    return `
+      <div class="mpw-social-card">
+        <div class="mpw-social-head">
+          <span class="mpw-social-icon" style="background:${r.color}18;color:${r.color}">${r.icono}</span>
+          <div>
+            <div class="mpw-social-nombre">${r.nombre}</div>
+            <span class="mpw-social-status ${className}">${label}</span>
+          </div>
+        </div>
+        ${publicado && data.url ? `
+          <a href="${data.url}" target="_blank" rel="noopener" class="btn btn-outline mpw-social-btn">
+            🔗 Ver publicación
+          </a>` : ''}
+        ${estatus === 'failed' && errorMsg ? `
+          <div class="mpw-social-error">${escapeHtmlLocal(errorMsg)}</div>
+        ` : ''}
+        ${estatus === 'failed' ? `
+          <button class="btn btn-outline mpw-social-btn" onclick="reintentarPublicacionRed('${p._id}', '${r.clave}')">
+            🔄 Reintentar
+          </button>` : ''}
+        ${fechaPub ? `<div class="mpw-social-fecha">Publicado el ${fechaPub}</div>` : ''}
+      </div>`;
+  });
+
+  return `
+    <div class="mpw-social-wrap">
+      <div style="font-size:13px;color:var(--text-light);margin-bottom:12px;line-height:1.5">
+        Estas son las publicaciones automáticas generadas al aprobar tu propiedad.
+      </div>
+      ${cards.join('')}
+      <div style="margin-top:12px;padding:10px 12px;background:var(--bg-secondary);border-radius:10px;font-size:12px;color:var(--text-light);line-height:1.5">
+        💡 La automatización se activa cuando tu propiedad es aprobada y según tu plan. Si algo falla, puedes reintentar desde aquí.
+      </div>
+    </div>`;
+};
+
+// Reintenta una publicación de red social desde el panel
+window.reintentarPublicacionRed = async (propiedadId, plataforma) => {
+  const ok = await dsConfirm({
+    title: '¿Reintentar publicación?',
+    message: `Se intentará publicar nuevamente esta propiedad en ${plataforma === 'facebook' ? 'Facebook' : 'Instagram'}.`,
+    confirmText: 'Sí, reintentar'
+  });
+  if (!ok) return;
+
+  dsToast({ title: 'Reintentando', message: 'Publicando en la red social...', type: 'info' });
+  try {
+    const data = await api.post(`/propiedades/${propiedadId}/reintentar-publicacion`, { plataforma });
+    if (data.ok) {
+      dsToast({ title: 'Publicado', message: data.mensaje || 'Publicación realizada correctamente.', type: 'success' });
+      cargarMisPropiedades();
+    } else {
+      dsToast({ title: 'No se pudo publicar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    }
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo conectar con el servidor.', type: 'error' });
+  }
 };
 
 const pausarMiPropiedad = async (id) => {

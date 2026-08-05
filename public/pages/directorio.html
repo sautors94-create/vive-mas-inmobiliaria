@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Directorio de Inmobiliarias Verificadas — Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    /* ===== Estilos específicos del directorio (usando el design system de Vive Más) ===== */
+    .directorio-hero {
+      background: linear-gradient(135deg, var(--bg-dark) 0%, var(--primary) 60%, var(--primary-light) 100%);
+      padding: 120px 0 60px;
+      text-align: center;
+      color: white;
+    }
+    .directorio-hero h1 {
+      font-size: clamp(32px, 5vw, 52px);
+      color: white;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    .directorio-hero p {
+      font-size: 16px;
+      color: rgba(255,255,255,0.8);
+      max-width: 600px;
+      margin: 0 auto 28px;
+    }
+    .directorio-hero .highlight { color: var(--accent); }
+
+    .verified-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 30px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--accent);
+    }
+    .pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--radius);
+      padding: 20px;
+      backdrop-filter: blur(8px);
+    }
+    .stat-card .stat-value { font-size: 28px; font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif; }
+    .stat-card .stat-label { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+
+    /* Barra de búsqueda */
+    .directorio-search {
+      max-width: 640px;
+      margin: -28px auto 24px;
+      position: relative;
+      z-index: 10;
+    }
+    .directorio-search input {
+      width: 100%;
+      padding: 16px 20px 16px 48px;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: white;
+      box-shadow: var(--shadow-hover);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .directorio-search input:focus { border-color: var(--primary); }
+    .directorio-search .search-icon {
+      position: absolute; left: 16px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+      pointer-events: none;
+    }
+    .directorio-search kbd {
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 11px;
+      color: var(--text-light);
+      font-family: monospace;
+    }
+
+    /* Filtros */
+    .directorio-filtros {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .filter-chip {
+      padding: 10px 18px;
+      border-radius: 30px;
+      border: 1.5px solid var(--border);
+      background: white;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+    .filter-chip.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    /* Resultados header */
+    .directorio-resultados-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .directorio-resultados-header p { color: var(--text-light); font-size: 14px; }
+    .directorio-resultados-header p strong { color: var(--text); }
+    .directorio-sort {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-light);
+    }
+    .directorio-sort select {
+      padding: 8px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: white;
+      cursor: pointer;
+      outline: none;
+    }
+    .directorio-sort select:focus { border-color: var(--primary); }
+
+    /* Grid de tarjetas */
+    .directorio-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    /* Tarjetas — reutilizan el estilo de .property-card */
+    .agency-card {
+      background: white;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: all 0.3s;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    .agency-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-hover);
+      border-color: var(--primary);
+    }
+    .agency-img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      background: var(--bg-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      color: var(--text-light);
+      font-size: 14px;
+    }
+    .agency-img img { width: 100%; height: 100%; object-fit: cover; }
+    .agency-img .gradient { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.4), transparent); }
+
+    .agency-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      backdrop-filter: blur(6px);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .agency-badge.inmobiliaria { background: rgba(33,150,243,0.15); color: #1565c0; border: 1px solid rgba(33,150,243,0.3); }
+    .agency-badge.agente { background: rgba(156,39,176,0.15); color: #6a1b9a; border: 1px solid rgba(156,39,176,0.3); }
+
+    .agency-verified {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(46,125,50,0.15);
+      color: #2e7d32;
+      border: 1px solid rgba(46,125,50,0.3);
+      backdrop-filter: blur(6px);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .agency-count {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      backdrop-filter: blur(6px);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .agency-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+    .agency-body h3 { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 6px; font-family: 'Bricolage Grotesque', sans-serif; }
+    .agency-location { font-size: 13px; color: var(--text-light); margin-bottom: 12px; display: flex; align-items: center; gap: 5px; }
+    .agency-desc { font-size: 13px; color: var(--text-light); line-height: 1.6; margin-bottom: 14px; flex: 1; }
+
+    .agency-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .agency-tags span {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--bg-secondary);
+      color: var(--text-light);
+      border: 1px solid var(--border);
+    }
+
+    .agency-contact { border-top: 1px solid var(--border); padding-top: 14px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
+    .agency-contact div { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-light); }
+
+    .agency-actions { display: flex; gap: 8px; }
+
+    /* Botón copiar */
+    .btn-copy {
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      background: var(--bg-secondary);
+      border: 1.5px solid var(--border);
+      color: var(--text-light);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-copy:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.active { display: flex; }
+    .modal-card {
+      background: white;
+      border-radius: 20px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-header h3 { font-size: 18px; color: var(--text); }
+    .modal-header p { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: var(--text-light);
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+    }
+    .modal-close:hover { color: var(--text); }
+
+    .modal-body { padding: 24px; }
+    .modal-preview {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 20px;
+    }
+    .modal-preview img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; }
+    .modal-preview .name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .modal-preview .loc { font-size: 12px; color: var(--text-light); }
+
+    .form-grupo { margin-bottom: 16px; }
+    .form-grupo label { display: block; font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+    .form-grupo .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: var(--bg-secondary);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-grupo .form-input:focus { border-color: var(--primary); background: white; }
+    textarea.form-input { resize: vertical; min-height: 80px; }
+
+    .privacy-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .privacy-row input { margin-top: 3px; accent-color: var(--primary); }
+    .privacy-row label { font-size: 12px; color: var(--text-light); line-height: 1.5; }
+    .privacy-row a { color: var(--primary); text-decoration: underline; }
+
+    .modal-footer { padding: 0 24px 24px; display: flex; gap: 10px; }
+
+    /* Toasts */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 20000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-hover);
+      max-width: 360px;
+      font-size: 13px;
+      animation: slideUp 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards;
+    }
+    .toast.success { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+    .toast.error { background: #fbe9e7; color: #bf360c; border: 1px solid #ffab91; }
+    .toast.info { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
+
+    /* Skeleton */
+    .skeleton-card {
+      height: 320px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+    }
+    @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* Estado vacío */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-light);
+    }
+    .empty-state .icono { font-size: 48px; margin-bottom: 12px; }
+    .empty-state h3 { font-size: 20px; color: var(--text); margin-bottom: 6px; }
+    .empty-state p { font-size: 14px; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 768px) {
+      .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .stat-card { padding: 14px; }
+      .stat-card .stat-value { font-size: 22px; }
+      .directorio-grid { grid-template-columns: 1fr; }
+      .directorio-resultados-header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container nav-content">
+      <a href="../index.html" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <span class="logo-sub">Inmobiliaria</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Inicio</a></li>
+        <li><a href="catalogo.html">Catálogo</a></li>
+        <li><a href="servicios.html">Servicios</a></li>
+        <li><a href="nosotros.html">Nosotros</a></li>
+        <li><a href="directorio.html" class="active">Directorio</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="login.html" class="btn btn-outline" id="btn-login">Iniciar sesión</a>
+        <a href="registro.html" class="btn btn-primary">Publicar</a>
+      </div>
+      <button class="nav-toggle" id="nav-toggle">☰</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="directorio-hero">
+    <div class="container">
+      <div class="verified-badge">
+        <span class="pulse-dot"></span>
+        Directorio Verificado KYC
+      </div>
+      <h1>Inmobiliarias y Agentes <span class="highlight">de Confianza</span></h1>
+      <p>Encuentra inmobiliarias verificadas con identidad comprobada. Contacta directamente con profesionales del sector que cumplen con nuestros estándares de verificación.</p>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="statVerificados">0</div>
+          <div class="stat-label">Verificados</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statCiudades">0</div>
+          <div class="stat-label">Ciudades</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statPropiedades">0</div>
+          <div class="stat-label">Propiedades</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEARCH & FILTERS -->
+  <section class="section" style="padding-top:40px">
+    <div class="container">
+      <div class="directorio-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar inmobiliaria, agente o ciudad...">
+        <kbd>Ctrl+K</kbd>
+      </div>
+
+      <div class="directorio-filtros" id="filterBar">
+        <button class="filter-chip active" data-filter="all">Todos</button>
+        <button class="filter-chip" data-filter="inmobiliaria">🏢 Inmobiliarias</button>
+        <button class="filter-chip" data-filter="agente">👤 Agentes</button>
+      </div>
+
+      <div class="directorio-resultados-header">
+        <p>Mostrando <strong id="resultCount">0</strong> resultados</p>
+        <div class="directorio-sort">
+          <label>Ordenar:</label>
+          <select id="sortSelect">
+            <option value="relevantes">Más relevantes</option>
+            <option value="propiedades">Más propiedades</option>
+            <option value="nombre">Nombre A-Z</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Skeleton -->
+      <div id="skeletonGrid" class="directorio-grid">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+
+      <!-- Grid -->
+      <div id="cardsGrid" class="directorio-grid hidden"></div>
+
+      <!-- Empty -->
+      <div id="emptyState" class="empty-state hidden">
+        <div class="icono">🔎</div>
+        <h3>Sin resultados</h3>
+        <p>Intenta con otros términos de búsqueda o filtros.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT MODAL -->
+  <div id="contactModal" class="modal-backdrop">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalTitle">Contactar Inmobiliaria</h3>
+          <p id="modalSubtitle">Tu mensaje será enviado directamente</p>
+        </div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-preview">
+          <img id="modalAvatar" src="" alt="">
+          <div>
+            <div class="name" id="modalAgencyName"></div>
+            <div class="loc" id="modalAgencyLocation"></div>
+          </div>
+        </div>
+        <div class="form-grupo">
+          <label>Tu nombre</label>
+          <input type="text" id="contactName" class="form-input" placeholder="Ej: Juan Pérez">
+        </div>
+        <div class="form-grupo">
+          <label>Tu correo electrónico</label>
+          <input type="email" id="contactEmail" class="form-input" placeholder="correo@ejemplo.com">
+        </div>
+        <div class="form-grupo">
+          <label>Tu teléfono <span style="color:var(--text-light);font-weight:400">(opcional)</span></label>
+          <input type="tel" id="contactPhone" class="form-input" placeholder="+52 55 1234 5678">
+        </div>
+        <div class="form-grupo">
+          <label>Mensaje</label>
+          <textarea id="contactMessage" class="form-input" placeholder="Hola, me interesa conocer más sobre sus propiedades..."></textarea>
+        </div>
+        <div class="privacy-row">
+          <input type="checkbox" id="contactPrivacy">
+          <label for="contactPrivacy">Acepto que mis datos sean compartidos con la inmobiliaria/agente según nuestra <a href="../legal/normas-generales/privacidad.html">política de privacidad</a>.</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" style="flex:1" onclick="sendContact()">Enviar mensaje</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOASTS -->
+  <div id="toast-container"></div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <div class="footer-brand">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <p>La plataforma inmobiliaria más confiable de México.</p>
+      </div>
+      <div class="footer-links">
+        <a href="catalogo.html">Catálogo</a>
+        <a href="directorio.html">Directorio</a>
+        <a href="servicios.html">Servicios</a>
+        <a href="nosotros.html">Nosotros</a>
+        <a href="../legal/normas-generales/terminos.html">Términos y condiciones</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 Vive Más Inmobiliaria. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    // ==================== DATA (desde API) ====================
+    let agencies = [];
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let currentAgency = null;
+
+    const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port && window.location.port !== '3000'
+      ? 'http://localhost:3000' : '';
+
+    const FALLBACK_IMAGES = [
+      'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=200&fit=crop',
+      'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=400&h=200&fit=crop',
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=200&fit=crop'
+    ];
+
+    async function cargarDirectorio() {
+      try {
+        document.getElementById('skeletonGrid').classList.remove('hidden');
+        document.getElementById('cardsGrid').classList.add('hidden');
+        const res = await fetch(`${API_URL}/api/directorio`);
+        const data = await res.json();
+        if (data.ok) {
+          agencies = data.directorio;
+          actualizarStats();
+          renderCards();
+        } else {
+          showToast('Error al cargar el directorio', 'error');
+        }
+      } catch (e) {
+        console.error(e);
+        showToast('No se pudo conectar con el servidor', 'error');
+      } finally {
+        document.getElementById('skeletonGrid').classList.add('hidden');
+        document.getElementById('cardsGrid').classList.remove('hidden');
+      }
+    }
+
+    function actualizarStats() {
+      const totalProps = agencies.reduce((s, a) => s + (a.properties || 0), 0);
+      const ciudades = new Set(agencies.map(a => (a.city || 'Mexico').toLowerCase())).size;
+      document.getElementById('statVerificados').textContent = agencies.length;
+      document.getElementById('statCiudades').textContent = ciudades;
+      document.getElementById('statPropiedades').textContent = totalProps >= 1000 ? (totalProps / 1000).toFixed(1) + 'k' : totalProps;
+    }
+
+    function getFilteredAgencies() {
+      return agencies.filter(a => {
+        const matchFilter = currentFilter === 'all' || a.type === currentFilter;
+        const matchSearch = searchQuery === '' ||
+          a.name.toLowerCase().includes(searchQuery) ||
+          a.location.toLowerCase().includes(searchQuery) ||
+          (a.tags || []).some(t => t.toLowerCase().includes(searchQuery));
+        return matchFilter && matchSearch;
+      });
+    }
+
+    function renderCards() {
+      const grid = document.getElementById('cardsGrid');
+      const empty = document.getElementById('emptyState');
+      const count = document.getElementById('resultCount');
+      const filtered = getFilteredAgencies();
+
+      count.textContent = filtered.length;
+
+      if (filtered.length === 0) {
+        grid.classList.add('hidden');
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      grid.classList.remove('hidden');
+      empty.classList.add('hidden');
+
+      grid.innerHTML = filtered.map((a, idx) => {
+        const img = a.image || FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length];
+        const nombre = (a.name || 'Inmobiliaria').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        const esInmobiliaria = a.type === 'inmobiliaria';
+        return `
+          <div class="agency-card" data-id="${a.id}">
+            <div class="agency-img">
+              <img src="${img}" alt="${a.name}" loading="lazy">
+              <div class="gradient"></div>
+              <span class="agency-badge ${esInmobiliaria ? 'inmobiliaria' : 'agente'}">
+                ${esInmobiliaria ? '🏢' : '👤'} ${esInmobiliaria ? 'Inmobiliaria' : 'Agente'}
+              </span>
+              <span class="agency-verified">✓ Verificado</span>
+              <span class="agency-count">🏠 ${a.properties} propiedades</span>
+            </div>
+            <div class="agency-body">
+              <h3>${nombre}</h3>
+              <div class="agency-location">📍 ${a.location || 'México'}</div>
+              <p class="agency-desc">${a.description || ''}</p>
+              <div class="agency-tags">
+                ${(a.tags || []).map(t => `<span>${t}</span>`).join('')}
+              </div>
+              <div class="agency-contact">
+                <div>📞 ${a.phone || 'No disponible'}</div>
+                <div>✉️ ${a.email}</div>
+              </div>
+              <div class="agency-actions">
+                <button class="btn btn-primary" style="flex:1" onclick="openModal('${a.id}')">
+                  💬 Contactar ${esInmobiliaria ? 'Inmobiliaria' : 'Agente'}
+                </button>
+                <button class="btn-copy" onclick="copiarTelefono('${a.phone || ''}')" title="Copiar teléfono">📋</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ==================== FILTERS ====================
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        currentFilter = chip.dataset.filter;
+        renderCards();
+      });
+    });
+
+    // ==================== SEARCH ====================
+    const searchInput = document.getElementById('searchInput');
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        searchQuery = searchInput.value.toLowerCase().trim();
+        renderCards();
+      }, 250);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+      }
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // ==================== SORT ====================
+    document.getElementById('sortSelect').addEventListener('change', (e) => {
+      const val = e.target.value;
+      switch (val) {
+        case 'propiedades': agencies.sort((a, b) => (b.properties || 0) - (a.properties || 0)); break;
+        case 'nombre': agencies.sort((a, b) => a.name.localeCompare(b.name)); break;
+        default: agencies.sort((a, b) => (b.properties || 0) - (a.properties || 0));
+      }
+      renderCards();
+    });
+
+    // ==================== MODAL ====================
+    function openModal(id) {
+      const agency = agencies.find(a => a.id === id);
+      if (!agency) return;
+      currentAgency = agency;
+
+      document.getElementById('modalTitle').textContent = `Contactar ${agency.type === 'inmobiliaria' ? 'Inmobiliaria' : 'Agente'}`;
+      document.getElementById('modalSubtitle').textContent = `Mensaje directo a ${agency.name}`;
+      document.getElementById('modalAvatar').src = agency.image || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=100&h=100&fit=crop';
+      document.getElementById('modalAgencyName').textContent = agency.name;
+      document.getElementById('modalAgencyLocation').textContent = agency.location || 'México';
+
+      document.getElementById('contactName').value = '';
+      document.getElementById('contactEmail').value = '';
+      document.getElementById('contactPhone').value = '';
+      document.getElementById('contactMessage').value = '';
+      document.getElementById('contactPrivacy').checked = false;
+
+      const modal = document.getElementById('contactModal');
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => document.getElementById('contactName').focus(), 100);
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('contactModal');
+      modal.classList.remove('active');
+      document.body.style.overflow = '';
+      currentAgency = null;
+    }
+
+    document.getElementById('contactModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+
+    function sendContact() {
+      const name = document.getElementById('contactName').value.trim();
+      const email = document.getElementById('contactEmail').value.trim();
+      const message = document.getElementById('contactMessage').value.trim();
+      const privacy = document.getElementById('contactPrivacy').checked;
+
+      if (!name) { showToast('Por favor ingresa tu nombre', 'error'); document.getElementById('contactName').focus(); return; }
+      if (!email || !email.includes('@')) { showToast('Por favor ingresa un correo válido', 'error'); document.getElementById('contactEmail').focus(); return; }
+      if (!message) { showToast('Por favor escribe un mensaje', 'error'); document.getElementById('contactMessage').focus(); return; }
+      if (!privacy) { showToast('Debes aceptar la política de privacidad', 'error'); return; }
+
+      const btn = document.querySelector('#contactModal .modal-footer .btn-primary');
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = 'Enviando...';
+      btn.disabled = true;
+
+      setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+        closeModal();
+        showToast(`Mensaje enviado a ${currentAgency?.name || 'la inmobiliaria'} correctamente`, 'success');
+      }, 1500);
+    }
+
+    function copiarTelefono(tel) {
+      if (!tel) { showToast('No hay teléfono disponible', 'info'); return; }
+      navigator.clipboard.writeText(tel).then(() => {
+        showToast(`Teléfono copiado: ${tel}`, 'success');
+      }).catch(() => showToast('No se pudo copiar', 'error'));
+    }
+
+    // ==================== TOAST ====================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ==================== NAV TOGGLE (responsive) ====================
+    const navToggle = document.getElementById('nav-toggle');
+    if (navToggle) {
+      navToggle.addEventListener('click', () => {
+        const links = document.querySelector('.nav-links');
+        const actions = document.querySelector('.nav-actions');
+        if (links) links.style.display = links.style.display === 'flex' ? 'none' : 'flex';
+        if (actions) actions.style.display = actions.style.display === 'flex' ? 'none' : 'flex';
+      });
+    }
+
+    // ==================== INIT ====================
+    cargarDirectorio();
+  </script>
+</body>
+</html>

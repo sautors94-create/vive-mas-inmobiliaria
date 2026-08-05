@@ -22,6 +22,8 @@ const servicesRoutes = require('./routes/services.routes');
 const reportRoutes = require('./routes/report.routes');
 const pagoRoutes = require('./routes/pagos');
 const { webhookStripe } = require('./routes/pagos');
+const { iniciarMarketingAutomation } = require('../services/marketingAutomation');
+const metaOAuthRoutes = require('../services/marketingAutomation/auth/metaOAuth.routes');
 
 const app = express();
 
@@ -97,6 +99,7 @@ app.get('/health', (req, res) => {
 });
 
 // Rutas
+app.use('/api/auth/meta', metaOAuthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/propiedades', propertyRoutes);
@@ -107,6 +110,43 @@ app.use('/api/chat', chatbotRoutes);
 app.use('/api/services', servicesRoutes);
 app.use('/api/reportes', reportRoutes);
 app.use('/api', pagoRoutes);
+
+// ==========================================
+// DIRECTORIO DE INMOBILIARIAS/AGENTES VERIFICADOS
+// ==========================================
+app.get('/api/directorio', async (req, res) => {
+  try {
+    const usuarios = await User.find({
+      identidadVerificada: true,
+      status: 'activo'
+    }).select('nombre email telefono avatar plan role kyc');
+
+    const directorio = await Promise.all(usuarios.map(async (u) => {
+      const numPropiedades = await Property.countDocuments({
+        propietario: u._id,
+        status: 'aprobada'
+      });
+      return {
+        id: u._id,
+        name: u.nombre,
+        type: u.role === 'basico_plus' ? 'inmobiliaria' : (u.role === 'services' ? 'agente' : 'inmobiliaria'),
+        location: u.kyc?.estado || 'México',
+        city: u.kyc?.ciudad || 'Mexico',
+        properties: numPropiedades,
+        verified: true,
+        phone: u.telefono || '',
+        email: u.email,
+        image: u.avatar || '',
+        description: `Inmobiliaria verificada en Vive Más Inmobiliaria. ${u.nombre} cuenta con ${numPropiedades} propiedades activas.`,
+        tags: ['Verificado', 'KYC', 'Confiado']
+      };
+    }));
+
+    res.json({ ok: true, directorio });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // ==========================================
 // LISTA DE ESPERA PREMIUM (Pública, sin auth)
@@ -130,6 +170,9 @@ app.post('/api/waitlist/premium', async (req, res) => {
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
+
+// Inicializar módulo de Marketing Automation
+iniciarMarketingAutomation();
 
 // ✅ CORRECCIÓN: Eliminé el middleware 404 duplicado que tenías
 // 404

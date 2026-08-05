@@ -4,6 +4,7 @@ const Lead = require('../models/Lead');
 const Novedad = require('../models/Novedad');
 const { enviarCoincidenciaBusqueda, enviarNovedad } = require('../utils/email');
 const { ejecutarModeracionCompleta } = require('./property.controller');
+const { eventBus } = require('../../services/marketingAutomation');
 
 const reanalizarPropiedadIA = async (req, res) => {
   try {
@@ -590,6 +591,15 @@ const aprobarPropiedad = async (req, res) => {
     await enviarMensajeInternoParaPropiedad({ req, propiedadId: req.params.id, mensaje: msg });
 
     notificarCoincidenciasBusqueda({ ...updated.toObject(), propietario: propiedad.propietario }).catch(() => {});
+
+    // Emitir evento de "propiedad publicada" para el Marketing Automation Engine
+    // (fire-and-forget: no bloquea la respuesta de aprobación)
+    try {
+      eventBus.emit('property:published', updated._id);
+      console.log(`Evento property:published emitido para "${updated.titulo}" (${updated._id})`);
+    } catch (e) {
+      console.error('Error emitiendo evento property:published:', e.message);
+    }
 
     res.json({ ok: true, mensaje: 'Propiedad aprobada', propiedad: updated });
   } catch (error) {

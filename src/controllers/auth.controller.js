@@ -769,7 +769,7 @@ const eliminarMiCuenta = async (req, res) => {
     const { password } = req.body;
     if (!password) return res.status(400).json({ error: 'Debes ingresar tu contraseña para confirmar.' });
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select('+password');
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
     const coincide = await bcrypt.compare(password, user.password);

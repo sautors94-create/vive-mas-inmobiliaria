@@ -18,7 +18,7 @@ const propertySchema = new mongoose.Schema({
     lat: { type: Number },
     lng: { type: Number },
   },
-caracteristicas: {
+  caracteristicas: {
     recamaras: { type: Number, default: 0 },
     banos: { type: Number, default: 0 },
     mediosBanos: { type: Number, default: 0 },
@@ -41,9 +41,61 @@ caracteristicas: {
       message: { type: String },
     }],
     analizadoEn: { type: Date, default: null },
-    agentesEjecutados: { type: [String], default: [] }, // ['validacion', 'moderacion']
+    agentesEjecutados: { type: [String], default: [] },
   },
   vistas: { type: Number, default: 0 },
+
+  // ==========================================
+  // PUBLICACIONES EN REDES SOCIALES
+  // ==========================================
+  // Guarda el estado de cada automatización de marketing.
+  // Estructura extensible: se pueden agregar linkedin, tiktok, x,
+  // telegram, whatsapp, pinterest, youtube sin modificar nada más.
+  socialMedia: {
+    facebook: {
+      published: { type: Boolean, default: false },
+      publishedAt: { type: Date, default: null },
+      postId: { type: String, default: null },
+      photoId: { type: String, default: null },
+      url: { type: String, default: null },
+      status: {
+        type: String,
+        enum: ['pending', 'publishing', 'published', 'failed'],
+        default: 'pending',
+      },
+      error: {
+        code: { type: Number, default: null },
+        message: { type: String, default: null },
+        type: { type: String, default: null },
+        raw: { type: mongoose.Schema.Types.Mixed, default: null },
+      },
+      attempts: { type: Number, default: 0 },
+      lastAttemptAt: { type: Date, default: null },
+      response: { type: mongoose.Schema.Types.Mixed, default: null },
+    },
+    instagram: {
+      published: { type: Boolean, default: false },
+      publishedAt: { type: Date, default: null },
+      mediaId: { type: String, default: null },
+      containerId: { type: String, default: null },
+      url: { type: String, default: null },
+      status: {
+        type: String,
+        enum: ['pending', 'publishing', 'published', 'failed'],
+        default: 'pending',
+      },
+      error: {
+        code: { type: Number, default: null },
+        message: { type: String, default: null },
+        type: { type: String, default: null },
+        raw: { type: mongoose.Schema.Types.Mixed, default: null },
+      },
+      attempts: { type: Number, default: 0 },
+      lastAttemptAt: { type: Date, default: null },
+      response: { type: mongoose.Schema.Types.Mixed, default: null },
+    },
+    // Futuro: linkedin, tiktok, x, telegram, whatsapp, pinterest, youtube
+  },
 }, { timestamps: true });
 
 propertySchema.index({ 'ubicacion.estado': 1, 'ubicacion.ciudad': 1 });
