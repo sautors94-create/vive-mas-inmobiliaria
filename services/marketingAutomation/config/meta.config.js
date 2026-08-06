@@ -13,7 +13,7 @@
 const metaConfig = {
   // ===== META APP =====
   appId: process.env.META_APP_ID || '1390074509739945',
-  appSecret: process.env.META_APP_SECRET || '89ce28b8d2dcd27b5da3acca87f844',
+  appSecret: process.env.META_APP_SECRET || '',
   configId: process.env.META_CONFIG_ID || '888317470626511',
   // v25.0 es la versión vigente de la Graph API. Meta retiró v19.0 en mayo 2026.
   apiVersion: process.env.META_API_VERSION || 'v25.0',
