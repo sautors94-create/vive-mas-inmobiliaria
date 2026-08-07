@@ -9,8 +9,9 @@ const filtrosActuales = {
   tipo: '',
   precioMin: 0,
   precioMax: 100000000,
-  recamaras: '',
+recamaras: '',
   banos: '',
+  credito: '',
   m2Min: 0,
   m2Max: 1000,
   orden: '-createdAt'
@@ -34,8 +35,9 @@ const obtenerFiltros = () => {
     precioMin: f.precioMin > 0 ? f.precioMin : '',
     // precioMax solo se manda si es menor al máximo absoluto
     precioMax: f.precioMax < 100000000 ? f.precioMax : '',
-    recamaras: f.recamaras || '',
+recamaras: f.recamaras || '',
     banos: f.banos || '',
+    credito: f.credito || '',
     m2Min: f.m2Min > 0 ? f.m2Min : '',
     m2Max: f.m2Max < 1000 ? f.m2Max : '',
     orden: f.orden || '-createdAt',
@@ -330,9 +332,13 @@ const actualizarChipLabel = (type) => {
       chipId = 'chip-precio';
       label = `${formatPrecioCorto(filtrosActuales.precioMin)} - ${formatPrecioCorto(filtrosActuales.precioMax)}`;
       break;
-    case 'recamaras':
+case 'recamaras':
       chipId = 'chip-recamaras';
       label = filtrosActuales.recamaras ? `🛏 ${filtrosActuales.recamaras}+` : '🛏 Recámaras';
+      break;
+    case 'credito':
+      chipId = 'chip-credito';
+      label = filtrosActuales.credito ? `💳 ${filtrosActuales.credito.split(',').length} seleccionado(s)` : '💳 Créditos';
       break;
   }
 
@@ -348,7 +354,14 @@ const renderChipsActivos = () => {
   if (!container) return;
 
   let chips = [];
-  const tipoLabels = { casa: 'Casa', departamento: 'Depto', terreno: 'Terreno', local: 'Local' };
+const tipoLabels = { casa: 'Casa', departamento: 'Depto', terreno: 'Terreno', local: 'Local' };
+  const creditoLabels = {
+    infonavit: 'INFONAVIT', fovissste: 'FOVISSSTE', cofinavit: 'Cofinavit', conavi: 'Conavi',
+    bbva: 'BBVA', banorte: 'Banorte', santander: 'Santander', hsbc: 'HSBC', scotiabank: 'Scotiabank',
+    banamex: 'Banamex', banregio: 'Banregio', mifel: 'Mifel', afirme: 'Afirme', inbursa: 'Inbursa',
+    banco_azteca: 'Banco Azteca', caja_popular_mexicana: 'Caja Popular Mexicana', pemex: 'PEMEX',
+    cfe: 'CFE', banjercito: 'Banjército', imss: 'IMSS'
+  };
 
   (filtrosActuales.estado || '').split(',').filter(Boolean).forEach(e => {
     chips.push(`<div class="chip">📍 ${e} <button class="chip-remove" onclick="quitarValorFiltro('estado','${e}')">×</button></div>`);
@@ -371,9 +384,13 @@ const renderChipsActivos = () => {
     chips.push(`<div class="chip">🛏 ${filtrosActuales.recamaras}+ <button class="chip-remove" onclick="quitarValorFiltro('recamaras')">×</button></div>`);
   }
 
-  if (filtrosActuales.ciudad) {
+if (filtrosActuales.ciudad) {
     chips.push(`<div class="chip">🏙 ${filtrosActuales.ciudad} <button class="chip-remove" onclick="quitarValorFiltro('ciudad')">×</button></div>`);
   }
+
+  (filtrosActuales.credito || '').split(',').filter(Boolean).forEach(c => {
+    chips.push(`<div class="chip">💳 ${creditoLabels[c] || c} <button class="chip-remove" onclick="quitarValorFiltro('credito','${c}')">×</button></div>`);
+  });
 
   if (chips.length > 0) {
     chips.push(`<span class="chip-clear" onclick="limpiarFiltros()">Limpiar todo</span>`);
@@ -415,13 +432,20 @@ const quitarValorFiltro = (tipo, valor) => {
       const onclickAttr = el.getAttribute('onclick') || '';
       if (onclickAttr.includes('Recamaras(')) el.classList.remove('selected');
     });
-  } else if (tipo === 'ciudad') {
+} else if (tipo === 'ciudad') {
     filtrosActuales.ciudad = '';
     const advCiudad = document.getElementById('adv-ciudad');
     if (advCiudad) advCiudad.value = '';
+  } else if (tipo === 'credito') {
+    filtrosActuales.credito = (filtrosActuales.credito || '')
+      .split(',').filter(Boolean).filter(v => v !== valor).join(',');
+    document.querySelectorAll(`.checkbox-option[data-value="${valor}"]`).forEach(el => {
+      const onclickAttr = el.getAttribute('onclick') || '';
+      if (onclickAttr.includes("'credito'")) el.classList.remove('selected');
+    });
   }
 
-  ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras'].forEach(actualizarChipLabel);
+  ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras', 'credito'].forEach(actualizarChipLabel);
   window.history.replaceState({}, document.title, window.location.pathname);
   aplicarFiltros();
 };
@@ -528,7 +552,7 @@ const limpiarFiltros = () => {
   if (precioMin) precioMin.value = 0;
   if (precioMax) precioMax.value = 100000000;
 
-  ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras'].forEach(actualizarChipLabel);
+['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras', 'credito'].forEach(actualizarChipLabel);
 
   const chipsContainer = document.getElementById('catalogo-chips');
   if (chipsContainer) chipsContainer.innerHTML = '';
@@ -550,8 +574,9 @@ const cargarFiltrosDesdeURL = () => {
   filtrosActuales.precioMax = parseInt(params.get('precioMax') || 100000000);
   filtrosActuales.recamaras = params.get('recamaras') || '';
   filtrosActuales.banos = params.get('banos') || '';
+  filtrosActuales.credito = params.get('credito') || '';
 
-  ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras'].forEach(actualizarChipLabel);
+  ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras', 'credito'].forEach(actualizarChipLabel);
 };
 
 // ===========================================

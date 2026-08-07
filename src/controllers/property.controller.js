@@ -13,8 +13,8 @@ const LIMITE_POR_PLAN = {
 };
 
 const crearPropiedad = async (req, res) => {
-  try {
-    const { titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas } = req.body;
+try {
+    const { titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas, creditosAceptados } = req.body;
     
     // Permitir ilimitadas si el rol es basico_plus, sin importar el plan de pago
     const planEfectivo = req.user.role === 'basico_plus' ? 'basico_plus' : (req.user.plan || 'gratuito');
@@ -44,8 +44,9 @@ const crearPropiedad = async (req, res) => {
     // ✅ CORREGIDO: Cambiado 'plan' por 'planEfectivo'
     const pesoPlan = pesoMap[planEfectivo] || 0;
 
-    const propiedad = await Property.create({
+const propiedad = await Property.create({
       titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas,
+      creditosAceptados: operacion === 'venta' ? (creditosAceptados || []) : [],
       propietario: req.user.id,
       status: 'revision',
       planPeso: pesoPlan
@@ -59,10 +60,10 @@ const crearPropiedad = async (req, res) => {
 
 const listarPropiedades = async (req, res) => {
   try {
-    const {
+const {
       operacion, tipo, estado, ciudad,
       precioMin, precioMax, recamaras, banos,
-      m2Min, m2Max, orden,
+      m2Min, m2Max, orden, credito,
       pagina = 1, limite = 15
     } = req.query;
 
@@ -94,12 +95,17 @@ const listarPropiedades = async (req, res) => {
       if (precioMin) filtro.precio.$gte = Number(precioMin);
       if (precioMax) filtro.precio.$lte = Number(precioMax);
     }
-    if (recamaras) filtro['caracteristicas.recamaras'] = { $gte: Number(recamaras) };
+if (recamaras) filtro['caracteristicas.recamaras'] = { $gte: Number(recamaras) };
     if (banos) filtro['caracteristicas.banos'] = { $gte: Number(banos) };
     if (m2Min || m2Max) {
       filtro['caracteristicas.m2'] = {};
       if (m2Min) filtro['caracteristicas.m2'].$gte = Number(m2Min);
       if (m2Max) filtro['caracteristicas.m2'].$lte = Number(m2Max);
+    }
+    // Filtro por crédito aceptado (ej. 'infonavit', 'bancario', 'fovissste')
+    if (credito) {
+      const valores = aArray(credito);
+      filtro.creditosAceptados = valores.length > 1 ? { $in: valores } : valores[0];
     }
 
     const ordenesPermitidos = { precio: { precio: 1 }, '-precio': { precio: -1 }, '-createdAt': { createdAt: -1 } };

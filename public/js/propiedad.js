@@ -97,6 +97,14 @@ ${p.caracteristicas.banos ? `<div class="caract-item"><div class="caract-valor">
             ${p.caracteristicas.m2 ? `<div class="caract-item"><div class="caract-valor">${p.caracteristicas.m2}</div><div class="caract-label">m²</div></div>` : ''}
           </div>
 
+${p.operacion === 'venta' && p.creditosAceptados && p.creditosAceptados.length > 0 ? `
+            <div class="creditos-block" style="margin-top:18px">
+              <div class="creditos-titulo" style="font-size:15px;font-weight:700;margin-bottom:8px">💳 Financiamiento aceptado</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                ${p.creditosAceptados.map(c => `<span style="padding:6px 14px;border-radius:20px;background:var(--primary-light, #e6f2ea);color:var(--primary, #1a472a);font-size:12.5px;font-weight:600">${c}</span>`).join('')}
+              </div>
+            </div>` : ''}
+
           <div class="descripcion-titulo">Descripción</div>
           <div class="descripcion-texto">${p.descripcion}</div>
 

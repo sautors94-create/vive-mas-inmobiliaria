@@ -507,6 +507,12 @@ const exportarLeadsExcel = async (req, res) => {
 const { buildMensajeAprobacion, buildMensajeRechazoFotos, validarFotosParaAprobacion } = require('../utils/adminMessages');
 const { enviarNotificacionMensaje } = require('../utils/email');
 
+// Genera el identificador de conversación de forma consistente con message.controller.js
+const generarConversacionId = (id1, id2, propiedadId) => {
+  const ordered = [id1, id2].sort();
+  const base = `${ordered[0]}_${ordered[1]}`;
+  return propiedadId ? `${base}_${propiedadId}` : base;
+};
 
 const enviarMensajeInternoParaPropiedad = async ({ req, propiedadId, mensaje }) => {
   const Message = require('../models/Message');
@@ -521,8 +527,11 @@ const enviarMensajeInternoParaPropiedad = async ({ req, propiedadId, mensaje }) 
     return;
   }
 
+  const conversacionId = generarConversacionId(remitenteId, destinatarioId.toString(), propiedadId);
+
   const nuevoMensaje = await Message.create({
     propiedad: propiedadId,
+    conversacionId,
     remitente: remitenteId,
     destinatario: destinatarioId,
     mensaje

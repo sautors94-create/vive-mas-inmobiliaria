@@ -25,9 +25,12 @@ const userSchema = new mongoose.Schema({
   cargoRecurrenteFecha: { type: Date, default: null },
   cargoRecurrenteRevocadoFecha: { type: Date, default: null },
   cargoRecurrenteIP: { type: String, default: null },
-  cargoRecurrenteUserAgent: { type: String, default: null },
+cargoRecurrenteUserAgent: { type: String, default: null },
   fechaCancelacion: { type: Date, default: null },
   status: { type: String, enum: ['activo', 'suspendido', 'bloqueado'], default: 'activo' },
+  // Cupón usado para activar el plan (ej. SOMOSASESORES para Básico Plus)
+  cuponUsado: { type: String, default: null },
+  cupon: { type: mongoose.Schema.Types.Mixed, default: null },
   avatar: { type: String, default: null },
   telefono: { type: String, default: null },
   rfc: { type: String, default: null, trim: true, uppercase: true },

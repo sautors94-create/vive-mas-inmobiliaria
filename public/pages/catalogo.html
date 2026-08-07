@@ -61,6 +61,9 @@
         <div class="sticky-chip" data-filter="recamaras" onclick="toggleFilterPopover('recamaras')">
           <span id="chip-recamaras">🛏 Recámaras</span>
         </div>
+        <div class="sticky-chip" data-filter="credito" onclick="toggleFilterPopover('credito')">
+          <span id="chip-credito">💳 Créditos</span>
+        </div>
         <button class="btn-more-filters" onclick="openAdvancedPanel()">
           + Más filtros
         </button>
@@ -144,7 +147,7 @@
     </div>
   </div>
 
-  <div class="filter-popover-container" id="filter-popover-recamaras">
+<div class="filter-popover-container" id="filter-popover-recamaras">
     <div class="filter-popover">
       <div class="filter-popover-header">
         <h4>🛏 Recámaras</h4>
@@ -155,6 +158,38 @@
         <div class="checkbox-option" data-value="2" onclick="selectQuickRecamaras(this)">2+</div>
         <div class="checkbox-option" data-value="3" onclick="selectQuickRecamaras(this)">3+</div>
         <div class="checkbox-option" data-value="4" onclick="selectQuickRecamaras(this)">4+</div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="closeAllFilterPopovers()">Aplicar</button>
+    </div>
+  </div>
+
+  <div class="filter-popover-container" id="filter-popover-credito">
+    <div class="filter-popover">
+      <div class="filter-popover-header">
+        <h4>💳 Créditos aceptados</h4>
+        <button class="popover-close" onclick="closeAllFilterPopovers()">×</button>
+      </div>
+      <div class="checkbox-group-custom">
+        <div class="checkbox-option" data-value="infonavit" onclick="toggleQuickCheckbox(this, 'credito')">INFONAVIT</div>
+        <div class="checkbox-option" data-value="fovissste" onclick="toggleQuickCheckbox(this, 'credito')">FOVISSSTE</div>
+        <div class="checkbox-option" data-value="cofinavit" onclick="toggleQuickCheckbox(this, 'credito')">Cofinavit</div>
+        <div class="checkbox-option" data-value="conavi" onclick="toggleQuickCheckbox(this, 'credito')">Conavi</div>
+        <div class="checkbox-option" data-value="bbva" onclick="toggleQuickCheckbox(this, 'credito')">BBVA</div>
+        <div class="checkbox-option" data-value="banorte" onclick="toggleQuickCheckbox(this, 'credito')">Banorte</div>
+        <div class="checkbox-option" data-value="santander" onclick="toggleQuickCheckbox(this, 'credito')">Santander</div>
+        <div class="checkbox-option" data-value="hsbc" onclick="toggleQuickCheckbox(this, 'credito')">HSBC</div>
+        <div class="checkbox-option" data-value="scotiabank" onclick="toggleQuickCheckbox(this, 'credito')">Scotiabank</div>
+        <div class="checkbox-option" data-value="banamex" onclick="toggleQuickCheckbox(this, 'credito')">Banamex</div>
+        <div class="checkbox-option" data-value="banregio" onclick="toggleQuickCheckbox(this, 'credito')">Banregio</div>
+        <div class="checkbox-option" data-value="mifel" onclick="toggleQuickCheckbox(this, 'credito')">Mifel</div>
+        <div class="checkbox-option" data-value="afirme" onclick="toggleQuickCheckbox(this, 'credito')">Afirme</div>
+        <div class="checkbox-option" data-value="inbursa" onclick="toggleQuickCheckbox(this, 'credito')">Inbursa</div>
+        <div class="checkbox-option" data-value="banco_azteca" onclick="toggleQuickCheckbox(this, 'credito')">Banco Azteca</div>
+        <div class="checkbox-option" data-value="caja_popular_mexicana" onclick="toggleQuickCheckbox(this, 'credito')">Caja Popular Mexicana</div>
+        <div class="checkbox-option" data-value="pemex" onclick="toggleQuickCheckbox(this, 'credito')">PEMEX</div>
+        <div class="checkbox-option" data-value="cfe" onclick="toggleQuickCheckbox(this, 'credito')">CFE</div>
+        <div class="checkbox-option" data-value="banjercito" onclick="toggleQuickCheckbox(this, 'credito')">Banjército</div>
+        <div class="checkbox-option" data-value="imss" onclick="toggleQuickCheckbox(this, 'credito')">IMSS</div>
       </div>
       <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="closeAllFilterPopovers()">Aplicar</button>
     </div>

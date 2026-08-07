@@ -27,10 +27,13 @@ const pagoSchema = new mongoose.Schema({
     enum: ['completado', 'pendiente', 'reembolsado'], 
     default: 'completado' 
   },
-  notas_admin: { 
+notas_admin: { 
     type: String, 
     default: '' // Aquí el admin guardará las aclaraciones
-  }
+  },
+  // Cupón aplicado (si aplica). Para basico_plus no hay monto real.
+  cupon: { type: String, default: null },
+  cupon_tipo: { type: String, enum: ['basico_plus', 'stripe', null], default: null }
 }, { 
   timestamps: true // Crea automáticamente createdAt y updatedAt
 });

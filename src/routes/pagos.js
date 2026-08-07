@@ -4,6 +4,7 @@ const Stripe = require('stripe');
 const Pago = require('../models/Pago');
 const Usuario = require('../models/User');
 const Property = require('../models/Property');
+const Cupon = require('../models/Cupon');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -359,6 +360,207 @@ router.patch('/admin/pagos/:id', authMiddlewareAdmin, requireRole('admin'), asyn
     res.json({ ok: true });
   } catch (error) {
     res.status(500).json({ ok: false, error: 'Error al actualizar pago' });
+  }
+});
+
+// ==========================================
+// CUPONES
+// ==========================================
+
+// Validar un cupón (público, requiere sesión)
+// Devuelve si es 'basico_plus' (aplicable gratis) o 'stripe' (con link de pago)
+router.post('/cupones/validar', authMiddlewareAdmin, async (req, res) => {
+  try {
+    const { codigo } = req.body;
+    if (!codigo) return res.status(400).json({ error: 'Ingresa un código de cupón' });
+
+    const cupon = await Cupon.findOne({ codigo: codigo.toUpperCase().trim() });
+    if (!cupon) return res.status(404).json({ error: 'Cupón no válido' });
+    if (!cupon.activo) return res.status(400).json({ error: 'Este cupón ya no está activo' });
+    if (cupon.usosMaximos && cupon.usosActuales >= cupon.usosMaximos) {
+      return res.status(400).json({ error: 'Este cupón ha alcanzado su límite de usos' });
+    }
+
+    res.json({
+      ok: true,
+      cupon: {
+        codigo: cupon.codigo,
+        tipo: cupon.tipo,
+        descripcion: cupon.descripcion,
+        dias: cupon.dias,
+        stripe_price_link: cupon.stripe_price_link
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Canjear un cupón de tipo 'basico_plus': aplica cuenta Básico Plus (role=basico_plus)
+// por N días SIN pago. Solo para el cupón SOMOSASESORES y similares.
+router.post('/cupones/canjear', authMiddlewareAdmin, async (req, res) => {
+  try {
+    const { codigo } = req.body;
+    if (!codigo) return res.status(400).json({ error: 'Ingresa un código de cupón' });
+
+    const cupon = await Cupon.findOne({ codigo: codigo.toUpperCase().trim() });
+    if (!cupon) return res.status(404).json({ error: 'Cupón no válido' });
+    if (!cupon.activo) return res.status(400).json({ error: 'Este cupón ya no está activo' });
+    if (cupon.usosMaximos && cupon.usosActuales >= cupon.usosMaximos) {
+      return res.status(400).json({ error: 'Este cupón ha alcanzado su límite de usos' });
+    }
+
+    // Solo cupones 'basico_plus' se pueden canjear sin pago
+    if (cupon.tipo !== 'basico_plus') {
+      return res.status(400).json({
+        error: 'Este cupón requiere pago en Stripe',
+        requierePago: true,
+        stripe_price_link: cupon.stripe_price_link
+      });
+    }
+
+    const usuario = await Usuario.findById(req.user.id);
+    if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    // Evitar reutilizar el mismo cupón por el mismo usuario (una sola vez)
+    if (usuario.cuponUsado === cupon.codigo) {
+      return res.status(400).json({ error: 'Ya utilizaste este cupón' });
+    }
+
+    const dias = cupon.dias || 360;
+    const fechaInicio = new Date();
+    const fechaFin = new Date(fechaInicio);
+    fechaFin.setDate(fechaFin.getDate() + dias);
+
+    // Aplicar cuenta Básico Plus (plan gratuito + rol basico_plus = ilimitado)
+    usuario.plan = 'gratuito';
+    usuario.role = 'basico_plus';
+    usuario.planFechaInicio = fechaInicio;
+    usuario.planFechaFin = fechaFin;
+    usuario.planPeriodo = 'anual';
+    usuario.planCancelado = false;
+    usuario.fechaCancelacion = null;
+    usuario.cuponUsado = cupon.codigo;
+    usuario.cupon = { codigo: cupon.codigo, tipo: 'basico_plus', aplicadoEn: fechaInicio, expira: fechaFin };
+    await usuario.save();
+
+    // Actualizar peso de sus propiedades (basico_plus = 3, prioridad máxima)
+    await Property.updateMany(
+      { propietario: usuario._id },
+      { $set: { planPeso: 3 } }
+    );
+
+    // Registrar un "pago" simbólico (monto 0) para conciliación
+    await Pago.create({
+      stripe_session_id: `cupon-${cupon.codigo}-${usuario._id}-${Date.now()}`,
+      usuario_id: usuario._id,
+      usuario_email: usuario.email,
+      plan_contratado: 'basico_plus',
+      monto: 0,
+      estatus: 'completado',
+      cupon: cupon.codigo,
+      cupon_tipo: 'basico_plus',
+      notas_admin: `Activación Básico Plus por cupón ${cupon.codigo} (${dias} días)`
+    });
+
+    // Incrementar contador de usos
+    cupon.usosActuales += 1;
+    await cupon.save();
+
+    res.json({
+      ok: true,
+      mensaje: `🎉 Cupón aplicado. Tu cuenta ahora es Básico Plus y expira el ${fechaFin.toLocaleDateString('es-MX')}.`,
+      plan: 'basico_plus',
+      expira: fechaFin,
+      usuario
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// ADMIN: GESTIÓN DE CUPONES
+// ==========================================
+
+// Listar/crear/actualizar/eliminar cupones (solo admin)
+router.get('/admin/cupones', authMiddlewareAdmin, requireRole('admin'), async (req, res) => {
+  try {
+    const cupones = await Cupon.find().sort({ createdAt: -1 }).populate('creadoPor', 'nombre email');
+    res.json({ ok: true, total: cupones.length, cupones });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/admin/cupones/stats', authMiddlewareAdmin, requireRole('admin'), async (req, res) => {
+  try {
+    const [total, activos, basico_plus, stripe, usosTotales] = await Promise.all([
+      Cupon.countDocuments(),
+      Cupon.countDocuments({ activo: true }),
+      Cupon.countDocuments({ tipo: 'basico_plus' }),
+      Cupon.countDocuments({ tipo: 'stripe' }),
+      Cupon.aggregate([{ $group: { _id: null, total: { $sum: '$usosActuales' } } }])
+    ]);
+    res.json({ ok: true, total, activos, basico_plus, stripe, usosTotales: usosTotales[0]?.total || 0 });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/admin/cupones', authMiddlewareAdmin, requireRole('admin'), async (req, res) => {
+  try {
+    const { codigo, tipo, descripcion, dias, stripe_coupon_id, stripe_price_link, usosMaximos, activo } = req.body;
+    if (!codigo) return res.status(400).json({ error: 'El código es obligatorio' });
+    if (!['basico_plus', 'stripe'].includes(tipo)) return res.status(400).json({ error: 'Tipo no válido' });
+
+    const existe = await Cupon.findOne({ codigo: codigo.toUpperCase().trim() });
+    if (existe) return res.status(400).json({ error: 'Ya existe un cupón con ese código' });
+
+    const cupon = await Cupon.create({
+      codigo: codigo.toUpperCase().trim(),
+      tipo,
+      descripcion: descripcion || '',
+      dias: tipo === 'basico_plus' ? (Number(dias) || 360) : 0,
+      stripe_coupon_id: tipo === 'stripe' ? (stripe_coupon_id || null) : null,
+      stripe_price_link: tipo === 'stripe' ? (stripe_price_link || null) : null,
+      usosMaximos: usosMaximos ? Number(usosMaximos) : null,
+      activo: activo !== false,
+      creadoPor: req.user.id
+    });
+
+    res.status(201).json({ ok: true, cupon });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.patch('/admin/cupones/:id', authMiddlewareAdmin, requireRole('admin'), async (req, res) => {
+  try {
+    const { descripcion, dias, stripe_coupon_id, stripe_price_link, usosMaximos, activo } = req.body;
+    const campos = {};
+    if (descripcion !== undefined) campos.descripcion = descripcion;
+    if (dias !== undefined) campos.dias = Number(dias);
+    if (stripe_coupon_id !== undefined) campos.stripe_coupon_id = stripe_coupon_id;
+    if (stripe_price_link !== undefined) campos.stripe_price_link = stripe_price_link;
+    if (usosMaximos !== undefined) campos.usosMaximos = usosMaximos ? Number(usosMaximos) : null;
+    if (activo !== undefined) campos.activo = !!activo;
+
+    const cupon = await Cupon.findByIdAndUpdate(req.params.id, campos, { new: true });
+    if (!cupon) return res.status(404).json({ error: 'Cupón no encontrado' });
+    res.json({ ok: true, cupon });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/admin/cupones/:id', authMiddlewareAdmin, requireRole('admin'), async (req, res) => {
+  try {
+    const cupon = await Cupon.findByIdAndDelete(req.params.id);
+    if (!cupon) return res.status(404).json({ error: 'Cupón no encontrado' });
+    res.json({ ok: true, mensaje: 'Cupón eliminado' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

@@ -1,33 +1,20 @@
-# TODO — Marketing Automation Engine
+# TODO — Implementación
 
-## Backend — Módulo `services/marketingAutomation/`
-- [x] `config/meta.config.js` — Credenciales y endpoints de Meta
-- [x] `content/contentGenerator.js` — Generador de texto + hashtags
-- [x] `utils/imageValidator.js` — Validación de imágenes antes de publicar
-- [x] `utils/tokenRefresher.js` — Cron de renovación de tokens
-- [x] `publishers/base.publisher.js` — Clase base abstracta
-- [x] `publishers/facebook.publisher.js` — Publicación Facebook (photos)
-- [x] `publishers/instagram.publisher.js` — Publicación Instagram (container + publish)
-- [x] `auth/metaOAuth.service.js` — Lógica OAuth (config_id)
-- [x] `auth/metaOAuth.controller.js` — Connect/callback/disconnect/status
-- [x] `auth/metaOAuth.routes.js` — Rutas Express de OAuth
-- [x] `events/propertyPublished.handler.js` — Escucha evento de propiedad publicada
-- [x] `index.js` — Punto de entrada del módulo
+## Tarea 1: Créditos/financiamientos en propiedades y filtros
+- [x] 1. Agregar campo `creditosAceptados` al schema de `src/models/Property.js`
+- [x] 2. Persistir `creditosAceptados` en `crearPropiedad` y `editarPropiedad` en `src/controllers/property.controller.js`
+- [x] 3. Agregar filtro por `creditosAceptados` en `listarPropiedades` (`src/controllers/property.controller.js`)
+- [x] 4. Agregar filtro de créditos en `public/pages/catalogo.html` (sticky bar + panel avanzado)
+- [x] 5. Agregar lógica de filtro de créditos en `public/js/catalogo.js`
+- [x] 6. Mostrar créditos aceptados en la vista de detalle (`public/js/propiedad.js`)
 
-## Backend — Modelos
-- [x] `src/models/SocialConfig.js` — Configuración de conexión Meta
-- [x] `src/models/SocialActivityLog.js` — Registro de actividad
-- [x] Modificar `src/models/Property.js` — Agregar objeto `socialMedia`
+## Tarea 2: Cupones en pagos y panel admin
+- [x] 7. Verificar middleware de `/cupones/validar` y `/cupones/canjear` — ya usan `auth.middleware` (cualquier usuario autenticado), no requiere cambio
+- [x] 8. Agregar campo de cupón + función `canjearCupon()` en el modal de planes de `public/js/dashboard.js`
 
-## Backend — Integración
-- [x] Modificar `src/controllers/admin.controller.js` — Emitir evento al aprobar
-- [x] Modificar `src/app.js` — Inicializar módulo al arrancar
-- [x] (Opcional) Endpoint de reintento en `property.routes.js`
-
-## Frontend — Panel del usuario
-- [x] Modificar `public/js/dashboard.js` — Pestaña "Redes Sociales" en drawer
-- [x] Modificar `public/css/mis-propiedades-workspace.css` — Estilos
-
-## Verificación
-- [ ] Levantar servidor y validar inicialización sin errores
-- [ ] Probar flujo de aprobación → evento → publicación/logs
+## Followup (pasos manuales)
+- [ ] Probar flujo de publicación con créditos (venta) y vista en detalle
+- [ ] Probar filtro por crédito en catálogo
+- [ ] Crear cupón `SOMOSASESORES` tipo `basico_plus` 360 días desde admin (panel → Cupones → Nuevo)
+- [ ] Probar canje de cupón `basico_plus` (sin pago) y redirección a Stripe para tipo `stripe`
+- [ ] Reiniciar servidor y verificar

@@ -62,6 +62,11 @@
               <label>💰 Precio</label>
               <span id="label-precio">Cualquier precio</span>
             </div>
+            <!-- Campo Créditos -->
+            <div class="search-bar-field" data-popover="popover-credito">
+              <label>💳 Créditos</label>
+              <span id="label-credito">Cualquier crédito</span>
+            </div>
             <!-- Botón Buscar -->
             <button class="search-bar-btn" onclick="buscar()">Buscar</button>
           </div>
@@ -138,6 +143,36 @@
                 <input type="number" class="range-slider-input" id="precio-min-input" placeholder="Mín $" oninput="syncDualRange('min', 'precio')">
                 <input type="number" class="range-slider-input" id="precio-max-input" placeholder="Máx $" oninput="syncDualRange('max', 'precio')">
               </div>
+            </div>
+          </div>
+
+          <!-- Popover Créditos -->
+          <div class="popover" id="popover-credito">
+            <div class="popover-header">
+              <h4>💳 Créditos aceptados</h4>
+              <button class="popover-close" onclick="closeAllPopovers()">×</button>
+            </div>
+            <div class="checkbox-group-custom">
+              <div class="checkbox-option" data-value="infonavit" onclick="toggleCheckbox(this, 'credito')">INFONAVIT</div>
+              <div class="checkbox-option" data-value="fovissste" onclick="toggleCheckbox(this, 'credito')">FOVISSSTE</div>
+              <div class="checkbox-option" data-value="cofinavit" onclick="toggleCheckbox(this, 'credito')">Cofinavit</div>
+              <div class="checkbox-option" data-value="conavi" onclick="toggleCheckbox(this, 'credito')">Conavi</div>
+              <div class="checkbox-option" data-value="bbva" onclick="toggleCheckbox(this, 'credito')">BBVA</div>
+              <div class="checkbox-option" data-value="banorte" onclick="toggleCheckbox(this, 'credito')">Banorte</div>
+              <div class="checkbox-option" data-value="santander" onclick="toggleCheckbox(this, 'credito')">Santander</div>
+              <div class="checkbox-option" data-value="hsbc" onclick="toggleCheckbox(this, 'credito')">HSBC</div>
+              <div class="checkbox-option" data-value="scotiabank" onclick="toggleCheckbox(this, 'credito')">Scotiabank</div>
+              <div class="checkbox-option" data-value="banamex" onclick="toggleCheckbox(this, 'credito')">Banamex</div>
+              <div class="checkbox-option" data-value="banregio" onclick="toggleCheckbox(this, 'credito')">Banregio</div>
+              <div class="checkbox-option" data-value="mifel" onclick="toggleCheckbox(this, 'credito')">Mifel</div>
+              <div class="checkbox-option" data-value="afirme" onclick="toggleCheckbox(this, 'credito')">Afirme</div>
+              <div class="checkbox-option" data-value="inbursa" onclick="toggleCheckbox(this, 'credito')">Inbursa</div>
+              <div class="checkbox-option" data-value="banco_azteca" onclick="toggleCheckbox(this, 'credito')">Banco Azteca</div>
+              <div class="checkbox-option" data-value="caja_popular_mexicana" onclick="toggleCheckbox(this, 'credito')">Caja Popular Mexicana</div>
+              <div class="checkbox-option" data-value="pemex" onclick="toggleCheckbox(this, 'credito')">PEMEX</div>
+              <div class="checkbox-option" data-value="cfe" onclick="toggleCheckbox(this, 'credito')">CFE</div>
+              <div class="checkbox-option" data-value="banjercito" onclick="toggleCheckbox(this, 'credito')">Banjército</div>
+              <div class="checkbox-option" data-value="imss" onclick="toggleCheckbox(this, 'credito')">IMSS</div>
             </div>
           </div>
         </div>

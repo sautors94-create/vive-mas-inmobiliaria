@@ -294,7 +294,7 @@
                     <option value="venta">Venta</option>
                   </select>
                 </div>
-                <div class="form-grupo">
+<div class="form-grupo">
                   <label>Tipo *</label>
                   <select id="p-tipo" class="form-input">
                     <option value="">Selecciona</option>
@@ -303,6 +303,45 @@
                     <option value="terreno">Terreno</option>
                     <option value="local">Local comercial</option>
                   </select>
+                </div>
+<div class="form-grupo" id="grupo-creditos" style="grid-column:1/-1;display:none">
+                  <label>¿Aceptas créditos o financiamiento? <span style="font-size:11px;color:var(--text-light)">(solo venta)</span></label>
+                  <div style="font-size:13px;font-weight:700;margin:14px 0 6px;color:var(--text);text-transform:uppercase;letter-spacing:0.03em">Instituciones de vivienda</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:10px">
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="infonavit"> INFONAVIT</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="cofinavit"> Cofinavit</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="fovissste"> FOVISSSTE</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="conavi"> Conavi</label>
+                  </div>
+                  <div style="font-size:13px;font-weight:700;margin:14px 0 6px;color:var(--text);text-transform:uppercase;letter-spacing:0.03em">Créditos bancarios</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:10px">
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="bbva"> BBVA</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="banorte"> Banorte</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="santander"> Santander</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="hsbc"> HSBC</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="scotiabank"> Scotiabank</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="banamex"> Banamex</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="banregio"> Banregio</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="mifel"> Mifel</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="afirme"> Afirme</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="inbursa"> Inbursa</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="banco_azteca"> Banco Azteca (productos específicos)</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="banca_mifel"> Banca Mifel</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="bxplus"> Ve por Más (BX+)</label>
+                  </div>
+                  <div style="font-size:13px;font-weight:700;margin:14px 0 6px;color:var(--text);text-transform:uppercase;letter-spacing:0.03em">Cajas y organismos</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:10px">
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="caja_popular_mexicana"> Caja Popular Mexicana</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="caja_morelia_valladolid"> Caja Morelia Valladolid</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="caja_gonzalo_vega"> Caja Gonzalo Vega</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="caja_san_rafael"> Caja San Rafael</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="pemex"> PEMEX</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="cfe"> CFE</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="banjercito"> Banjército</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="issfam"> ISSFAM</label>
+                    <label class="credito-option"><input type="checkbox" class="credito-checkbox" value="imss"> IMSS</label>
+                    <label class="credito-option"><input type="text" class="form-input" id="p-credito-otro" placeholder="Otro crédito (especifica)" style="width:220px;padding:8px 12px;font-size:13px"></label>
+                  </div>
                 </div>
               </div>
             </div>

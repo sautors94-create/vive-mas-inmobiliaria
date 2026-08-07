@@ -18,7 +18,8 @@ const mostrarSeccion = (seccion) => {
   if (seccion === 'revision') cargarRevision();
   if (seccion === 'propiedades') cargarTodasPropiedades();
   if (seccion === 'leads') cargarLeads();
-  if (seccion === 'pagos') cargarPagosAdmin();
+if (seccion === 'pagos') cargarPagosAdmin();
+  if (seccion === 'cupones') cargarCuponesAdmin();
   if (seccion === 'usuarios') cargarUsuarios();
   if (seccion === 'temas') cargarTemasPersonalizados();
   if (seccion === 'destacadas') cargarDestacadas();
@@ -1709,6 +1710,100 @@ window.guardarNotaPago = async (id) => {
   } catch (e) {
     dsToast({ title: 'Error', message: 'No se pudo guardar.', type: 'error' });
   }
+};
+
+// ==========================================
+// MÓDULO "CUPONES" (PANEL ADMIN)
+// ==========================================
+let cuponModData = [];
+
+window.cargarCuponesAdmin = async () => {
+  const tbody = document.getElementById('cupones-admin-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center">Cargando cupones...</td></tr>';
+  try {
+    const [data, dataStats] = await Promise.all([
+      api.get('/admin/cupones'),
+      api.get('/admin/cupones/stats')
+    ]);
+
+    const kpisEl = document.getElementById('cupon-mod-kpis');
+    if (kpisEl && dataStats.ok) {
+      kpisEl.innerHTML = `
+        <div class="mod-kpi-card"><div class="mod-kpi-num">${dataStats.total}</div><div class="mod-kpi-label">Total cupones</div></div>
+        <div class="mod-kpi-card"><div class="mod-kpi-num">${dataStats.activos}</div><div class="mod-kpi-label">Activos</div></div>
+        <div class="mod-kpi-card"><div class="mod-kpi-num">${dataStats.usosTotales}</div><div class="mod-kpi-label">Usos totales</div></div>
+      `;
+    }
+
+    cuponModData = data.cupones || [];
+    if (!cuponModData.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--text-light)">No hay cupones registrados.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = cuponModData.map(c => `
+      <tr>
+        <td style="font-weight:700">${escapeHtml(c.codigo)}</td>
+        <td><span class="status-badge" style="background:${c.tipo === 'basico_plus' ? '#fef3c7' : '#eff6ff'};color:${c.tipo === 'basico_plus' ? '#92400e' : '#1d4ed8'}">${c.tipo === 'basico_plus' ? '🎁 Básico Plus' : '💳 Stripe'}</span></td>
+        <td>${escapeHtml(c.descripcion || '—')}</td>
+        <td>${c.tipo === 'basico_plus' ? `${c.dias || 360} días` : (c.stripe_coupon_id || '—')}</td>
+        <td>${c.usosActuales}${c.usosMaximos ? ` / ${c.usosMaximos}` : ''}</td>
+        <td>
+          <span class="status-badge" style="background:${c.activo ? '#f0fdf4' : '#f3f4f6'};color:${c.activo ? '#166534' : '#6b7280'}">${c.activo ? 'Activo' : 'Inactivo'}</span>
+        </td>
+      </tr>`).join('');
+  } catch (error) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:#c62828">Error al cargar cupones.</td></tr>';
+  }
+};
+
+window.abrirFormCupon = () => {
+  document.getElementById('cupon-form').style.display = 'block';
+};
+
+window.cerrarFormCupon = () => {
+  document.getElementById('cupon-form').style.display = 'none';
+};
+
+window.guardarCupon = async () => {
+  const codigo = document.getElementById('cupon-codigo').value.trim();
+  const tipo = document.getElementById('cupon-tipo').value;
+  const descripcion = document.getElementById('cupon-descripcion').value.trim();
+  const dias = document.getElementById('cupon-dias').value;
+  const stripe_coupon_id = document.getElementById('cupon-stripe-coupon').value.trim();
+  const stripe_price_link = document.getElementById('cupon-stripe-link').value.trim();
+  const usosMaximos = document.getElementById('cupon-usos-max').value;
+  const activo = document.getElementById('cupon-activo').checked;
+
+  if (!codigo) { dsToast({ title: 'Falta el código', message: 'Escribe un código de cupón.', type: 'error' }); return; }
+
+  try {
+    const data = await api.post('/admin/cupones', {
+      codigo, tipo, descripcion, dias: dias || 360,
+      stripe_coupon_id, stripe_price_link,
+      usosMaximos: usosMaximos || null, activo
+    });
+    if (data.ok) {
+      dsToast({ title: 'Cupón creado', message: `El cupón ${codigo.toUpperCase()} fue creado.`, type: 'success' });
+      cerrarFormCupon();
+      document.getElementById('cupon-codigo').value = '';
+      document.getElementById('cupon-descripcion').value = '';
+      document.getElementById('cupon-stripe-coupon').value = '';
+      document.getElementById('cupon-stripe-link').value = '';
+      document.getElementById('cupon-usos-max').value = '';
+      cargarCuponesAdmin();
+    } else {
+      dsToast({ title: 'Error', message: data.error || 'No se pudo crear.', type: 'error' });
+    }
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo crear el cupón.', type: 'error' });
+  }
+};
+
+window.toggleCuponTipo = () => {
+  const tipo = document.getElementById('cupon-tipo').value;
+  document.getElementById('cupon-dias-wrap').style.display = tipo === 'basico_plus' ? 'block' : 'none';
+  document.getElementById('cupon-stripe-wrap').style.display = tipo === 'stripe' ? 'block' : 'none';
 };
 
 // ==========================================

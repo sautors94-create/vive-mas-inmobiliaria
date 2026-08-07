@@ -3,6 +3,23 @@ if (!auth.isLoggedIn()) window.location.href = 'login.html';
 const user = auth.getUser();
 let mapaPublicar = null;
 let markerPublicar = null;
+
+// ==================== CRÉDITOS / FINANCIAMIENTO ====================
+// Muestra u oculta el selector de créditos según la operación (solo venta)
+const toggleCreditos = () => {
+  const operacion = document.getElementById('p-operacion')?.value || '';
+  const grupo = document.getElementById('grupo-creditos');
+  if (!grupo) return;
+  grupo.style.display = operacion === 'venta' ? 'block' : 'none';
+  if (operacion !== 'venta') {
+    document.querySelectorAll('.credito-checkbox:checked').forEach(el => el.checked = false);
+  }
+};
+document.addEventListener('DOMContentLoaded', () => {
+  const opSel = document.getElementById('p-operacion');
+  if (opSel) opSel.addEventListener('change', toggleCreditos);
+  toggleCreditos();
+});
 // ==================== SINCRONIZACIÓN SLIDERS ====================
 const syncPrecio = (origen) => {
   const slider = document.getElementById('p-precio-slider');
@@ -127,12 +144,119 @@ window.mostrarModalPlanes = () => {
           <button onclick="listaEsperaPremium()" style="width:100%;margin-top:14px;padding:10px;background:#e5e7eb;color:#9ca3af;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:not-allowed">Próximamente</button>
         </div>
       </div>
+      <!-- SECCIÓN DE CUPÓN / CÓDIGO PROMOCIONAL -->
+      <div style="border-top:1px solid #e5e7eb;padding-top:18px;margin-bottom:18px">
+        <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:6px">🎟️ ¿Tienes un cupón?</div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:12px">Ingresa tu código para canjear beneficios o descuentos.</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="cupon-input" class="form-input" placeholder="Ej: SOMOSASESORES" style="flex:1;text-transform:uppercase;padding:10px 12px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none">
+          <button onclick="canjearCupon()" style="padding:10px 18px;background:#0f172a;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap">Canjear</button>
+        </div>
+        <div id="cupon-msg" style="display:none;margin-top:10px;font-size:13px;line-height:1.5"></div>
+      </div>
+
       <button onclick="document.getElementById('modal-planes')?.remove()" style="width:100%;padding:11px;background:#f1f5f9;color:#475569;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Cerrar</button>
     </div>
   `;
 
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
+};
+
+// ==========================================
+// CANJE DE CUPONES / CÓDIGOS PROMOCIONALES
+// ==========================================
+window.canjearCupon = async () => {
+  const input = document.getElementById('cupon-input');
+  const msg = document.getElementById('cupon-msg');
+  if (!input) return;
+  const codigo = input.value.trim();
+  if (!codigo) {
+    msg.style.display = 'block';
+    msg.style.color = '#dc2626';
+    msg.textContent = '⚠️ Ingresa un código de cupón.';
+    return;
+  }
+
+  msg.style.display = 'block';
+  msg.style.color = '#64748b';
+  msg.textContent = 'Validando cupón...';
+
+  try {
+    // 1. Validar el cupón
+    const validacion = await api.post('/cupones/validar', { codigo });
+    if (!validacion.ok) {
+      msg.style.color = '#dc2626';
+      msg.textContent = '❌ ' + (validacion.error || 'Cupón no válido.');
+      return;
+    }
+
+    const cupon = validacion.cupon;
+    const user = auth.getUser() || {};
+
+    // 2. Si ya usó este cupón
+    if (user.cuponUsado === cupon.codigo) {
+      msg.style.color = '#dc2626';
+      msg.textContent = '❌ Ya utilizaste este cupón.';
+      return;
+    }
+
+    // 3. Cupón tipo 'basico_plus': canjeable sin pago
+    if (cupon.tipo === 'basico_plus') {
+      msg.style.color = '#64748b';
+      msg.textContent = 'Aplicando cupón...';
+      const canje = await api.post('/cupones/canjear', { codigo });
+      if (canje.ok) {
+        msg.style.color = '#16a34a';
+        msg.style.fontWeight = '600';
+        msg.textContent = '✅ ' + (canje.mensaje || '¡Cupón aplicado correctamente!');
+        // Actualizar localStorage con el nuevo rol basico_plus
+        const userActual = auth.getUser() || {};
+        const userActualizado = {
+          ...userActual,
+          plan: 'gratuito',
+          role: 'basico_plus',
+          planFechaFin: canje.expira,
+          cuponUsado: cupon.codigo,
+          cupon: { codigo: cupon.codigo, tipo: 'basico_plus' }
+        };
+        localStorage.setItem('user', JSON.stringify(userActualizado));
+        // Actualizar UI
+        setTimeout(() => {
+          window.location.reload();
+        }, 1800);
+      } else {
+        msg.style.color = '#dc2626';
+        msg.textContent = '❌ ' + (canje.error || 'No se pudo aplicar el cupón.');
+        if (canje.requierePago && canje.stripe_price_link) {
+          // Redirigir al link de pago si aplica
+          msg.innerHTML = `Este cupón requiere pago. <a href="${canje.stripe_price_link}" target="_blank" rel="noopener" style="color:#0369a1;font-weight:600">Ir a pagar →</a>`;
+        }
+      }
+      return;
+    }
+
+    // 4. Cupón tipo 'stripe': redirigir al link de pago con descuento
+    if (cupon.tipo === 'stripe') {
+      if (cupon.stripe_price_link) {
+        msg.style.color = '#64748b';
+        msg.textContent = 'Redirigiendo al pago con descuento...';
+        setTimeout(() => {
+          window.location.href = `${cupon.stripe_price_link}?client_reference_id=${user._id || user.id}`;
+        }, 800);
+      } else {
+        msg.style.color = '#dc2626';
+        msg.textContent = 'Este cupón no tiene un link de pago configurado.';
+      }
+      return;
+    }
+
+    msg.style.color = '#dc2626';
+    msg.textContent = 'Tipo de cupón no soportado.';
+  } catch (e) {
+    msg.style.color = '#dc2626';
+    msg.textContent = '❌ Error de conexión. Intenta de nuevo.';
+  }
 };
 
 const mostrarModalBienvenidaPlan = (plan) => {
@@ -2133,6 +2257,17 @@ const recamaras = document.getElementById('p-recamaras').value;
   }
 
 
+// Créditos aceptados (solo para venta) — se leen de los checkboxes
+  let creditosAceptados = [];
+  if (operacion === 'venta') {
+    creditosAceptados = Array.from(document.querySelectorAll('.credito-checkbox:checked'))
+      .map(el => el.value)
+      .filter(Boolean);
+    // Campo "Otro crédito (especifica)"
+    const otroCredito = (document.getElementById('p-credito-otro')?.value || '').trim();
+    if (otroCredito) creditosAceptados.push(`Otro: ${otroCredito}`);
+  }
+
   const body = {
     titulo, precio: Number(precio), operacion, tipo, descripcion,
     ubicacion: { estado, ciudad, colonia, direccion, lat: lat ? parseFloat(lat) : null, lng: lng ? parseFloat(lng) : null },
@@ -2142,7 +2277,8 @@ caracteristicas: {
     mediosBanos: Number(mediosBanos) || 0,
     estacionamientos: Number(estacionamientos) || 0,
     m2: Number(m2) || 0
-  }
+  },
+  creditosAceptados
   };
 
 

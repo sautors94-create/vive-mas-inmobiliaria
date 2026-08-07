@@ -25,6 +25,8 @@ const propertySchema = new mongoose.Schema({
     estacionamientos: { type: Number, default: 0 },
     m2: { type: Number, default: 0 },
   },
+  // Créditos/financiamiento que acepta la propiedad (INFONAVIT, FOVISSSTE, bancarios, etc.)
+  creditosAceptados: [{ type: String, trim: true }],
   propietario: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   destacada: { type: Boolean, default: false },
   planPeso: { type: Number, default: 0 }, // 0=Gratuito, 1=Básico, 2=Premium

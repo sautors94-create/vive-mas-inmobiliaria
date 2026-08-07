@@ -223,8 +223,13 @@ const crearCardPropiedad = (p) => {
           <span class="tag tag-${p.operacion}">${p.operacion}</span>
           <span class="tag tag-${p.tipo}">${p.tipo}</span>
         </div>
-        <div class="property-title">${p.titulo}</div>
+<div class="property-title">${p.titulo}</div>
         <div class="property-location">📍 ${p.ubicacion.colonia ? p.ubicacion.colonia + ', ' : ''}${p.ubicacion.ciudad}, ${p.ubicacion.estado}</div>
+        ${p.operacion === 'venta' && p.creditosAceptados && p.creditosAceptados.length > 0 ? `
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+          ${p.creditosAceptados.slice(0, 3).map(c => `<span style="padding:3px 10px;border-radius:20px;background:var(--primary-light, #e6f2ea);color:var(--primary, #1a472a);font-size:11px;font-weight:600">${c}</span>`).join('')}
+          ${p.creditosAceptados.length > 3 ? `<span style="font-size:11px;color:var(--text-light, #6b7280);font-weight:600">+${p.creditosAceptados.length - 3}</span>` : ''}
+        </div>` : ''}
         <div class="property-footer">
           <div class="property-price">${formatPrecio(p.precio)}</div>
           <div class="property-details">

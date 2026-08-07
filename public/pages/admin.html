@@ -99,7 +99,8 @@
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('usuarios')">👥 Usuarios</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('temas')">🎨 Temas del sitio</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('destacadas')">⭐ Propiedades destacadas</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('pagos')">💳 Pagos y Conciliación</a>
+<a href="#" class="sidebar-link" onclick="mostrarSeccion('pagos')">💳 Pagos y Conciliación</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('cupones')">🎟️ Cupones</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('bloqueos')">🛡️ Usuarios vetados</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('monitoreo')">🤖 Monitoreo de chats</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('novedades')">📰 Novedades</a>
@@ -612,11 +613,73 @@
         </div>
       </section>
 
-      <div id="drawer-pago-overlay" onclick="cerrarDrawerPago()"></div>
+<div id="drawer-pago-overlay" onclick="cerrarDrawerPago()"></div>
       <div id="drawer-pago">
         <button class="drawer-close-btn" onclick="cerrarDrawerPago()">✕</button>
         <div id="drawer-pago-content"></div>
       </div>
+
+      <!-- CUPONES -->
+      <section id="sec-cupones" class="dash-section" style="display:none">
+        <div class="mod-header">
+          <div>
+            <h2>Cupones</h2>
+            <div class="mod-header-sub">Panel > Cupones · Crea y gestiona cupones de descuento o acceso</div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarCuponesAdmin()">↻ Actualizar</button>
+            <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="abrirFormCupon()">+ Nuevo cupón</button>
+          </div>
+        </div>
+
+        <div class="mod-kpis" id="cupon-mod-kpis" style="grid-template-columns:repeat(3,1fr)">
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Total cupones</div></div>
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Activos</div></div>
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Usos totales</div></div>
+        </div>
+
+        <div id="cupon-form" style="display:none;background:white;border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px">
+          <h3 style="margin-bottom:14px;font-size:15px">Nuevo cupón</h3>
+          <div style="display:grid;gap:12px">
+            <div class="form-grupo"><label>Código *</label><input type="text" id="cupon-codigo" class="form-input" placeholder="Ej: SOMOSASESORES" style="text-transform:uppercase"></div>
+            <div class="form-grupo">
+              <label>Tipo</label>
+              <select id="cupon-tipo" class="form-input" onchange="toggleCuponTipo()">
+                <option value="basico_plus">🎁 Básico Plus (acceso gratuito, sin pago)</option>
+                <option value="stripe">💳 Descuento en Stripe</option>
+              </select>
+            </div>
+            <div class="form-grupo"><label>Descripción</label><input type="text" id="cupon-descripcion" class="form-input" placeholder="Ej: Acceso Básico Plus por 1 año para asesores"></div>
+<div class="form-grupo" id="cupon-dias-wrap"><label>Días de acceso (para Básico Plus)</label><input type="number" id="cupon-dias" class="form-input" value="360" min="1"></div>
+            <div class="form-grupo" id="cupon-stripe-wrap" style="display:none">
+              <label>ID del cupón en Stripe</label>
+              <input type="text" id="cupon-stripe-coupon" class="form-input" placeholder="Ej: 10OFFANUAL">
+              <label style="margin-top:10px">Link de pago Stripe</label>
+              <input type="text" id="cupon-stripe-link" class="form-input" placeholder="https://buy.stripe.com/...">
+            </div>
+            <div class="form-grupo"><label>Usos máximos (vacío = ilimitado)</label><input type="number" id="cupon-usos-max" class="form-input" placeholder="Ilimitado"></div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)">
+              <input type="checkbox" id="cupon-activo" checked>
+              Activo
+            </label>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button class="btn btn-primary" onclick="guardarCupon()">Crear cupón</button>
+            <button class="btn btn-outline" onclick="cerrarFormCupon()">Cancelar</button>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px">
+          <table class="data-table">
+            <thead>
+              <tr><th>Código</th><th>Tipo</th><th>Descripción</th><th>Detalle</th><th>Usos</th><th>Estado</th></tr>
+            </thead>
+            <tbody id="cupones-admin-tbody">
+              <tr><td colspan="6" style="padding:40px;text-align:center">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <!-- USUARIOS VETADOS -->
       <section id="sec-bloqueos" class="dash-section" style="display:none">

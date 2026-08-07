@@ -6,7 +6,8 @@ const filtrosActivos = {
   operacion: [],
   tipo: [],
   precioMin: 0,
-  precioMax: 100000000
+  precioMax: 100000000,
+  credito: []
 };
 
 // ==================== POPOVER SYSTEM ====================
@@ -177,6 +178,20 @@ const updateLabels = () => {
       labelPrecio.textContent = 'Cualquier precio';
     }
   }
+
+  const labelCredito = document.getElementById('label-credito');
+  if (labelCredito) {
+    const creditoLabels = {
+      infonavit: 'INFONAVIT', fovissste: 'FOVISSSTE', cofinavit: 'Cofinavit', conavi: 'Conavi',
+      bbva: 'BBVA', banorte: 'Banorte', santander: 'Santander', hsbc: 'HSBC', scotiabank: 'Scotiabank',
+      banamex: 'Banamex', banregio: 'Banregio', mifel: 'Mifel', afirme: 'Afirme', inbursa: 'Inbursa',
+      banco_azteca: 'Banco Azteca', caja_popular_mexicana: 'Caja Popular Mexicana', pemex: 'PEMEX',
+      cfe: 'CFE', banjercito: 'Banjército', imss: 'IMSS'
+    };
+    labelCredito.textContent = filtrosActivos.credito.length > 0
+      ? filtrosActivos.credito.map(c => creditoLabels[c] || c).join(', ')
+      : 'Cualquier crédito';
+  }
 };
 
 const renderChips = () => {
@@ -203,6 +218,17 @@ const renderChips = () => {
     chips.push(`<div class="chip">💰 ${formatPrecioCortoCorto(filtrosActivos.precioMin)} - ${formatPrecioCortoCorto(filtrosActivos.precioMax)} <button class="chip-remove" onclick="removeChip('precio')">×</button></div>`);
   }
 
+  const creditoLabels = {
+    infonavit: 'INFONAVIT', fovissste: 'FOVISSSTE', cofinavit: 'Cofinavit', conavi: 'Conavi',
+    bbva: 'BBVA', banorte: 'Banorte', santander: 'Santander', hsbc: 'HSBC', scotiabank: 'Scotiabank',
+    banamex: 'Banamex', banregio: 'Banregio', mifel: 'Mifel', afirme: 'Afirme', inbursa: 'Inbursa',
+    banco_azteca: 'Banco Azteca', caja_popular_mexicana: 'Caja Popular Mexicana', pemex: 'PEMEX',
+    cfe: 'CFE', banjercito: 'Banjército', imss: 'IMSS'
+  };
+  filtrosActivos.credito.forEach(c => {
+    chips.push(`<div class="chip">💳 ${creditoLabels[c] || c} <button class="chip-remove" onclick="removeChip('credito', '${c}')">×</button></div>`);
+  });
+
   if (chips.length > 0) {
     chips.push(`<span class="chip-clear" onclick="clearAllChips()">Limpiar todo</span>`);
   }
@@ -228,6 +254,9 @@ const removeChip = (filterType, value) => {
     if (pMin) pMin.value = 0;
     if (pMax) pMax.value = 100000000;
     updateDualRange('precio');
+  } else if (filterType === 'credito') {
+    filtrosActivos.credito = filtrosActivos.credito.filter(v => v !== value);
+    document.querySelector(`#popover-credito .checkbox-option[data-value="${value}"]`)?.classList.remove('selected');
   }
 
   updateLabels();
@@ -240,6 +269,7 @@ const clearAllChips = () => {
   filtrosActivos.tipo = [];
   filtrosActivos.precioMin = 0;
   filtrosActivos.precioMax = 100000000;
+  filtrosActivos.credito = [];
 
   document.querySelectorAll('.popover-option.selected').forEach(opt => opt.classList.remove('selected'));
   document.querySelectorAll('.radio-option.selected').forEach(opt => opt.classList.remove('selected'));
@@ -266,6 +296,7 @@ const buscar = () => {
   if (filtrosActivos.tipo.length > 0) params.append('tipo', filtrosActivos.tipo.join(','));
   if (filtrosActivos.precioMin > 0) params.append('precioMin', filtrosActivos.precioMin);
   if (filtrosActivos.precioMax < 100000000) params.append('precioMax', filtrosActivos.precioMax);
+  if (filtrosActivos.credito.length > 0) params.append('credito', filtrosActivos.credito.join(','));
 
   window.location.href = `pages/catalogo.html?${params.toString()}`;
 };
