@@ -9,21 +9,35 @@ const { TOTP, Secret } = require('otpauth');
 const Stripe = require('stripe');
 const { subirACloudinary } = require('../config/cloudinary');
 const { generarCodigo, enviarCodigoVerificacion, enviarBienvenida, enviarEnlaceRecuperacion, enviarAlerta2FADesactivado } = require('../utils/email');
-const { enviarCodigoSMS } = require('../utils/sms');
+const { enviarOTP, verificarOTP, twilioVerifyConfigurado } = require('../utils/twilioVerify');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Envía el código de verificación por el canal elegido por el usuario.
+// SMS usa Twilio Verify: el código lo genera y valida Twilio, no nosotros
+// (por eso aquí se limpia codigoVerificacion/codigoExpira en ese caso).
 // Si eligió SMS pero Twilio todavía no está configurado (o falla el envío),
 // hace fallback a email para no dejar a nadie sin poder verificar su cuenta.
+// Guarda en canalVerificacionUsado el canal REAL usado, para que
+// verificarCodigo() sepa contra qué validar.
 const enviarCodigoPorCanal = async (user, codigo) => {
   if (user.metodoVerificacion === 'sms' && user.telefono) {
-    const resultado = await enviarCodigoSMS(user.telefono, codigo);
-    if (resultado.ok) return { ok: true, canal: 'sms' };
+    const resultado = await enviarOTP(user.telefono);
+    if (resultado.ok) {
+      user.canalVerificacionUsado = 'sms';
+      user.codigoVerificacion = null;
+      user.codigoExpira = null;
+      await user.save();
+      return { ok: true, canal: 'sms' };
+    }
     // Fallback a email
+    user.canalVerificacionUsado = 'email';
+    await user.save();
     await enviarCodigoVerificacion(user.email, user.nombre, codigo);
     return { ok: true, canal: 'email', fallback: true };
   }
+  user.canalVerificacionUsado = 'email';
+  await user.save();
   await enviarCodigoVerificacion(user.email, user.nombre, codigo);
   return { ok: true, canal: 'email' };
 };
@@ -104,15 +118,25 @@ const verificarCodigo = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
     if (user.verificado) return res.status(400).json({ error: 'La cuenta ya está verificada' });
-    if (!user.codigoVerificacion || user.codigoVerificacion !== codigo) {
-      return res.status(400).json({ error: 'Código incorrecto' });
+
+    if (user.canalVerificacionUsado === 'sms' && user.telefono) {
+      const resultado = await verificarOTP(user.telefono, codigo);
+      if (!resultado.ok) {
+        return res.status(400).json({ error: 'Código incorrecto o vencido' });
+      }
+    } else {
+      if (!user.codigoVerificacion || user.codigoVerificacion !== codigo) {
+        return res.status(400).json({ error: 'Código incorrecto' });
+      }
+      if (new Date() > user.codigoExpira) {
+        return res.status(400).json({ error: 'El código ha expirado. Solicita uno nuevo.' });
+      }
     }
-    if (new Date() > user.codigoExpira) {
-      return res.status(400).json({ error: 'El código ha expirado. Solicita uno nuevo.' });
-    }
+
     user.verificado = true;
     user.codigoVerificacion = null;
     user.codigoExpira = null;
+    user.canalVerificacionUsado = null;
     await user.save();
     await enviarBienvenida(email, user.nombre, user.plan);
     const { accessToken, refreshToken } = generarTokens(user);
@@ -571,12 +595,77 @@ const subirKyc = async (req, res) => {
 
 const actualizarPerfil = async (req, res) => {
   try {
-    const { telefono } = req.body;
+    // El teléfono ya NO se cambia por aquí: requiere verificación OTP por SMS.
+    // Ver solicitarCambioCelular / confirmarCambioCelular más abajo.
     const campos = {};
-    if (telefono) campos.telefono = telefono.trim();
     if (!Object.keys(campos).length) return res.status(400).json({ error: 'Nada que actualizar' });
     const user = await User.findByIdAndUpdate(req.user.id, campos, { new: true }).select('-password');
     res.json({ ok: true, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ==========================================
+// CAMBIO DE CELULAR (verificación OTP por SMS vía Twilio Verify)
+// ==========================================
+// Flujo en 2 pasos: 1) solicitarCambioCelular envía el código al número nuevo
+// y lo deja guardado como "pendiente" (todavía no reemplaza el teléfono real);
+// 2) confirmarCambioCelular valida el código contra Twilio y, si es correcto,
+// recién ahí actualiza el teléfono real del usuario.
+
+const solicitarCambioCelular = async (req, res) => {
+  try {
+    const { telefono } = req.body;
+    const limpio = typeof telefono === 'string' ? telefono.replace(/\D/g, '').trim() : '';
+    if (!limpio || limpio.length < 10) {
+      return res.status(400).json({ error: 'Ingresa un número de celular válido (10 dígitos).' });
+    }
+    if (!twilioVerifyConfigurado()) {
+      return res.status(503).json({ error: 'La verificación por SMS no está disponible en este momento. Intenta más tarde.' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const enUso = await User.findOne({ telefono: limpio, _id: { $ne: user._id } });
+    if (enUso) return res.status(400).json({ error: 'Ese número de celular ya está registrado en otra cuenta.' });
+
+    const resultado = await enviarOTP(limpio);
+    if (!resultado.ok) {
+      return res.status(502).json({ error: 'No se pudo enviar el código por SMS. Verifica el número e intenta de nuevo.' });
+    }
+
+    user.telefonoPendiente = limpio;
+    await user.save();
+
+    res.json({ ok: true, mensaje: 'Te enviamos un código por SMS al nuevo número.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const confirmarCambioCelular = async (req, res) => {
+  try {
+    const { codigo } = req.body;
+    if (!codigo) return res.status(400).json({ error: 'Ingresa el código que te enviamos por SMS.' });
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (!user.telefonoPendiente) {
+      return res.status(400).json({ error: 'No hay un cambio de celular pendiente. Solicítalo de nuevo.' });
+    }
+
+    const resultado = await verificarOTP(user.telefonoPendiente, codigo);
+    if (!resultado.ok) {
+      return res.status(400).json({ error: 'Código incorrecto o vencido.' });
+    }
+
+    user.telefono = user.telefonoPendiente;
+    user.telefonoPendiente = null;
+    await user.save();
+
+    res.json({ ok: true, mensaje: 'Tu número de celular fue actualizado correctamente.', user });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -803,6 +892,8 @@ module.exports = {
   restablecerPassword, 
   actualizarNotificaciones, 
   actualizarPerfil, 
+  solicitarCambioCelular,
+  confirmarCambioCelular,
   subirKyc,
   iniciarSetup2FA,
   confirmar2FA,

@@ -15,6 +15,8 @@ const {
   restablecerPassword, // <--- Aquí está la función
   actualizarNotificaciones, 
   actualizarPerfil, 
+  solicitarCambioCelular,
+  confirmarCambioCelular,
   subirKyc,
   iniciarSetup2FA,
   confirmar2FA,
@@ -54,6 +56,10 @@ router.get('/perfil', authMiddleware, perfil);
 router.get('/leads', authMiddleware, misLeads);
 router.patch('/notificaciones', authMiddleware, actualizarNotificaciones);
 router.patch('/perfil', authMiddleware, actualizarPerfil);
+
+// Cambio de celular con verificación OTP por SMS (Twilio Verify)
+router.post('/celular/solicitar-cambio', authMiddleware, solicitarCambioCelular);
+router.post('/celular/confirmar-cambio', authMiddleware, confirmarCambioCelular);
 
 // Verificar si el plan cambió (al regresar de Stripe)
 router.get('/verificar-plan', authMiddleware, async (req, res) => {

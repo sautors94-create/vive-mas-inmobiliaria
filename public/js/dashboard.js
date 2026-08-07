@@ -1697,8 +1697,8 @@ const cargarCuenta = () => {
       <div class="form-grupo">
         <label>Teléfono</label>
         <div style="display:flex;gap:8px">
-          <input type="tel" id="cuenta-telefono" class="form-input" value="${user.telefono || ''}" placeholder="10 dígitos" style="flex:1">
-          <button class="btn btn-primary" style="padding:10px 18px;font-size:13px;white-space:nowrap" onclick="guardarTelefono()">Guardar</button>
+          <input type="tel" id="cuenta-telefono" class="form-input" value="${user.telefono || ''}" placeholder="10 dígitos" disabled style="flex:1">
+          <button class="btn btn-primary" style="padding:10px 18px;font-size:13px;white-space:nowrap" onclick="mostrarModalCambiarCelular()">Cambiar</button>
         </div>
       </div>
       <div class="form-grupo">
@@ -1880,19 +1880,87 @@ window.mostrarModalEliminarCuenta = () => {
   });
 };
 
-const guardarTelefono = async () => {
-  const telefono = document.getElementById('cuenta-telefono')?.value.trim();
-  if (!telefono || telefono.length < 10) {
-    dsToast({ title: 'Teléfono inválido', message: 'Ingresa un número de al menos 10 dígitos.', type: 'error' });
+// ==========================================
+// CAMBIO DE CELULAR (verificación OTP por SMS)
+// ==========================================
+window._celularTelefonoPendiente = null;
+
+window.mostrarModalCambiarCelular = () => {
+  document.getElementById('mcel-telefono').value = '';
+  document.getElementById('mcel-codigo').value = '';
+  document.getElementById('mcel-error-1').style.display = 'none';
+  document.getElementById('mcel-error-2').style.display = 'none';
+  document.getElementById('mcel-paso-1').style.display = 'block';
+  document.getElementById('mcel-paso-2').style.display = 'none';
+  document.getElementById('modal-cambiar-celular').style.display = 'flex';
+};
+
+window.cerrarModalCambiarCelular = () => {
+  document.getElementById('modal-cambiar-celular').style.display = 'none';
+};
+
+window._celularEnviarCodigo = async (reenviar = false) => {
+  const errorEl1 = document.getElementById('mcel-error-1');
+  errorEl1.style.display = 'none';
+
+  let telefono;
+  if (reenviar) {
+    telefono = window._celularTelefonoPendiente;
+  } else {
+    telefono = document.getElementById('mcel-telefono').value.trim();
+    if (!telefono || telefono.replace(/\D/g, '').length < 10) {
+      errorEl1.textContent = 'Ingresa un número de al menos 10 dígitos.';
+      errorEl1.style.display = 'block';
+      return;
+    }
+  }
+
+  const btn = document.getElementById('mcel-enviar');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+  const data = await api.post('/auth/celular/solicitar-cambio', { telefono });
+  if (btn) { btn.disabled = false; btn.textContent = 'Enviar código'; }
+
+  if (data.ok) {
+    window._celularTelefonoPendiente = telefono;
+    document.getElementById('mcel-numero-mostrado').textContent = telefono;
+    document.getElementById('mcel-paso-1').style.display = 'none';
+    document.getElementById('mcel-paso-2').style.display = 'block';
+    if (reenviar) dsToast({ title: 'Código reenviado', message: 'Revisa tus mensajes SMS.', type: 'info' });
+  } else {
+    if (reenviar) {
+      document.getElementById('mcel-error-2').textContent = data.error || 'No se pudo reenviar el código.';
+      document.getElementById('mcel-error-2').style.display = 'block';
+    } else {
+      errorEl1.textContent = data.error || 'No se pudo enviar el código.';
+      errorEl1.style.display = 'block';
+    }
+  }
+};
+
+window._celularConfirmarCodigo = async () => {
+  const errorEl2 = document.getElementById('mcel-error-2');
+  errorEl2.style.display = 'none';
+  const codigo = document.getElementById('mcel-codigo').value.trim();
+  if (!codigo) {
+    errorEl2.textContent = 'Ingresa el código que te enviamos.';
+    errorEl2.style.display = 'block';
     return;
   }
-  const data = await api.patch('/auth/perfil', { telefono });
+
+  const btn = document.getElementById('mcel-confirmar');
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  const data = await api.post('/auth/celular/confirmar-cambio', { codigo });
+  btn.disabled = false; btn.textContent = 'Confirmar';
+
   if (data.ok) {
-    const userActualizado = { ...user, telefono };
+    const userActualizado = { ...user, telefono: window._celularTelefonoPendiente };
     localStorage.setItem('user', JSON.stringify(userActualizado));
-    dsToast({ title: 'Teléfono actualizado', message: 'Tu número fue guardado correctamente.', type: 'success' });
+    dsToast({ title: 'Teléfono actualizado', message: 'Tu número fue verificado y guardado.', type: 'success' });
+    cerrarModalCambiarCelular();
+    cargarCuenta();
   } else {
-    dsToast({ title: 'No se pudo guardar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    errorEl2.textContent = data.error || 'Código incorrecto.';
+    errorEl2.style.display = 'block';
   }
 };
 

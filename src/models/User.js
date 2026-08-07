@@ -33,6 +33,11 @@ cargoRecurrenteUserAgent: { type: String, default: null },
   cupon: { type: mongoose.Schema.Types.Mixed, default: null },
   avatar: { type: String, default: null },
   telefono: { type: String, default: null },
+  // Nuevo celular pendiente de confirmar por OTP (Twilio Verify) al solicitar un cambio de número
+  telefonoPendiente: { type: String, default: null },
+  // Canal realmente usado para el código de verificación de cuenta pendiente ('email' o 'sms'),
+  // puede diferir de metodoVerificacion si hubo fallback a email por falta/fallo de Twilio
+  canalVerificacionUsado: { type: String, enum: ['email', 'sms', null], default: null },
   rfc: { type: String, default: null, trim: true, uppercase: true },
   kyc: {
     ineFrenteUrl: { type: String, default: null },

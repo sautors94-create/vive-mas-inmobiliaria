@@ -601,6 +601,34 @@
   };
 </script>
 
+<!-- MODAL: CAMBIAR CELULAR (verificación OTP por SMS) -->
+<div id="modal-cambiar-celular" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:16px;padding:28px;max-width:440px;width:90%">
+    <h3 style="margin-bottom:12px">Cambiar número de celular</h3>
+
+    <div id="mcel-paso-1">
+      <div style="font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:14px">Ingresa tu nuevo número. Te enviaremos un código de verificación por SMS.</div>
+      <input type="tel" id="mcel-telefono" class="form-input" placeholder="10 dígitos" style="margin-bottom:10px;width:100%">
+      <div id="mcel-error-1" style="display:none;font-size:12px;color:#dc2626;margin-bottom:10px"></div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button id="mcel-enviar" class="btn btn-primary" style="flex:1" onclick="window._celularEnviarCodigo()">Enviar código</button>
+        <button class="btn btn-outline" style="flex:1" onclick="cerrarModalCambiarCelular()">Cancelar</button>
+      </div>
+    </div>
+
+    <div id="mcel-paso-2" style="display:none">
+      <div style="font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:14px">Ingresa el código de verificación que enviamos por SMS al <b id="mcel-numero-mostrado"></b>.</div>
+      <input type="text" id="mcel-codigo" class="form-input" placeholder="Código de verificación" maxlength="6" style="margin-bottom:10px;letter-spacing:3px;text-align:center;font-size:18px;width:100%">
+      <div id="mcel-error-2" style="display:none;font-size:12px;color:#dc2626;margin-bottom:10px"></div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button id="mcel-confirmar" class="btn btn-primary" style="flex:1" onclick="window._celularConfirmarCodigo()">Confirmar</button>
+        <button class="btn btn-outline" style="flex:1" onclick="cerrarModalCambiarCelular()">Cancelar</button>
+      </div>
+      <button style="margin-top:12px;font-size:12px;background:none;border:none;color:var(--primary);cursor:pointer;text-decoration:underline" onclick="window._celularEnviarCodigo(true)">Reenviar código</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL GENÉRICO DE CONFIRMACIÓN DE CUENTA -->
 <div id="modal-confirmar-cuenta" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center">
   <div style="background:white;border-radius:16px;padding:28px;max-width:440px;width:90%">
