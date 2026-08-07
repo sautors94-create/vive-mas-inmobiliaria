@@ -84,4 +84,37 @@ const eliminarTemaPersonalizado = async (req, res) => {
   }
 };
 
-module.exports = { getConfig, actualizarTema, getDestacadas, actualizarDestacadas, guardarTemaPersonalizado, eliminarTemaPersonalizado };
+// Obtener los enlaces de pago (Stripe Payment Links) configurables
+const getPagos = async (req, res) => {
+  try {
+    let config = await SiteConfig.findOne({ activo: true });
+    if (!config) config = await SiteConfig.create({});
+    res.json({ ok: true, pagos: config.pagos || {} });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+};
+
+// Actualizar los enlaces de pago (Stripe Payment Links) desde el panel admin
+const actualizarPagos = async (req, res) => {
+  try {
+    const { basico_mensual, basico_anual, basico_mesgratis, basico_10, basico_15 } = req.body;
+    let config = await SiteConfig.findOne({ activo: true });
+    if (!config) config = await SiteConfig.create({});
+
+    config.pagos = {
+      basico_mensual: basico_mensual || config.pagos?.basico_mensual,
+      basico_anual: basico_anual || config.pagos?.basico_anual,
+      basico_mesgratis: basico_mesgratis || config.pagos?.basico_mesgratis,
+      basico_10: basico_10 || config.pagos?.basico_10,
+      basico_15: basico_15 || config.pagos?.basico_15,
+    };
+
+    await config.save();
+    res.json({ ok: true, pagos: config.pagos });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+};
+
+module.exports = { getConfig, actualizarTema, getDestacadas, actualizarDestacadas, guardarTemaPersonalizado, eliminarTemaPersonalizado, getPagos, actualizarPagos };

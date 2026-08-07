@@ -517,8 +517,8 @@
           
           const periodo = document.getElementById('registro-periodo-elegido').value;
           const linkStripe = periodo === 'anual' 
-            ? 'https://buy.stripe.com/test_dRmfZh1JDc6U2B6cUWc3m01' 
-            : 'https://buy.stripe.com/test_9B6fZhgExb2QejO8EGc3m00';
+            ? 'https://buy.stripe.com/14AaEYaZ20Xl0ZEcnE2Ji01' 
+            : 'https://buy.stripe.com/3cIeVeebe5dBfUyevM2Ji00';
             
           window.location.href = `${linkStripe}?client_reference_id=${data.user._id || data.user.id}&prefilled_email=${encodeURIComponent(data.user.email)}`;
           return; 

@@ -19,6 +19,7 @@ const mostrarSeccion = (seccion) => {
   if (seccion === 'propiedades') cargarTodasPropiedades();
   if (seccion === 'leads') cargarLeads();
 if (seccion === 'pagos') cargarPagosAdmin();
+  if (seccion === 'stripe-links') renderStripeLinks();
   if (seccion === 'cupones') cargarCuponesAdmin();
   if (seccion === 'usuarios') cargarUsuarios();
   if (seccion === 'temas') cargarTemasPersonalizados();
@@ -1713,14 +1714,59 @@ window.guardarNotaPago = async (id) => {
 };
 
 // ==========================================
+// LINKS DE PAGO STRIPE (PRODUCCIÓN)
+// ==========================================
+const STRIPE_PAYMENT_LINKS = [
+  { key: 'basico_mensual', nombre: 'Básico Mensual', detalle: '$99 MXN / mes', url: 'https://buy.stripe.com/3cIeVeebe5dBfUyevM2Ji00' },
+  { key: 'basico_anual', nombre: 'Básico Anual', detalle: '$999 MXN / año', url: 'https://buy.stripe.com/14AaEYaZ20Xl0ZEcnE2Ji01' },
+  { key: 'basico_mes_gratis', nombre: 'Básico Mes Gratis', detalle: '1 mes gratis', url: 'https://buy.stripe.com/14AfZic36fSf6jYcnE2Ji04' },
+  { key: 'basico_10', nombre: 'Básico 10%', detalle: '10% de descuento', url: 'https://buy.stripe.com/00wfZic36fSffUycnE2Ji02' },
+  { key: 'basico_15', nombre: 'Básico 15%', detalle: '15% de descuento', url: 'https://buy.stripe.com/3cI5kEc36bBZ37MfzQ2Ji03' }
+];
+
+window.renderStripeLinks = () => {
+  const cont = document.getElementById('stripe-links-list');
+  if (!cont) return;
+  cont.innerHTML = STRIPE_PAYMENT_LINKS.map(l => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:white;border:1px solid var(--border);border-radius:12px;padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:12px;min-width:0">
+        <div style="width:40px;height:40px;border-radius:10px;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">💳</div>
+        <div style="min-width:0">
+          <div style="font-size:14px;font-weight:700">${escapeHtml(l.nombre)}</div>
+          <div style="font-size:12px;color:var(--text-light)">${escapeHtml(l.detalle)}</div>
+          <div style="font-size:11px;color:var(--text-light);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px">${escapeHtml(l.url)}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="btn btn-outline admin-mini-btn" onclick="copiarLinkStripe('${l.url}')">📋 Copiar</button>
+        <button class="btn btn-primary admin-mini-btn" onclick="window.open('${l.url}','_blank')">Abrir ↗</button>
+      </div>
+    </div>
+  `).join('');
+};
+
+window.copiarLinkStripe = (url) => {
+  navigator.clipboard.writeText(url).then(() => {
+    dsToast({ title: 'Link copiado', message: 'El link de pago se copió al portapapeles.', type: 'success' });
+  }).catch(() => {
+    dsToast({ title: 'No se pudo copiar', message: 'Copia el link manualmente.', type: 'error' });
+  });
+};
+
+// ==========================================
 // MÓDULO "CUPONES" (PANEL ADMIN)
 // ==========================================
 let cuponModData = [];
+let cuponEditandoId = null; // si está en null → crear/duplicar; si tiene id → editar
+
+const formatoFechaCupon = (f) => f ? new Date(f).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Sin vigencia';
+const cuponExpirado = (c) => c.expiraEn && new Date(c.expiraEn) < new Date();
+const formatoFechaInputCupon = (f) => f ? new Date(f).toISOString().slice(0, 10) : '';
 
 window.cargarCuponesAdmin = async () => {
   const tbody = document.getElementById('cupones-admin-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center">Cargando cupones...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" style="padding:40px;text-align:center">Cargando cupones...</td></tr>';
   try {
     const [data, dataStats] = await Promise.all([
       api.get('/admin/cupones'),
@@ -1738,31 +1784,130 @@ window.cargarCuponesAdmin = async () => {
 
     cuponModData = data.cupones || [];
     if (!cuponModData.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--text-light)">No hay cupones registrados.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--text-light)">No hay cupones registrados.</td></tr>';
       return;
     }
-    tbody.innerHTML = cuponModData.map(c => `
+    tbody.innerHTML = cuponModData.map(c => {
+      const expirado = cuponExpirado(c);
+      const estado = expirado
+        ? { bg: '#fdecea', color: '#991b1b', label: 'Expirado' }
+        : c.activo
+          ? { bg: '#f0fdf4', color: '#166534', label: 'Activo' }
+          : { bg: '#f3f4f6', color: '#6b7280', label: 'Inactivo' };
+      return `
       <tr>
         <td style="font-weight:700">${escapeHtml(c.codigo)}</td>
         <td><span class="status-badge" style="background:${c.tipo === 'basico_plus' ? '#fef3c7' : '#eff6ff'};color:${c.tipo === 'basico_plus' ? '#92400e' : '#1d4ed8'}">${c.tipo === 'basico_plus' ? '🎁 Básico Plus' : '💳 Stripe'}</span></td>
         <td>${escapeHtml(c.descripcion || '—')}</td>
         <td>${c.tipo === 'basico_plus' ? `${c.dias || 360} días` : (c.stripe_coupon_id || '—')}</td>
-        <td>${c.usosActuales}${c.usosMaximos ? ` / ${c.usosMaximos}` : ''}</td>
+        <td>${c.usosActuales}${c.usosMaximos ? ` / ${c.usosMaximos}` : ' <span title="Ilimitado">∞</span>'}</td>
+        <td>${formatoFechaCupon(c.expiraEn)}${expirado ? ' ⚠️' : ''}</td>
         <td>
-          <span class="status-badge" style="background:${c.activo ? '#f0fdf4' : '#f3f4f6'};color:${c.activo ? '#166534' : '#6b7280'}">${c.activo ? 'Activo' : 'Inactivo'}</span>
+          <span class="status-badge" style="background:${estado.bg};color:${estado.color}">${estado.label}</span>
         </td>
-      </tr>`).join('');
+        <td>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn btn-outline admin-mini-btn" onclick="toggleCuponActivo('${c._id}', ${c.activo}, '${escapeHtml(c.codigo)}')">${c.activo ? '⏸ Desactivar' : '▶ Activar'}</button>
+            <button class="btn btn-outline admin-mini-btn" onclick="editarCupon('${c._id}')">✏️ Editar</button>
+            <button class="btn btn-outline admin-mini-btn" onclick="duplicarCupon('${c._id}')">⧉ Duplicar</button>
+            <button class="btn btn-outline admin-mini-btn" style="border-color:#c62828;color:#c62828" onclick="eliminarCupon('${c._id}', '${escapeHtml(c.codigo)}')">🗑️ Eliminar</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
   } catch (error) {
-    tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:#c62828">Error al cargar cupones.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="padding:40px;text-align:center;color:#c62828">Error al cargar cupones.</td></tr>';
+  }
+};
+
+window.toggleCuponActivo = async (id, activo, codigo) => {
+  const data = await api.patch(`/admin/cupones/${id}`, { activo: !activo });
+  if (data.ok) {
+    dsToast({
+      title: activo ? 'Cupón desactivado' : 'Cupón activado',
+      message: `El cupón ${codigo} ${activo ? 'ya no está disponible.' : 'está disponible nuevamente.'}`,
+      type: 'success'
+    });
+    cargarCuponesAdmin();
+  } else {
+    dsToast({ title: 'No se pudo actualizar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
+};
+
+window.eliminarCupon = async (id, codigo) => {
+  const ok = await dsConfirm({
+    title: '¿Eliminar cupón?',
+    message: `El cupón ${codigo} se eliminará permanentemente. Esta acción no se puede deshacer.`,
+    confirmText: 'Eliminar',
+    danger: true
+  });
+  if (!ok) return;
+  const data = await api.delete(`/admin/cupones/${id}`);
+  if (data.ok) {
+    dsToast({ title: 'Cupón eliminado', message: `El cupón ${codigo} fue eliminado.`, type: 'success' });
+    cargarCuponesAdmin();
+  } else {
+    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
   }
 };
 
 window.abrirFormCupon = () => {
+  cuponEditandoId = null;
+  document.getElementById('cupon-form-title').textContent = 'Nuevo cupón';
+  document.getElementById('cupon-codigo').value = '';
+  document.getElementById('cupon-tipo').value = 'basico_plus';
+  document.getElementById('cupon-descripcion').value = '';
+  document.getElementById('cupon-dias').value = 360;
+  document.getElementById('cupon-stripe-coupon').value = '';
+  document.getElementById('cupon-stripe-link').value = '';
+  document.getElementById('cupon-usos-max').value = '';
+  document.getElementById('cupon-vigencia').value = '';
+  document.getElementById('cupon-activo').checked = true;
+  toggleCuponTipo();
+  const btn = document.querySelector('#cupon-form .btn-primary');
+  if (btn) btn.textContent = 'Crear cupón';
   document.getElementById('cupon-form').style.display = 'block';
+  document.getElementById('cupon-codigo').focus();
 };
 
 window.cerrarFormCupon = () => {
   document.getElementById('cupon-form').style.display = 'none';
+  cuponEditandoId = null;
+};
+
+const rellenarFormCupon = (c, duplicando = false) => {
+  if (!c) return;
+  document.getElementById('cupon-form-title').textContent = duplicando ? `Duplicar cupón ${c.codigo}` : `Editar cupón ${c.codigo}`;
+  document.getElementById('cupon-codigo').value = duplicando ? `${c.codigo}-COPIA` : c.codigo;
+  document.getElementById('cupon-tipo').value = c.tipo || 'stripe';
+  document.getElementById('cupon-descripcion').value = c.descripcion || '';
+  document.getElementById('cupon-dias').value = c.dias || 360;
+  document.getElementById('cupon-stripe-coupon').value = c.stripe_coupon_id || '';
+  document.getElementById('cupon-stripe-link').value = c.stripe_price_link || '';
+  document.getElementById('cupon-usos-max').value = c.usosMaximos || '';
+  document.getElementById('cupon-vigencia').value = formatoFechaInputCupon(c.expiraEn);
+  document.getElementById('cupon-activo').checked = c.activo !== false;
+  toggleCuponTipo();
+  const btn = document.querySelector('#cupon-form .btn-primary');
+  if (btn) btn.textContent = duplicando ? 'Duplicar cupón' : 'Guardar cambios';
+};
+
+window.editarCupon = (id) => {
+  const c = cuponModData.find(x => x._id === id);
+  if (!c) return;
+  cuponEditandoId = id;
+  rellenarFormCupon(c, false);
+  document.getElementById('cupon-form').style.display = 'block';
+  document.getElementById('cupon-codigo').focus();
+};
+
+window.duplicarCupon = (id) => {
+  const c = cuponModData.find(x => x._id === id);
+  if (!c) return;
+  cuponEditandoId = null;
+  rellenarFormCupon(c, true);
+  document.getElementById('cupon-form').style.display = 'block';
+  document.getElementById('cupon-codigo').focus();
 };
 
 window.guardarCupon = async () => {
@@ -1773,30 +1918,39 @@ window.guardarCupon = async () => {
   const stripe_coupon_id = document.getElementById('cupon-stripe-coupon').value.trim();
   const stripe_price_link = document.getElementById('cupon-stripe-link').value.trim();
   const usosMaximos = document.getElementById('cupon-usos-max').value;
+  const vigencia = document.getElementById('cupon-vigencia').value;
   const activo = document.getElementById('cupon-activo').checked;
 
   if (!codigo) { dsToast({ title: 'Falta el código', message: 'Escribe un código de cupón.', type: 'error' }); return; }
 
   try {
-    const data = await api.post('/admin/cupones', {
+    const payload = {
       codigo, tipo, descripcion, dias: dias || 360,
       stripe_coupon_id, stripe_price_link,
+      expiraEn: vigencia ? new Date(vigencia + 'T23:59:59').toISOString() : null,
       usosMaximos: usosMaximos || null, activo
-    });
+    };
+
+    let data;
+    if (cuponEditandoId) {
+      data = await api.patch(`/admin/cupones/${cuponEditandoId}`, payload);
+    } else {
+      data = await api.post('/admin/cupones', payload);
+    }
+
     if (data.ok) {
-      dsToast({ title: 'Cupón creado', message: `El cupón ${codigo.toUpperCase()} fue creado.`, type: 'success' });
+      dsToast({
+        title: cuponEditandoId ? 'Cupón actualizado' : 'Cupón creado',
+        message: cuponEditandoId ? `Los cambios en ${codigo.toUpperCase()} se guardaron.` : `El cupón ${codigo.toUpperCase()} fue creado.`,
+        type: 'success'
+      });
       cerrarFormCupon();
-      document.getElementById('cupon-codigo').value = '';
-      document.getElementById('cupon-descripcion').value = '';
-      document.getElementById('cupon-stripe-coupon').value = '';
-      document.getElementById('cupon-stripe-link').value = '';
-      document.getElementById('cupon-usos-max').value = '';
       cargarCuponesAdmin();
     } else {
-      dsToast({ title: 'Error', message: data.error || 'No se pudo crear.', type: 'error' });
+      dsToast({ title: 'Error', message: data.error || 'No se pudo guardar.', type: 'error' });
     }
   } catch (e) {
-    dsToast({ title: 'Error', message: 'No se pudo crear el cupón.', type: 'error' });
+    dsToast({ title: 'Error', message: cuponEditandoId ? 'No se pudo actualizar el cupón.' : 'No se pudo crear el cupón.', type: 'error' });
   }
 };
 

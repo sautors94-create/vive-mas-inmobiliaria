@@ -8,13 +8,17 @@ const {
   getDestacadas,
   actualizarDestacadas,
   guardarTemaPersonalizado,
-  eliminarTemaPersonalizado
+  eliminarTemaPersonalizado,
+  getPagos,
+  actualizarPagos
 } = require('../controllers/siteconfig.controller');
 
 router.get('/config', getConfig);
 router.get('/destacadas', getDestacadas);
+router.get('/pagos', getPagos);
 router.patch('/tema', authMiddleware, requireRole('admin'), actualizarTema);
 router.patch('/destacadas', authMiddleware, requireRole('admin'), actualizarDestacadas);
+router.patch('/pagos', authMiddleware, requireRole('admin'), actualizarPagos);
 router.post('/temas-personalizados', authMiddleware, requireRole('admin'), guardarTemaPersonalizado);
 router.delete('/temas-personalizados/:id', authMiddleware, requireRole('admin'), eliminarTemaPersonalizado);
 

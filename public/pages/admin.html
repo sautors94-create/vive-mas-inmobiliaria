@@ -99,7 +99,8 @@
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('usuarios')">👥 Usuarios</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('temas')">🎨 Temas del sitio</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('destacadas')">⭐ Propiedades destacadas</a>
-<a href="#" class="sidebar-link" onclick="mostrarSeccion('pagos')">💳 Pagos y Conciliación</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('pagos')">💳 Pagos y Conciliación</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('stripe-links')">🔗 Links de pago Stripe</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('cupones')">🎟️ Cupones</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('bloqueos')">🛡️ Usuarios vetados</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('monitoreo')">🤖 Monitoreo de chats</a>
@@ -619,6 +620,25 @@
         <div id="drawer-pago-content"></div>
       </div>
 
+      <!-- LINKS DE PAGO STRIPE (PRODUCCIÓN) -->
+      <section id="sec-stripe-links" class="dash-section" style="display:none">
+        <div class="mod-header">
+          <div>
+            <h2>Links de pago Stripe</h2>
+            <div class="mod-header-sub">Panel > Stripe · Links de producción (SomosViveMas.com)</div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="renderStripeLinks()">↻ Recargar</button>
+          </div>
+        </div>
+        <div id="stripe-links-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
+          <div class="loading">Cargando...</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-light);padding:12px 16px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border);line-height:1.6">
+          ⚡ Estos son los links de pago de Stripe en <b>producción</b>. Úsalos para crear cupones tipo "stripe" con descuento (10%, 15%, 1 mes gratis, mensual, anual) desde la sección <b>Cupones</b> de este panel.
+        </div>
+      </section>
+
       <!-- CUPONES -->
       <section id="sec-cupones" class="dash-section" style="display:none">
         <div class="mod-header">
@@ -639,7 +659,7 @@
         </div>
 
         <div id="cupon-form" style="display:none;background:white;border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px">
-          <h3 style="margin-bottom:14px;font-size:15px">Nuevo cupón</h3>
+          <h3 id="cupon-form-title" style="margin-bottom:14px;font-size:15px">Nuevo cupón</h3>
           <div style="display:grid;gap:12px">
             <div class="form-grupo"><label>Código *</label><input type="text" id="cupon-codigo" class="form-input" placeholder="Ej: SOMOSASESORES" style="text-transform:uppercase"></div>
             <div class="form-grupo">
@@ -658,6 +678,7 @@
               <input type="text" id="cupon-stripe-link" class="form-input" placeholder="https://buy.stripe.com/...">
             </div>
             <div class="form-grupo"><label>Usos máximos (vacío = ilimitado)</label><input type="number" id="cupon-usos-max" class="form-input" placeholder="Ilimitado"></div>
+            <div class="form-grupo"><label>Vigencia (vacío = sin expiración)</label><input type="date" id="cupon-vigencia" class="form-input"></div>
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)">
               <input type="checkbox" id="cupon-activo" checked>
               Activo
@@ -672,10 +693,10 @@
         <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px">
           <table class="data-table">
             <thead>
-              <tr><th>Código</th><th>Tipo</th><th>Descripción</th><th>Detalle</th><th>Usos</th><th>Estado</th></tr>
+              <tr><th>Código</th><th>Tipo</th><th>Descripción</th><th>Detalle</th><th>Usos</th><th>Vence</th><th>Estado</th><th>Acciones</th></tr>
             </thead>
             <tbody id="cupones-admin-tbody">
-              <tr><td colspan="6" style="padding:40px;text-align:center">Cargando...</td></tr>
+              <tr><td colspan="8" style="padding:40px;text-align:center">Cargando...</td></tr>
             </tbody>
           </table>
         </div>

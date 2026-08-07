@@ -21,6 +21,13 @@ const siteConfigSchema = new mongoose.Schema({
   },
   temasPersonalizados: [temaSchema],
   destacadas: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Property' }],
+  pagos: {
+    basico_mensual: { type: String, default: 'https://buy.stripe.com/3cIeVeebe5dBfUyevM2Ji00' },
+    basico_anual: { type: String, default: 'https://buy.stripe.com/14AaEYaZ20Xl0ZEcnE2Ji01' },
+    basico_mesgratis: { type: String, default: 'https://buy.stripe.com/14AfZic36fSf6jYcnE2Ji04' },
+    basico_10: { type: String, default: 'https://buy.stripe.com/00wfZic36fSffUycnE2Ji02' },
+    basico_15: { type: String, default: 'https://buy.stripe.com/3cI5kEc36bBZ37MfzQ2Ji03' },
+  },
   activo: { type: Boolean, default: true },
 }, { timestamps: true });
 

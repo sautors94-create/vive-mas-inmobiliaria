@@ -377,6 +377,9 @@ router.post('/cupones/validar', authMiddlewareAdmin, async (req, res) => {
     const cupon = await Cupon.findOne({ codigo: codigo.toUpperCase().trim() });
     if (!cupon) return res.status(404).json({ error: 'Cupón no válido' });
     if (!cupon.activo) return res.status(400).json({ error: 'Este cupón ya no está activo' });
+    if (cupon.expiraEn && cupon.expiraEn < new Date()) {
+      return res.status(400).json({ error: 'Este cupón ha expirado' });
+    }
     if (cupon.usosMaximos && cupon.usosActuales >= cupon.usosMaximos) {
       return res.status(400).json({ error: 'Este cupón ha alcanzado su límite de usos' });
     }
@@ -388,6 +391,7 @@ router.post('/cupones/validar', authMiddlewareAdmin, async (req, res) => {
         tipo: cupon.tipo,
         descripcion: cupon.descripcion,
         dias: cupon.dias,
+        expiraEn: cupon.expiraEn,
         stripe_price_link: cupon.stripe_price_link
       }
     });
@@ -406,6 +410,9 @@ router.post('/cupones/canjear', authMiddlewareAdmin, async (req, res) => {
     const cupon = await Cupon.findOne({ codigo: codigo.toUpperCase().trim() });
     if (!cupon) return res.status(404).json({ error: 'Cupón no válido' });
     if (!cupon.activo) return res.status(400).json({ error: 'Este cupón ya no está activo' });
+    if (cupon.expiraEn && cupon.expiraEn < new Date()) {
+      return res.status(400).json({ error: 'Este cupón ha expirado' });
+    }
     if (cupon.usosMaximos && cupon.usosActuales >= cupon.usosMaximos) {
       return res.status(400).json({ error: 'Este cupón ha alcanzado su límite de usos' });
     }
@@ -510,7 +517,7 @@ router.get('/admin/cupones/stats', authMiddlewareAdmin, requireRole('admin'), as
 
 router.post('/admin/cupones', authMiddlewareAdmin, requireRole('admin'), async (req, res) => {
   try {
-    const { codigo, tipo, descripcion, dias, stripe_coupon_id, stripe_price_link, usosMaximos, activo } = req.body;
+    const { codigo, tipo, descripcion, dias, stripe_coupon_id, stripe_price_link, expiraEn, usosMaximos, activo } = req.body;
     if (!codigo) return res.status(400).json({ error: 'El código es obligatorio' });
     if (!['basico_plus', 'stripe'].includes(tipo)) return res.status(400).json({ error: 'Tipo no válido' });
 
@@ -524,6 +531,7 @@ router.post('/admin/cupones', authMiddlewareAdmin, requireRole('admin'), async (
       dias: tipo === 'basico_plus' ? (Number(dias) || 360) : 0,
       stripe_coupon_id: tipo === 'stripe' ? (stripe_coupon_id || null) : null,
       stripe_price_link: tipo === 'stripe' ? (stripe_price_link || null) : null,
+      expiraEn: expiraEn ? new Date(expiraEn) : null,
       usosMaximos: usosMaximos ? Number(usosMaximos) : null,
       activo: activo !== false,
       creadoPor: req.user.id
@@ -537,12 +545,13 @@ router.post('/admin/cupones', authMiddlewareAdmin, requireRole('admin'), async (
 
 router.patch('/admin/cupones/:id', authMiddlewareAdmin, requireRole('admin'), async (req, res) => {
   try {
-    const { descripcion, dias, stripe_coupon_id, stripe_price_link, usosMaximos, activo } = req.body;
+    const { descripcion, dias, stripe_coupon_id, stripe_price_link, expiraEn, usosMaximos, activo } = req.body;
     const campos = {};
     if (descripcion !== undefined) campos.descripcion = descripcion;
     if (dias !== undefined) campos.dias = Number(dias);
     if (stripe_coupon_id !== undefined) campos.stripe_coupon_id = stripe_coupon_id;
     if (stripe_price_link !== undefined) campos.stripe_price_link = stripe_price_link;
+    if (expiraEn !== undefined) campos.expiraEn = expiraEn ? new Date(expiraEn) : null;
     if (usosMaximos !== undefined) campos.usosMaximos = usosMaximos ? Number(usosMaximos) : null;
     if (activo !== undefined) campos.activo = !!activo;
 

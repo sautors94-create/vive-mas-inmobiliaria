@@ -292,8 +292,8 @@ const mostrarModalBienvenidaPlan = (plan) => {
 };
 window.contratarPlan = (plan, periodo = 'mensual') => {
   const STRIPE_LINKS = { 
-    basico_mensual: 'https://buy.stripe.com/test_9B6fZhgExb2QejO8EGc3m00', 
-    basico_anual: 'https://buy.stripe.com/test_dRmfZh1JDc6U2B6cUWc3m01' // LINK REAL ANUAL
+basico_mensual: 'https://buy.stripe.com/3cIeVeebe5dBfUyevM2Ji00',
+    basico_anual: 'https://buy.stripe.com/14AaEYaZ20Xl0ZEcnE2Ji01' // LINK REAL ANUAL
   };
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -1984,8 +1984,8 @@ const guardarNotificaciones = async () => {
 };
 window.contratarPlan = (plan, periodo = 'mensual') => {
   const STRIPE_LINKS = { 
-    basico_mensual: 'https://buy.stripe.com/test_9B6fZhgExb2QejO8EGc3m00', 
-    basico_anual: 'https://buy.stripe.com/test_dRmfZh1JDc6U2B6cUWc3m01'
+basico_mensual: 'https://buy.stripe.com/3cIeVeebe5dBfUyevM2Ji00',
+    basico_anual: 'https://buy.stripe.com/14AaEYaZ20Xl0ZEcnE2Ji01'
   };
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
