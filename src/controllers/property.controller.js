@@ -12,6 +12,34 @@ const LIMITE_POR_PLAN = {
   premium: Infinity
 };
 
+// Pausa las propiedades aprobadas que excedan el límite del plan (ej. al bajar a gratuito).
+// Mantiene las primeras N (más recientes) activas y pausa el resto.
+// Devuelve la cantidad de propiedades pausadas.
+const pausarPropiedadesExcedentes = async (usuarioId, limite) => {
+  try {
+    const aprobadas = await Property.find({
+      propietario: usuarioId,
+      status: 'aprobada'
+    }).sort({ createdAt: -1 });
+
+    if (aprobadas.length <= limite) return 0;
+
+    const excedentes = aprobadas.slice(limite);
+    const idsExcedentes = excedentes.map(p => p._id);
+
+    await Property.updateMany(
+      { _id: { $in: idsExcedentes } },
+      { $set: { status: 'pausada' } }
+    );
+
+    console.log(`⏸️ ${idsExcedentes.length} propiedades pausadas por exceder el límite de ${limite} para el usuario ${usuarioId}`);
+    return idsExcedentes.length;
+  } catch (error) {
+    console.error('❌ Error al pausar propiedades excedentes:', error.message);
+    return 0;
+  }
+};
+
 const crearPropiedad = async (req, res) => {
 try {
     const { titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas, creditosAceptados } = req.body;
@@ -355,4 +383,4 @@ const registrarBusqueda = async (req, res) => {
   }
 };
 
-module.exports = { crearPropiedad, listarPropiedades, detallePropiedad, editarPropiedad, eliminarPropiedad, pausarPropiedad, reactivarPropiedad, misPropiedades, subirFotos, registrarBusqueda, ejecutarModeracionCompleta };
+module.exports = { crearPropiedad, listarPropiedades, detallePropiedad, editarPropiedad, eliminarPropiedad, pausarPropiedad, reactivarPropiedad, misPropiedades, subirFotos, registrarBusqueda, ejecutarModeracionCompleta, pausarPropiedadesExcedentes };

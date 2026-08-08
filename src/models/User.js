@@ -25,8 +25,10 @@ const userSchema = new mongoose.Schema({
   cargoRecurrenteFecha: { type: Date, default: null },
   cargoRecurrenteRevocadoFecha: { type: Date, default: null },
   cargoRecurrenteIP: { type: String, default: null },
-cargoRecurrenteUserAgent: { type: String, default: null },
+  cargoRecurrenteUserAgent: { type: String, default: null },
   fechaCancelacion: { type: Date, default: null },
+  // Fecha del último aviso de próximo cobro enviado (para no repetir notificaciones)
+  ultimoAvisoCobroEnviado: { type: Date, default: null },
   status: { type: String, enum: ['activo', 'suspendido', 'bloqueado'], default: 'activo' },
   // Cupón usado para activar el plan (ej. SOMOSASESORES para Básico Plus)
   cuponUsado: { type: String, default: null },

@@ -35,6 +35,7 @@ const {
 
 const authMiddleware = require('../middleware/auth.middleware');
 const { upload, uploadDocumentos } = require('../config/cloudinary');
+const { enviarNotificacionCobro } = require('../utils/email');
 
 // ==========================================
 // RUTAS PÚBLICAS (No requieren estar logueado)
@@ -67,9 +68,83 @@ router.post('/celular/confirmar-cambio', authMiddleware, confirmarCambioCelular)
 // Verificar si el plan cambió (al regresar de Stripe)
 router.get('/verificar-plan', authMiddleware, async (req, res) => {
   try {
-    const user = await require('../models/User').findById(req.user.id).select('plan planFechaFin planFechaInicio planPeriodo planCancelado cargoRecurrenteAutorizado nombre email');
+    const user = await require('../models/User').findById(req.user.id).select('plan planFechaFin planFechaInicio planPeriodo planCancelado cargoRecurrenteAutorizado nombre email ultimoAvisoCobroEnviado notificaciones');
     if (!user) return res.status(404).json({ ok: false });
-    res.json({ ok: true, plan: user.plan, planFechaFin: user.planFechaFin, planFechaInicio: user.planFechaInicio, planPeriodo: user.planPeriodo, planCancelado: user.planCancelado, cargoRecurrenteAutorizado: user.cargoRecurrenteAutorizado, user });
+
+    // ==========================================
+    // AVISO DE PRÓXIMO COBRO (Ley Banxico / LeyMex)
+    // Solo aplica a planes de pago mensuales, no cancelados, con cargo recurrente autorizado
+    // Amarillo: faltan ≤10 días | Rojo: faltan ≤5 días
+    // Se envía un máximo de 1 email por día (campo ultimoAvisoCobroEnviado)
+    // ==========================================
+    let avisoCobro = null;
+    const planUser = (user.plan || 'gratuito').toLowerCase();
+    const tienePlanPago = planUser === 'basico' || planUser === 'premium';
+    const planMensual = (user.planPeriodo || 'mensual') === 'mensual';
+    const cargoAutorizado = user.cargoRecurrenteAutorizado === true;
+    const noCancelado = user.planCancelado !== true;
+    const planFechaFin = user.planFechaFin ? new Date(user.planFechaFin) : null;
+
+    if (tienePlanPago && planMensual && noCancelado && cargoAutorizado && planFechaFin && planFechaFin > new Date()) {
+      const diasRestantes = Math.ceil((planFechaFin - new Date()) / (1000 * 60 * 60 * 24));
+      const fechaCobroTexto = planFechaFin.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      // Determinar si aplica aviso (rojo ≤5, amarillo ≤10)
+      let color = null;
+      let tipoAviso = null;
+      if (diasRestantes <= 5) {
+        color = 'rojo';
+        tipoAviso = 'proximo_cobro';
+      } else if (diasRestantes <= 10) {
+        color = 'amarillo';
+        tipoAviso = 'proximo_cobro';
+      }
+
+      if (color) {
+        // Enviar notificación por email máximo 1 vez al día
+        const ahora = Date.now();
+        const ultimoAviso = user.ultimoAvisoCobroEnviado ? new Date(user.ultimoAvisoCobroEnviado).getTime() : 0;
+        const pasaron24h = ahora - ultimoAviso >= 24 * 60 * 60 * 1000;
+        const notifCargoActivada = user.notificaciones?.cargoRecurrente !== false;
+
+        if (pasaron24h && notifCargoActivada) {
+          try {
+            await enviarNotificacionCobro(user.email, user.nombre, tipoAviso, {
+              plan: user.plan,
+              monto: 99,
+              fechaCobro: fechaCobroTexto,
+              fechaFin: fechaCobroTexto
+            });
+            user.ultimoAvisoCobroEnviado = new Date();
+            await user.save();
+            console.log(`📧 Aviso de próximo cobro enviado a ${user.email} (${diasRestantes} días, ${color})`);
+          } catch (emailErr) {
+            console.warn(`⚠️ No se pudo enviar aviso de cobro a ${user.email}: ${emailErr.message}`);
+          }
+        }
+
+        avisoCobro = {
+          diasRestantes,
+          color,
+          fechaCobro: fechaCobroTexto,
+          mensaje: diasRestantes <= 5
+            ? `¡Atención! Se realizará el cobro de tu plan en ${diasRestantes} día(s).`
+            : `Próximo cobro en ${diasRestantes} día(s).`
+        };
+      }
+    }
+
+    res.json({
+      ok: true,
+      plan: user.plan,
+      planFechaFin: user.planFechaFin,
+      planFechaInicio: user.planFechaInicio,
+      planPeriodo: user.planPeriodo,
+      planCancelado: user.planCancelado,
+      cargoRecurrenteAutorizado: user.cargoRecurrenteAutorizado,
+      avisoCobro,
+      user
+    });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }

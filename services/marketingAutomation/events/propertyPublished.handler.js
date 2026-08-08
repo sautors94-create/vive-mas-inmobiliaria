@@ -25,7 +25,7 @@ const metaConfig = require('../config/meta.config');
 
 // Normaliza el objeto de la propiedad a los datos que espera el generador
 const normalizarDatosPropiedad = (propiedad, propietario) => {
-  const urlPublica = `${process.env.CLIENT_URL || 'https://somosvivemas.com'}/pages/propiedad.html?id=${propiedad._id}`;
+  const urlPublica = `${process.env.CLIENT_URL || 'https://SomosViveMas.com'}/pages/propiedad.html?id=${propiedad._id}`;
 
   return {
     titulo: propiedad.titulo,

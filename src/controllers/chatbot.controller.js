@@ -281,7 +281,7 @@ const generarPromptMax = (memoria, estado, instruccion, servicioInfo) => {
 - SOLO español. NUNCA digas que eres IA.
 - NUNCA inventes portales, procesos legales o métodos.
 - Si el usuario habla de temas NO relacionados (deportes, clima, recetas, política), responde ÚNICAMENTE: "Puedo ayudarte únicamente con servicios inmobiliarios, administración y soporte de Vive Más. ¿Tienes alguna consulta sobre esto?"
-- ANTI-ALUCINACIONES TÉCNICAS: Si el usuario pregunta por FUNCIONES TÉCNICAS de la plataforma que NO estén en tu información (ej: "carga masiva", "subir Excel", "APIs", "formato de carga", "migrar datos", "publicar masivo"), NUNCA las inventes. Di: "Actualmente no contamos con esa función. Te recomiendo escribir a soporte@vivemas.mx para ver opciones a la medida."
+- ANTI-ALUCINACIONES TÉCNICAS: Si el usuario pregunta por FUNCIONES TÉCNICAS de la plataforma que NO estén en tu información (ej: "carga masiva", "subir Excel", "APIs", "formato de carga", "migrar datos", "publicar masivo"), NUNCA las inventes. Di: "Actualmente no contamos con esa función. Te recomiendo escribir a soporte@SomosViveMas.com para ver opciones a la medida."
 - Si el usuario muestra frustración ("no sirves", "no me ayudas"), discúlpate y ofrece hablar con un humano. NUNCA respondas de forma robótica.
 
 Eres Max, asesor inmobiliario de Vive Más.`;
@@ -345,7 +345,7 @@ const chatSoporte = async (req, res) => {
         if (/(regarding|about|please|sorry)/i.test(respuesta)) { const r2 = await groq.chat.completions.create({ ...CONFIG_VIVI, messages: [...messages, {role:"assistant", content:respuesta}, {role:"user", content:"SOLO español."}], temperature: 0.2 }); const fix = r2.choices?.[0]?.message?.content?.trim(); if (fix && !/(regarding|please)/i.test(fix)) respuesta = fix; else respuesta = "Entiendo. ¿Podrías darme más detalles? 😊"; }
         
         return res.json({ ok: true, respuesta: respuesta.replace(/¿Hay algo más.*?\?/gi, '').replace(/\n{3,}/g, "\n\n").trim(), tipo: "soporte", esLead: /nombre|telefono|contactar/i.test((respuesta + " " + mensaje).toLowerCase()) });
-    } catch (error) { logBot('ERROR_VALIDACION', { bot: 'Vivi', error: error.message }); return res.status(500).json({ ok: false, respuesta: "Hubo un problema técnico. Escribe a soporte@vivemas.mx. 😊", tipo: "soporte", esLead: false }); }
+    } catch (error) { logBot('ERROR_VALIDACION', { bot: 'Vivi', error: error.message }); return res.status(500).json({ ok: false, respuesta: "Hubo un problema técnico. Escribe a soporte@SomosViveMas.com. 😊", tipo: "soporte", esLead: false }); }
 };
 
 const chatServicios = async (req, res) => {
@@ -375,7 +375,7 @@ const chatServicios = async (req, res) => {
         // 3. Preguntas técnicas inexistentes
         if (contieneAlgunaPalabra(mensaje, ["carga masiva", "publicacion masiva", "publicación masiva", "formato excel", "formato de carga", "plantilla excel", "api de propiedades", "integracion", "integración", "importar propiedades", "migrar propiedades"])) {
             logBot('ALUCINACION_TECNICA_BLOQUEADA', { msg: mensaje.substring(0, 40) });
-            return res.json({ ok: true, respuesta: "Actualmente nuestra plataforma no cuenta con una función de carga masiva por Excel o API. Las propiedades se publican de forma individual desde el panel de usuario. Si tienes un volumen muy alto de propiedades, te recomiendo contactar a soporte en **soporte@vivemas.mx** para evaluar opciones a la medida. ¿Te puedo ayudar con algo más?", tipo: "servicios", esLead: false, estado: estadoActual, memoria: memoriaCompleta });
+            return res.json({ ok: true, respuesta: "Actualmente nuestra plataforma no cuenta con una función de carga masiva por Excel o API. Las propiedades se publican de forma individual desde el panel de usuario. Si tienes un volumen muy alto de propiedades, te recomiendo contactar a soporte en **soporte@SomosViveMas.com** para evaluar opciones a la medida. ¿Te puedo ayudar con algo más?", tipo: "servicios", esLead: false, estado: estadoActual, memoria: memoriaCompleta });
         }
 
         // 4. Preguntas sobre la plataforma
