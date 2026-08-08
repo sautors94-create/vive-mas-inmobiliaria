@@ -17,7 +17,7 @@ const metaConfig = {
   configId: process.env.META_CONFIG_ID || '888317470626511',
   // v25.0 es la versión vigente de la Graph API. Meta retiró v19.0 en mayo 2026.
   apiVersion: process.env.META_API_VERSION || 'v25.0',
-  redirectUri: process.env.META_REDIRECT_URI || 'https://somosvivemas.com/api/auth/meta/callback',
+  redirectUri: process.env.META_REDIRECT_URI || 'https://SomosViveMas.com/api/auth/meta/callback',
   scopes: (process.env.META_SCOPES || 'pages_show_list,pages_manage_posts,pages_read_engagement,business_management,instagram_basic,instagram_content_publish,public_profile')
     .split(',')
     .map(s => s.trim())

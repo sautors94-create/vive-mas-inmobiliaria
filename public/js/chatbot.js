@@ -307,7 +307,7 @@ async enviar() {
       const telefono = '525512345678'; // WhatsApp de Vive Más
       window.open(`https://wa.me/${telefono}?text=Hola,%20quiero%20atención%20personalizada`, '_blank');
     } else if (accion === 'email') {
-      window.open('mailto:soporte@vivemas.mx?subject=Quiero atención personalizada', '_blank');
+      window.open('mailto:soporte@SomosViveMas.com?subject=Quiero atención personalizada', '_blank');
     } else if (accion === 'catalogo') {
       const basePath = window.location.pathname.includes('/pages/') ? '' : 'pages/';
       window.location.href = basePath + 'catalogo.html';

@@ -319,6 +319,9 @@ const verificarPlanActual = async (intentos = 0, mostrarModal = false) => {
 
     const planServidor = (data.plan || 'gratuito').toLowerCase();
 
+    // Guardar aviso de próximo cobro devuelto por el servidor
+    avisoCobroServidor = data.avisoCobro || null;
+
     // Actualizar localStorage con datos frescos (TODOS los campos nuevos)
     const userActual = auth.getUser() || {};
     const userActualizado = { 
@@ -625,6 +628,7 @@ const buscarDireccion = async () => {
 
 let fotosOrden = []; // array de objetos: { file, dataUrl }
 let fotoPortadaIdx = 0; // índice dentro de fotosOrden
+let avisoCobroServidor = null; // aviso de próximo cobro devuelto por /auth/verificar-plan
 
 const getLimiteFotos = () => {
   const plan = (auth.getUser()?.plan || 'gratuito').toLowerCase();
@@ -1786,6 +1790,44 @@ const cargarCuenta = () => {
   const periodoLabel = planPeriodo === 'anual' ? 'Anual' : 'Mensual';
   const periodoIcon = planPeriodo === 'anual' ? '📅' : '🗓️';
 
+  // Estado de alerta de próximo cobro
+  // Amarillo: faltan ≤10 días | Rojo: faltan ≤5 días
+  // Prioriza el aviso calculado por el servidor (avisoCobroServidor), que ya
+  // incluye el envío de notificación por email. Se usa como fallback el cálculo local.
+  let alertaCobroHTML = '';
+  if (avisoCobroServidor) {
+    const color = avisoCobroServidor.color;
+    const diasAviso = avisoCobroServidor.diasRestantes;
+    const fechaCobroAviso = avisoCobroServidor.fechaCobro || fechaFinTexto;
+    if (color === 'rojo') {
+      alertaCobroHTML = `
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-bottom:16px">
+          <div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:4px">🔴 ¡Atención! Se realizará el cobro de tu plan en ${diasAviso} día(s)</div>
+          <div style="font-size:12px;color:#7f1d1d;line-height:1.6">El próximo cobro de <b>${periodoLabel}</b> se realizará el <b>${fechaCobroAviso}</b>. Asegúrate de tener fondos disponibles para evitar la suspensión del plan y la pausa de tus propiedades adicionales.</div>
+        </div>`;
+    } else if (color === 'amarillo') {
+      alertaCobroHTML = `
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;margin-bottom:16px">
+          <div style="font-size:13px;font-weight:600;color:#92400e;margin-bottom:4px">🟡 Próximo cobro en ${diasAviso} día(s)</div>
+          <div style="font-size:12px;color:#78350f;line-height:1.6">Se realizará el cobro de tu plan el <b>${fechaCobroAviso}</b>. Recibirás la notificación de cargo antes de esa fecha.</div>
+        </div>`;
+    }
+  } else if (tienePlanPago && planPeriodo === 'mensual' && !planCancelado && cargoRecurrenteAutorizado && diasRestantes !== null) {
+    if (diasRestantes <= 5) {
+      alertaCobroHTML = `
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-bottom:16px">
+          <div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:4px">🔴 ¡Atención! Se realizará el cobro de tu plan en ${diasRestantes} día(s)</div>
+          <div style="font-size:12px;color:#7f1d1d;line-height:1.6">El próximo cobro de <b>${periodoLabel}</b> se realizará el <b>${fechaFinTexto}</b>. Asegúrate de tener fondos disponibles para evitar la suspensión del plan y la pausa de tus propiedades adicionales.</div>
+        </div>`;
+    } else if (diasRestantes <= 10) {
+      alertaCobroHTML = `
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;margin-bottom:16px">
+          <div style="font-size:13px;font-weight:600;color:#92400e;margin-bottom:4px">🟡 Próximo cobro en ${diasRestantes} día(s)</div>
+          <div style="font-size:12px;color:#78350f;line-height:1.6">Se realizará el cobro de tu plan el <b>${fechaFinTexto}</b>. Recibirás la notificación de cargo antes de esa fecha.</div>
+        </div>`;
+    }
+  }
+
   // Sección de gestión de plan (solo si tiene plan de pago)
   let planManagementHTML = '';
   if (tienePlanPago) {
@@ -1806,6 +1848,8 @@ const cargarCuenta = () => {
             </div>
           </div>
         </div>
+
+        ${alertaCobroHTML}
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px">
           <div style="background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border)">

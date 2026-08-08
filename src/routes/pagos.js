@@ -5,6 +5,8 @@ const Pago = require('../models/Pago');
 const Usuario = require('../models/User');
 const Property = require('../models/Property');
 const Cupon = require('../models/Cupon');
+const { pausarPropiedadesExcedentes } = require('../controllers/property.controller');
+const { enviarNotificacionCobro } = require('../utils/email');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -175,6 +177,22 @@ const webhookStripe = async (req, res) => {
       usuario.cargoRecurrenteAutorizado = false;
       usuario.fechaCancelacion = new Date();
       await usuario.save();
+
+      // Pausar propiedades que excedan el límite del plan gratuito (3)
+      // Solo si aún no han sido pausadas por esta situación
+      await pausarPropiedadesExcedentes(usuario._id, 3).catch(() => {});
+
+      // Notificar al usuario que no se pudo cobrar
+      try {
+        await enviarNotificacionCobro(usuario.email, usuario.nombre, 'pago_fallido', {
+          plan: usuario.plan,
+          monto: 99,
+          fechaFin: usuario.planFechaFin ? usuario.planFechaFin.toLocaleDateString('es-MX') : '—'
+        });
+      } catch (emailErr) {
+        console.warn(`⚠️ No se pudo enviar email de pago fallido: ${emailErr.message}`);
+      }
+
       console.log(`❌ Renovación fallida para ${usuario.email}. Plan cancelado, mantiene acceso hasta: ${usuario.planFechaFin?.toLocaleDateString('es-MX')}`);
     }
   }

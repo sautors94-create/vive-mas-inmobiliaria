@@ -471,6 +471,76 @@ const enviarCoincidenciaBusqueda = async (email, nombre, propiedad) => {
   });
 };
 
+// ==========================================
+// ✅ NUEVA: NOTIFICACIÓN DE PRÓXIMO COBRO / PAGO FALLIDO
+// ==========================================
+const enviarNotificacionCobro = async (email, nombre, tipo, datos) => {
+  // tipo: 'proximo_cobro' | 'pago_fallido'
+  const esProximo = tipo === 'proximo_cobro';
+  const headerColor = esProximo ? '#0f1923,#1a472a' : '#0f1923,#7f1d1d';
+  const titulo = esProximo ? 'Próximo cargo de tu plan' : 'No pudimos cobrar tu plan';
+  const emoji = esProximo ? '⏰' : '❌';
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
+        .container { max-width: 560px; margin: 40px auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .header { background: linear-gradient(135deg, ${headerColor}); padding: 40px; text-align: center; }
+        .logo { font-size: 28px; font-weight: 700; color: white; }
+        .logo span { color: #f4a261; }
+        .body { padding: 40px; }
+        .greeting { font-size: 18px; color: #1a1a2e; margin-bottom: 16px; font-weight: 600; }
+        .text { font-size: 15px; color: #6b7280; line-height: 1.6; margin-bottom: 24px; }
+        .alerta-box { background: ${esProximo ? '#fffbeb' : '#fef2f2'}; border: 1px solid ${esProximo ? '#fde68a' : '#fecaca'}; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+        .alerta-text { font-size: 15px; color: ${esProximo ? '#92400e' : '#991b1b'}; font-weight: 600; }
+        .datos-box { background: #f8f9fa; border-radius: 8px; padding: 16px; margin-bottom: 24px; border: 1px solid #e5e7eb; }
+        .dato-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+        .dato-label { color: #6b7280; }
+        .dato-valor { font-weight: 600; color: #1a1a2e; }
+        .btn { display: block; background: #1a472a; color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px; text-align: center; }
+        .footer { background: #f8f9fa; padding: 24px 40px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">Vive<span>Más</span> Inmobiliaria</div>
+        </div>
+        <div class="body">
+          <div class="greeting">${emoji} ${titulo}</div>
+          <div class="text">Hola, <strong>${nombre}</strong>. Este es un aviso importante sobre tu suscripción a Vive Más Inmobiliaria.</div>
+          <div class="alerta-box">
+            <div class="alerta-text">${esProximo ? `Se realizará el cobro de tu plan el **${datos.fechaCobro}**.` : `No pudimos realizar el cobro de tu plan. Tu cuenta seguirá activa hasta el **${datos.fechaFin}**, pero si no se regulariza el pago, tus propiedades adicionales serán pausadas.`}</div>
+          </div>
+          <div class="datos-box">
+            <div class="dato-row"><span class="dato-label">Plan</span><span class="dato-valor">${datos.plan || 'Básico'}</span></div>
+            <div class="dato-row"><span class="dato-label">Monto</span><span class="dato-valor">$${datos.monto ? Number(datos.monto).toLocaleString('es-MX') : '99'} MXN</span></div>
+            ${datos.fechaCobro ? `<div class="dato-row"><span class="dato-label">Fecha de cobro</span><span class="dato-valor">${datos.fechaCobro}</span></div>` : ''}
+            ${datos.fechaFin ? `<div class="dato-row"><span class="dato-label">Vigencia hasta</span><span class="dato-valor">${datos.fechaFin}</span></div>` : ''}
+          </div>
+          <a href="${process.env.APP_URL || 'http://localhost:3000'}/pages/dashboard.html" class="btn">Ir a mi panel</a>
+        </div>
+        <div class="footer">
+          © 2024 Vive Más Inmobiliaria · México<br>
+          Este es un correo automático de notificación de suscripción.
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: `${emoji} ${titulo} — Vive Más Inmobiliaria`,
+    html,
+  });
+};
+
 module.exports = { 
   generarCodigo, 
   enviarCodigoVerificacion, 
@@ -480,5 +550,6 @@ module.exports = {
   enviarEnlaceRecuperacion,       
   enviarAlerta2FADesactivado,
   enviarNovedad,
-  enviarCoincidenciaBusqueda
+  enviarCoincidenciaBusqueda,
+  enviarNotificacionCobro
 };

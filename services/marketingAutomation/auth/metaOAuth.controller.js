@@ -108,7 +108,7 @@ const dataDeletion = async (req, res) => {
   try {
     const { confirmation_code, user_id } = req.body;
     res.json({
-      url: `${process.env.CLIENT_URL || 'https://somosvivemas.com'}/legal/normas-generales/privacidad.html`,
+      url: `${process.env.CLIENT_URL || 'https://SomosViveMas.com'}/legal/normas-generales/privacidad.html`,
       confirmation_code: confirmation_code || null,
     });
   } catch (error) {
