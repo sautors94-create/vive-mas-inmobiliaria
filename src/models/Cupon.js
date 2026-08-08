@@ -29,7 +29,6 @@ const cuponSchema = new mongoose.Schema({
   creadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 }, { timestamps: true });
 
-cuponSchema.index({ codigo: 1 });
 cuponSchema.index({ activo: 1, tipo: 1 });
 
 module.exports = mongoose.model('Cupon', cuponSchema);
