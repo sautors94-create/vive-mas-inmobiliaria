@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vive Más Inmobiliaria — Promoción</title>
+  <script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/design-system.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container nav-content">
+      <a href="/" class="logo" style="text-decoration:none">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <span class="logo-sub">Inmobiliaria</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/">Inicio</a></li>
+        <li><a href="pages/catalogo.html">Propiedades</a></li>
+        <li><a href="pages/servicios.html">Servicios</a></li>
+        <li><a href="pages/nosotros.html">Nosotros</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="pages/login.html" class="btn btn-outline" style="padding:8px 16px;font-size:13px">Iniciar sesión</a>
+        <a href="pages/registro.html" class="btn btn-primary" style="padding:8px 16px;font-size:13px">Crear cuenta</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO PROMOCIÓN -->
+  <section class="hero" style="min-height:100vh;display:flex;align-items:center;padding-top:70px">
+    <div class="container">
+      <div class="hero-content" style="max-width:720px;padding:60px 0;text-align:center;margin:0 auto">
+        <div style="font-size:14px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:16px">Bienvenido a</div>
+        <h1 style="font-size:clamp(36px,5vw,56px);color:white;margin-bottom:16px">
+          Vive<span style="color:var(--accent)">Más</span> Inmobiliaria
+        </h1>
+        <p style="font-size:17px;color:rgba(255,255,255,0.8);margin-bottom:32px;max-width:520px;margin-left:auto;margin-right:auto">
+          Encuentra tu hogar ideal, publica tu propiedad o conéctate con los mejores asesores inmobiliarios de México.
+        </p>
+
+        <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+          <a href="pages/catalogo.html" class="btn btn-accent" style="padding:14px 32px;font-size:16px;font-weight:600;text-decoration:none">
+            🏠 Ver propiedades
+          </a>
+          <a href="pages/registro.html" class="btn" style="padding:14px 32px;font-size:16px;font-weight:600;text-decoration:none;background:white;color:var(--primary)">
+            ✨ Crear cuenta gratis
+          </a>
+        </div>
+
+        <div style="margin-top:40px;display:flex;gap:24px;justify-content:center;flex-wrap:wrap;color:rgba(255,255,255,0.7);font-size:13px">
+          <span>✓ Publica hasta 3 propiedades gratis</span>
+          <span>✓ Conecta con compradores</span>
+          <span>✓ Asesores verificados</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CARACTERÍSTICAS -->
+  <section class="section">
+    <div class="container">
+      <h2 class="text-center" style="font-size:28px;margin-bottom:40px">¿Por qué elegir ViveMás?</h2>
+      <div class="services-grid">
+        <div class="service-card">
+          <div class="service-icon">🏠</div>
+          <h3>Publica tu propiedad</h3>
+          <p>Sube fotos, precio y ubicación. Llega a miles de compradores potenciales.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🔍</div>
+          <h3>Encuentra tu hogar</h3>
+          <p>Filtra por ciudad, precio, tipo y operación. Compara opciones fácilmente.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🤝</div>
+          <h3>Asesores verificados</h3>
+          <p>Conecta con inmobiliarias y agentes con identidad verificada.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL -->
+  <section class="section section-dark">
+    <div class="container" style="text-align:center">
+      <h2 style="font-size:28px;margin-bottom:12px">¿Listo para empezar?</h2>
+      <p style="font-size:15px;color:var(--text-light);margin-bottom:28px">Crea tu cuenta gratis y comienza a explorar hoy mismo.</p>
+      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+        <a href="pages/registro.html" class="btn btn-primary" style="padding:14px 32px;font-size:16px;text-decoration:none">Crear cuenta gratis</a>
+        <a href="pages/catalogo.html" class="btn btn-outline" style="padding:14px 32px;font-size:16px;text-decoration:none">Ver propiedades</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <div class="logo" style="text-decoration:none">
+            <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+          </div>
+          <p>Plataforma inmobiliaria nacional</p>
+        </div>
+        <div class="footer-links">
+          <a href="pages/catalogo.html">Propiedades</a>
+          <a href="pages/servicios.html">Servicios</a>
+          <a href="pages/nosotros.html">Nosotros</a>
+        </div>
+        <div class="footer-links">
+          <a href="legal/index.html">Términos y condiciones</a>
+          <a href="legal/index.html">Privacidad</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        © 2025 Vive Más Inmobiliaria. Todos los derechos reservados.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Centro de Salud — Vive Más Inmobiliaria</title>
+  <script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/design-system.css">
+  <link rel="stylesheet" href="../css/dashboard-premium.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/health.css">
+  <link rel="stylesheet" href="../css/topbar-premium.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <div class="ds-topbar">
+    <div class="container ds-topbar-inner">
+      <div class="ds-topbar-left">
+        <a href="/" class="logo" style="text-decoration:none">
+          <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+          <span class="logo-sub">Health</span>
+        </a>
+        <div class="ds-topbar-title">
+          <div class="kicker">Panel de administración</div>
+          <div class="main">Centro de Salud del Sistema</div>
+        </div>
+      </div>
+
+      <div class="ds-topbar-right">
+        <a href="admin.html" class="btn btn-outline" style="text-decoration:none;font-size:13px;padding:9px 16px">← Volver al panel</a>
+        <div id="ds-avatar-wrap" style="position:relative">
+          <div id="ds-avatar-btn" class="ds-avatar">
+            <span id="ds-avatar-bg" class="badge" aria-hidden="true"><span id="ds-user-initials">A</span></span>
+            <div class="meta">
+              <div class="name" id="ds-user-name">Admin</div>
+              <div class="plan" id="ds-user-plan">Administrador</div>
+            </div>
+          </div>
+          <div id="ds-avatar-menu" class="ds-dropdown">
+            <div class="ds-dropdown-header">
+              <div class="title">Administración</div>
+              <div class="subtitle">Acciones rápidas</div>
+            </div>
+            <div class="ds-dropdown-body">
+              <div class="ds-dropdown-item" onclick="window.location.href='admin.html'">
+                <div class="t">📊 Panel admin</div>
+                <div class="d">Ir al panel principal</div>
+              </div>
+              <div class="ds-dropdown-item" onclick="window.location.href='/'">
+                <div class="t">🌐 Ver sitio público</div>
+                <div class="d">Ir al inicio del sitio</div>
+              </div>
+            </div>
+            <div class="ds-dropdown-actions">
+              <button class="btn btn-outline" style="flex:1" onclick="auth.logout()">Cerrar sesión</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-user">
+        <div class="user-avatar" style="background:var(--accent-dark)">A</div>
+        <div class="user-info">
+          <div class="user-name">Admin</div>
+          <div class="user-plan">Centro de Salud</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="admin.html" class="sidebar-link">📊 Dashboard</a>
+        <a href="admin.html" class="sidebar-link">⏳ En revisión</a>
+        <a href="admin.html" class="sidebar-link">🏠 Propiedades</a>
+        <a href="admin.html" class="sidebar-link">📋 Leads</a>
+        <a href="admin.html" class="sidebar-link">👥 Usuarios</a>
+        <a href="admin.html" class="sidebar-link">🎨 Temas del sitio</a>
+        <a href="admin.html" class="sidebar-link">💳 Pagos y Conciliación</a>
+        <a href="admin.html" class="sidebar-link">🎟️ Cupones</a>
+        <a href="admin.html" class="sidebar-link">🛡️ Usuarios vetados</a>
+        <a href="admin.html" class="sidebar-link">🤖 Monitoreo de chats</a>
+        <a href="admin.html" class="sidebar-link">📰 Novedades</a>
+        <a href="admin.html" class="sidebar-link">🚩 Reportes</a>
+        <a href="health.html" class="sidebar-link active">🩺 Salud del sistema</a>
+      </nav>
+    </aside>
+
+    <!-- CONTENIDO -->
+    <main class="dashboard-main">
+      <div class="health-wrap">
+
+        <!-- ESTADO GENERAL -->
+        <div id="health-general"></div>
+
+        <!-- TARJETAS DE SERVICIOS -->
+        <div class="health-grid" id="health-tarjetas">
+          <div class="loading">Cargando estado del sistema...</div>
+        </div>
+
+        <!-- RIESGOS -->
+        <div class="health-tabla-wrap">
+          <div class="dash-section-header" style="margin-bottom:12px">
+            <h2 style="font-size:20px">Centro de Riesgo</h2>
+          </div>
+          <div id="health-riesgos">
+            <div class="loading">Cargando riesgos...</div>
+          </div>
+        </div>
+
+        <!-- ALERTAS -->
+        <div class="health-tabla-wrap">
+          <div class="dash-section-header" style="margin-bottom:12px">
+            <h2 style="font-size:20px">Alertas activas</h2>
+          </div>
+          <div id="health-alertas">
+            <div class="loading">Cargando alertas...</div>
+          </div>
+        </div>
+
+        <!-- HISTORIAL / GRÁFICAS -->
+        <div class="health-tabla-wrap">
+          <div class="dash-section-header" style="margin-bottom:12px">
+            <h2 style="font-size:20px">Historial y crecimiento</h2>
+            <div class="health-filters">
+              <select class="filter-select" style="width:auto" onchange="renderHealthHistorial(parseInt(this.value))">
+                <option value="1">24 horas</option>
+                <option value="7" selected>7 días</option>
+                <option value="30">30 días</option>
+                <option value="90">90 días</option>
+              </select>
+            </div>
+          </div>
+          <div id="health-historial">
+            <div class="loading">Cargando historial...</div>
+          </div>
+        </div>
+
+        <!-- CONFIGURACIÓN DE UMBRALES -->
+        <div class="health-tabla-wrap">
+          <div class="dash-section-header" style="margin-bottom:12px">
+            <h2 style="font-size:20px">Configuración de umbrales</h2>
+          </div>
+          <div id="health-config">
+            <div class="loading">Cargando configuración...</div>
+          </div>
+        </div>
+
+        <!-- LOGS -->
+        <div class="health-tabla-wrap">
+          <div class="dash-section-header" style="margin-bottom:12px">
+            <h2 style="font-size:20px">Logs de auditoría</h2>
+          </div>
+          <div id="health-logs">
+            <div class="loading">Cargando logs...</div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/session-manager.js"></script>
+  <script src="../js/ui/toasts.js"></script>
+  <script src="../js/ui/confirm.js"></script>
+  <script src="../js/ui/lucide.js"></script>
+  <script src="../js/ui/topbar.js"></script>
+  <script src="../js/health-admin.js"></script>
+</body>
+</html>

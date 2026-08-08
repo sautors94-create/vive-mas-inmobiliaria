@@ -1,15 +1,40 @@
-# TODO — Funcionalidad de cancelación de plan y alertas de vencimiento
+# TODO — ViveMás Infrastructure & System Health Center + Página /promocion
 
-## Backend
-- [x] 1. `src/models/User.js`: Agregar campo `ultimoAvisoCobroEnviado`
-- [x] 2. `src/controllers/property.controller.js`: Agregar función `pausarPropiedadesExcedentes`
-- [x] 3. `src/routes/pagos.js`: En `invoice.payment_failed` pausar propiedades excedentes y notificar
-- [ ] 4. `src/controllers/auth.controller.js`: Agregar lógica de aviso de próximo cobro en `verificar-plan`
-- [ ] 5. `src/routes/auth.routes.js`: Actualizar `verificar-plan` para devolver estado de aviso de cobro
+## BACKEND — Modelos
+- [x] src/models/HealthMetric.js
+- [x] src/models/AlertLog.js
+- [x] src/models/AuditLog.js
+- [x] src/models/SystemConfig.js
 
-## Frontend
-- [x] 6. `public/js/dashboard.js`: Mejorar `cargarCuenta()` con alertas de próximo cobro (amarillo ≤10 días, rojo ≤5 días)
-- [ ] 7. `public/css/dashboard.css`: Agregar estilos para alertas de vencimiento
+## BACKEND — Servicios de monitoreo
+- [x] src/services/health/monitors/mongoMonitor.js
+- [x] src/services/health/monitors/cloudinaryMonitor.js
+- [x] src/services/health/monitors/nodeMonitor.js
+- [x] src/services/health/monitors/websiteMonitor.js
+- [x] src/services/health/monitors/hostingerMonitor.js
+- [x] src/services/health/monitors/backupMonitor.js
+- [x] src/services/health/alertManager.js
+- [x] src/services/health/collector.js
+- [x] src/services/health/healthScheduler.js
+
+## BACKEND — Controlador y rutas
+- [x] src/controllers/health.controller.js
+- [x] src/routes/health.routes.js
+
+## BACKEND — Integración
+- [x] src/app.js (montar ruta /api/admin/health + scheduler)
+- [x] .env.example (nuevas variables vacías)
+
+## FRONTEND — Panel Salud
+- [x] public/css/health.css
+- [x] public/js/health-admin.js
+- [x] public/pages/health.html
+- [x] public/pages/admin.html (link sidebar)
+
+## FRONTEND — Página promoción QR
+- [x] public/promocion.html
 
 ## Verificación
-- [ ] 8. Probar el flujo completo en la sección "Mi Cuenta"
+- [ ] Probar rutas protegidas /api/admin/health
+- [ ] Verificar que no se exponen secretos
+

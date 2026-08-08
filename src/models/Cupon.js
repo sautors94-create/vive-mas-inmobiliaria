@@ -22,14 +22,11 @@ const cuponSchema = new mongoose.Schema({
   stripe_coupon_id: { type: String, default: null },
   stripe_price_link: { type: String, default: null },
   activo: { type: Boolean, default: true },
-  // Fecha de vigencia del cupón (null = sin expiración). Un cupón vencido no puede usarse.
-  expiraEn: { type: Date, default: null },
   usosMaximos: { type: Number, default: null }, // null = ilimitado
   usosActuales: { type: Number, default: 0 },
   creadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 }, { timestamps: true });
 
-cuponSchema.index({ codigo: 1 });
 cuponSchema.index({ activo: 1, tipo: 1 });
 
 module.exports = mongoose.model('Cupon', cuponSchema);

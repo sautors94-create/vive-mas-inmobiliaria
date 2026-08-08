@@ -1,0 +1,215 @@
+/* ==================== CENTRO DE SALUD DEL SISTEMA ==================== */
+.health-wrap { padding: 4px 0 32px; }
+
+/* Estado general */
+.health-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+
+.health-puntaje {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.health-puntaje-num {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: 700;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  color: white;
+  flex-shrink: 0;
+}
+
+.health-puntaje-num.bueno { background: #16a34a; }
+.health-puntaje-num.atencion { background: #f59e0b; }
+.health-puntaje-num.critico { background: #dc2626; }
+
+.health-encabezado-meta { font-size: 13px; color: var(--text-light); line-height: 1.6; }
+
+/* Grid de tarjetas */
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.health-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s;
+}
+
+.health-card:hover { transform: translateY(-2px); }
+
+.health-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.health-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'Bricolage Grotesque', sans-serif;
+}
+
+/* Indicador de estado */
+.health-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.health-dot.normal, .health-dot.bueno { background: #16a34a; }
+.health-dot.atencion, .health-dot.warning { background: #f59e0b; }
+.health-dot.critico, .health-dot.critico-alto { background: #dc2626; }
+.health-dot.info { background: #3b82f6; }
+.health-dot.off { background: #9ca3af; }
+
+.health-card-body { font-size: 13px; color: var(--text-light); line-height: 1.7; }
+.health-card-body strong { color: var(--text); }
+
+/* Barra de progreso */
+.health-bar {
+  height: 8px;
+  background: var(--bg-secondary);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+.health-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s;
+}
+.health-bar-fill.bueno { background: #16a34a; }
+.health-bar-fill.atencion { background: #f59e0b; }
+.health-bar-fill.critico { background: #dc2626; }
+
+/* Tabla de colecciones / logs */
+.health-tabla-wrap {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+}
+
+.health-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
+.health-tabla th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--border);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-light);
+}
+.health-tabla td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+.health-tabla tr:last-child td { border-bottom: none; }
+
+/* Alertas */
+.health-alertas { display: flex; flex-direction: column; gap: 10px; }
+.health-alerta {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: white;
+}
+.health-alerta.info { border-left: 4px solid #3b82f6; }
+.health-alerta.warning { border-left: 4px solid #f59e0b; }
+.health-alerta.advertencia { border-left: 4px solid #f97316; }
+.health-alerta.critico { border-left: 4px solid #dc2626; }
+.health-alerta.emergencia { border-left: 4px solid #7f1d1d; background: #fef2f2; }
+
+.health-alerta-icono { font-size: 18px; flex-shrink: 0; }
+.health-alerta-body { flex: 1; }
+.health-alerta-titulo { font-weight: 600; font-size: 13px; color: var(--text); }
+.health-alerta-desc { font-size: 12.5px; color: var(--text-light); margin-top: 2px; line-height: 1.5; }
+.health-alerta-fecha { font-size: 11px; color: var(--text-light); opacity: 0.8; margin-top: 4px; }
+
+/* Riesgos */
+.health-riesgos { display: flex; flex-direction: column; gap: 10px; }
+.health-riesgo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: white;
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+.health-riesgo.alto { border-left: 4px solid #dc2626; }
+.health-riesgo.medio { border-left: 4px solid #f59e0b; }
+.health-riesgo.bajo { border-left: 4px solid #16a34a; }
+
+/* Logs */
+.health-logs-fila { font-family: 'Consolas', 'Monaco', monospace; font-size: 12.5px; }
+.health-logs-fila .log-hora { color: var(--text-light); margin-right: 8px; }
+.health-logs-fila .log-accion { font-weight: 600; color: var(--primary); margin-right: 8px; }
+.health-logs-fila .log-resultado.exito { color: #16a34a; }
+.health-logs-fila .log-resultado.fallo { color: #dc2626; }
+
+/* Config umbrales */
+.health-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.health-config-item {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.health-config-item h4 { font-size: 13px; margin-bottom: 10px; color: var(--text); }
+.health-config-item label { font-size: 12px; color: var(--text-light); display: block; margin-top: 8px; }
+.health-config-item input[type="number"] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  margin-top: 4px;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+}
+.health-config-item input[type="number"]:focus { border-color: var(--primary); }
+
+/* Filtros */
+.health-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .health-encabezado { flex-direction: column; align-items: flex-start; }
+  .health-grid { grid-template-columns: 1fr; }
+}

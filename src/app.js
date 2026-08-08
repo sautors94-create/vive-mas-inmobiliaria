@@ -24,6 +24,8 @@ const pagoRoutes = require('./routes/pagos');
 const { webhookStripe } = require('./routes/pagos');
 const { iniciarMarketingAutomation } = require('../services/marketingAutomation');
 const metaOAuthRoutes = require('../services/marketingAutomation/auth/metaOAuth.routes');
+const healthRoutes = require('./routes/health.routes');
+const healthScheduler = require('./services/health/healthScheduler');
 
 const app = express();
 
@@ -101,6 +103,9 @@ app.get('/health', (req, res) => {
 // Rutas
 app.use('/api/auth/meta', metaOAuthRoutes);
 app.use('/api/auth', authRoutes);
+// Health: se monta ANTES de /api/admin para que la ruta pública /public
+// no sea interceptada por el middleware de auth de adminRoutes
+app.use('/api/admin/health', healthRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/propiedades', propertyRoutes);
 app.use('/api/favoritos', favoriteRoutes);
@@ -173,6 +178,9 @@ app.post('/api/waitlist/premium', async (req, res) => {
 
 // Inicializar módulo de Marketing Automation
 iniciarMarketingAutomation();
+
+// Inicializar Centro de Salud y Monitoreo (Health Center)
+healthScheduler.iniciar();
 
 // ✅ CORRECCIÓN: Eliminé el middleware 404 duplicado que tenías
 // 404
