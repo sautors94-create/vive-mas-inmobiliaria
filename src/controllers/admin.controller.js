@@ -83,6 +83,33 @@ const revisarKyc = async (req, res) => {
   }
 };
 
+// Aprobar o rechazar la verificación KYB (empresas) de un usuario
+const revisarKyb = async (req, res) => {
+  try {
+    const { aprobado, motivo } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (!user.kyb || user.kyb.status !== 'en_revision') {
+      return res.status(400).json({ error: 'Este usuario no tiene una verificación KYB pendiente de revisión' });
+    }
+
+    if (aprobado) {
+      user.kyb.status = 'aprobado';
+      user.kyb.motivoRechazo = null;
+    } else {
+      if (!motivo) return res.status(400).json({ error: 'Debes indicar el motivo del rechazo' });
+      user.kyb.status = 'rechazado';
+      user.kyb.motivoRechazo = motivo;
+    }
+    user.kyb.updatedAt = new Date();
+    await user.save();
+
+    res.json({ ok: true, mensaje: aprobado ? 'Verificación KYB aprobada.' : 'Verificación KYB rechazada.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getUsuarios = async (req, res) => {
   try {
     const { plan, role, status, search, fechaDesde, fechaHasta } = req.query;
@@ -1348,6 +1375,7 @@ const actualizarNovedad = async (req, res) => {
 module.exports = { 
   getUsuarios, 
   revisarKyc,
+  revisarKyb,
   getUsuariosStats,
   exportarUsuariosExcel,
   cambiarPlan, 

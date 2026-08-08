@@ -8,7 +8,7 @@ const bcrypt = require('bcryptjs');
 const { TOTP, Secret } = require('otpauth');
 const Stripe = require('stripe');
 const { subirACloudinary } = require('../config/cloudinary');
-const { generarCodigo, enviarCodigoVerificacion, enviarBienvenida, enviarEnlaceRecuperacion, enviarAlerta2FADesactivado } = require('../utils/email');
+const { generarCodigo, enviarCodigoVerificacion, enviarCodigoVerificacionCorreoCorporativo, enviarBienvenida, enviarEnlaceRecuperacion, enviarAlerta2FADesactivado } = require('../utils/email');
 const { enviarOTP, verificarOTP, twilioVerifyConfigurado } = require('../utils/twilioVerify');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
@@ -550,31 +550,38 @@ const subirKyc = async (req, res) => {
   try {
     const rfcRaw = req.body.rfc;
     const rfc = typeof rfcRaw === 'string' ? rfcRaw.trim().toUpperCase() : '';
+    const tipoDocumento = req.body.tipoDocumento === 'pasaporte' ? 'pasaporte' : 'ine';
 
     if (!rfc) {
       return res.status(400).json({ error: 'RFC es requerido' });
     }
 
-    const ineFrente = req.files?.ineFrente?.[0];
-    const ineReverso = req.files?.ineReverso?.[0];
+    const documentoFrente = req.files?.documentoFrente?.[0];
+    const documentoReverso = req.files?.documentoReverso?.[0];
 
-    if (!ineFrente || !ineReverso) {
-      return res.status(400).json({ error: 'Debes subir INE frente e INE reverso' });
+    if (!documentoFrente) {
+      return res.status(400).json({ error: tipoDocumento === 'ine' ? 'Debes subir el INE (frente)' : 'Debes subir la página del pasaporte' });
+    }
+    if (tipoDocumento === 'ine' && !documentoReverso) {
+      return res.status(400).json({ error: 'Debes subir el INE (reverso)' });
     }
 
-    const [ineFrenteUrl, ineReversoUrl] = await Promise.all([
-      subirACloudinary(ineFrente.buffer, ineFrente.mimetype, 'vive-mas/kyc/ine'),
-      subirACloudinary(ineReverso.buffer, ineReverso.mimetype, 'vive-mas/kyc/ine')
-    ]);
+    const subidas = [subirACloudinary(documentoFrente.buffer, documentoFrente.mimetype, 'vive-mas/kyc/identificacion')];
+    if (tipoDocumento === 'ine') {
+      subidas.push(subirACloudinary(documentoReverso.buffer, documentoReverso.mimetype, 'vive-mas/kyc/identificacion'));
+    }
+    const [documentoFrenteUrl, documentoReversoUrl] = await Promise.all(subidas);
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
       {
         rfc,
         kyc: {
-          ineFrenteUrl,
-          ineReversoUrl,
+          tipoDocumento,
+          documentoFrenteUrl,
+          documentoReversoUrl: tipoDocumento === 'ine' ? documentoReversoUrl : null,
           status: 'en_revision',
+          motivoRechazo: null,
           updatedAt: new Date()
         }
       },
@@ -588,6 +595,134 @@ const subirKyc = async (req, res) => {
       mensaje: 'Documentos recibidos. Tu verificación está en revisión.',
       user
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ==========================================
+// KYB — Verificación de empresas (persona moral)
+// ==========================================
+// Flujo: 1) el usuario captura el correo corporativo y lo verifica con un
+// código (solicitarVerificacionCorreoCorporativo / confirmarVerificacionCorreoCorporativo);
+// 2) solo con el correo ya verificado puede enviar el resto de los documentos (subirKyb).
+
+const solicitarVerificacionCorreoCorporativo = async (req, res) => {
+  try {
+    const { correoCorporativo, razonSocial } = req.body;
+    const correo = typeof correoCorporativo === 'string' ? correoCorporativo.trim().toLowerCase() : '';
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_REGEX.test(correo)) {
+      return res.status(400).json({ error: 'Ingresa un correo corporativo válido' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const codigo = generarCodigo();
+    const expira = new Date(Date.now() + 15 * 60 * 1000);
+
+    user.kyb = user.kyb || {};
+    user.kyb.correoCorporativo = correo;
+    user.kyb.correoCorporativoVerificado = false;
+    user.kyb.correoCorporativoCodigo = codigo;
+    user.kyb.correoCorporativoCodigoExpira = expira;
+    if (razonSocial) user.kyb.razonSocial = razonSocial.trim();
+    await user.save();
+
+    await enviarCodigoVerificacionCorreoCorporativo(correo, user.kyb.razonSocial, codigo);
+
+    res.json({ ok: true, mensaje: 'Te enviamos un código de verificación a ese correo.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const confirmarVerificacionCorreoCorporativo = async (req, res) => {
+  try {
+    const { codigo } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    if (!user.kyb?.correoCorporativoCodigo || !codigo || user.kyb.correoCorporativoCodigo !== codigo) {
+      return res.status(400).json({ error: 'Código incorrecto' });
+    }
+    if (new Date() > user.kyb.correoCorporativoCodigoExpira) {
+      return res.status(400).json({ error: 'El código ha expirado. Solicita uno nuevo.' });
+    }
+
+    user.kyb.correoCorporativoVerificado = true;
+    user.kyb.correoCorporativoCodigo = null;
+    user.kyb.correoCorporativoCodigoExpira = null;
+    await user.save();
+
+    res.json({ ok: true, mensaje: 'Correo corporativo verificado.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const subirKyb = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    if (!user.kyb?.correoCorporativoVerificado) {
+      return res.status(400).json({ error: 'Primero debes verificar el correo corporativo.' });
+    }
+
+    const { razonSocial, rfcEmpresa, representanteNombre } = req.body;
+    const representanteTipoDocumento = req.body.representanteTipoDocumento === 'pasaporte' ? 'pasaporte' : 'ine';
+
+    if (!razonSocial || !rfcEmpresa || !representanteNombre) {
+      return res.status(400).json({ error: 'Faltan datos: razón social, RFC de la empresa y nombre del representante legal.' });
+    }
+
+    const constanciaSituacionFiscal = req.files?.constanciaSituacionFiscal?.[0];
+    const actaConstitutiva = req.files?.actaConstitutiva?.[0];
+    const comprobanteDomicilio = req.files?.comprobanteDomicilio?.[0];
+    const representanteDocumentoFrente = req.files?.representanteDocumentoFrente?.[0];
+    const representanteDocumentoReverso = req.files?.representanteDocumentoReverso?.[0];
+
+    if (!constanciaSituacionFiscal || !actaConstitutiva || !comprobanteDomicilio || !representanteDocumentoFrente) {
+      return res.status(400).json({ error: 'Debes adjuntar Constancia de Situación Fiscal, Acta Constitutiva, Comprobante de domicilio e identificación del representante legal.' });
+    }
+    if (representanteTipoDocumento === 'ine' && !representanteDocumentoReverso) {
+      return res.status(400).json({ error: 'Debes subir el INE del representante legal (reverso).' });
+    }
+
+    const [
+      constanciaSituacionFiscalUrl,
+      actaConstitutivaUrl,
+      comprobanteDomicilioUrl,
+      representanteDocumentoFrenteUrl,
+      representanteDocumentoReversoUrl
+    ] = await Promise.all([
+      subirACloudinary(constanciaSituacionFiscal.buffer, constanciaSituacionFiscal.mimetype, 'vive-mas/kyb/documentos'),
+      subirACloudinary(actaConstitutiva.buffer, actaConstitutiva.mimetype, 'vive-mas/kyb/documentos'),
+      subirACloudinary(comprobanteDomicilio.buffer, comprobanteDomicilio.mimetype, 'vive-mas/kyb/documentos'),
+      subirACloudinary(representanteDocumentoFrente.buffer, representanteDocumentoFrente.mimetype, 'vive-mas/kyb/identificacion'),
+      representanteTipoDocumento === 'ine'
+        ? subirACloudinary(representanteDocumentoReverso.buffer, representanteDocumentoReverso.mimetype, 'vive-mas/kyb/identificacion')
+        : Promise.resolve(null)
+    ]);
+
+    user.tipoCuenta = 'empresa';
+    user.kyb.razonSocial = razonSocial.trim();
+    user.kyb.rfcEmpresa = rfcEmpresa.trim().toUpperCase();
+    user.kyb.representanteNombre = representanteNombre.trim();
+    user.kyb.representanteTipoDocumento = representanteTipoDocumento;
+    user.kyb.constanciaSituacionFiscalUrl = constanciaSituacionFiscalUrl;
+    user.kyb.actaConstitutivaUrl = actaConstitutivaUrl;
+    user.kyb.comprobanteDomicilioUrl = comprobanteDomicilioUrl;
+    user.kyb.representanteDocumentoFrenteUrl = representanteDocumentoFrenteUrl;
+    user.kyb.representanteDocumentoReversoUrl = representanteDocumentoReversoUrl;
+    user.kyb.status = 'en_revision';
+    user.kyb.motivoRechazo = null;
+    user.kyb.updatedAt = new Date();
+    await user.save();
+
+    res.json({ ok: true, mensaje: 'Documentos de tu empresa recibidos. Tu verificación KYB está en revisión.', user });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -895,6 +1030,9 @@ module.exports = {
   solicitarCambioCelular,
   confirmarCambioCelular,
   subirKyc,
+  solicitarVerificacionCorreoCorporativo,
+  confirmarVerificacionCorreoCorporativo,
+  subirKyb,
   iniciarSetup2FA,
   confirmar2FA,
   desactivar2FA,

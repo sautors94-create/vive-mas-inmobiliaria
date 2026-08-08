@@ -19,7 +19,6 @@ const mostrarSeccion = (seccion) => {
   if (seccion === 'propiedades') cargarTodasPropiedades();
   if (seccion === 'leads') cargarLeads();
 if (seccion === 'pagos') cargarPagosAdmin();
-  if (seccion === 'stripe-links') renderStripeLinks();
   if (seccion === 'cupones') cargarCuponesAdmin();
   if (seccion === 'usuarios') cargarUsuarios();
   if (seccion === 'temas') cargarTemasPersonalizados();
@@ -827,18 +826,19 @@ const renderKycDrawer = (u) => {
     rechazado: { bg: '#fdecea', border: '#f5c2c0', text: '#7a2a27', label: 'Rechazado' }
   };
   const c = colores[kyc.status] || colores.pendiente;
+  const etiquetaDoc = kyc.tipoDocumento === 'pasaporte' ? 'Pasaporte' : 'INE';
 
-  const documentos = (kyc.status === 'en_revision' || kyc.status === 'aprobado' || kyc.status === 'rechazado') && kyc.ineFrenteUrl
-    ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-        <a href="${kyc.ineFrenteUrl}" target="_blank"><img src="${kyc.ineFrenteUrl}" style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid ${c.border}"></a>
-        <a href="${kyc.ineReversoUrl}" target="_blank"><img src="${kyc.ineReversoUrl}" style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid ${c.border}"></a>
+  const documentos = (kyc.status === 'en_revision' || kyc.status === 'aprobado' || kyc.status === 'rechazado') && kyc.documentoFrenteUrl
+    ? `<div style="display:grid;grid-template-columns:${kyc.documentoReversoUrl ? '1fr 1fr' : '1fr'};gap:10px;margin-top:10px">
+        <a href="${kyc.documentoFrenteUrl}" target="_blank"><img src="${kyc.documentoFrenteUrl}" style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid ${c.border}"></a>
+        ${kyc.documentoReversoUrl ? `<a href="${kyc.documentoReversoUrl}" target="_blank"><img src="${kyc.documentoReversoUrl}" style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid ${c.border}"></a>` : ''}
       </div>`
     : '';
 
   return `
       <div style="padding:16px;background:${c.bg};border:1px solid ${c.border};border-radius:10px;margin-bottom:20px;font-size:13px">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <b style="color:${c.text}">🪪 Verificación KYC: ${c.label}</b>
+          <b style="color:${c.text}">🪪 Verificación KYC (${etiquetaDoc}): ${c.label}</b>
         </div>
         ${u.rfc ? `<div style="margin-top:6px;color:${c.text}">RFC: ${escapeHtml(u.rfc)}</div>` : ''}
         ${kyc.status === 'rechazado' && kyc.motivoRechazo ? `<div style="margin-top:6px;color:${c.text}"><b>Motivo:</b> ${escapeHtml(kyc.motivoRechazo)}</div>` : ''}
@@ -847,6 +847,46 @@ const renderKycDrawer = (u) => {
           <div style="display:flex;gap:8px;margin-top:12px">
             <button class="btn btn-primary admin-mini-btn" onclick="aprobarKyc('${u._id}')">✓ Aprobar</button>
             <button class="btn btn-outline admin-mini-btn" style="border-color:#c62828;color:#c62828" onclick="rechazarKyc('${u._id}')">Rechazar</button>
+          </div>` : ''}
+      </div>`;
+};
+
+const renderKybDrawer = (u) => {
+  const kyb = u.kyb || { status: 'pendiente' };
+  if (!kyb.status || kyb.status === 'pendiente') return ''; // sin nada que mostrar: la empresa nunca inició su KYB
+
+  const colores = {
+    pendiente: { bg: '#f8f9fa', border: '#e5e7eb', text: 'var(--text-light)', label: 'Sin verificar' },
+    en_revision: { bg: '#fff8e1', border: '#f5d98a', text: '#7a5c00', label: 'En revisión' },
+    aprobado: { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534', label: 'Aprobado' },
+    rechazado: { bg: '#fdecea', border: '#f5c2c0', text: '#7a2a27', label: 'Rechazado' }
+  };
+  const c = colores[kyb.status] || colores.pendiente;
+  const etiquetaDocRep = kyb.representanteTipoDocumento === 'pasaporte' ? 'Pasaporte' : 'INE';
+
+  const linkDoc = (url, label) => url
+    ? `<a href="${url}" target="_blank" style="display:block;padding:8px 10px;background:white;border:1px solid ${c.border};border-radius:8px;margin-top:6px;font-size:12px;color:${c.text};text-decoration:none">📄 ${label}</a>`
+    : '';
+
+  return `
+      <div style="padding:16px;background:${c.bg};border:1px solid ${c.border};border-radius:10px;margin-bottom:20px;font-size:13px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <b style="color:${c.text}">🏢 Verificación KYB (empresa): ${c.label}</b>
+        </div>
+        ${kyb.razonSocial ? `<div style="margin-top:6px;color:${c.text}"><b>Razón social:</b> ${escapeHtml(kyb.razonSocial)}</div>` : ''}
+        ${kyb.rfcEmpresa ? `<div style="margin-top:2px;color:${c.text}"><b>RFC empresa:</b> ${escapeHtml(kyb.rfcEmpresa)}</div>` : ''}
+        ${kyb.correoCorporativo ? `<div style="margin-top:2px;color:${c.text}"><b>Correo corporativo:</b> ${escapeHtml(kyb.correoCorporativo)} ${kyb.correoCorporativoVerificado ? '✅' : '⚠️ no verificado'}</div>` : ''}
+        ${kyb.representanteNombre ? `<div style="margin-top:2px;color:${c.text}"><b>Representante legal:</b> ${escapeHtml(kyb.representanteNombre)} (${etiquetaDocRep})</div>` : ''}
+        ${kyb.status === 'rechazado' && kyb.motivoRechazo ? `<div style="margin-top:6px;color:${c.text}"><b>Motivo:</b> ${escapeHtml(kyb.motivoRechazo)}</div>` : ''}
+        ${linkDoc(kyb.constanciaSituacionFiscalUrl, 'Constancia de Situación Fiscal (PDF)')}
+        ${linkDoc(kyb.actaConstitutivaUrl, 'Acta Constitutiva (PDF)')}
+        ${linkDoc(kyb.comprobanteDomicilioUrl, 'Comprobante de domicilio (PDF)')}
+        ${linkDoc(kyb.representanteDocumentoFrenteUrl, `${etiquetaDocRep} representante (frente)`)}
+        ${linkDoc(kyb.representanteDocumentoReversoUrl, `${etiquetaDocRep} representante (reverso)`)}
+        ${kyb.status === 'en_revision' ? `
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-primary admin-mini-btn" onclick="aprobarKyb('${u._id}')">✓ Aprobar</button>
+            <button class="btn btn-outline admin-mini-btn" style="border-color:#c62828;color:#c62828" onclick="rechazarKyb('${u._id}')">Rechazar</button>
           </div>` : ''}
       </div>`;
 };
@@ -883,6 +923,43 @@ window.confirmarRechazoKyc = async () => {
   }
 };
 
+// ==========================================
+// KYB (empresas)
+// ==========================================
+let usuarioKybARechazar = null;
+
+window.aprobarKyb = async (id) => {
+  const data = await api.patch(`/admin/usuarios/${id}/kyb`, { aprobado: true });
+  if (data.ok) {
+    dsToast({ title: 'Verificación KYB aprobada', type: 'success' });
+    cerrarDrawerUsuario();
+    cargarUsuarios();
+  } else {
+    dsToast({ title: 'Error', message: data.error || 'No se pudo aprobar', type: 'error' });
+  }
+};
+
+window.rechazarKyb = (id) => {
+  usuarioKybARechazar = id;
+  document.getElementById('kyb-rechazo-motivo').value = '';
+  document.getElementById('modal-rechazar-kyb').style.display = 'flex';
+};
+
+window.confirmarRechazoKyb = async () => {
+  const motivo = document.getElementById('kyb-rechazo-motivo').value.trim();
+  if (!motivo) { dsToast({ title: 'Falta el motivo', message: 'Escribe por qué se rechaza la verificación.', type: 'error' }); return; }
+
+  const data = await api.patch(`/admin/usuarios/${usuarioKybARechazar}/kyb`, { aprobado: false, motivo });
+  if (data.ok) {
+    dsToast({ title: 'Verificación KYB rechazada', type: 'success' });
+    document.getElementById('modal-rechazar-kyb').style.display = 'none';
+    cerrarDrawerUsuario();
+    cargarUsuarios();
+  } else {
+    dsToast({ title: 'Error', message: data.error || 'No se pudo rechazar', type: 'error' });
+  }
+};
+
 window.abrirDrawerUsuario = (id) => {
   const u = usrMod.data.find(x => x._id === id);
   const content = document.getElementById('drawer-usr-content');
@@ -911,6 +988,7 @@ window.abrirDrawerUsuario = (id) => {
       </div>
 
       ${renderKycDrawer(u)}
+      ${renderKybDrawer(u)}
 
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="cerrarDrawerUsuario()">Cerrar</button>
@@ -1714,59 +1792,14 @@ window.guardarNotaPago = async (id) => {
 };
 
 // ==========================================
-// LINKS DE PAGO STRIPE (PRODUCCIÓN)
-// ==========================================
-const STRIPE_PAYMENT_LINKS = [
-  { key: 'basico_mensual', nombre: 'Básico Mensual', detalle: '$99 MXN / mes', url: 'https://buy.stripe.com/3cIeVeebe5dBfUyevM2Ji00' },
-  { key: 'basico_anual', nombre: 'Básico Anual', detalle: '$999 MXN / año', url: 'https://buy.stripe.com/14AaEYaZ20Xl0ZEcnE2Ji01' },
-  { key: 'basico_mes_gratis', nombre: 'Básico Mes Gratis', detalle: '1 mes gratis', url: 'https://buy.stripe.com/14AfZic36fSf6jYcnE2Ji04' },
-  { key: 'basico_10', nombre: 'Básico 10%', detalle: '10% de descuento', url: 'https://buy.stripe.com/00wfZic36fSffUycnE2Ji02' },
-  { key: 'basico_15', nombre: 'Básico 15%', detalle: '15% de descuento', url: 'https://buy.stripe.com/3cI5kEc36bBZ37MfzQ2Ji03' }
-];
-
-window.renderStripeLinks = () => {
-  const cont = document.getElementById('stripe-links-list');
-  if (!cont) return;
-  cont.innerHTML = STRIPE_PAYMENT_LINKS.map(l => `
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:white;border:1px solid var(--border);border-radius:12px;padding:14px 16px">
-      <div style="display:flex;align-items:center;gap:12px;min-width:0">
-        <div style="width:40px;height:40px;border-radius:10px;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">💳</div>
-        <div style="min-width:0">
-          <div style="font-size:14px;font-weight:700">${escapeHtml(l.nombre)}</div>
-          <div style="font-size:12px;color:var(--text-light)">${escapeHtml(l.detalle)}</div>
-          <div style="font-size:11px;color:var(--text-light);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px">${escapeHtml(l.url)}</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;flex-shrink:0">
-        <button class="btn btn-outline admin-mini-btn" onclick="copiarLinkStripe('${l.url}')">📋 Copiar</button>
-        <button class="btn btn-primary admin-mini-btn" onclick="window.open('${l.url}','_blank')">Abrir ↗</button>
-      </div>
-    </div>
-  `).join('');
-};
-
-window.copiarLinkStripe = (url) => {
-  navigator.clipboard.writeText(url).then(() => {
-    dsToast({ title: 'Link copiado', message: 'El link de pago se copió al portapapeles.', type: 'success' });
-  }).catch(() => {
-    dsToast({ title: 'No se pudo copiar', message: 'Copia el link manualmente.', type: 'error' });
-  });
-};
-
-// ==========================================
 // MÓDULO "CUPONES" (PANEL ADMIN)
 // ==========================================
 let cuponModData = [];
-let cuponEditandoId = null; // si está en null → crear/duplicar; si tiene id → editar
-
-const formatoFechaCupon = (f) => f ? new Date(f).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Sin vigencia';
-const cuponExpirado = (c) => c.expiraEn && new Date(c.expiraEn) < new Date();
-const formatoFechaInputCupon = (f) => f ? new Date(f).toISOString().slice(0, 10) : '';
 
 window.cargarCuponesAdmin = async () => {
   const tbody = document.getElementById('cupones-admin-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="8" style="padding:40px;text-align:center">Cargando cupones...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center">Cargando cupones...</td></tr>';
   try {
     const [data, dataStats] = await Promise.all([
       api.get('/admin/cupones'),
@@ -1784,130 +1817,31 @@ window.cargarCuponesAdmin = async () => {
 
     cuponModData = data.cupones || [];
     if (!cuponModData.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="padding:40px;text-align:center;color:var(--text-light)">No hay cupones registrados.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--text-light)">No hay cupones registrados.</td></tr>';
       return;
     }
-    tbody.innerHTML = cuponModData.map(c => {
-      const expirado = cuponExpirado(c);
-      const estado = expirado
-        ? { bg: '#fdecea', color: '#991b1b', label: 'Expirado' }
-        : c.activo
-          ? { bg: '#f0fdf4', color: '#166534', label: 'Activo' }
-          : { bg: '#f3f4f6', color: '#6b7280', label: 'Inactivo' };
-      return `
+    tbody.innerHTML = cuponModData.map(c => `
       <tr>
         <td style="font-weight:700">${escapeHtml(c.codigo)}</td>
         <td><span class="status-badge" style="background:${c.tipo === 'basico_plus' ? '#fef3c7' : '#eff6ff'};color:${c.tipo === 'basico_plus' ? '#92400e' : '#1d4ed8'}">${c.tipo === 'basico_plus' ? '🎁 Básico Plus' : '💳 Stripe'}</span></td>
         <td>${escapeHtml(c.descripcion || '—')}</td>
         <td>${c.tipo === 'basico_plus' ? `${c.dias || 360} días` : (c.stripe_coupon_id || '—')}</td>
-        <td>${c.usosActuales}${c.usosMaximos ? ` / ${c.usosMaximos}` : ' <span title="Ilimitado">∞</span>'}</td>
-        <td>${formatoFechaCupon(c.expiraEn)}${expirado ? ' ⚠️' : ''}</td>
+        <td>${c.usosActuales}${c.usosMaximos ? ` / ${c.usosMaximos}` : ''}</td>
         <td>
-          <span class="status-badge" style="background:${estado.bg};color:${estado.color}">${estado.label}</span>
+          <span class="status-badge" style="background:${c.activo ? '#f0fdf4' : '#f3f4f6'};color:${c.activo ? '#166534' : '#6b7280'}">${c.activo ? 'Activo' : 'Inactivo'}</span>
         </td>
-        <td>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button class="btn btn-outline admin-mini-btn" onclick="toggleCuponActivo('${c._id}', ${c.activo}, '${escapeHtml(c.codigo)}')">${c.activo ? '⏸ Desactivar' : '▶ Activar'}</button>
-            <button class="btn btn-outline admin-mini-btn" onclick="editarCupon('${c._id}')">✏️ Editar</button>
-            <button class="btn btn-outline admin-mini-btn" onclick="duplicarCupon('${c._id}')">⧉ Duplicar</button>
-            <button class="btn btn-outline admin-mini-btn" style="border-color:#c62828;color:#c62828" onclick="eliminarCupon('${c._id}', '${escapeHtml(c.codigo)}')">🗑️ Eliminar</button>
-          </div>
-        </td>
-      </tr>`;
-    }).join('');
+      </tr>`).join('');
   } catch (error) {
-    tbody.innerHTML = '<tr><td colspan="8" style="padding:40px;text-align:center;color:#c62828">Error al cargar cupones.</td></tr>';
-  }
-};
-
-window.toggleCuponActivo = async (id, activo, codigo) => {
-  const data = await api.patch(`/admin/cupones/${id}`, { activo: !activo });
-  if (data.ok) {
-    dsToast({
-      title: activo ? 'Cupón desactivado' : 'Cupón activado',
-      message: `El cupón ${codigo} ${activo ? 'ya no está disponible.' : 'está disponible nuevamente.'}`,
-      type: 'success'
-    });
-    cargarCuponesAdmin();
-  } else {
-    dsToast({ title: 'No se pudo actualizar', message: data.error || 'Intenta de nuevo.', type: 'error' });
-  }
-};
-
-window.eliminarCupon = async (id, codigo) => {
-  const ok = await dsConfirm({
-    title: '¿Eliminar cupón?',
-    message: `El cupón ${codigo} se eliminará permanentemente. Esta acción no se puede deshacer.`,
-    confirmText: 'Eliminar',
-    danger: true
-  });
-  if (!ok) return;
-  const data = await api.delete(`/admin/cupones/${id}`);
-  if (data.ok) {
-    dsToast({ title: 'Cupón eliminado', message: `El cupón ${codigo} fue eliminado.`, type: 'success' });
-    cargarCuponesAdmin();
-  } else {
-    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:#c62828">Error al cargar cupones.</td></tr>';
   }
 };
 
 window.abrirFormCupon = () => {
-  cuponEditandoId = null;
-  document.getElementById('cupon-form-title').textContent = 'Nuevo cupón';
-  document.getElementById('cupon-codigo').value = '';
-  document.getElementById('cupon-tipo').value = 'basico_plus';
-  document.getElementById('cupon-descripcion').value = '';
-  document.getElementById('cupon-dias').value = 360;
-  document.getElementById('cupon-stripe-coupon').value = '';
-  document.getElementById('cupon-stripe-link').value = '';
-  document.getElementById('cupon-usos-max').value = '';
-  document.getElementById('cupon-vigencia').value = '';
-  document.getElementById('cupon-activo').checked = true;
-  toggleCuponTipo();
-  const btn = document.querySelector('#cupon-form .btn-primary');
-  if (btn) btn.textContent = 'Crear cupón';
   document.getElementById('cupon-form').style.display = 'block';
-  document.getElementById('cupon-codigo').focus();
 };
 
 window.cerrarFormCupon = () => {
   document.getElementById('cupon-form').style.display = 'none';
-  cuponEditandoId = null;
-};
-
-const rellenarFormCupon = (c, duplicando = false) => {
-  if (!c) return;
-  document.getElementById('cupon-form-title').textContent = duplicando ? `Duplicar cupón ${c.codigo}` : `Editar cupón ${c.codigo}`;
-  document.getElementById('cupon-codigo').value = duplicando ? `${c.codigo}-COPIA` : c.codigo;
-  document.getElementById('cupon-tipo').value = c.tipo || 'stripe';
-  document.getElementById('cupon-descripcion').value = c.descripcion || '';
-  document.getElementById('cupon-dias').value = c.dias || 360;
-  document.getElementById('cupon-stripe-coupon').value = c.stripe_coupon_id || '';
-  document.getElementById('cupon-stripe-link').value = c.stripe_price_link || '';
-  document.getElementById('cupon-usos-max').value = c.usosMaximos || '';
-  document.getElementById('cupon-vigencia').value = formatoFechaInputCupon(c.expiraEn);
-  document.getElementById('cupon-activo').checked = c.activo !== false;
-  toggleCuponTipo();
-  const btn = document.querySelector('#cupon-form .btn-primary');
-  if (btn) btn.textContent = duplicando ? 'Duplicar cupón' : 'Guardar cambios';
-};
-
-window.editarCupon = (id) => {
-  const c = cuponModData.find(x => x._id === id);
-  if (!c) return;
-  cuponEditandoId = id;
-  rellenarFormCupon(c, false);
-  document.getElementById('cupon-form').style.display = 'block';
-  document.getElementById('cupon-codigo').focus();
-};
-
-window.duplicarCupon = (id) => {
-  const c = cuponModData.find(x => x._id === id);
-  if (!c) return;
-  cuponEditandoId = null;
-  rellenarFormCupon(c, true);
-  document.getElementById('cupon-form').style.display = 'block';
-  document.getElementById('cupon-codigo').focus();
 };
 
 window.guardarCupon = async () => {
@@ -1918,39 +1852,30 @@ window.guardarCupon = async () => {
   const stripe_coupon_id = document.getElementById('cupon-stripe-coupon').value.trim();
   const stripe_price_link = document.getElementById('cupon-stripe-link').value.trim();
   const usosMaximos = document.getElementById('cupon-usos-max').value;
-  const vigencia = document.getElementById('cupon-vigencia').value;
   const activo = document.getElementById('cupon-activo').checked;
 
   if (!codigo) { dsToast({ title: 'Falta el código', message: 'Escribe un código de cupón.', type: 'error' }); return; }
 
   try {
-    const payload = {
+    const data = await api.post('/admin/cupones', {
       codigo, tipo, descripcion, dias: dias || 360,
       stripe_coupon_id, stripe_price_link,
-      expiraEn: vigencia ? new Date(vigencia + 'T23:59:59').toISOString() : null,
       usosMaximos: usosMaximos || null, activo
-    };
-
-    let data;
-    if (cuponEditandoId) {
-      data = await api.patch(`/admin/cupones/${cuponEditandoId}`, payload);
-    } else {
-      data = await api.post('/admin/cupones', payload);
-    }
-
+    });
     if (data.ok) {
-      dsToast({
-        title: cuponEditandoId ? 'Cupón actualizado' : 'Cupón creado',
-        message: cuponEditandoId ? `Los cambios en ${codigo.toUpperCase()} se guardaron.` : `El cupón ${codigo.toUpperCase()} fue creado.`,
-        type: 'success'
-      });
+      dsToast({ title: 'Cupón creado', message: `El cupón ${codigo.toUpperCase()} fue creado.`, type: 'success' });
       cerrarFormCupon();
+      document.getElementById('cupon-codigo').value = '';
+      document.getElementById('cupon-descripcion').value = '';
+      document.getElementById('cupon-stripe-coupon').value = '';
+      document.getElementById('cupon-stripe-link').value = '';
+      document.getElementById('cupon-usos-max').value = '';
       cargarCuponesAdmin();
     } else {
-      dsToast({ title: 'Error', message: data.error || 'No se pudo guardar.', type: 'error' });
+      dsToast({ title: 'Error', message: data.error || 'No se pudo crear.', type: 'error' });
     }
   } catch (e) {
-    dsToast({ title: 'Error', message: cuponEditandoId ? 'No se pudo actualizar el cupón.' : 'No se pudo crear el cupón.', type: 'error' });
+    dsToast({ title: 'Error', message: 'No se pudo crear el cupón.', type: 'error' });
   }
 };
 

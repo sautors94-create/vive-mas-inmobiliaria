@@ -18,6 +18,9 @@ const {
   solicitarCambioCelular,
   confirmarCambioCelular,
   subirKyc,
+  solicitarVerificacionCorreoCorporativo,
+  confirmarVerificacionCorreoCorporativo,
+  subirKyb,
   iniciarSetup2FA,
   confirmar2FA,
   desactivar2FA,
@@ -31,7 +34,7 @@ const {
 } = require('../controllers/auth.controller');
 
 const authMiddleware = require('../middleware/auth.middleware');
-const { upload } = require('../config/cloudinary');
+const { upload, uploadDocumentos } = require('../config/cloudinary');
 
 // ==========================================
 // RUTAS PÚBLICAS (No requieren estar logueado)
@@ -86,14 +89,14 @@ router.get('/2fa/setup', authMiddleware, iniciarSetup2FA);
 router.post('/2fa/confirmar', authMiddleware, confirmar2FA);
 router.post('/2fa/desactivar', authMiddleware, desactivar2FA);
 
-// KYC
+// KYC (persona) — INE o Pasaporte
 router.post(
   '/kyc',
   authMiddleware,
   (req, res, next) => {
     upload.fields([
-      { name: 'ineFrente', maxCount: 1 },
-      { name: 'ineReverso', maxCount: 1 }
+      { name: 'documentoFrente', maxCount: 1 },
+      { name: 'documentoReverso', maxCount: 1 }
     ])(req, res, (err) => {
       if (!err) return next();
       if (err.code === 'LIMIT_FILE_SIZE') {
@@ -106,6 +109,30 @@ router.post(
     });
   },
   subirKyc
+);
+
+// KYB (empresa) — correo corporativo + documentos
+router.post('/kyb/correo/solicitar', authMiddleware, solicitarVerificacionCorreoCorporativo);
+router.post('/kyb/correo/confirmar', authMiddleware, confirmarVerificacionCorreoCorporativo);
+router.post(
+  '/kyb',
+  authMiddleware,
+  (req, res, next) => {
+    uploadDocumentos.fields([
+      { name: 'constanciaSituacionFiscal', maxCount: 1 },
+      { name: 'actaConstitutiva', maxCount: 1 },
+      { name: 'comprobanteDomicilio', maxCount: 1 },
+      { name: 'representanteDocumentoFrente', maxCount: 1 },
+      { name: 'representanteDocumentoReverso', maxCount: 1 }
+    ])(req, res, (err) => {
+      if (!err) return next();
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'Archivo demasiado grande (máximo 10MB)' });
+      }
+      return res.status(400).json({ error: err.message || 'Error al subir archivos' });
+    });
+  },
+  subirKyb
 );
 
 module.exports = router;

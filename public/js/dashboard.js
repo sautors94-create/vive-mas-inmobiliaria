@@ -292,8 +292,8 @@ const mostrarModalBienvenidaPlan = (plan) => {
 };
 window.contratarPlan = (plan, periodo = 'mensual') => {
   const STRIPE_LINKS = { 
-basico_mensual: 'https://buy.stripe.com/3cIeVeebe5dBfUyevM2Ji00',
-    basico_anual: 'https://buy.stripe.com/14AaEYaZ20Xl0ZEcnE2Ji01' // LINK REAL ANUAL
+    basico_mensual: 'https://buy.stripe.com/test_9B6fZhgExb2QejO8EGc3m00', 
+    basico_anual: 'https://buy.stripe.com/test_dRmfZh1JDc6U2B6cUWc3m01' // LINK REAL ANUAL
   };
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -1533,41 +1533,62 @@ const renderKycCuenta = (u) => {
     ? `<div style="margin-bottom:14px;padding:10px 12px;background:#fdecea;border:1px solid #f5c2c0;border-radius:10px;font-size:12px;color:#7a2a27"><b>Motivo del rechazo anterior:</b> ${escapeHtmlLocal(kyc.motivoRechazo)}</div>`
     : '';
 
+  const esPasaporte = kyc.tipoDocumento === 'pasaporte';
+
   return `
     <div style="background:var(--bg-secondary);border-radius:16px;padding:24px;border:1px solid var(--border);margin-bottom:24px">
       <h3 style="font-size:16px;margin-bottom:6px;font-family:'Bricolage Grotesque',sans-serif">🪪 Verificación de identidad (KYC)</h3>
-      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Verifica tu identidad con tu INE para obtener la insignia de verificado y generar más confianza al publicar o responder mensajes.</p>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Verifica tu identidad con tu INE o pasaporte para obtener la insignia de verificado y generar más confianza al publicar o responder mensajes.</p>
       ${motivoRechazo}
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px">
-        <div class="form-grupo"><label>RFC</label><input type="text" id="kyc-rfc" class="form-input" value="${u.rfc || ''}" placeholder="Tu RFC" maxlength="13"></div>
+        <div class="form-grupo"><label>RFC</label><input type="text" id="kyc-rfc" class="form-input" value="${escapeHtmlLocal(u.rfc || '')}" placeholder="Tu RFC" maxlength="13"></div>
+        <div class="form-grupo">
+          <label>Documento de identidad</label>
+          <div style="display:flex;gap:16px;padding-top:8px">
+            <label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer"><input type="radio" name="kyc-tipo-doc" value="ine" ${!esPasaporte ? 'checked' : ''} onchange="actualizarCampoKycReverso()"> INE</label>
+            <label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer"><input type="radio" name="kyc-tipo-doc" value="pasaporte" ${esPasaporte ? 'checked' : ''} onchange="actualizarCampoKycReverso()"> Pasaporte</label>
+          </div>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px">
-        <div class="form-grupo"><label>INE (frente)</label><input type="file" id="kyc-ine-frente" accept="image/*" class="form-input"></div>
-        <div class="form-grupo"><label>INE (reverso)</label><input type="file" id="kyc-ine-reverso" accept="image/*" class="form-input"></div>
+        <div class="form-grupo"><label id="kyc-label-frente">${esPasaporte ? 'Pasaporte' : 'INE (frente)'}</label><input type="file" id="kyc-documento-frente" accept="image/*" class="form-input"></div>
+        <div class="form-grupo" id="kyc-grupo-reverso" style="${esPasaporte ? 'display:none' : ''}"><label>INE (reverso)</label><input type="file" id="kyc-documento-reverso" accept="image/*" class="form-input"></div>
       </div>
       <button class="btn btn-primary" style="padding:10px 24px;font-size:14px" onclick="enviarKyc()">Enviar a verificación</button>
       <div id="kyc-msg" style="display:none;margin-top:12px"></div>
     </div>`;
 };
 
+window.actualizarCampoKycReverso = () => {
+  const tipo = document.querySelector('input[name="kyc-tipo-doc"]:checked')?.value || 'ine';
+  const esIne = tipo === 'ine';
+  const label = document.getElementById('kyc-label-frente');
+  if (label) label.textContent = esIne ? 'INE (frente)' : 'Pasaporte';
+  const grupoReverso = document.getElementById('kyc-grupo-reverso');
+  if (grupoReverso) grupoReverso.style.display = esIne ? 'block' : 'none';
+};
+
 const enviarKyc = async () => {
   const rfc = document.getElementById('kyc-rfc').value.trim();
-  const frente = document.getElementById('kyc-ine-frente').files[0];
-  const reverso = document.getElementById('kyc-ine-reverso').files[0];
+  const tipoDocumento = document.querySelector('input[name="kyc-tipo-doc"]:checked')?.value || 'ine';
+  const frente = document.getElementById('kyc-documento-frente').files[0];
+  const reverso = document.getElementById('kyc-documento-reverso').files[0];
   const msgEl = document.getElementById('kyc-msg');
 
   if (!rfc) { dsToast({ title: 'Falta el RFC', message: 'Escribe tu RFC para continuar.', type: 'error' }); return; }
-  if (!frente || !reverso) { dsToast({ title: 'Faltan documentos', message: 'Sube la foto del frente y el reverso de tu INE.', type: 'error' }); return; }
+  if (!frente) { dsToast({ title: 'Falta el documento', message: tipoDocumento === 'ine' ? 'Sube la foto del frente de tu INE.' : 'Sube la foto de tu pasaporte.', type: 'error' }); return; }
+  if (tipoDocumento === 'ine' && !reverso) { dsToast({ title: 'Falta el reverso', message: 'Sube la foto del reverso de tu INE.', type: 'error' }); return; }
 
   const formData = new FormData();
   formData.append('rfc', rfc);
-  formData.append('ineFrente', frente);
-  formData.append('ineReverso', reverso);
+  formData.append('tipoDocumento', tipoDocumento);
+  formData.append('documentoFrente', frente);
+  if (tipoDocumento === 'ine' && reverso) formData.append('documentoReverso', reverso);
 
   const data = await api.postForm('/auth/kyc', formData);
   if (data.ok) {
     dsToast({ title: 'Documentos enviados', message: data.mensaje || 'Tu verificación está en revisión.', type: 'success' });
-    user.kyc = { status: 'en_revision' };
+    user.kyc = { status: 'en_revision', tipoDocumento };
     user.rfc = rfc;
     localStorage.setItem('user', JSON.stringify(user));
     const box = document.getElementById('kyc-cuenta-box');
@@ -1577,6 +1598,169 @@ const enviarKyc = async () => {
     dsToast({ title: 'No se pudo enviar', message: data.error || 'Intenta de nuevo.', type: 'error' });
   }
 };
+
+// ==========================================
+// KYB — Verificación de empresas
+// ==========================================
+const renderKybCuenta = (u) => {
+  const kyb = u.kyb || { status: 'pendiente' };
+
+  if (kyb.status === 'aprobado') {
+    return `
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:16px;padding:20px 24px;margin-bottom:24px">
+        <h3 style="font-size:15px;color:#166534;margin-bottom:4px">🏢 Empresa verificada (KYB) ✓</h3>
+        <p style="font-size:13px;color:#166534">${escapeHtmlLocal(kyb.razonSocial || 'Tu empresa')} está verificada.</p>
+      </div>`;
+  }
+
+  if (kyb.status === 'en_revision') {
+    return `
+      <div style="background:#fff8e1;border:1px solid #f5d98a;border-radius:16px;padding:20px 24px;margin-bottom:24px">
+        <h3 style="font-size:15px;color:#7a5c00;margin-bottom:4px">🏢 Verificación KYB en revisión</h3>
+        <p style="font-size:13px;color:#7a5c00">Recibimos los documentos de tu empresa. Un administrador los revisará pronto.</p>
+      </div>`;
+  }
+
+  const motivoRechazo = kyb.status === 'rechazado' && kyb.motivoRechazo
+    ? `<div style="margin-bottom:14px;padding:10px 12px;background:#fdecea;border:1px solid #f5c2c0;border-radius:10px;font-size:12px;color:#7a2a27"><b>Motivo del rechazo anterior:</b> ${escapeHtmlLocal(kyb.motivoRechazo)}</div>`
+    : '';
+
+  const correoVerificado = !!kyb.correoCorporativoVerificado;
+  const esPasaporteRep = kyb.representanteTipoDocumento === 'pasaporte';
+
+  return `
+    <div style="background:var(--bg-secondary);border-radius:16px;padding:24px;border:1px solid var(--border);margin-bottom:24px">
+      <h3 style="font-size:16px;margin-bottom:6px;font-family:'Bricolage Grotesque',sans-serif">🏢 Verificación de empresa (KYB)</h3>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Si publicas a nombre de una empresa, verifica tu negocio para obtener la insignia de empresa verificada.</p>
+      ${motivoRechazo}
+
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px">
+        <div class="form-grupo"><label>Razón social</label><input type="text" id="kyb-razon-social" class="form-input" value="${escapeHtmlLocal(kyb.razonSocial || '')}" placeholder="Nombre de la empresa"></div>
+        <div class="form-grupo"><label>RFC de la empresa</label><input type="text" id="kyb-rfc-empresa" class="form-input" value="${escapeHtmlLocal(kyb.rfcEmpresa || '')}" placeholder="RFC" maxlength="13"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:16px">
+        <div class="form-grupo" style="flex:1"><label>Correo corporativo</label><input type="email" id="kyb-correo-corporativo" class="form-input" value="${escapeHtmlLocal(kyb.correoCorporativo || '')}" placeholder="tunombre@tuempresa.com" ${correoVerificado ? 'disabled' : ''}></div>
+        ${correoVerificado
+          ? `<span style="padding:10px 14px;background:#f0fdf4;color:#166534;border-radius:10px;font-size:13px;white-space:nowrap">✓ Verificado</span>`
+          : `<button class="btn btn-outline" style="padding:10px 16px;font-size:13px;white-space:nowrap" onclick="solicitarCodigoCorreoCorporativo()">Enviar código</button>`}
+      </div>
+      ${!correoVerificado ? `
+      <div id="kyb-correo-codigo-wrap" style="display:none;margin-bottom:16px">
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div class="form-grupo" style="flex:1"><label>Código recibido por correo</label><input type="text" id="kyb-correo-codigo" class="form-input" placeholder="Código de verificación" maxlength="6"></div>
+          <button class="btn btn-primary" style="padding:10px 16px;font-size:13px;white-space:nowrap" onclick="confirmarCodigoCorreoCorporativo()">Confirmar</button>
+        </div>
+      </div>` : ''}
+
+      <div style="margin-bottom:8px;font-weight:600;font-size:13px">Documentos de la empresa (PDF)</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px">
+        <div class="form-grupo"><label>Constancia de Situación Fiscal</label><input type="file" id="kyb-constancia" accept="application/pdf" class="form-input"></div>
+        <div class="form-grupo"><label>Acta Constitutiva</label><input type="file" id="kyb-acta" accept="application/pdf" class="form-input"></div>
+        <div class="form-grupo"><label>Comprobante de domicilio</label><input type="file" id="kyb-comprobante" accept="application/pdf" class="form-input"></div>
+      </div>
+
+      <div style="margin-bottom:8px;font-weight:600;font-size:13px">Representante legal</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px">
+        <div class="form-grupo"><label>Nombre completo</label><input type="text" id="kyb-representante-nombre" class="form-input" value="${escapeHtmlLocal(kyb.representanteNombre || '')}" placeholder="Nombre del representante legal"></div>
+        <div class="form-grupo">
+          <label>Documento de identidad</label>
+          <div style="display:flex;gap:16px;padding-top:8px">
+            <label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer"><input type="radio" name="kyb-tipo-doc" value="ine" ${!esPasaporteRep ? 'checked' : ''} onchange="actualizarCampoKybReverso()"> INE</label>
+            <label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer"><input type="radio" name="kyb-tipo-doc" value="pasaporte" ${esPasaporteRep ? 'checked' : ''} onchange="actualizarCampoKybReverso()"> Pasaporte</label>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px">
+        <div class="form-grupo"><label id="kyb-label-frente">${esPasaporteRep ? 'Pasaporte' : 'INE (frente)'}</label><input type="file" id="kyb-representante-frente" accept="image/*" class="form-input"></div>
+        <div class="form-grupo" id="kyb-grupo-reverso" style="${esPasaporteRep ? 'display:none' : ''}"><label>INE (reverso)</label><input type="file" id="kyb-representante-reverso" accept="image/*" class="form-input"></div>
+      </div>
+
+      <button class="btn btn-primary" style="padding:10px 24px;font-size:14px" onclick="enviarKyb()">Enviar a verificación</button>
+      <div id="kyb-msg" style="display:none;margin-top:12px"></div>
+    </div>`;
+};
+
+window.actualizarCampoKybReverso = () => {
+  const tipo = document.querySelector('input[name="kyb-tipo-doc"]:checked')?.value || 'ine';
+  const esIne = tipo === 'ine';
+  const label = document.getElementById('kyb-label-frente');
+  if (label) label.textContent = esIne ? 'INE (frente)' : 'Pasaporte';
+  const grupoReverso = document.getElementById('kyb-grupo-reverso');
+  if (grupoReverso) grupoReverso.style.display = esIne ? 'block' : 'none';
+};
+
+window.solicitarCodigoCorreoCorporativo = async () => {
+  const correo = document.getElementById('kyb-correo-corporativo')?.value.trim();
+  const razonSocial = document.getElementById('kyb-razon-social')?.value.trim();
+  if (!correo) { dsToast({ title: 'Falta el correo', message: 'Escribe el correo corporativo.', type: 'error' }); return; }
+  const data = await api.post('/auth/kyb/correo/solicitar', { correoCorporativo: correo, razonSocial });
+  if (data.ok) {
+    dsToast({ title: 'Código enviado', message: 'Revisa la bandeja de ese correo.', type: 'success' });
+    const wrap = document.getElementById('kyb-correo-codigo-wrap');
+    if (wrap) wrap.style.display = 'block';
+  } else {
+    dsToast({ title: 'No se pudo enviar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
+};
+
+window.confirmarCodigoCorreoCorporativo = async () => {
+  const codigo = document.getElementById('kyb-correo-codigo')?.value.trim();
+  if (!codigo) { dsToast({ title: 'Falta el código', message: 'Ingresa el código que recibiste.', type: 'error' }); return; }
+  const data = await api.post('/auth/kyb/correo/confirmar', { codigo });
+  if (data.ok) {
+    dsToast({ title: 'Correo verificado', type: 'success' });
+    user.kyb = { ...(user.kyb || {}), correoCorporativoVerificado: true };
+    localStorage.setItem('user', JSON.stringify(user));
+    const box = document.getElementById('kyb-cuenta-box');
+    if (box) box.innerHTML = renderKybCuenta(user);
+  } else {
+    dsToast({ title: 'Código incorrecto', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
+};
+
+window.enviarKyb = async () => {
+  const razonSocial = document.getElementById('kyb-razon-social')?.value.trim();
+  const rfcEmpresa = document.getElementById('kyb-rfc-empresa')?.value.trim();
+  const representanteNombre = document.getElementById('kyb-representante-nombre')?.value.trim();
+  const tipoDoc = document.querySelector('input[name="kyb-tipo-doc"]:checked')?.value || 'ine';
+  const constancia = document.getElementById('kyb-constancia')?.files[0];
+  const acta = document.getElementById('kyb-acta')?.files[0];
+  const comprobante = document.getElementById('kyb-comprobante')?.files[0];
+  const repFrente = document.getElementById('kyb-representante-frente')?.files[0];
+  const repReverso = document.getElementById('kyb-representante-reverso')?.files[0];
+  const msgEl = document.getElementById('kyb-msg');
+
+  if (!user.kyb?.correoCorporativoVerificado) { dsToast({ title: 'Falta verificar el correo', message: 'Verifica el correo corporativo antes de continuar.', type: 'error' }); return; }
+  if (!razonSocial || !rfcEmpresa || !representanteNombre) { dsToast({ title: 'Faltan datos', message: 'Completa razón social, RFC y nombre del representante.', type: 'error' }); return; }
+  if (!constancia || !acta || !comprobante || !repFrente) { dsToast({ title: 'Faltan documentos', message: 'Adjunta todos los documentos requeridos.', type: 'error' }); return; }
+  if (tipoDoc === 'ine' && !repReverso) { dsToast({ title: 'Falta el reverso del INE', message: 'Sube el reverso del INE del representante legal.', type: 'error' }); return; }
+
+  const formData = new FormData();
+  formData.append('razonSocial', razonSocial);
+  formData.append('rfcEmpresa', rfcEmpresa);
+  formData.append('representanteNombre', representanteNombre);
+  formData.append('representanteTipoDocumento', tipoDoc);
+  formData.append('constanciaSituacionFiscal', constancia);
+  formData.append('actaConstitutiva', acta);
+  formData.append('comprobanteDomicilio', comprobante);
+  formData.append('representanteDocumentoFrente', repFrente);
+  if (tipoDoc === 'ine' && repReverso) formData.append('representanteDocumentoReverso', repReverso);
+
+  const data = await api.postForm('/auth/kyb', formData);
+  if (data.ok) {
+    dsToast({ title: 'Documentos enviados', message: data.mensaje || 'Tu verificación KYB está en revisión.', type: 'success' });
+    user.kyb = { ...(user.kyb || {}), status: 'en_revision' };
+    user.tipoCuenta = 'empresa';
+    localStorage.setItem('user', JSON.stringify(user));
+    const box = document.getElementById('kyb-cuenta-box');
+    if (box) box.innerHTML = renderKybCuenta(user);
+  } else {
+    if (msgEl) { msgEl.style.display = 'block'; msgEl.style.color = '#c62828'; msgEl.textContent = data.error || 'No se pudo enviar la verificación.'; }
+    dsToast({ title: 'No se pudo enviar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
+};
+
 
 const cargarCuenta = () => {
   const info = document.getElementById('cuenta-info');
@@ -1713,6 +1897,7 @@ const cargarCuenta = () => {
     ${planManagementHTML}
 
     <div id="kyc-cuenta-box">${renderKycCuenta(user)}</div>
+    <div id="kyb-cuenta-box">${renderKybCuenta(user)}</div>
 
     <div style="background:var(--bg-secondary);border-radius:16px;padding:24px;border:1px solid var(--border);margin-bottom:24px">
       <h3 style="font-size:16px;margin-bottom:16px;font-family:'Bricolage Grotesque',sans-serif">🔔 Preferencias de notificaciones</h3>
@@ -1984,8 +2169,8 @@ const guardarNotificaciones = async () => {
 };
 window.contratarPlan = (plan, periodo = 'mensual') => {
   const STRIPE_LINKS = { 
-basico_mensual: 'https://buy.stripe.com/3cIeVeebe5dBfUyevM2Ji00',
-    basico_anual: 'https://buy.stripe.com/14AaEYaZ20Xl0ZEcnE2Ji01'
+    basico_mensual: 'https://buy.stripe.com/test_9B6fZhgExb2QejO8EGc3m00', 
+    basico_anual: 'https://buy.stripe.com/test_dRmfZh1JDc6U2B6cUWc3m01'
   };
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');

@@ -39,9 +39,31 @@ cargoRecurrenteUserAgent: { type: String, default: null },
   // puede diferir de metodoVerificacion si hubo fallback a email por falta/fallo de Twilio
   canalVerificacionUsado: { type: String, enum: ['email', 'sms', null], default: null },
   rfc: { type: String, default: null, trim: true, uppercase: true },
+  // 'persona' = KYC individual (INE/Pasaporte). 'empresa' = se llenó también el KYB.
+  tipoCuenta: { type: String, enum: ['persona', 'empresa'], default: 'persona' },
   kyc: {
-    ineFrenteUrl: { type: String, default: null },
-    ineReversoUrl: { type: String, default: null },
+    tipoDocumento: { type: String, enum: ['ine', 'pasaporte', null], default: null },
+    documentoFrenteUrl: { type: String, default: null }, // INE frente, o única página del pasaporte
+    documentoReversoUrl: { type: String, default: null }, // solo aplica si tipoDocumento === 'ine'
+    status: { type: String, enum: ['pendiente', 'en_revision', 'aprobado', 'rechazado'], default: 'pendiente' },
+    motivoRechazo: { type: String, default: null },
+    updatedAt: { type: Date, default: null },
+  },
+  // KYB — verificación de empresas (persona moral)
+  kyb: {
+    razonSocial: { type: String, default: null, trim: true },
+    rfcEmpresa: { type: String, default: null, trim: true, uppercase: true },
+    constanciaSituacionFiscalUrl: { type: String, default: null }, // PDF
+    actaConstitutivaUrl: { type: String, default: null }, // PDF
+    comprobanteDomicilioUrl: { type: String, default: null }, // PDF
+    representanteNombre: { type: String, default: null, trim: true },
+    representanteTipoDocumento: { type: String, enum: ['ine', 'pasaporte', null], default: null },
+    representanteDocumentoFrenteUrl: { type: String, default: null }, // foto
+    representanteDocumentoReversoUrl: { type: String, default: null }, // foto, solo si INE
+    correoCorporativo: { type: String, default: null, trim: true, lowercase: true },
+    correoCorporativoVerificado: { type: Boolean, default: false },
+    correoCorporativoCodigo: { type: String, default: null },
+    correoCorporativoCodigoExpira: { type: Date, default: null },
     status: { type: String, enum: ['pendiente', 'en_revision', 'aprobado', 'rechazado'], default: 'pendiente' },
     motivoRechazo: { type: String, default: null },
     updatedAt: { type: Date, default: null },
@@ -90,6 +112,7 @@ userSchema.methods.toJSON = function() {
   delete user.cargoRecurrenteUserAgent;
   delete user.twoFactorSecret;
   delete user.twoFactorRecoveryCodes;
+  if (user.kyb) delete user.kyb.correoCorporativoCodigo;
   return user;
 };
 
