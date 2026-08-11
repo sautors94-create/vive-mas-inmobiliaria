@@ -7,6 +7,7 @@ const Waitlist = require('../models/Waitlist');
 
 const {
   getUsuarios,
+  getVerificaciones,
   revisarKyc,
   revisarKyb,
   getUsuariosStats,
@@ -78,6 +79,8 @@ router.delete('/leads/:id', eliminarLead);
 router.get('/usuarios/stats', getUsuariosStats);
 router.get('/usuarios/exportar', exportarUsuariosExcel);
 router.get('/usuarios', getUsuarios);
+router.get('/verificaciones', getVerificaciones);
+router.get('/salud', getSalud);
 router.patch('/usuarios/:id/kyc', revisarKyc);
 router.patch('/usuarios/:id/kyb', revisarKyb);
 router.post('/usuarios/masivo', upload.single('archivo'), crearUsuariosMasivo);

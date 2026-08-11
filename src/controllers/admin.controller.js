@@ -2,9 +2,15 @@ const User = require('../models/User');
 const Property = require('../models/Property');
 const Lead = require('../models/Lead');
 const Novedad = require('../models/Novedad');
-const { enviarCoincidenciaBusqueda, enviarNovedad } = require('../utils/email');
+const mongoose = require('mongoose');
+const Stripe = require('stripe');
+const { cloudinary } = require('../config/cloudinary');
+const { transporter, enviarCoincidenciaBusqueda, enviarNovedad } = require('../utils/email');
+const { twilioVerifyConfigurado } = require('../utils/twilioVerify');
 const { ejecutarModeracionCompleta } = require('./property.controller');
 const { eventBus } = require('../../services/marketingAutomation');
+
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 const reanalizarPropiedadIA = async (req, res) => {
   try {
@@ -108,6 +114,133 @@ const revisarKyb = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+};
+
+// Obtener KYC y KYB pendientes de revisión — un registro por cada verificación
+// pendiente (un mismo usuario puede aparecer hasta 2 veces: una vez por su KYC
+// y otra por su KYB, si tiene ambos en revisión al mismo tiempo).
+const getVerificaciones = async (req, res) => {
+  try {
+    const usuarios = await User.find({
+      $or: [
+        { 'kyc.status': 'en_revision' },
+        { 'kyb.status': 'en_revision' }
+      ]
+    }).sort({ updatedAt: -1 });
+
+    const verificaciones = [];
+    for (const u of usuarios) {
+      if (u.kyc?.status === 'en_revision') {
+        verificaciones.push({
+          tipo: 'kyc',
+          status: u.kyc.status,
+          usuario: { _id: u._id, nombre: u.nombre, email: u.email, rfc: u.rfc },
+          kyc: u.kyc,
+          updatedAt: u.kyc.updatedAt || u.updatedAt
+        });
+      }
+      if (u.kyb?.status === 'en_revision') {
+        verificaciones.push({
+          tipo: 'kyb',
+          status: u.kyb.status,
+          usuario: { _id: u._id, nombre: u.nombre, email: u.email, rfc: u.rfc },
+          kyb: u.kyb,
+          updatedAt: u.kyb.updatedAt || u.updatedAt
+        });
+      }
+    }
+
+    const kycPendientes = verificaciones.filter(v => v.tipo === 'kyc').length;
+    const kybPendientes = verificaciones.filter(v => v.tipo === 'kyb').length;
+
+    res.json({
+      ok: true,
+      total: verificaciones.length,
+      stats: { kycPendientes, kybPendientes },
+      verificaciones
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+// Estado de salud de los servicios externos de los que depende la plataforma.
+// Se ejecuta bajo demanda (botón "Verificar ahora" en el panel admin), no en
+// cada carga de página — por eso hace pings reales en vez de solo revisar
+// que existan las variables de entorno.
+const getSalud = async (req, res) => {
+  const servicios = [];
+
+  // MongoDB — usa la conexión ya abierta, mide el ping real
+  const inicioMongo = Date.now();
+  try {
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.db.admin().ping();
+      servicios.push({ nombre: 'MongoDB', icono: '🗄️', ok: true, detalle: `Conectado (${mongoose.connection.host})`, latencia: Date.now() - inicioMongo });
+    } else {
+      servicios.push({ nombre: 'MongoDB', icono: '🗄️', ok: false, detalle: 'Sin conexión activa' });
+    }
+  } catch (error) {
+    servicios.push({ nombre: 'MongoDB', icono: '🗄️', ok: false, detalle: error.message });
+  }
+
+  // Cloudinary — valida credenciales con una llamada ligera a su API
+  const inicioCloudinary = Date.now();
+  try {
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      servicios.push({ nombre: 'Cloudinary', icono: '🖼️', ok: false, detalle: 'Variables de entorno faltantes' });
+    } else {
+      await cloudinary.api.ping();
+      servicios.push({ nombre: 'Cloudinary', icono: '🖼️', ok: true, detalle: 'Conectado', latencia: Date.now() - inicioCloudinary });
+    }
+  } catch (error) {
+    servicios.push({ nombre: 'Cloudinary', icono: '🖼️', ok: false, detalle: error.message });
+  }
+
+  // Stripe — confirma que la llave secreta es válida
+  const inicioStripe = Date.now();
+  try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      servicios.push({ nombre: 'Stripe', icono: '💳', ok: false, detalle: 'Variable de entorno faltante' });
+    } else {
+      await stripe.balance.retrieve();
+      servicios.push({ nombre: 'Stripe', icono: '💳', ok: true, detalle: 'Conectado', latencia: Date.now() - inicioStripe });
+    }
+  } catch (error) {
+    servicios.push({ nombre: 'Stripe', icono: '💳', ok: false, detalle: error.message });
+  }
+
+  // Twilio Verify — solo confirma que las 3 variables estén configuradas
+  // (no dispara un envío real de SMS solo por revisar el estado)
+  servicios.push(
+    twilioVerifyConfigurado()
+      ? { nombre: 'Twilio Verify (SMS)', icono: '📱', ok: true, detalle: 'Configurado' }
+      : { nombre: 'Twilio Verify (SMS)', icono: '📱', ok: false, detalle: 'Faltan SID_TWILIO / Token_TWILIO / SID_SERVICIO_TWILIO' }
+  );
+
+  // Email (SMTP) — verifica la conexión real con el servidor de correo
+  const inicioEmail = Date.now();
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      servicios.push({ nombre: 'Correo (SMTP)', icono: '✉️', ok: false, detalle: 'Variables de entorno faltantes' });
+    } else {
+      await transporter.verify();
+      servicios.push({ nombre: 'Correo (SMTP)', icono: '✉️', ok: true, detalle: 'Conectado', latencia: Date.now() - inicioEmail });
+    }
+  } catch (error) {
+    servicios.push({ nombre: 'Correo (SMTP)', icono: '✉️', ok: false, detalle: error.message });
+  }
+
+  const segundos = Math.floor(process.uptime());
+  const horas = Math.floor(segundos / 3600);
+  const minutos = Math.floor((segundos % 3600) / 60);
+  const uptime = `${horas}h ${minutos}m`;
+
+  res.json({
+    ok: true,
+    servicios,
+    uptime,
+    version: require('../../package.json').version || '1.0.0'
+  });
 };
 
 const getUsuarios = async (req, res) => {
@@ -1374,6 +1507,8 @@ const actualizarNovedad = async (req, res) => {
 
 module.exports = { 
   getUsuarios, 
+  getVerificaciones,
+  getSalud,
   revisarKyc,
   revisarKyb,
   getUsuariosStats,

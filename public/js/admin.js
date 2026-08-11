@@ -15,6 +15,8 @@ const mostrarSeccion = (seccion) => {
   if (sec) sec.style.display = 'block';
   event.target.closest('.sidebar-link')?.classList.add('active');
   if (seccion === 'dashboard') cargarDashboard();
+  if (seccion === 'verificaciones') cargarVerificaciones();
+  if (seccion === 'salud') cargarSalud();
   if (seccion === 'revision') cargarRevision();
   if (seccion === 'propiedades') cargarTodasPropiedades();
   if (seccion === 'leads') cargarLeads();
@@ -27,6 +29,120 @@ if (seccion === 'pagos') cargarPagosAdmin();
   if (seccion === 'monitoreo') cargarMonitoreo();
   if (seccion === 'novedades') cargarNovedades();
   if (seccion === 'reportes') cargarReportes();
+};
+
+const cargarVerificaciones = async () => {
+  const lista = document.getElementById('verif-lista');
+  const kpisEl = document.getElementById('verif-mod-kpis');
+  if (!lista) return;
+  lista.innerHTML = '<div class="loading">Cargando verificaciones...</div>';
+  try {
+    const data = await api.get('/admin/verificaciones');
+    if (!data.ok) {
+      lista.innerHTML = '<div class="loading" style="color:#c62828">No se pudieron cargar las verificaciones.</div>';
+      return;
+    }
+    const verificaciones = data.verificaciones || [];
+    const kycPendientes = (data.stats?.kycPendientes) ?? verificaciones.filter(v => v.tipo === 'kyc' && v.status === 'en_revision').length;
+    const kybPendientes = (data.stats?.kybPendientes) ?? verificaciones.filter(v => v.tipo === 'kyb' && v.status === 'en_revision').length;
+    const total = verificaciones.length;
+
+    kpisEl.innerHTML = `
+      <div class="mod-kpi-card"><div class="mod-kpi-num">${kycPendientes}</div><div class="mod-kpi-label">Pendientes KYC</div></div>
+      <div class="mod-kpi-card"><div class="mod-kpi-num">${kybPendientes}</div><div class="mod-kpi-label">Pendientes KYB</div></div>
+      <div class="mod-kpi-card"><div class="mod-kpi-num">${total}</div><div class="mod-kpi-label">Total</div></div>
+    `;
+
+    if (verificaciones.length === 0) {
+      lista.innerHTML = '<div class="loading" style="color:var(--text-light)">No hay verificaciones registradas.</div>';
+      return;
+    }
+
+    const colores = {
+      pendiente: { bg: '#f8f9fa', border: '#e5e7eb', text: 'var(--text-light)', label: 'Sin verificar' },
+      en_revision: { bg: '#fff8e1', border: '#f5d98a', text: '#7a5c00', label: 'En revisión' },
+      aprobado: { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534', label: 'Aprobado' },
+      rechazado: { bg: '#fdecea', border: '#f5c2c0', text: '#7a2a27', label: 'Rechazado' }
+    };
+
+    lista.innerHTML = verificaciones.map(v => {
+      const c = colores[v.status] || colores.pendiente;
+      const esKyc = v.tipo === 'kyc';
+      const nombre = v.usuario?.nombre || '—';
+      const email = v.usuario?.email || '';
+      const detalle = esKyc
+        ? (v.kyc?.tipoDocumento === 'pasaporte' ? 'Pasaporte' : 'INE') + (v.usuario?.rfc ? ` · RFC: ${v.usuario.rfc}` : '')
+        : (v.kyb?.razonSocial ? `Razón social: ${v.kyb.razonSocial}` : 'Empresa');
+      const docsHtml = esKyc
+        ? (v.kyc?.documentoFrenteUrl
+            ? `<div style="display:grid;grid-template-columns:${v.kyc.documentoReversoUrl ? '1fr 1fr' : '1fr'};gap:8px;margin-top:10px">
+                <a href="${v.kyc.documentoFrenteUrl}" target="_blank"><img src="${v.kyc.documentoFrenteUrl}" style="width:100%;height:70px;object-fit:cover;border-radius:8px;border:1px solid ${c.border}"></a>
+                ${v.kyc.documentoReversoUrl ? `<a href="${v.kyc.documentoReversoUrl}" target="_blank"><img src="${v.kyc.documentoReversoUrl}" style="width:100%;height:70px;object-fit:cover;border-radius:8px;border:1px solid ${c.border}"></a>` : ''}
+              </div>` : '')
+        : [v.kyb?.constanciaSituacionFiscalUrl, v.kyb?.actaConstitutivaUrl, v.kyb?.comprobanteDomicilioUrl]
+            .filter(Boolean)
+            .map((url, i) => `<a href="${url}" target="_blank" style="display:block;padding:6px 10px;background:white;border:1px solid ${c.border};border-radius:8px;margin-top:6px;font-size:12px;color:${c.text};text-decoration:none">📄 Documento ${i + 1}</a>`)
+            .join('');
+
+      return `
+        <div style="background:white;border:1px solid var(--border);border-radius:14px;padding:18px 20px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:20px">${esKyc ? '🪪' : '🏢'}</span>
+                <span style="font-weight:700;font-size:15px">${escapeHtml(nombre)}</span>
+                <span class="status-badge" style="background:${c.bg};color:${c.text};border:1px solid ${c.border}">${c.label}</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px">${escapeHtml(email)} · ${escapeHtml(detalle)}</div>
+              <div style="font-size:11px;color:var(--text-light);margin-top:2px">${new Date(v.updatedAt || v.createdAt).toLocaleString('es-MX')}</div>
+              ${docsHtml}
+            </div>
+            ${v.status === 'en_revision' ? `
+              <div style="display:flex;gap:8px;flex-shrink:0">
+                <button class="btn btn-primary admin-mini-btn" onclick="${esKyc ? `aprobarKyc` : `aprobarKyb`}('${v.usuario?._id}')">✓ Aprobar</button>
+                <button class="btn btn-outline admin-mini-btn" style="border-color:#c62828;color:#c62828" onclick="${esKyc ? `rechazarKyc` : `rechazarKyb`}('${v.usuario?._id}')">Rechazar</button>
+                <button class="btn btn-outline admin-mini-btn" onclick="abrirDrawerUsuario('${v.usuario?._id}')">Ver usuario</button>
+              </div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    lista.innerHTML = '<div class="loading" style="color:#c62828">Error al cargar verificaciones.</div>';
+  }
+};
+
+const cargarSalud = async () => {
+  const content = document.getElementById('salud-content');
+  if (!content) return;
+  content.innerHTML = '<div class="loading">Verificando estado del sistema...</div>';
+  try {
+    const data = await api.get('/admin/salud');
+    if (!data.ok) {
+      content.innerHTML = '<div style="padding:20px;background:#fdecea;border:1px solid #f5c2c0;border-radius:12px;color:#7a2a27;font-size:14px">No se pudo verificar el estado del sistema.</div>';
+      return;
+    }
+    const servicios = data.servicios || [];
+    content.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">
+        ${servicios.map(s => {
+          const ok = s.estado === 'ok' || s.ok;
+          return `
+            <div style="padding:18px;background:white;border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <span style="font-size:24px">${s.icono || (ok ? '✅' : '❌')}</span>
+                <span style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${ok ? '#f0fdf4' : '#fdecea'};color:${ok ? '#166534' : '#991b1b'}">${ok ? 'Operativo' : 'Caído'}</span>
+              </div>
+              <div style="font-weight:700;font-size:14px">${escapeHtml(s.nombre || 'Servicio')}</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px">${escapeHtml(s.detalle || '')}</div>
+              ${s.latencia ? `<div style="font-size:12px;color:var(--text-light);margin-top:4px">⏱ ${s.latencia}ms</div>` : ''}
+            </div>`;
+        }).join('')}
+      </div>
+      ${data.uptime ? `<div style="margin-top:16px;font-size:13px;color:var(--text-light)">⏰ Tiempo activo: ${escapeHtml(data.uptime)}</div>` : ''}
+      ${data.version ? `<div style="margin-top:4px;font-size:13px;color:var(--text-light)">📦 Versión: ${escapeHtml(data.version)}</div>` : ''}`;
+  } catch (e) {
+    content.innerHTML = '<div style="padding:20px;background:#fdecea;border:1px solid #f5c2c0;border-radius:12px;color:#7a2a27;font-size:14px">Error de conexión al verificar la salud del sistema.</div>';
+  }
 };
 
 const cargarDashboard = async () => {

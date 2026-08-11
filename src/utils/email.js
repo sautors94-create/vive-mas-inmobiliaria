@@ -472,6 +472,7 @@ const enviarCoincidenciaBusqueda = async (email, nombre, propiedad) => {
 };
 
 module.exports = { 
+  transporter,
   generarCodigo, 
   enviarCodigoVerificacion, 
   enviarCodigoVerificacionCorreoCorporativo,

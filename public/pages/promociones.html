@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vive Más Inmobiliaria — Conoce la plataforma</title>
+  <meta name="description" content="La plataforma inmobiliaria digital de México. Encuentra propiedades, publica como asesor o verifica tu inmobiliaria como empresa.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --primary: #1a472a;
+      --primary-light: #2d6a4f;
+      --accent: #f4a261;
+      --accent-dark: #e08a3e;
+      --bg-dark: #0f1923;
+      --text-light: #6b7280;
+      --border: #e5e7eb;
+      --radius-lg: 20px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-dark);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    h1, h2, h3, .logo { font-family: 'Bricolage Grotesque', sans-serif; }
+
+    .hero {
+      background: radial-gradient(circle at 30% 0%, var(--primary-light) 0%, var(--primary) 45%, var(--bg-dark) 100%);
+      padding: 48px 24px 56px;
+      text-align: center;
+    }
+    .logo { font-size: 22px; font-weight: 700; margin-bottom: 32px; }
+    .logo-vive { color: #fff; }
+    .logo-mas { color: var(--accent); }
+    .logo-sub { display: block; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 400; letter-spacing: 2px; opacity: 0.7; margin-top: 2px; text-transform: uppercase; }
+
+    .badge {
+      display: inline-block;
+      background: rgba(244,162,97,0.15);
+      border: 1px solid rgba(244,162,97,0.4);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 100px;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      font-size: 15px;
+      color: rgba(255,255,255,0.75);
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .ctas {
+      max-width: 420px;
+      margin: 28px auto 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 0 8px;
+    }
+    .btn {
+      display: block;
+      text-decoration: none;
+      text-align: center;
+      padding: 16px 24px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      transition: transform 150ms ease, opacity 150ms ease;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--accent); color: var(--bg-dark); }
+    .btn-outline { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,0.35); }
+
+    .audiencias {
+      flex: 1;
+      background: #fff;
+      color: #1a1a2e;
+      border-radius: 28px 28px 0 0;
+      margin-top: -24px;
+      padding: 40px 20px 32px;
+    }
+    .audiencias-title {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-light);
+      margin-bottom: 24px;
+    }
+    .cards { max-width: 460px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .card-icon {
+      font-size: 26px;
+      width: 46px; height: 46px;
+      flex-shrink: 0;
+      background: #f0fdf4;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .card p { font-size: 13px; color: var(--text-light); line-height: 1.5; }
+
+    .trust {
+      max-width: 460px;
+      margin: 28px auto 0;
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--text-light);
+    }
+    .trust span { display: flex; align-items: center; gap: 6px; }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: var(--text-light);
+    }
+    footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+
+    @media (min-width: 560px) {
+      .hero h1 { font-size: 40px; }
+      .ctas { flex-direction: row; }
+    }
+  </style>
+</head>
+<body>
+
+  <section class="hero">
+    <div class="logo">
+      <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+      <span class="logo-sub">Inmobiliaria</span>
+    </div>
+    <div class="badge">Bienvenido</div>
+    <h1>La plataforma inmobiliaria<br>hecha para <span>México</span></h1>
+    <p>Encuentra tu próxima propiedad, publica como asesor o verifica tu inmobiliaria — todo en un solo lugar, con verificación de identidad y pagos seguros.</p>
+    <div class="ctas">
+      <a href="/" class="btn btn-primary">Explorar propiedades</a>
+      <a href="registro.html" class="btn btn-outline">Crear cuenta gratis</a>
+    </div>
+  </section>
+
+  <section class="audiencias">
+    <div class="audiencias-title">Hecho para cada quien</div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">🏠</div>
+        <div>
+          <h3>¿Buscas propiedad?</h3>
+          <p>Explora casas, departamentos, terrenos y locales en venta o renta, con filtros por crédito, ubicación y presupuesto.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧑‍💼</div>
+        <div>
+          <h3>¿Eres asesor inmobiliario?</h3>
+          <p>Publica tus propiedades, gestiona tus leads y genera confianza con la insignia de identidad verificada (KYC).</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏢</div>
+        <div>
+          <h3>¿Representas una inmobiliaria o desarrolladora?</h3>
+          <p>Verifica tu empresa (KYB) con tus documentos fiscales y publica a nombre de tu marca con respaldo profesional.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="trust">
+      <span>🔒 Pagos seguros con Stripe</span>
+      <span>🪪 Identidad verificada</span>
+    </div>
+  </section>
+
+  <footer>
+    ¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a>
+  </footer>
+
+</body>
+</html>

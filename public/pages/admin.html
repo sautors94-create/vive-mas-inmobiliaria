@@ -93,6 +93,9 @@
 
       <nav class="sidebar-nav">
         <a href="#" class="sidebar-link active" onclick="mostrarSeccion('dashboard')">📊 Dashboard</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('verificaciones')">🪪 Verificaciones KYC/KYB</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('promociones')">🎁 Promociones</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('salud')">❤️ Salud del sistema</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('revision')">⏳ En revisión</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('propiedades')">🏠 Propiedades</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('leads')">📋 Leads</a>
@@ -140,6 +143,90 @@
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- VERIFICACIONES KYC/KYB -->
+      <section id="sec-verificaciones" class="dash-section" style="display:none">
+        <div class="mod-header">
+          <div>
+            <h2>Verificaciones KYC / KYB</h2>
+            <div class="mod-header-sub">Panel > Verificaciones · Autoriza o rechaza identidades (KYC) y empresas (KYB)</div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarVerificaciones()">↻ Actualizar</button>
+          </div>
+        </div>
+
+        <div class="mod-kpis" id="verif-mod-kpis" style="grid-template-columns:repeat(3,1fr)">
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Pendientes KYC</div></div>
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Pendientes KYB</div></div>
+          <div class="mod-kpi-card"><div class="mod-kpi-num">–</div><div class="mod-kpi-label">Total</div></div>
+        </div>
+
+        <div id="verif-lista" style="display:flex;flex-direction:column;gap:12px">
+          <div class="loading">Cargando verificaciones...</div>
+        </div>
+      </section>
+
+      <!-- PROMOCIONES -->
+      <section id="sec-promociones" class="dash-section" style="display:none">
+        <div class="mod-header">
+          <div>
+            <h2>Promociones</h2>
+            <div class="mod-header-sub">Panel > Promociones · Vista previa de la página de promociones</div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="window.open('promociones.html','_blank')">🌐 Ver página pública</button>
+          </div>
+        </div>
+
+        <div style="background:white;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)">
+          <!-- Hero -->
+          <div style="background:linear-gradient(135deg,var(--bg-dark,#0f1923),var(--primary,#1a472a));padding:40px 32px;color:white;text-align:center">
+            <div style="font-size:13px;text-transform:uppercase;letter-spacing:2px;opacity:0.7;margin-bottom:8px">Ofertas exclusivas</div>
+            <h2 style="font-size:28px;font-weight:800;margin:0 0 8px">Promociones Vive Más</h2>
+            <p style="font-size:14px;opacity:0.8;margin:0">Descuentos y beneficios especiales para asesores, inmobiliarias y desarrolladores</p>
+          </div>
+
+          <!-- Grid de promos -->
+          <div style="padding:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px">
+            <div style="border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--bg-secondary)">
+              <div style="font-size:32px;margin-bottom:10px">🎁</div>
+              <div style="font-size:15px;font-weight:700;margin-bottom:4px">Básico Plus Gratis</div>
+              <div style="font-size:12px;color:var(--text-light);margin-bottom:12px">Acceso ilimitado por 1 año para asesores</div>
+              <div style="font-size:12px;color:var(--primary);font-weight:600">Código: SOMOSASESORES</div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--bg-secondary)">
+              <div style="font-size:32px;margin-bottom:10px">💳</div>
+              <div style="font-size:15px;font-weight:700;margin-bottom:4px">10% OFF Anual</div>
+              <div style="font-size:12px;color:var(--text-light);margin-bottom:12px">Descuento en plan Premium anual</div>
+              <div style="font-size:12px;color:var(--primary);font-weight:600">Código: 10OFFANUAL</div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--bg-secondary)">
+              <div style="font-size:32px;margin-bottom:10px">🏢</div>
+              <div style="font-size:15px;font-weight:700;margin-bottom:4px">Desarrolladores</div>
+              <div style="font-size:12px;color:var(--text-light);margin-bottom:12px">Beneficios para empresas y desarrolladores</div>
+              <div style="font-size:12px;color:var(--primary);font-weight:600">Contacta ventas</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SALUD DEL SISTEMA -->
+      <section id="sec-salud" class="dash-section" style="display:none">
+        <div class="mod-header">
+          <div>
+            <h2>Salud del sistema</h2>
+            <div class="mod-header-sub">Panel > Salud · Estado de los servicios y API</div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarSalud()">↻ Verificar ahora</button>
+          </div>
+        </div>
+
+        <div id="salud-content">
+          <div class="loading">Verificando estado del sistema...</div>
         </div>
       </section>
 
