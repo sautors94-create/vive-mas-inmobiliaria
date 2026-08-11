@@ -8,6 +8,7 @@ const Waitlist = require('../models/Waitlist');
 const {
   getUsuarios,
   getVerificaciones,
+  getSalud,
   revisarKyc,
   revisarKyb,
   getUsuariosStats,
