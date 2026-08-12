@@ -192,7 +192,19 @@
         }, 1000);
       }
     });
+
+    // Nav toggle mobile
+    const navToggle = document.getElementById('nav-toggle');
+    const navLinks = document.querySelector('.nav-links');
+    const navActions = document.querySelector('.nav-actions');
+    if (navToggle) {
+      navToggle.addEventListener('click', () => {
+        navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+        navActions.style.display = navActions.style.display === 'flex' ? 'none' : 'flex';
+      });
+    }
   </script>
   <script src="../js/chatbot.js"></script>
+  <script src="../js/social-widget.js"></script>
 </body>
 </html>

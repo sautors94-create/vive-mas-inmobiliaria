@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Somos ViveMás — Para Agentes</title>
+<style>
+:root{
+  --gd:#8B6914;--gl:#c9a227;--gb:#e6c44a;
+  --bg:#16120a;--bg2:#1e1910;
+  --card:rgba(30,25,16,0.95);--bdr:rgba(139,105,20,0.2);--bdr2:rgba(139,105,20,0.1);
+  --tx:#f8f2e0;--txs:#c4b488;--txm:#8a7c58;
+  --grn:#7bc67e;--wrm:#d4883a;
+  --gdim:rgba(201,162,39,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;font-family:-apple-system,'Segoe UI','Helvetica Neue',Arial,sans-serif;color:var(--tx);overflow:hidden;}
+body{background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(139,105,20,0.08) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 80% 80%,rgba(230,196,74,0.05) 0%,transparent 60%),var(--bg);}
+.h{font-family:Georgia,'Times New Roman',serif;font-weight:700;}
+
+/* TOPBAR */
+.tb{position:fixed;top:0;left:0;right:0;height:50px;background:rgba(22,18,10,0.95);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 16px;gap:10px;z-index:500;}
+.tb-b{font-weight:700;font-size:0.95rem;}.tb-b .s{color:var(--txs);}.tb-b .v{color:var(--gl);}.tb-b .m{color:var(--gb);}
+.tb-sep{width:1px;height:16px;background:var(--bdr);}
+.tb-l{font-size:0.72rem;color:var(--txm);}
+.tb-r{margin-left:auto;display:flex;align-items:center;gap:6px;}
+.tb-btn{background:none;border:1px solid var(--bdr);color:var(--txs);font-family:inherit;font-size:0.72rem;padding:5px 10px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all 0.2s;white-space:nowrap;}
+.tb-btn:hover{border-color:var(--gd);color:var(--gl);background:var(--gdim);}
+.tb-btn:focus-visible{outline:2px solid var(--gl);outline-offset:2px;}
+
+/* WRAP */
+.wrap{position:fixed;top:50px;left:0;right:0;bottom:0;overflow:hidden;}
+.atmo{position:absolute;inset:0;z-index:0;pointer-events:none;}
+.ab{position:absolute;border-radius:50%;filter:blur(100px);}
+.ab.a{width:500px;height:500px;background:radial-gradient(circle,rgba(139,105,20,0.13),transparent 70%);top:-200px;right:-100px;}
+.ab.b{width:400px;height:400px;background:radial-gradient(circle,rgba(230,196,74,0.05),transparent 70%);bottom:-150px;left:-100px;}
+.ab.c{width:350px;height:350px;background:radial-gradient(circle,rgba(201,162,39,0.07),transparent 70%);top:40%;left:50%;transform:translate(-50%,-50%);}
+.al{position:absolute;bottom:28%;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 5%,rgba(139,105,20,0.05) 30%,rgba(201,162,39,0.07) 50%,rgba(139,105,20,0.05) 70%,transparent 95%);}
+#cv{position:absolute;inset:0;z-index:1;pointer-events:none;}
+
+/* SLIDES */
+.sl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:32px 5vw 90px;opacity:0;transform:scale(0.96);transition:opacity 0.7s ease,transform 0.7s ease;z-index:2;pointer-events:none;}
+.sl.on{opacity:1;transform:scale(1);pointer-events:auto;}
+.sl.oL{opacity:0;transform:translateX(-45px) scale(0.96);}
+.sl.oR{opacity:0;transform:translateX(45px) scale(0.96);}
+
+/* TIPOGRAFIA */
+.st{font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:clamp(1.9rem,4.5vw,3.4rem);line-height:1.12;margin-bottom:14px;}
+.ss{font-size:clamp(0.9rem,1.6vw,1.15rem);font-weight:300;color:var(--txs);line-height:1.7;max-width:560px;}
+.cy{color:var(--gl);}.cb{color:var(--gb);}.cw{color:var(--wrm);}.cg{color:var(--grn);}
+.ct{display:flex;flex-direction:column;align-items:center;text-align:center;}
+.gl{width:80px;height:2px;background:linear-gradient(90deg,transparent,var(--gl),transparent);margin:12px 0;}
+
+/* STAGGER ANIM */
+.si{opacity:0;transform:translateY(18px);transition:opacity 0.55s cubic-bezier(0.16,1,0.3,1),transform 0.55s cubic-bezier(0.16,1,0.3,1);}
+.sl.on .si{opacity:1;transform:translateY(0)!important;}
+.sl.oL .si,.sl.oR .si{opacity:0;}
+
+/* CARDS GRID */
+.cg3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%;max-width:860px;margin-top:24px;}
+.crd{background:var(--card);border:1px solid var(--bdr);border-radius:13px;padding:20px 14px;text-align:center;}
+.crd .ci{width:44px;height:44px;border-radius:12px;background:var(--gdim);border:1px solid rgba(201,162,39,0.18);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;color:var(--gl);}
+.crd .ct2{font-weight:600;font-size:clamp(0.84rem,1.1vw,0.96rem);margin-bottom:5px;}
+.crd .cd{font-size:clamp(0.76rem,0.95vw,0.84rem);color:var(--txs);line-height:1.5;}
+
+/* BENEFIT ROWS */
+.bf{display:flex;flex-direction:column;gap:12px;width:100%;max-width:620px;margin-top:24px;}
+.br{display:flex;gap:10px;align-items:stretch;}
+.bs{flex:1;background:var(--card);border:1px solid var(--bdr);border-radius:11px;padding:16px 12px;text-align:center;}
+.bs .bi{color:var(--gl);margin-bottom:6px;}
+.bs .bt{font-weight:600;font-size:clamp(0.8rem,1.05vw,0.92rem);margin-bottom:3px;}
+.bs .bd{font-size:clamp(0.72rem,0.9vw,0.8rem);color:var(--txs);line-height:1.4;}
+.bfa{color:var(--gd);align-self:center;flex-shrink:0;}
+
+/* MOCKUP */
+.mk{background:var(--card);border:1px solid var(--bdr);border-radius:13px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.35);max-width:520px;width:100%;}
+.mk-bar{height:30px;background:rgba(10,8,0,0.7);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 10px;gap:4px;}
+.mk-d{width:8px;height:8px;border-radius:50%;}.mk-d.r{background:#e5534b;}.mk-d.y{background:var(--gl);}.mk-d.g{background:var(--grn);}
+.mk-url{margin-left:8px;background:rgba(255,255,255,0.03);border-radius:4px;padding:2px 8px;font-size:0.58rem;color:var(--txm);flex:1;max-width:200px;}
+.mk-nav{height:28px;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 10px;gap:10px;}
+.mk-nav .lo{font-weight:700;font-size:0.62rem;}.mk-nav .lo .a{color:var(--txs);}.mk-nav .lo .b{color:var(--gl);}.mk-nav .lo .c{color:var(--gb);}
+.mk-nav .li{display:flex;gap:8px;margin-left:auto;}.mk-nav .li span{font-size:0.48rem;color:var(--txm);opacity:0.5;}
+.mk-srch{margin:6px 6px 0;background:rgba(255,255,255,0.02);border:1px solid var(--bdr);border-radius:8px;padding:3px;display:flex;align-items:center;gap:2px;flex-wrap:wrap;}
+.mk-f{flex:1;padding:5px 6px;border-radius:6px;border-left:1px solid var(--bdr);min-width:50px;}.mk-f:first-child{border-left:none;}
+.mk-fl{display:block;font-size:0.4rem;color:var(--tx);font-weight:600;margin-bottom:1px;}
+.mk-fv{font-size:0.44rem;color:var(--txm);}
+.mk-btn{background:var(--gd);color:var(--bg);border:none;padding:5px 10px;border-radius:6px;font-size:0.44rem;font-weight:700;}
+.mk-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:6px;}
+.mk-c{background:rgba(255,255,255,0.01);border:1px solid var(--bdr);border-radius:7px;overflow:hidden;}
+.mk-img{height:46px;background:linear-gradient(135deg,#1e1a0e,#0e0c06);display:flex;align-items:center;justify-content:center;color:var(--txm);font-size:0.8rem;opacity:0.25;}
+.mk-info{padding:4px 6px;}
+.mk-tag{display:inline-block;font-size:0.34rem;padding:1px 4px;border-radius:4px;font-weight:600;text-transform:uppercase;margin-bottom:2px;}
+.mk-tag.v{background:var(--gdim);color:var(--gl);}.mk-tag.r{background:rgba(96,165,250,0.1);color:#60a5fa;}
+.mk-line{height:2px;background:var(--txm);border-radius:2px;opacity:0.1;margin-bottom:2px;}.mk-line:last-of-type{width:50%;margin-bottom:0;}
+.mk-price{font-size:0.44rem;font-weight:700;color:var(--gl);margin-top:2px;}
+
+/* PROMO BOX */
+.promo{background:linear-gradient(135deg,rgba(139,105,20,0.12),rgba(230,196,74,0.06));border:1.5px solid rgba(201,162,39,0.28);border-radius:18px;padding:32px 28px;text-align:center;max-width:540px;width:100%;}
+.promo-badge{display:inline-block;background:var(--gd);color:var(--bg);font-weight:700;font-size:clamp(0.68rem,0.95vw,0.8rem);padding:5px 16px;border-radius:18px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;}
+.promo-title{font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:clamp(1.7rem,3.2vw,2.4rem);color:var(--gb);margin-bottom:6px;}
+.promo-sub{font-size:clamp(0.95rem,1.4vw,1.1rem);color:var(--txs);margin-bottom:18px;}
+.promo-price{display:flex;align-items:baseline;gap:8px;justify-content:center;}
+.promo-old{font-size:clamp(0.85rem,1.2vw,1rem);color:var(--txm);text-decoration:line-through;}
+.promo-new{font-family:Georgia,'Times New Roman',serif;font-size:clamp(1.5rem,2.8vw,2.2rem);font-weight:700;color:var(--grn);}
+.promo-note{font-size:clamp(0.7rem,0.85vw,0.78rem);color:var(--txm);margin-top:10px;font-style:italic;}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:14px;width:100%;max-width:560px;margin-top:24px;}
+.step{display:flex;gap:14px;align-items:flex-start;}
+.step-n{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gd),var(--gb));color:var(--bg);font-family:Georgia,serif;font-weight:700;font-size:0.95rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.step-t h4{font-weight:600;font-size:clamp(0.88rem,1.15vw,1rem);margin-bottom:2px;}
+.step-t p{font-size:clamp(0.8rem,0.95vw,0.88rem);color:var(--txs);line-height:1.4;}
+
+/* CTA */
+.cta{display:inline-flex;align-items:center;gap:10px;padding:16px 38px;background:linear-gradient(135deg,var(--gd),var(--gb));color:#0a0800;font-family:Georgia,serif;font-weight:700;font-size:clamp(0.95rem,1.4vw,1.15rem);border:none;border-radius:50px;cursor:pointer;text-decoration:none;box-shadow:0 10px 35px rgba(139,105,20,0.35);transition:transform 0.2s,box-shadow 0.2s;}
+.cta:hover{transform:translateY(-2px);box-shadow:0 15px 45px rgba(139,105,20,0.45);}
+.cta:focus-visible{outline:2px solid var(--gb);outline-offset:3px;}
+
+/* CONTROLES */
+.ctrl{position:absolute;bottom:0;left:0;right:0;height:56px;background:linear-gradient(transparent,rgba(22,18,10,0.95) 35%);display:flex;align-items:center;padding:0 14px;z-index:100;gap:8px;}
+.cb{background:none;border:none;color:var(--tx);font-size:0.9rem;cursor:pointer;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;}
+.cb:hover{background:rgba(255,255,255,0.06);}
+.cb:focus-visible{outline:2px solid var(--gl);outline-offset:2px;}
+.pw{flex:1;height:4px;background:rgba(255,255,255,0.08);border-radius:3px;cursor:pointer;position:relative;transition:height 0.15s;}
+.pw:hover{height:7px;}
+.pb{height:100%;background:linear-gradient(90deg,var(--gd),var(--gb));border-radius:3px;width:0%;transition:width 0.3s linear;position:relative;}
+.pb::after{content:'';position:absolute;right:-5px;top:50%;transform:translateY(-50%) scale(0);width:12px;height:12px;border-radius:50%;background:var(--gb);transition:transform 0.15s;}
+.pw:hover .pb::after{transform:translateY(-50%) scale(1);}
+.sc{font-size:0.75rem;color:var(--txm);font-variant-numeric:tabular-nums;min-width:42px;text-align:center;}
+.fs{margin-left:auto;}
+.dots{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px;z-index:50;}
+.dt{width:6px;height:6px;border-radius:50%;background:var(--txm);opacity:0.2;cursor:pointer;transition:all 0.3s;border:none;}
+.dt.on{opacity:1;background:var(--gl);box-shadow:0 0 8px rgba(201,162,39,0.4);transform:scale(1.4);}
+.dt:hover{opacity:0.5;}
+.dt:focus-visible{outline:2px solid var(--gl);outline-offset:2px;}
+.toast{position:fixed;top:60px;right:12px;background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:10px 16px;font-size:0.82rem;color:var(--tx);z-index:600;opacity:0;transform:translateY(-6px);transition:all 0.3s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+/* TWO COL */
+.tc{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center;width:100%;max-width:1000px;}
+.tc-list{display:flex;flex-direction:column;gap:10px;}
+.tc-item{display:flex;gap:10px;align-items:flex-start;}
+.tc-ic{width:36px;height:36px;border-radius:9px;background:var(--gdim);border:1px solid rgba(201,162,39,0.18);display:flex;align-items:center;justify-content:center;color:var(--gl);flex-shrink:0;}
+.tc-item h4{font-weight:600;font-size:0.88rem;margin-bottom:1px;}
+.tc-item p{font-size:0.78rem;color:var(--txs);line-height:1.4;}
+
+/* FRASE */
+.fi{font-size:clamp(0.92rem,2vw,1.3rem);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--txs);padding:6px 0;border-bottom:1px solid var(--bdr2);opacity:0;transform:translateX(-18px);transition:all 0.55s cubic-bezier(0.16,1,0.3,1);}
+.sl.on .fi{opacity:1;transform:translateX(0);}
+.ff{font-family:Georgia,serif;font-size:clamp(1.2rem,3.2vw,2.2rem);font-weight:700;color:var(--gb);opacity:0;transform:scale(0.85);transition:all 0.7s cubic-bezier(0.16,1,0.3,1) 1s;}
+.sl.on .ff{opacity:1;transform:scale(1);}
+
+@media(max-width:900px){
+  .sl{padding:26px 5vw 84px;}
+  .cg3{grid-template-columns:1fr 1fr;}
+  .br{flex-direction:column;}.bfa{transform:rotate(90deg);}
+  .dots{display:none;}.tb-l{display:none;}
+  .tc{grid-template-columns:1fr;gap:20px;}
+}
+@media(max-width:600px){
+  .sl{padding:20px 4vw 80px;}
+  .cg3{grid-template-columns:1fr;}
+  .ctrl{height:52px;padding:0 8px;gap:5px;}
+  .cb{width:36px;height:36px;font-size:0.85rem;}
+  .sc{font-size:0.7rem;min-width:34px;}
+  .tb-btn span.tb-text{display:none;}
+  .tb{padding:0 8px;gap:6px;}
+  .promo{padding:24px 18px;}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important;}}
+</style>
+</head>
+<body>
+
+<header class="tb" role="banner">
+  <div class="tb-b"><span class="s">Somos </span><span class="v">Vive </span><span class="m">Más</span></div>
+  <div class="tb-sep"></div>
+  <div class="tb-l">Para Agentes</div>
+  <div class="tb-r">
+    <button class="tb-btn" id="cl" aria-label="Copiar enlace"><span id="cl-icon"></span> <span class="tb-text">Copiar enlace</span></button>
+    <button class="tb-btn" id="rs" aria-label="Reiniciar"><span id="rs-icon"></span> <span class="tb-text">Reiniciar</span></button>
+    <button class="tb-btn" id="tfs" aria-label="Pantalla completa"><span id="fs-icon"></span></button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="atmo"><div class="ab a"></div><div class="ab b"></div><div class="ab c"></div><div class="al"></div></div>
+  <canvas id="cv"></canvas>
+
+  <!-- S0: HOOK -->
+  <div class="sl on" data-idx="0" data-dur="7000">
+    <div class="ct">
+      <h2 class="st si">Tu proxima venta <span class="st si">podria empezar aqui</span></h2>
+      <p class="ss si">Somos ViveMás no es otro portal donde publicas y rezas. Es una comunidad disenada para que tu negocio inmobiliario crezca con más herramientas, más visibilidad y más oportunidades.</p>
+      <div class="gl si" style="width:100px;"></div>
+      <p class="si" style="font-size:clamp(0.82rem,1.1vw,0.95rem);font-weight:600;color:var(--txm);letter-spacing:0.1em;text-transform:uppercase;">
+        Nosotros te damos infraestructura y comunidad. Tu pones tu experiencia.
+      </p>
+    </div>
+  </div>
+
+  <!-- S1: PROBLEMA -->
+  <div class="sl" data-idx="1" data-dur="8000">
+    <div class="ct">
+      <h2 class="st si">Ser agente inmobiliario <span class="cw">no deberia ser tan dificil</span></h2>
+      <p class="ss si">La mayoria de agentes enfrentan los mismos obstaculos todos los dias.</p>
+      <div class="cg3">
+        <div class="crd si"><div class="ci" data-i="eye"></div><div class="ct2">Poca visibilidad</div><div class="cd">Publicas en portales donde te pierdes entre miles de anuncios. Sin diferenciacion.</div></div>
+        <div class="crd si"><div class="ci" data-i="users"></div><div class="ct2">Red aislada</div><div class="cd">Trabajas solo. No hay una red que amplifique tu alcance o te conecte con colegas.</div></div>
+        <div class="crd si"><div class="ci" data-i="dollar"></div><div class="ct2">Costos altos</div><div class="cd">Pagas por publicar, por destacar, por contacto. Y los resultados no siempre llegan.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S2: LO QUE CAMBIA -->
+  <div class="sl" data-idx="2" data-dur="8000">
+    <div class="ct">
+      <h2 class="st si"><span class="cy">No conectamos propiedades.</span> Conectamos oportunidades.</h2>
+      <p class="ss si">ViveMás no es un directorio más. Es una plataforma donde tu perfil, tus propiedades y tu red profesional trabajan juntos.</p>
+      <div class="bf">
+        <div class="br">
+          <div class="bs si"><div class="bi" data-i="search"></div><div class="bt">Tu perfil profesional</div><div class="bd">Visible para compradores, propietarios y otros agentes.</div></div>
+          <div class="bs si"><div class="bi" data-i="home"></div><div class="bt">Tus propiedades</div><div class="bd">Con herramientas avanzadas de busqueda y filtros.</div></div>
+        </div>
+        <div class="br">
+          <div class="bs si"><div class="bi" data-i="network"></div><div class="bt">Tu red</div><div class="bd">Conecta con colegas, comparte oportunidades, crece juntos.</div></div>
+          <div class="bs si"><div class="bi" data-i="bolt"></div><div class="bt">Tus herramientas</div><div class="bd">Publicacion, gestion, comparador, creditos, todo integrado.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S3: LA PLATAFORMA -->
+  <div class="sl" data-idx="3" data-dur="8000">
+    <div class="tc">
+      <div>
+        <h2 class="st si">La plataforma <span class="cy">ya existe</span></h2>
+        <p class="ss si" style="margin-bottom:18px;">No es una promesa. Es una herramienta real que ya esta conectando personas con propiedades y servicios.</p>
+        <div class="tc-list">
+          <div class="tc-item si"><div class="tc-ic" data-i="search"></div><div><h4>Busqueda avanzada</h4><p>Ubicacion, tipo, precio y 20+ creditos en una sola barra.</p></div></div>
+          <div class="tc-item si"><div class="tc-ic" data-i="credit"></div><div><h4>Creditos inmobiliarios</h4><p>INFONAVIT, FOVISSSTE, bancos privados y más.</p></div></div>
+          <div class="tc-item si"><div class="tc-ic" data-i="compare"></div><div><h4>Comparador</h4><p>Compara propiedades lado a lado antes de decidir.</p></div></div>
+          <div class="tc-item si"><div class="tc-ic" data-i="book"></div><div><h4>Directorio profesional</h4><p>Tu perfil visible dentro de una red activa.</p></div></div>
+        </div>
+      </div>
+      <div class="mk si">
+        <div class="mk-bar"><div class="mk-d r"></div><div class="mk-d y"></div><div class="mk-d g"></div><div class="mk-url">somosvivemas.com</div></div>
+        <div class="mk-nav"><div class="lo"><span class="a">Somos </span><span class="b">Vive </span><span class="c">Más</span></div><div class="li"><span>Inicio</span><span>Catalogo</span><span>Servicios</span><span>Directorio</span></div></div>
+        <div class="mk-srch">
+          <div class="mk-f"><div class="mk-fl">Ubicacion</div><div class="mk-fv">Donde buscas?</div></div>
+          <div class="mk-f"><div class="mk-fl">Operacion</div><div class="mk-fv">Renta o Venta</div></div>
+          <div class="mk-f"><div class="mk-fl">Tipo</div><div class="mk-fv">Tipo de propiedad</div></div>
+          <div class="mk-f"><div class="mk-fl">Precio</div><div class="mk-fv">Cualquier precio</div></div>
+          <button class="mk-btn">Buscar</button>
+        </div>
+        <div class="mk-grid">
+          <div class="mk-c"><div class="mk-img" data-i="home"></div><div class="mk-info"><span class="mk-tag v">Venta</span><div class="mk-line"></div><div class="mk-line" style="width:65%"></div><div class="mk-price">$2,450,000</div></div></div>
+          <div class="mk-c"><div class="mk-img" data-i="building"></div><div class="mk-info"><span class="mk-tag r">Renta</span><div class="mk-line"></div><div class="mk-line" style="width:60%"></div><div class="mk-price">$15,000/mes</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S4: SOMOSASESORES -->
+  <div class="sl" data-idx="4" data-dur="8000">
+    <div class="ct">
+      <div class="promo si">
+        <div class="promo-badge">SomosAsesores</div>
+        <div class="promo-title">Tu perfil profesional dentro de ViveMás</div>
+        <div class="promo-sub">Un espacio propio donde los clientes te encuentran, te conocen y te contactan directamente.</div>
+        <div class="promo-price">
+          <span class="promo-old">$99/mes</span>
+          <span class="promo-new">$0/mes</span>
+        </div>
+        <div class="promo-note">Precio de lanzamiento para los primeros asesores de la comunidad.</div>
+      </div>
+      <div class="gl si"></div>
+      <p class="ss si" style="max-width:480px;">Incluye: perfil destacado, publicacion de propiedades, acceso al directorio, visibilidad en busquedas y conexion con la comunidad.</p>
+    </div>
+  </div>
+
+  <!-- S5: COMO UNIRSE -->
+  <div class="sl" data-idx="5" data-dur="7000">
+    <div class="ct">
+      <h2 class="st si">Tres pasos para <span class="cb">empezar</span></h2>
+      <p class="ss si">Sin procesos largos. Sin contratos complicados.</p>
+      <div class="steps">
+        <div class="step si"><div class="step-n">1</div><div class="step-t"><h4>Registra tu perfil</h4><p>Completa tu informacion profesional. Tu foto, especialidad, zona de cobertura.</p></div></div>
+        <div class="step si"><div class="step-n">2</div><div class="step-t"><h4>Publica tus propiedades</h4><p>Sube tu inventario con fotos, descripcion, precio y creditos aceptados.</p></div></div>
+        <div class="step si"><div class="step-n">3</div><div class="step-t"><h4>Conecta y crece</h4><p>Los clientes te encuentran. La comunidad te amplifica. Tu negocio crece.</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S6: CIERRE -->
+  <div class="sl" data-idx="6" data-dur="7000">
+    <div class="ct" style="gap:20px;">
+      <div style="display:flex;align-items:baseline;gap:6px;" class="si">
+        <span style="font-size:clamp(1rem,2.2vw,1.5rem);font-weight:400;color:var(--txs);">Somos </span>
+        <span style="font-family:Georgia,serif;font-size:clamp(2rem,5vw,3.8rem);font-weight:700;color:var(--gl);">Vive </span>
+        <span style="font-family:Georgia,serif;font-size:clamp(2rem,5vw,3.8rem);font-weight:700;color:var(--gb);">Más</span>
+      </div>
+      <div class="gl si" style="width:100px;"></div>
+      <div class="ss si" style="max-width:500px;">Tu negocio no tiene que crecer solo. La comunidad esta lista. La plataforma existe. Solo falta ti.</div>
+      <div class="fi si" style="max-width:500px;width:100%;">No somos otro portal.</div>
+      <div class="fi si" style="max-width:500px;width:100%;">Somos comunidad.</div>
+      <div class="ff si">SOMOS VIVE MAS</div>
+      <a href="https://somosvivemas.com" target="_blank" rel="noopener" class="cta si">UNETE COMO ASESOR <span data-i="arrow-r" style="display:inline-block;"></span></a>
+    </div>
+  </div>
+
+  <nav class="dots" id="dn" aria-label="Navegacion de slides"></nav>
+  <div class="ctrl">
+    <button class="cb" id="pv" aria-label="Anterior"><span data-i="arrow-l"></span></button>
+    <button class="cb" id="cp" aria-label="Reproducir/Pausar"><span id="cp-icon"></span></button>
+    <button class="cb" id="nx" aria-label="Siguiente"><span data-i="arrow-r"></span></button>
+    <div class="pw" id="pw"><div class="pb" id="pb"></div></div>
+    <div class="sc" id="sc">1 / 7</div>
+    <button class="cb fs" id="fs" aria-label="Pantalla completa"><span data-i="expand"></span></button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* === SISTEMA DE ICONOS SVG INLINE === */
+function ic(n,s){
+  s=s||18;
+  var p={
+    'pause':'<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
+    'play':'<polygon points="6 3 20 12 6 21"/>',
+    'arrow-l':'<path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>',
+    'arrow-r':'<path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>',
+    'expand':'<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/>',
+    'reset':'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+    'link':'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    'copy':'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+    'home':'<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+    'building':'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 6h.01M15 6h.01M9 10h.01M15 10h.01M9 14h.01M15 14h.01M9 18h6"/>',
+    'users':'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+    'search':'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>',
+    'chart':'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+    'network':'<circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="2"/><circle cx="20" cy="6" r="2"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="18" r="2"/><path d="M9.5 10.5 5.5 7.5M14.5 10.5l4-3M9.5 13.5l-4 3M14.5 13.5l4 3"/>',
+    'bolt':'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10z"/>',
+    'credit':'<rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/>',
+    'compare':'<rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/>',
+    'book':'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+    'eye':'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+    'dollar':'<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+    'shield':'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+    'star':'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26z"/>',
+    'check':'<path d="M20 6 9 17l-5-5"/>',
+    'arrow-d':'<path d="M12 5v14M19 12l-7 7-7-7"/>',
+    'map-pin':'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+    'phone':'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.11 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.74.34 1.53.57 2.34.7A2 2 0 0 1 22 16.92z"/>',
+    'mail':'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+    'trending':'<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+    'target':'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+    'user-plus':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>',
+    'bar-chart':'<path d="M12 20V10M18 20V4M6 20v-4"/>',
+    'layers':'<polygon points="12 2 2 7 12 12 22 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+    'globe':'<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/>',
+    'zap':'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10z"/>',
+    'wrench':'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/>',
+    'megaphone':'<path d="m3 11 18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+    'handshake':'<path d="m11 17 2 2a1 1 0 1 0 3-3M7.5 20.5 5 18a1.5 1.5 0 1 1 3-3l2.5 2.5"/><path d="m16 3-4 4 6 6 4-4-2-2-2 2-2-2 2-2z"/><path d="m12 7-2-2"/><path d="m20 11-2-2"/>'
+  };
+  return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;">'+(p[n]||'')+'</svg>';
+}
+
+/* Insertar iconos en el DOM */
+document.querySelectorAll('[data-i]').forEach(function(el){
+  var s=el.getAttribute('data-i-size');
+  el.innerHTML=ic(el.getAttribute('data-i'),s?parseInt(s):undefined);
+});
+document.getElementById('cl-icon').innerHTML=ic('copy',14);
+document.getElementById('rs-icon').innerHTML=ic('reset',14);
+document.getElementById('fs-icon').innerHTML=ic('expand',14);
+
+/* === NAVEGACION === */
+(function(){
+  var S=document.querySelectorAll('.sl'),N=S.length,
+      pb=document.getElementById('pb'),pw=document.getElementById('pw'),
+      sc=document.getElementById('sc'),cpBtn=document.getElementById('cp'),
+      dn=document.getElementById('dn'),toastEl=document.getElementById('toast'),
+      c=0,play=true,st=null,pt=null,pv=0;
+
+  for(var i=0;i<N;i++){var d=document.createElement('button');d.className='dt'+(i===0?' on':'');d.setAttribute('aria-label','Slide '+(i+1));d.d=i;dn.appendChild(d);}
+  dn.addEventListener('click',function(e){var b=e.target.closest('[d]');if(b)go(+b.d);});
+
+  function stagger(s){
+    var a=s.querySelectorAll('.si,.fi,.ff');
+    for(var i=0;i<a.length;i++)a[i].style.transitionDelay=(0.1+i*0.06)+'s';
+  }
+
+  function go(n,dir){
+    if(n<0||n>=N||n===c)return;
+    var p=S[c],x=S[n],d=dir||(n>c?'L':'R');
+    p.classList.remove('on');p.classList.add(d==='L'?'oL':'oR');
+    x.offsetHeight;stagger(x);x.classList.add('on');
+    setTimeout(function(){p.classList.remove('oL','oR');},750);
+    c=n;upd();prog();
+    try{history.replaceState(null,'','#slide-'+n);}catch(e){}
+  }
+
+  function upd(){
+    sc.textContent=(c+1)+' / '+N;
+    var ds=dn.querySelectorAll('.dt');
+    for(var i=0;i<ds.length;i++)ds[i].classList.toggle('on',i===c);
+    document.getElementById('cp-icon').innerHTML=play?ic('pause',14):ic('play',14);
+  }
+
+  function prog(){
+    clearTimeout(st);clearInterval(pt);pv=0;pb.style.width='0%';
+    if(!play)return;
+    var dur=parseInt(S[c].getAttribute('data-dur'))||7000,step=30/dur*100;
+    pt=setInterval(function(){pv=Math.min(100,pv+step);pb.style.width=pv+'%';},30);
+    st=setTimeout(function(){if(c<N-1)go(c+1,'L');else{play=false;upd();toast('Fin de la presentacion');}},dur);
+  }
+
+  function tp(){play=!play;upd();if(play)prog();else{clearTimeout(st);clearInterval(pt);}}
+
+  cpBtn.addEventListener('click',tp);
+  document.getElementById('nx').addEventListener('click',function(){go(c+1,'L');});
+  document.getElementById('pv').addEventListener('click',function(){go(c-1,'R');});
+  document.getElementById('fs').addEventListener('click',tfs);
+  document.getElementById('tfs').addEventListener('click',tfs);
+  document.getElementById('rs').addEventListener('click',function(){go(0);play=true;upd();prog();toast('Reiniciada');});
+  pw.addEventListener('click',function(e){var r=pw.getBoundingClientRect();go(Math.max(0,Math.min(N-1,Math.floor((e.clientX-r.left)/r.width*N))));});
+  document.getElementById('cl').addEventListener('click',function(){
+    var url=location.origin+location.pathname+'#slide-'+c;
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(function(){toast('Enlace copiado: #slide-'+c);}).catch(function(){toast('No se pudo copiar');});}
+    else{var ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Enlace copiado: #slide-'+c);}catch(e){toast('No se pudo copiar');}document.body.removeChild(ta);}
+  });
+
+  function tfs(){if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(function(){});}else{document.exitFullscreen();}}
+
+  var tx=0;
+  document.addEventListener('touchstart',function(e){tx=e.changedTouches[0].clientX;},{passive:true});
+  document.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50){dx<0?go(c+1,'L'):go(c-1,'R');}},{passive:true});
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'){e.preventDefault();go(c+1,'L');}
+    else if(e.key==='ArrowLeft'){e.preventDefault();go(c-1,'R');}
+    else if(e.key===' '){e.preventDefault();tp();}
+    else if(e.key==='f'||e.key==='F')tfs();
+  });
+
+  /* Hash navigation */
+  var h=location.hash.match(/#slide-(\d+)/);
+  if(h){var n=parseInt(h[1]);if(n>=0&&n<N){c=-1;go(n);}}
+
+  /* Particulas */
+  var cv=document.getElementById('cv'),cx=cv.getContext('2d'),pts=[];
+  function rs(){cv.width=cv.parentElement.clientWidth;cv.height=cv.parentElement.clientHeight;}
+  function init(){rs();pts=[];for(var i=0;i<22;i++)pts.push({x:Math.random()*cv.width,y:Math.random()*cv.height,vx:(Math.random()-0.5)*0.15,vy:(Math.random()-0.5)*0.15,r:Math.max(0.5,Math.random()*1.4),o:Math.random()*0.12+0.03});}
+  function draw(){cx.clearRect(0,0,cv.width,cv.height);for(var i=0;i<pts.length;i++){var p=pts[i];p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=cv.width;if(p.x>cv.width)p.x=0;if(p.y<0)p.y=cv.height;if(p.y>cv.height)p.y=0;cx.beginPath();cx.arc(p.x,p.y,Math.max(0.5,p.r),0,6.28);cx.fillStyle='rgba(201,162,39,'+p.o+')';cx.fill();}requestAnimationFrame(draw);}
+  window.addEventListener('resize',rs);init();draw();
+
+  var tT;
+  function toast(m){clearTimeout(tT);toastEl.textContent=m;toastEl.classList.add('show');tT=setTimeout(function(){toastEl.classList.remove('show');},2500);}
+
+  upd();prog();
+  setTimeout(function(){toast('Desliza o usa flechas para navegar');},1000);
+})();
+</script>
+</body>
+</html>
