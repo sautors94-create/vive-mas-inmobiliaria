@@ -108,6 +108,7 @@
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('monitoreo')">🤖 Monitoreo de chats</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('novedades')">📰 Novedades</a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('reportes')">🚩 Reportes</a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('presentaciones')">📽️ Presentaciones</a>
       </nav>
     </aside>
 
@@ -958,7 +959,104 @@
         <div id="drawer-mon-content"></div>
       </div>
 
+          <!-- PRESENTACIONES -->
+      <section id="sec-presentaciones" class="dash-section" style="display:none">
+        <div class="mod-header">
+          <div>
+            <h2>Presentaciones</h2>
+            <div class="mod-header-sub">Panel > Presentaciones · Enlaces directos a las presentaciones comerciales e internas</div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="window.open('indexadmin.html','_blank')">🔄 Abrir como panel independiente</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;max-width:900px">
+
+          <!-- AGENTES -->
+          <a href="slide-agents.html" style="text-decoration:none;color:inherit;display:block;background:white;border:1px solid var(--border);border-radius:14px;padding:24px 22px;transition:all 0.25s;cursor:pointer;position:relative;overflow:hidden;" onmouseover="this.style.borderColor='var(--primary)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.08)';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none';this.style.transform='none'">
+            <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:var(--primary);opacity:0.06;border-radius:50%;"></div>
+            <div style="position:relative;z-index:1;">
+              <div style="display:inline-block;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--primary);background:rgba(0,0,0,0.04);padding:3px 10px;border-radius:4px;margin-bottom:12px;">Para agentes y asesores</div>
+              <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:700;margin-bottom:6px;color:var(--text-dark)">Presentacion para Agentes</div>
+              <div style="font-size:13px;color:var(--text-light);line-height:1.5;margin-bottom:14px;">Como ViveMas da infraestructura, visibilidad y comunidad al profesional inmobiliario.</div>
+              <div style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--primary);">Abrir <span style="display:inline-block;">→</span></div>
+            </div>
+          </a>
+
+          <!-- PROPIETARIOS -->
+          <a href="slide-propietarios.html" style="text-decoration:none;color:inherit;display:block;background:white;border:1px solid var(--border);border-radius:14px;padding:24px 22px;transition:all 0.25s;cursor:pointer;position:relative;overflow:hidden;" onmouseover="this.style.borderColor='#2d6a4f';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.08)';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none';this.style.transform='none'">
+            <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:#2d6a4f;opacity:0.06;border-radius:50%;"></div>
+            <div style="position:relative;z-index:1;">
+              <div style="display:inline-block;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#2d6a4f;background:rgba(45,106,79,0.06);padding:3px 10px;border-radius:4px;margin-bottom:12px;">Para propietarios</div>
+              <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:700;margin-bottom:6px;color:var(--text-dark)">Presentacion para Propietarios</div>
+              <div style="font-size:13px;color:var(--text-light);line-height:1.5;margin-bottom:14px;">De publicar en portales a gestionar tu propiedad en un ecosistema con servicios integrados.</div>
+              <div style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#2d6a4f;">Abrir <span style="display:inline-block;">→</span></div>
+            </div>
+          </a>
+
+          <!-- SOCIOS -->
+          <a href="slide-partner.html" style="text-decoration:none;color:inherit;display:block;background:white;border:1px solid var(--border);border-radius:14px;padding:24px 22px;transition:all 0.25s;cursor:pointer;position:relative;overflow:hidden;" onmouseover="this.style.borderColor='var(--accent-dark)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.08)';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none';this.style.transform='none'">
+            <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:var(--accent-dark);opacity:0.06;border-radius:50%;"></div>
+            <div style="position:relative;z-index:1;">
+              <div style="display:inline-block;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-dark);background:rgba(231,111,81,0.06);padding:3px 10px;border-radius:4px;margin-bottom:12px;">Para socios e inversionistas</div>
+              <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:700;margin-bottom:6px;color:var(--text-dark)">Vision y Socios</div>
+              <div style="font-size:13px;color:var(--text-light);line-height:1.5;margin-bottom:14px;">La vision completa del ecosistema, lo que existe, y que significa formar parte desde el inicio.</div>
+              <div style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent-dark);">Abrir <span style="display:inline-block;">→</span></div>
+            </div>
+          </a>
+
+          <!-- EQUIPO -->
+          <a href="slide-nuestroequipo.html" style="text-decoration:none;color:inherit;display:block;background:white;border:1px solid var(--border);border-radius:14px;padding:24px 22px;transition:all 0.25s;cursor:pointer;position:relative;overflow:hidden;" onmouseover="this.style.borderColor='#1a3a6e';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.08)';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none';this.style.transform='none'">
+            <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:#1a3a6e;opacity:0.06;border-radius:50%;"></div>
+            <div style="position:relative;z-index:1;">
+              <div style="display:inline-block;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#1a3a6e;background:rgba(26,58,110,0.06);padding:3px 10px;border-radius:4px;margin-bottom:12px;">Uso interno — equipo ViveMas</div>
+              <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:700;margin-bottom:6px;color:var(--text-dark)">Nuestro Equipo</div>
+              <div style="font-size:13px;color:var(--text-light);line-height:1.5;margin-bottom:14px;">La radiografia interna: como opera la plataforma, que hemos construido, y hacia donde vamos.</div>
+              <div style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#1a3a6e;">Abrir <span style="display:inline-block;">→</span></div>
+            </div>
+          </a>
+
+        </div>
+
+        <!-- INSTRUCCIONES -->
+        <div style="margin-top:28px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:20px 24px;max-width:900px;">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:700;margin-bottom:10px;">Como compartir estas presentaciones</div>
+          <div style="display:grid;gap:10px;">
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+              <span style="flex-shrink:0;width:24px;height:24px;border-radius:6px;background:rgba(0,0,0,0.05);display:flex;align-items:center;justify-content:center;font-size:12px;">1</span>
+              <div style="font-size:13px;color:var(--text-light);line-height:1.5;">Abre la presentacion que necesitas desde el panel o directamente por URL.</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+              <span style="flex-shrink:0;width:24px;height:24px;border-radius:6px;background:rgba(0,0,0,0.05);display:flex;align-items:center;justify-content:center;font-size:12px;">2</span>
+              <div style="font-size:13px;color:var(--text-light);line-height:1.5;">Navega al slide que quieres enviar y haz clic en el boton <strong style="color:var(--text-dark);">Compartir</strong> en la barra superior.</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+              <span style="flex-shrink:0;width:24px;height:24px;border-radius:6px;background:rgba(0,0,0,0.05);display:flex;align-items:center;justify-content:center;font-size:12px;">3</span>
+              <div style="font-size:13px;color:var(--text-light);line-height:1.5;">Se copia un enlace directo a ese slide (ej: <code style="background:rgba(0,0,0,0.06);padding:1px 6px;border-radius:4px;font-size:12px;">slide-agents.html#slide-4</code>). Pegalo en WhatsApp, correo o donde quieras.</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+              <span style="flex-shrink:0;width:24px;height:24px;border-radius:6px;background:rgba(0,0,0,0.05);display:flex;align-items:center;justify-content:center;font-size:12px;">4</span>
+              <div style="font-size:13px;color:var(--text-light);line-height:1.5;">La persona abre el enlace desde cualquier navegador, celular o computadora. No necesita instalar nada.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ARCHIVOS -->
+        <div style="margin-top:16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;padding:20px 24px;max-width:900px;">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:700;margin-bottom:12px;">Archivos en esta carpeta</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-family:monospace;color:var(--text-light);">
+            <div>📁 indexadmin.html <span style="opacity:0.5;">← este panel</span></div>
+            <div>📁 slide-agents.html</div>
+            <div>📁 slide-propietarios.html</div>
+            <div>│  slide-partner.html</div>
+            <div>│  slide-nuestroequipo.html</div>
+          </div>
+        </div>
+
+      </section>
     </main>
+    
   </div>
 
   <!-- MODAL RECHAZAR KYC -->

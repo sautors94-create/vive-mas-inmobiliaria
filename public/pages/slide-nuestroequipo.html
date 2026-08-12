@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Somos ViveMas — Nuestro Equipo</title>
+<style>
+/* ========== VARIABLES ========== */
+:root{
+  --gd-deep:#1a1200;--gd-main:#8B6914;--gd-light:#c9a227;--gd-bright:#e6c44a;
+  --bg:#12100b;--bg2:#1e1910;
+  --card:rgba(28,23,14,0.9);--border:rgba(139,105,20,0.18);--border2:rgba(139,105,20,0.1);
+  --text:#f8f2e0;--text-sec:#c4b488;--text-mut:#8a7c58;
+  --green:#7bc67e;--warm:#d4883a;--red:#e5534b;--blue:#60a5fa;
+  --gold-dim:rgba(201,162,39,0.10);
+  --font-d:'Avenir Next','Segoe UI','SF Pro Display',-apple-system,system-ui,sans-serif;
+  --font-b:'Segoe UI',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+}
+
+/* ========== RESET ========== */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;font-family:var(--font-b);color:var(--text);overflow:hidden;}
+body{background:var(--bg);
+  background-image:
+    radial-gradient(ellipse 70% 50% at 15% 15%,rgba(139,105,20,0.06) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 80%,rgba(96,165,250,0.03) 0%,transparent 60%),
+    radial-gradient(ellipse 100% 100% at 50% 50%,rgba(18,16,11,0.95) 0%,var(--bg) 100%);
+}
+button{font-family:inherit;}
+:focus-visible{outline:2px solid var(--gd-light);outline-offset:2px;border-radius:4px;}
+
+/* ========== TOPBAR ========== */
+.topbar{position:fixed;top:0;left:0;right:0;height:50px;background:rgba(18,16,11,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px;z-index:500;}
+.tb-brand{font-family:var(--font-d);font-weight:700;font-size:0.95rem;white-space:nowrap;}
+.tb-brand .s{color:var(--text-sec);}.tb-brand .v{color:var(--gd-light);}.tb-brand .m{color:var(--gd-bright);}
+.tb-sep{width:1px;height:18px;background:var(--border);flex-shrink:0;}
+.tb-label{font-size:0.72rem;color:var(--text-mut);white-space:nowrap;}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.tb-btn{background:none;border:1px solid var(--border);color:var(--text-sec);font-size:0.72rem;padding:5px 10px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all 0.2s;white-space:nowrap;}
+.tb-btn:hover,.tb-btn.on{border-color:var(--gd-main);color:var(--gd-light);background:var(--gold-dim);}
+.tb-btn .btn-text{display:inline;}
+.tb-modes{display:flex;gap:3px;margin-left:4px;}
+.tb-modes .tb-btn{padding:5px 8px;font-size:0.68rem;}
+
+/* ========== WRAP Y ATMOSFERA ========== */
+.wrap{position:fixed;top:50px;left:0;right:0;bottom:0;overflow:hidden;}
+.atmo{position:absolute;inset:0;z-index:0;pointer-events:none;}
+.ab{position:absolute;border-radius:50%;filter:blur(100px);will-change:transform;}
+.ab.b1{width:500px;height:500px;background:radial-gradient(circle,rgba(139,105,20,0.10),transparent 70%);top:-200px;right:-100px;opacity:0.6;}
+.ab.b2{width:400px;height:400px;background:radial-gradient(circle,rgba(96,165,250,0.04),transparent 70%);bottom:-160px;left:-100px;opacity:0.5;}
+.ab.b3{width:360px;height:360px;background:radial-gradient(circle,rgba(201,162,39,0.07),transparent 70%);top:38%;left:48%;transform:translate(-50%,-50%);opacity:0.4;transition:background 1.2s ease;}
+.atmo-line{position:absolute;bottom:30%;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 5%,rgba(139,105,20,0.04) 30%,rgba(96,165,250,0.04) 50%,rgba(139,105,20,0.04) 70%,transparent 95%);}
+#ptc{position:absolute;inset:0;z-index:1;pointer-events:none;}
+
+/* ========== SLIDES ========== */
+.slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:40px 5vw 100px;opacity:0;transform:scale(0.96);transition:opacity 0.8s ease,transform 0.8s ease;z-index:2;pointer-events:none;}
+.slide.on{opacity:1;transform:scale(1);pointer-events:auto;}
+.slide.outL{opacity:0;transform:translateX(-50px) scale(0.96);}
+.slide.outR{opacity:0;transform:translateX(50px) scale(0.96);}
+
+/* ========== ANIMACIONES ========== */
+.anim{opacity:0;transform:translateY(20px);transition:opacity 0.6s cubic-bezier(0.16,1,0.3,1),transform 0.6s cubic-bezier(0.16,1,0.3,1);}
+.slide.on .anim{opacity:1;transform:translateY(0);}
+.anim.sc{transform:scale(0.88);transition:opacity 0.9s cubic-bezier(0.16,1,0.3,1),transform 0.9s cubic-bezier(0.16,1,0.3,1);}
+.slide.on .anim.sc{transform:scale(1);}
+.anim.xl{transform:translateX(-24px);}
+.slide.on .anim.xl{transform:translateX(0);}
+.anim.xr{transform:translateX(24px);}
+.slide.on .anim.xr{transform:translateX(0);}
+.d1{transition-delay:0.06s}.d2{transition-delay:0.12s}.d3{transition-delay:0.18s}
+.d4{transition-delay:0.24s}.d5{transition-delay:0.30s}.d6{transition-delay:0.36s}
+.d7{transition-delay:0.42s}.d8{transition-delay:0.48s}.d9{transition-delay:0.54s}
+.d10{transition-delay:0.60s}.d11{transition-delay:0.66s}.d12{transition-delay:0.72s}
+.d13{transition-delay:0.78s}.d14{transition-delay:0.84s}.d15{transition-delay:0.90s}
+.d20{transition-delay:1.2s}.d25{transition-delay:1.5s}
+.slide.outL .anim,.slide.outR .anim{opacity:0;transform:translateY(10px) scale(0.97);}
+.slide.outL .anim{transform:translateX(-30px) scale(0.97);}
+.slide.outR .anim{transform:translateX(30px) scale(0.97);}
+
+/* ========== TIPOGRAFIA ========== */
+.st{font-family:var(--font-d);font-weight:700;font-size:clamp(2rem,4.8vw,3.6rem);line-height:1.1;margin-bottom:16px;}
+.ss{font-size:clamp(0.95rem,1.8vw,1.2rem);font-weight:300;color:var(--text-sec);line-height:1.7;max-width:600px;}
+.cy{color:var(--gd-light);}.cb{color:var(--gd-bright);}.cw{color:var(--warm);}.cg{color:var(--green);}.cbl{color:var(--blue);}
+.center{display:flex;flex-direction:column;align-items:center;text-align:center;}
+.gold-line{width:80px;height:2px;background:linear-gradient(90deg,transparent,var(--gd-light),transparent);margin:14px 0;}
+
+/* ========== LOGO ========== */
+.logo-big{display:flex;align-items:baseline;gap:6px;line-height:1;}
+.logo-big .lb-s{font-family:var(--font-d);font-size:clamp(1rem,2.5vw,1.6rem);font-weight:400;color:var(--text-sec);}
+.logo-big .lb-v{font-family:var(--font-d);font-size:clamp(2.8rem,7vw,5.5rem);font-weight:700;color:var(--gd-light);}
+.logo-big .lb-m{font-family:var(--font-d);font-size:clamp(2.8rem,7vw,5.5rem);font-weight:700;color:var(--gd-bright);}
+.logo-big.sm .lb-s{font-size:clamp(0.8rem,2vw,1.2rem);}
+.logo-big.sm .lb-v,.logo-big.sm .lb-m{font-size:clamp(1.8rem,4.5vw,3.2rem);}
+
+/* ========== SUBTITULO TAG ========== */
+.tag{display:inline-block;font-family:var(--font-d);font-size:clamp(0.65rem,0.9vw,0.78rem);font-weight:600;letter-spacing:0.12em;text-transform:uppercase;padding:5px 14px;border-radius:20px;margin-bottom:14px;}
+.tag-gold{background:var(--gold-dim);color:var(--gd-light);border:1px solid rgba(201,162,39,0.2);}
+.tag-blue{background:rgba(96,165,250,0.08);color:var(--blue);border:1px solid rgba(96,165,250,0.15);}
+.tag-green{background:rgba(123,198,126,0.08);color:var(--green);border:1px solid rgba(123,198,126,0.15);}
+
+/* ========== PILARES GRID ========== */
+.pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;width:100%;max-width:920px;margin-top:24px;}
+.pillar{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 14px;text-align:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+.pil-ic{width:44px;height:44px;border-radius:12px;background:var(--gold-dim);border:1px solid rgba(201,162,39,0.18);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;color:var(--gd-light);}
+.pil-ic svg{width:20px;height:20px;stroke:var(--gd-light);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.pil-t{font-family:var(--font-d);font-weight:600;font-size:clamp(0.82rem,1.1vw,0.95rem);margin-bottom:4px;}
+.pil-d{font-size:clamp(0.72rem,0.9vw,0.82rem);color:var(--text-sec);line-height:1.4;}
+
+/* ========== ARQUITECTURA VISUAL ========== */
+.arch{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:700px;margin-top:20px;}
+.arch-layer{width:100%;border-radius:12px;padding:14px 18px;text-align:center;}
+.arch-layer.front{background:rgba(201,162,39,0.08);border:1px solid rgba(201,162,39,0.2);}
+.arch-layer.core{background:rgba(139,105,20,0.12);border:1px solid rgba(139,105,20,0.25);}
+.arch-layer.base{background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.12);}
+.arch-label{font-family:var(--font-d);font-weight:700;font-size:clamp(0.68rem,0.9vw,0.78rem);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;}
+.arch-label.al-gold{color:var(--gd-light);}
+.arch-label.al-amber{color:var(--warm);}
+.arch-label.al-blue{color:var(--blue);}
+.arch-items{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+.arch-item{font-size:clamp(0.72rem,0.9vw,0.82rem);color:var(--text-sec);background:rgba(255,255,255,0.03);border:1px solid var(--border2);padding:4px 12px;border-radius:6px;}
+.arch-conn{color:var(--gd-main);font-size:0.9rem;opacity:0.35;}
+
+/* ========== MOCKUP ========== */
+.bm{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);max-width:560px;width:100%;}
+.bm-bar{height:28px;background:rgba(10,8,0,0.6);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 10px;gap:5px;}
+.bm-dot{width:7px;height:7px;border-radius:50%;}.bm-dot.r{background:var(--red);}.bm-dot.y{background:var(--gd-light);}.bm-dot.g{background:var(--green);}
+.bm-url{margin-left:8px;background:rgba(255,255,255,0.03);border-radius:4px;padding:2px 8px;font-size:0.55rem;color:var(--text-mut);flex:1;max-width:200px;}
+.bm-url::before{content:"\1F512 ";font-size:0.4rem;}
+.bm-nav{height:26px;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 10px;gap:8px;font-size:0.46rem;color:var(--text-mut);opacity:0.6;}
+.bm-nav .bn-brand{font-family:var(--font-d);font-weight:700;font-size:0.6rem;opacity:1;}
+.bm-nav .bn-brand .a{color:var(--text-sec);}.bm-nav .bn-brand .b{color:var(--gd-light);}.bm-nav .bn-brand .c{color:var(--gd-bright);}
+.bm-nav .bn-links{display:flex;gap:8px;margin-left:auto;}
+.bm-search{margin:5px 5px 0;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;padding:3px;display:flex;align-items:center;gap:2px;flex-wrap:wrap;}
+.bm-sf{flex:1;padding:4px 6px;border-radius:5px;border-left:1px solid var(--border);min-width:45px;}
+.bm-sf:first-child{border-left:none;}
+.bm-sf-l{display:block;font-size:0.38rem;color:var(--text);font-weight:600;margin-bottom:1px;}
+.bm-sf-v{font-size:0.42rem;color:var(--text-mut);}
+.bm-sb{background:var(--gd-main);color:var(--bg);border:none;padding:4px 9px;border-radius:5px;font-size:0.42rem;font-weight:700;cursor:default;}
+.bm-props{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:5px;}
+.bm-pc{background:rgba(255,255,255,0.01);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.bm-pi{height:44px;background:linear-gradient(135deg,#1e1a0e,#0e0c06);display:flex;align-items:center;justify-content:center;color:var(--text-mut);font-size:0.8rem;opacity:0.22;}
+.bm-pn{padding:3px 5px;}
+.bm-pt{display:inline-block;font-size:0.32rem;padding:1px 4px;border-radius:3px;font-weight:600;text-transform:uppercase;margin-bottom:2px;}
+.bm-pt.v{background:var(--gold-dim);color:var(--gd-light);}
+.bm-pt.r{background:rgba(96,165,250,0.1);color:var(--blue);}
+.bm-pl{height:2px;background:var(--text-mut);border-radius:2px;opacity:0.1;margin-bottom:1px;}
+.bm-pl:last-child{width:50%;margin-bottom:0;}
+.bm-pp{font-size:0.42rem;font-weight:700;color:var(--gd-light);margin-top:1px;font-family:var(--font-d);}
+
+/* ========== OPERACION GRID ========== */
+.ops-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;max-width:880px;margin-top:24px;}
+.op-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 16px;text-align:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+.op-ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:1.2rem;}
+.op-ic svg{width:20px;height:20px;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none;}
+.op-ic.gold-bg{background:var(--gold-dim);border:1px solid rgba(201,162,39,0.18);}
+.op-ic.gold-bg svg{stroke:var(--gd-light);}
+.op-ic.green-bg{background:rgba(123,198,126,0.08);border:1px solid rgba(123,198,126,0.15);}
+.op-ic.green-bg svg{stroke:var(--green);}
+.op-ic.blue-bg{background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.12);}
+.op-ic.blue-bg svg{stroke:var(--blue);}
+.op-t{font-family:var(--font-d);font-weight:600;font-size:clamp(0.88rem,1.15vw,1rem);margin-bottom:4px;}
+.op-d{font-size:clamp(0.78rem,0.95vw,0.88rem);color:var(--text-sec);line-height:1.5;}
+
+/* ========== ROADMAP ========== */
+.road{display:flex;flex-direction:column;gap:0;width:100%;max-width:650px;margin-top:24px;position:relative;}
+.road::before{content:'';position:absolute;left:19px;top:28px;bottom:28px;width:2px;background:linear-gradient(to bottom,var(--gd-main),var(--blue));border-radius:2px;opacity:0.3;}
+.road-item{display:flex;gap:16px;align-items:flex-start;position:relative;padding:12px 0;}
+.road-dot{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;z-index:1;font-family:var(--font-d);font-weight:700;font-size:0.85rem;}
+.road-dot.rg{background:linear-gradient(135deg,var(--gd-main),var(--gd-bright));color:var(--bg);}
+.road-dot.rb{background:linear-gradient(135deg,rgba(96,165,250,0.3),rgba(96,165,250,0.15));color:var(--blue);border:1.5px solid rgba(96,165,250,0.3);}
+.road-info h4{font-family:var(--font-d);font-weight:600;font-size:clamp(0.9rem,1.15vw,1.02rem);margin-bottom:2px;}
+.road-info p{font-size:clamp(0.8rem,0.95vw,0.88rem);color:var(--text-sec);line-height:1.5;}
+.road-info .ri-tag{display:inline-block;font-size:clamp(0.62rem,0.8vw,0.72rem);font-weight:600;padding:2px 8px;border-radius:4px;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;}
+.ri-tag.done{background:rgba(123,198,126,0.1);color:var(--green);}
+.ri-tag.now{background:var(--gold-dim);color:var(--gd-light);}
+.ri-tag.next{background:rgba(96,165,250,0.08);color:var(--blue);}
+
+/* ========== VALORES GRID ========== */
+.val-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;width:100%;max-width:700px;margin-top:24px;}
+.val-item{display:flex;gap:12px;align-items:flex-start;}
+.val-ic{width:40px;height:40px;border-radius:10px;background:var(--gold-dim);border:1px solid rgba(201,162,39,0.18);display:flex;align-items:center;justify-content:center;color:var(--gd-light);font-size:1.1rem;flex-shrink:0;}
+.val-t h4{font-family:var(--font-d);font-weight:600;font-size:clamp(0.9rem,1.1vw,1rem);margin-bottom:2px;}
+.val-t p{font-size:clamp(0.8rem,0.95vw,0.88rem);color:var(--text-sec);line-height:1.5;}
+
+/* ========== CTA ========== */
+.cta-big{display:inline-flex;align-items:center;gap:10px;padding:16px 40px;background:linear-gradient(135deg,var(--gd-main),var(--gd-bright));color:#0a0800;font-family:var(--font-d);font-weight:700;font-size:clamp(0.95rem,1.4vw,1.15rem);border:none;border-radius:50px;cursor:pointer;text-decoration:none;box-shadow:0 12px 40px rgba(139,105,20,0.35);transition:transform 0.2s,box-shadow 0.2s;}
+.cta-big:hover{transform:translateY(-3px);box-shadow:0 18px 50px rgba(139,105,20,0.45);}
+
+/* ========== CONTROLES ========== */
+.ctrl{position:absolute;bottom:0;left:0;right:0;height:58px;background:linear-gradient(transparent,rgba(18,16,11,0.95) 35%);display:flex;align-items:center;padding:0 16px;z-index:100;gap:8px;}
+.cb{background:none;border:none;color:var(--text);font-size:1rem;cursor:pointer;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;}
+.cb:hover{background:rgba(255,255,255,0.06);}
+.cb svg{width:16px;height:16px;fill:var(--text);}
+.pw{flex:1;height:4px;background:rgba(255,255,255,0.08);border-radius:3px;cursor:pointer;position:relative;transition:height 0.15s;}
+.pw:hover{height:7px;}
+.pb{height:100%;background:linear-gradient(90deg,var(--gd-main),var(--gd-bright));border-radius:3px;width:0%;transition:width 0.3s linear;position:relative;}
+.pb::after{content:'';position:absolute;right:-5px;top:50%;transform:translateY(-50%) scale(0);width:12px;height:12px;border-radius:50%;background:var(--gd-bright);transition:transform 0.15s;}
+.pw:hover .pb::after{transform:translateY(-50%) scale(1);}
+.sctr{font-size:0.78rem;color:var(--text-mut);font-variant-numeric:tabular-nums;min-width:46px;text-align:center;}
+.cfs{margin-left:auto;}
+.dots{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px;z-index:50;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--text-mut);opacity:0.2;cursor:pointer;transition:all 0.3s;border:none;padding:0;}
+.dot.on{opacity:1;background:var(--gd-light);box-shadow:0 0 10px rgba(201,162,39,0.4);transform:scale(1.4);}
+.dot:hover{opacity:0.5;}
+
+/* ========== TOAST Y SHARE ========== */
+.toast{position:fixed;top:60px;right:14px;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:10px 18px;font-size:0.82rem;color:var(--text);z-index:600;opacity:0;transform:translateY(-8px);transition:all 0.3s;pointer-events:none;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);max-width:320px;}
+.toast.show{opacity:1;transform:translateY(0);}
+.share-hint{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 16px;font-size:0.75rem;color:var(--gd-light);z-index:400;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);max-width:90vw;overflow:hidden;text-overflow:ellipsis;}
+.share-hint.show{opacity:1;}
+
+/* ========== MODO SCROLL ========== */
+body.scroll-mode{overflow-y:auto!important;overflow-x:hidden!important;}
+body.scroll-mode .wrap{position:static;height:auto;overflow:visible;}
+body.scroll-mode .slide{position:relative;min-height:100vh;opacity:1;transform:none;pointer-events:auto;display:flex;}
+body.scroll-mode .slide.outL,body.scroll-mode .slide.outR{opacity:1;transform:none;}
+body.scroll-mode .slide .anim{opacity:0;transform:translateY(20px);transition:opacity 0.5s ease,transform 0.5s ease;}
+body.scroll-mode .slide .anim.vis{opacity:1;transform:none;}
+body.scroll-mode .slide .anim.sc{transform:scale(0.92);}
+body.scroll-mode .slide .anim.sc.vis{transform:scale(1);}
+body.scroll-mode .slide .anim.xl{transform:translateX(-20px);}
+body.scroll-mode .slide .anim.xl.vis{transform:none;}
+body.scroll-mode .atmo{position:fixed;}
+body.scroll-mode .ctrl{position:fixed;}
+body.scroll-mode .dots{display:none;}
+body.scroll-mode #ptc{position:fixed;}
+body.scroll-mode .slide{transition:none;}
+
+/* ========== RESPONSIVE ========== */
+@media(max-width:1024px){
+  .pillars{grid-template-columns:1fr 1fr;}
+  .ops-grid{grid-template-columns:1fr 1fr;}
+  .slide.s3-layout{padding:30px 4vw 100px;}
+  .s3-grid{grid-template-columns:1fr!important;gap:24px!important;}
+  .s3-left{order:1;}.s3-right{order:2;}
+}
+@media(max-width:900px){
+  .slide{padding:28px 4vw 90px;}
+  .val-grid{grid-template-columns:1fr;}
+  .dots{display:none;}
+  .tb-label{display:none;}
+}
+@media(max-width:600px){
+  .slide{padding:20px 4vw 82px;}
+  .pillars,.ops-grid{grid-template-columns:1fr;}
+  .ctrl{height:54px;padding:0 8px;gap:5px;}
+  .cb{width:36px;height:36px;font-size:0.85rem;}
+  .sctr{font-size:0.7rem;min-width:34px;}
+  .tb-btn .btn-text{display:none;}
+  .topbar{padding:0 8px;gap:6px;height:46px;}
+  .wrap{top:46px;}
+  body.scroll-mode .wrap{top:0;}
+  .tb-modes{display:none;}
+  .logo-big .lb-s{font-size:clamp(0.8rem,6vw,1.1rem);}
+  .logo-big .lb-v,.logo-big .lb-m{font-size:clamp(1.8rem,14vw,3rem);}
+  .st{margin-bottom:12px;}
+  .arch-items{gap:5px;}
+  .arch-item{font-size:clamp(0.62rem,2.2vw,0.75rem);padding:3px 8px;}
+}
+@media(max-width:400px){
+  .slide{padding:16px 3vw 78px;}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- ========== TOPBAR ========== -->
+<header class="topbar" role="banner">
+  <div class="tb-brand"><span class="s">Somos </span><span class="v">Vive </span><span class="m">Mas</span></div>
+  <div class="tb-sep"></div>
+  <div class="tb-label">Nuestro Equipo</div>
+  <div class="tb-modes">
+    <button class="tb-btn on" id="modeSlide" title="Modo presentacion">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <span class="btn-text">Pantalla</span>
+    </button>
+    <button class="tb-btn" id="modeScroll" title="Modo scroll movil">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+      <span class="btn-text">Scroll</span>
+    </button>
+    <button class="tb-btn" id="modeShare" title="Copiar enlace de este slide">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      <span class="btn-text">Compartir</span>
+    </button>
+  </div>
+  <div class="tb-right">
+    <button class="tb-btn" id="btnReset" title="Reiniciar">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      <span class="btn-text">Reiniciar</span>
+    </button>
+    <button class="tb-btn" id="btnFS" title="Pantalla completa">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      <span class="btn-text">Full</span>
+    </button>
+  </div>
+</header>
+
+<!-- ========== CONTENIDO ========== -->
+<div class="wrap">
+  <div class="atmo">
+    <div class="ab b1"></div><div class="ab b2"></div><div class="ab b3"></div>
+    <div class="atmo-line"></div>
+  </div>
+  <canvas id="ptc"></canvas>
+
+  <!-- ===== S0: HOOK INTERNO ===== -->
+  <section class="slide on" id="slide-0" data-dur="7000">
+    <div class="center">
+      <div class="tag tag-gold anim d1">Presentacion interna</div>
+      <h2 class="st anim d2">Lo que estamos construyendo <span class="cb">y por que importa</span></h2>
+      <p class="ss anim d3" style="max-width:620px;">Esta no es una presentacion de ventas. Es la radiografia de lo que hacemos, como funciona, donde estamos y hacia donde vamos. Para que cada persona del equipo entienda el mapa completo.</p>
+      <div class="gold-line anim d4" style="width:100px;"></div>
+      <p class="anim d5" style="font-family:var(--font-d);font-size:clamp(0.78rem,1vw,0.9rem);font-weight:600;color:var(--text-mut);letter-spacing:0.1em;text-transform:uppercase;">
+        Si no entiendes el todo, no puedes darle lo mejor a tu parte.
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== S1: QUE ES VIVEMAS REALMENTE ===== -->
+  <section class="slide" id="slide-1" data-dur="9000">
+    <div class="center">
+      <div class="tag tag-gold anim d1">Identidad</div>
+      <h2 class="st anim d2">Somos ViveMas no es <span class="cw">una inmobiliaria</span></h2>
+      <p class="ss anim d3">Es un ecosistema digital que conecta a todos los actores del mercado inmobiliario. Nuestro producto no es una propiedad. Es la conexion entre personas, propiedades y oportunidades.</p>
+      <div class="pillars">
+        <div class="pillar anim d4">
+          <div class="pil-ic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="pil-t">Plataforma</div>
+          <div class="pil-d">El sitio web, la app, las herramientas. El medio.</div>
+        </div>
+        <div class="pillar anim d6">
+          <div class="pil-ic"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="pil-t">Comunidad</div>
+          <div class="pil-d">Propietarios, agentes, compradores, inversionistas. El ecosistema.</div>
+        </div>
+        <div class="pillar anim d8">
+          <div class="pil-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+          <div class="pil-t">Servicios</div>
+          <div class="pil-d">Pago, administracion, mantenimiento. Lo que retiene.</div>
+        </div>
+        <div class="pillar anim d10">
+          <div class="pil-ic"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <div class="pil-t">Crecimiento</div>
+          <div class="pil-d">El efecto red. Mientras mas gente, mas valor para todos.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== S2: ARQUITECTURA DE LA PLATAFORMA ===== -->
+  <section class="slide" id="slide-2" data-dur="9000">
+    <div class="center">
+      <div class="tag tag-blue anim d1">Tecnologia</div>
+      <h2 class="st anim d2">Como esta construida <span class="cbl">la plataforma</span></h2>
+      <p class="ss anim d3">Tres capas que trabajan juntas. Lo que el usuario ve es solo la punta del iceberg.</p>
+      <div class="arch">
+        <div class="arch-layer front anim d4">
+          <div class="arch-label al-gold">Capa Frontal — Lo que ve el usuario</div>
+          <div class="arch-items">
+            <span class="arch-item">Catalogo de propiedades</span>
+            <span class="arch-item">Busqueda avanzada</span>
+            <span class="arch-item">Comparador</span>
+            <span class="arch-item">Directorio profesional</span>
+            <span class="arch-item">Perfiles de usuario</span>
+            <span class="arch-item">Dashboard de servicios</span>
+          </div>
+        </div>
+        <div class="arch-conn anim d5">&#9660;</div>
+        <div class="arch-layer core anim d6">
+          <div class="arch-label al-amber">Capa Core — Lo que hace funcionar todo</div>
+          <div class="arch-items">
+            <span class="arch-item">Gestion de propiedades</span>
+            <span class="arch-item">Motor de busqueda y filtros</span>
+            <span class="arch-item">Sistema de creditos</span>
+            <span class="arch-item">Pago de servicios</span>
+            <span class="arch-item">Roles y permisos</span>
+            <span class="arch-item">Notificaciones</span>
+          </div>
+        </div>
+        <div class="arch-conn anim d7">&#9660;</div>
+        <div class="arch-layer base anim d8">
+          <div class="arch-label al-blue">Capa Base — La infraestructura</div>
+          <div class="arch-items">
+            <span class="arch-item">Base de datos</span>
+            <span class="arch-item">Hosting y CDN</span>
+            <span class="arch-item">Seguridad</span>
+            <span class="arch-item">Analitica</span>
+            <span class="arch-item">APIs internas</span>
+            <span class="arch-item">Integraciones futuras</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== S3: LO QUE YA EXISTE ===== -->
+  <section class="slide s3-layout" id="slide-3" data-dur="8000">
+    <div class="s3-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center;width:100%;max-width:1050px;">
+      <div class="s3-left">
+        <div class="tag tag-green anim d1">Realidad</div>
+        <h2 class="st anim d2">Esto no es una idea. <span class="cg">Ya funciona.</span></h2>
+        <p class="ss anim d3" style="margin-bottom:20px;">La plataforma esta viva en somosvivemas.com. Estas son las herramientas que ya estan operativas hoy.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="anim xl d4" style="display:flex;gap:10px;align-items:flex-start;"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);margin-top:6px;flex-shrink:0;"></div><div style="font-size:0.88rem;color:var(--text-sec);line-height:1.4;"><strong style="color:var(--text);">Catalogo activo</strong> — Propiedades publicadas con fotos, precios, ubicacion y detalles completos.</div></div>
+          <div class="anim xl d5" style="display:flex;gap:10px;align-items:flex-start;"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);margin-top:6px;flex-shrink:0;"></div><div style="font-size:0.88rem;color:var(--text-sec);line-height:1.4;"><strong style="color:var(--text);">Busqueda con filtros</strong> — Ubicacion, tipo, operacion, precio y tipo de credito.</div></div>
+          <div class="anim xl d6" style="display:flex;gap:10px;align-items:flex-start;"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);margin-top:6px;flex-shrink:0;"></div><div style="font-size:0.88rem;color:var(--text-sec);line-height:1.4;"><strong style="color:var(--text);">Creditos inmobiliarios</strong> — INFONAVIT, FOVISSSTE, bancos. El usuario filtra por su tipo de credito.</div></div>
+          <div class="anim xl d7" style="display:flex;gap:10px;align-items:flex-start;"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);margin-top:6px;flex-shrink:0;"></div><div style="font-size:0.88rem;color:var(--text-sec);line-height:1.4;"><strong style="color:var(--text);">Comparador de propiedades</strong> — Compara lado a lado antes de decidir.</div></div>
+          <div class="anim xl d8" style="display:flex;gap:10px;align-items:flex-start;"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);margin-top:6px;flex-shrink:0;"></div><div style="font-size:0.88rem;color:var(--text-sec);line-height:1.4;"><strong style="color:var(--text);">Directorio profesional</strong> — Espacio para agentes, agencias y proveedores.</div></div>
+        </div>
+      </div>
+      <div class="s3-right" style="display:flex;justify-content:center;">
+        <div class="bm anim d3">
+          <div class="bm-bar"><div class="bm-dot r"></div><div class="bm-dot y"></div><div class="bm-dot g"></div><div class="bm-url">somosvivemas.com</div></div>
+          <div class="bm-nav"><div class="bn-brand"><span class="a">Somos </span><span class="b">Vive </span><span class="c">Mas</span></div><div class="bn-links"><span>Inicio</span><span>Catalogo</span><span>Servicios</span><span>Nosotros</span><span>Directorio</span></div></div>
+          <div class="bm-search">
+            <div class="bm-sf"><div class="bm-sf-l">Ubicacion</div><div class="bm-sf-v">Donde buscas?</div></div>
+            <div class="bm-sf"><div class="bm-sf-l">Operacion</div><div class="bm-sf-v">Renta o Venta</div></div>
+            <div class="bm-sf"><div class="bm-sf-l">Tipo</div><div class="bm-sf-v">Tipo de propiedad</div></div>
+            <div class="bm-sf"><div class="bm-sf-l">Precio</div><div class="bm-sf-v">Cualquier precio</div></div>
+            <div class="bm-sf"><div class="bm-sf-l">Creditos</div><div class="bm-sf-v">Cualquier credito</div></div>
+            <div class="bm-sb">Buscar</div>
+          </div>
+          <div class="bm-props">
+            <div class="bm-pc"><div class="bm-pi">&#127968;</div><div class="bm-pn"><span class="bm-pt v">Venta</span><div class="bm-pl"></div><div class="bm-pl" style="width:70%"></div><div class="bm-pp">$2,450,000</div></div></div>
+            <div class="bm-pc"><div class="bm-pi">&#127970;</div><div class="bm-pn"><span class="bm-pt r">Renta</span><div class="bm-pl"></div><div class="bm-pl" style="width:65%"></div><div class="bm-pp">$15,000/mes</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== S4: COMO OPERAMOS ===== -->
+  <section class="slide" id="slide-4" data-dur="9000">
+    <div class="center">
+      <div class="tag tag-gold anim d1">Operacion</div>
+      <h2 class="st anim d2">Las areas que hacen <span class="cy">que esto funcione</span></h2>
+      <p class="ss anim d3">Cada area del equipo tiene un rol critico. Si una falla, el ecosistema se debilita.</p>
+      <div class="ops-grid">
+        <div class="op-card anim d4">
+          <div class="op-ic gold-bg"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div class="op-t">Plataforma y Tecnologia</div>
+          <div class="op-d">Desarrollo, mantenimiento, mejoras, errores, velocidad. Sin esto no hay producto.</div>
+        </div>
+        <div class="op-card anim d6">
+          <div class="op-ic green-bg"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="op-t">Contenido y Propiedades</div>
+          <div class="op-d">Carga, verificacion, fotos, descripcion, actualizacion. La calidad del catalogo.</div>
+        </div>
+        <div class="op-card anim d8">
+          <div class="op-ic blue-bg"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="op-t">Comunidad y Relaciones</div>
+          <div class="op-d">Agentes, agencias, propietarios. Captacion, vinculacion, retencion.</div>
+        </div>
+        <div class="op-card anim d9">
+          <div class="op-ic gold-bg"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+          <div class="op-t">Marca y Comunicacion</div>
+          <div class="op-d">Posicionamiento, mensajes, redes, presentaciones. Como nos percibe el mercado.</div>
+        </div>
+        <div class="op-card anim d11">
+          <div class="op-ic green-bg"><svg viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <div class="op-t">Servicios y Operaciones</div>
+          <div class="op-d">Pago de servicios, administracion, mantenimiento. Lo que genera recurrente.</div>
+        </div>
+        <div class="op-card anim d13">
+          <div class="op-ic blue-bg"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+          <div class="op-t">Estrategia y Crecimiento</div>
+          <div class="op-d">Vision a mediano y largo plazo, alianzas, decisiones de direccion.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== S5: ROADMAP ===== -->
+  <section class="slide" id="slide-5" data-dur="9000">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;width:100%;max-width:1000px;">
+      <div>
+        <div class="tag tag-blue anim d1">Roadmap</div>
+        <h2 class="st anim d2">Donde estamos y <span class="cbl">hacia donde vamos</span></h2>
+        <p class="ss anim d3" style="margin-bottom:20px;">No estamos adivinando. Hay un camino. Algunas cosas ya estan hechas, otras estan en curso, y las demas son el siguiente paso.</p>
+      </div>
+      <div class="road">
+        <div class="road-item anim xl d4">
+          <div class="road-dot rg">1</div>
+          <div class="road-info"><span class="ri-tag done">Hecho</span><h4>Plataforma base operativa</h4><p>Catalogo, busqueda, filtros, creditos, comparador, directorio. Funcionando en produccion.</p></div>
+        </div>
+        <div class="road-item anim xl d6">
+          <div class="road-dot rg">2</div>
+          <div class="road-info"><span class="ri-tag done">Hecho</span><h4>Identidad y posicionamiento</h4><p>Marca, mensajes, presentaciones, lenguaje visual. Todo alineado a la vision de comunidad.</p></div>
+        </div>
+        <div class="road-item anim xl d8">
+          <div class="road-dot rg">3</div>
+          <div class="road-info"><span class="ri-tag now">En curso</span><h4>Captacion de comunidad</h4><p>Incorporar agentes, propietarios y profesionales al ecosistema. Las primeras presentaciones comerciales.</p></div>
+        </div>
+        <div class="road-item anim xl d10">
+          <div class="road-dot rb">4</div>
+          <div class="road-info"><span class="ri-tag next">Siguiente</span><h4>Servicios integrados</h4><p>Pago de servicios, administracion y mantenimiento como productos activos dentro de la plataforma.</p></div>
+        </div>
+        <div class="road-item anim xl d12">
+          <div class="road-dot rb">5</div>
+          <div class="road-info"><span class="ri-tag next">Siguiente</span><h4>Efecto red activo</h4><p>Que la comunidad genere valor por si misma. Que un propietario llegue por un agente. Que un agente llegue por un comprador.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== S6: LO QUE NOS HACE DIFERENTES (INTERNO) ===== -->
+  <section class="slide" id="slide-6" data-dur="8000">
+    <div class="center">
+      <div class="tag tag-gold anim d1">Ventaja competitiva</div>
+      <h2 class="st anim d2">Nuestra ventaja no es <span class="cb">un feature</span></h2>
+      <p class="ss anim d3">Cualquier portal puede agregar un filtro o un comparador. Lo que no pueden copiar es lo que construimos por dentro.</p>
+      <div class="val-grid">
+        <div class="val-item anim xl d4">
+          <div class="val-ic">&#9881;</div>
+          <div class="val-t"><h4>Vision de ecosistema</h4><p>No pensamos en paginas. Pensamos en conexiones. Cada decision responde a: como esto hace mas fuerte a la comunidad?</p></div>
+        </div>
+        <div class="val-item anim xl d6">
+          <div class="val-ic">&#9889;</div>
+          <div class="val-t"><h4>Ejecucion real</h4><p>No somos solo ideas. Tenemos plataforma funcionando, marca definida, presentaciones listas. Ejecutamos.</p></div>
+        </div>
+        <div class="val-item anim xl d8">
+          <div class="val-ic">&#127919;</div>
+          <div class="val-t"><h4>Enfoque antes de escala</h4><p>No queremos ser grandes sin ser buenos. Primero calidad, despues cantidad. Primero comunidad, despues numeros.</p></div>
+        </div>
+        <div class="val-item anim xl d10">
+          <div class="val-ic">&#128640;</div>
+          <div class="val-t"><h4>Servicios como retencion</h4><p>Nadie regresa a un portal solo para ver propiedades. Regresa si le resuelves otros problemas. Eso construye lealtad.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== S7: TU ROL ===== -->
+  <section class="slide" id="slide-7" data-dur="8000">
+    <div class="center">
+      <div class="tag tag-green anim d1">Equipo</div>
+      <h2 class="st anim d2">Lo que hacemos cada dia <span class="cg">define lo que somos</span></h2>
+      <p class="ss anim d3" style="max-width:620px;">Ninguna plataforma es mas fuerte que el equipo que la opera. Los portales grandes tienen presupuesto. Nosotros tenemos algo que el dinero no compra: personas que entienden lo que estan construyendo.</p>
+      <div style="display:flex;flex-direction:column;gap:14px;width:100%;max-width:600px;margin-top:24px;">
+        <div class="anim xl d4" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;">
+          <div style="font-size:1.4rem;flex-shrink:0;margin-top:2px;">&#128161;</div>
+          <div><div style="font-family:var(--font-d);font-weight:600;font-size:0.92rem;margin-bottom:2px;">Entiende el mapa completo</div><div style="font-size:0.82rem;color:var(--text-sec);line-height:1.4;">No te limites a tu area. Saber como conecta todo te permite tomar mejores decisiones.</div></div>
+        </div>
+        <div class="anim xl d6" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;">
+          <div style="font-size:1.4rem;flex-shrink:0;margin-top:2px;">&#128170;</div>
+          <div><div style="font-family:var(--font-d);font-weight:600;font-size:0.92rem;margin-bottom:2px;">Ejecuta con criterio</div><div style="font-size:0.82rem;color:var(--text-sec);line-height:1.4;">No todo lo que se puede hacer se debe hacer. Prioriza lo que fortalece el ecosistema.</div></div>
+        </div>
+        <div class="anim xl d8" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;">
+          <div style="font-size:1.4rem;flex-shrink:0;margin-top:2px;">&#128172;</div>
+          <div><div style="font-family:var(--font-d);font-weight:600;font-size:0.92rem;margin-bottom:2px;">Comunica lo que ves</div><div style="font-size:0.82rem;color:var(--text-sec);line-height:1.4;">Si algo no funciona, si algo puede mejorar, si algo no tiene sentido: habla. El silencio no construye.</div></div>
+        </div>
+        <div class="anim xl d10" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;">
+          <div style="font-size:1.4rem;flex-shrink:0;margin-top:2px;">&#127793;</div>
+          <div><div style="font-family:var(--font-d);font-weight:600;font-size:0.92rem;margin-bottom:2px;">Piensa a largo plazo</div><div style="font-size:0.82rem;color:var(--text-sec);line-height:1.4;">Lo que hacemos hoy no es para este mes. Es para que en un ano ViveMas sea la referencia.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== S8: CIERRE ===== -->
+  <section class="slide" id="slide-8" data-dur="7000">
+    <div class="center" style="gap:20px;">
+      <div class="logo-big sm anim sc d1">
+        <span class="lb-s">Somos </span><span class="lb-v">Vive </span><span class="lb-m">Mas</span>
+      </div>
+      <div class="gold-line anim d3" style="width:120px;"></div>
+      <p class="ss anim d4" style="max-width:540px;">No estamos construyendo una pagina web. Estamos construyendo el ecosistema inmobiliario que Mexico no tiene. Y cada persona de este equipo es parte de eso.</p>
+      <div class="anim d6" style="font-family:var(--font-d);font-size:clamp(0.78rem,1.1vw,0.92rem);font-weight:600;color:var(--text-mut);letter-spacing:0.12em;text-transform:uppercase;">
+        No somos solamente una inmobiliaria. Somos una comunidad.
+      </div>
+      <div class="anim d8" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+        <a href="https://somosvivemas.com" target="_blank" rel="noopener" class="cta-big" style="font-size:clamp(0.85rem,1.2vw,1rem);padding:14px 32px;">
+          VER LA PLATAFORMA &#8594;
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== NAVEGACION ========== -->
+  <nav class="dots" id="dotsNav" aria-label="Navegacion de slides"></nav>
+  <div class="ctrl" role="navigation" aria-label="Controles de presentacion">
+    <button class="cb" id="ctrlPrev" aria-label="Slide anterior"><svg viewBox="0 0 24 24"><polygon points="15 18 9 12 15 6"/></svg></button>
+    <button class="cb" id="ctrlPlay" aria-label="Pausar o reanudar">
+      <svg viewBox="0 0 24 24" id="iconPlay"><polygon points="5 3 19 12 5 21"/></svg>
+      <svg viewBox="0 0 24 24" id="iconPause" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+    </button>
+    <button class="cb" id="ctrlNext" aria-label="Slide siguiente"><svg viewBox="0 0 24 24"><polygon points="9 18 15 12 9 6"/></svg></button>
+    <div class="pw" id="progressWrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="pb" id="progressBar"></div></div>
+    <div class="sctr" id="slideCounter">1 / 9</div>
+    <button class="cb cfs" id="ctrlFS" aria-label="Pantalla completa"><svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+  </div>
+</div>
+
+<div class="toast" id="toastEl" role="status" aria-live="polite"></div>
+<div class="share-hint" id="shareHint"></div>
+
+<script>
+(function(){
+  'use strict';
+  var slides=document.querySelectorAll('.slide'),N=slides.length,
+      progressBar=document.getElementById('progressBar'),progressWrap=document.getElementById('progressWrap'),
+      slideCounter=document.getElementById('slideCounter'),ctrlPlay=document.getElementById('ctrlPlay'),
+      ctrlPrev=document.getElementById('ctrlPrev'),ctrlNext=document.getElementById('ctrlNext'),
+      ctrlFS=document.getElementById('ctrlFS'),btnReset=document.getElementById('btnReset'),
+      btnFS=document.getElementById('btnFS'),dotsNav=document.getElementById('dotsNav'),
+      toastEl=document.getElementById('toastEl'),shareHint=document.getElementById('shareHint'),
+      iconPlay=document.getElementById('iconPlay'),iconPause=document.getElementById('iconPause'),
+      modeSlide=document.getElementById('modeSlide'),modeScroll=document.getElementById('modeScroll'),
+      modeShare=document.getElementById('modeShare');
+  var cur=0,playing=true,slideTimer=null,progTimer=null,progVal=0,isScrollMode=false;
+
+  for(var i=0;i<N;i++){var d=document.createElement('button');d.className='dot'+(i===0?' on':'');d.setAttribute('data-dot',i);d.setAttribute('aria-label','Ir al slide '+(i+1));dotsNav.appendChild(d);}
+  dotsNav.addEventListener('click',function(e){var b=e.target.closest('[data-dot]');if(b)go(parseInt(b.getAttribute('data-dot')));});
+
+  function go(index,dir){
+    if(index<0||index>=N||index===cur)return;
+    var prev=slides[cur],next=slides[index],d=dir||(index>cur?'left':'right');
+    prev.classList.remove('on');prev.classList.add(d==='left'?'outL':'outR');
+    next.style.display='none';void next.offsetHeight;next.style.display='';
+    next.classList.add('on');
+    setTimeout(function(){prev.classList.remove('outL','outR');},850);
+    cur=index;updateUI();startProgress();updateAtmosphere(index);updateHash();
+  }
+
+  function updateUI(){
+    slideCounter.textContent=(cur+1)+' / '+N;
+    var dots=dotsNav.querySelectorAll('.dot');
+    for(var i=0;i<dots.length;i++)dots[i].classList.toggle('on',i===cur);
+    iconPlay.style.display=playing?'none':'';
+    iconPause.style.display=playing?'':'none';
+    progressWrap.setAttribute('aria-valuenow',0);
+  }
+
+  function startProgress(){
+    clearInterval(slideTimer);clearInterval(progTimer);progVal=0;progressBar.style.width='0%';
+    if(!playing||isScrollMode)return;
+    var dur=parseInt(slides[cur].getAttribute('data-dur'))||6000,step=(30/dur)*100;
+    progTimer=setInterval(function(){progVal=Math.min(100,progVal+step);progressBar.style.width=progVal+'%';progressWrap.setAttribute('aria-valuenow',Math.round(progVal));},30);
+    slideTimer=setTimeout(function(){if(cur<N-1)go(cur+1,'left');else{togglePlay();toast('Presentacion finalizada');}},dur);
+  }
+
+  function togglePlay(){playing=!playing;updateUI();if(playing)startProgress();else{clearInterval(slideTimer);clearInterval(progTimer);}}
+
+  function updateAtmosphere(idx){
+    var b3=document.querySelector('.ab.b3');
+    var c=['rgba(139,105,20,0.10)','rgba(139,105,20,0.12)','rgba(96,165,250,0.08)','rgba(123,198,126,0.08)','rgba(201,162,39,0.10)','rgba(139,105,20,0.08)','rgba(212,136,58,0.08)','rgba(123,198,126,0.10)','rgba(201,162,39,0.12)'];
+    b3.style.background='radial-gradient(circle,'+(c[idx]||c[0])+',transparent 70%)';
+  }
+
+  function updateHash(){var h='#slide-'+cur;if(location.hash!==h)history.replaceState(null,'',h);}
+  function readHash(){var h=location.hash.replace('#slide-',''),idx=parseInt(h);if(!isNaN(idx)&&idx>=0&&idx<N&&idx!==cur)go(idx);}
+  window.addEventListener('hashchange',readHash);
+
+  function setScrollMode(on){
+    isScrollMode=on;document.body.classList.toggle('scroll-mode',on);
+    modeSlide.classList.toggle('on',!on);modeScroll.classList.toggle('on',on);
+    clearInterval(slideTimer);clearInterval(progTimer);progressBar.style.width='0%';
+    if(on){var obs=new IntersectionObserver(function(e){e.forEach(function(en){if(en.isIntersecting)en.target.classList.add('vis');});},{threshold:0.15});document.querySelectorAll('.slide .anim').forEach(function(el){obs.observe(el);});toast('Modo scroll activado');}
+    else{document.querySelectorAll('.slide .anim.vis').forEach(function(el){el.classList.remove('vis');});toast('Modo presentacion activado');startProgress();}
+  }
+
+  function shareURL(){
+    var url=location.origin+location.pathname+'#slide-'+cur;
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(function(){showShareHint('Enlace copiado: '+url);}).catch(function(){showShareHint(url);});}
+    else showShareHint(url);
+  }
+  function showShareHint(t){shareHint.textContent=t;shareHint.classList.add('show');setTimeout(function(){shareHint.classList.remove('show');},3000);}
+
+  var toastTimer;function toast(m){clearTimeout(toastTimer);toastEl.textContent=m;toastEl.classList.add('show');toastTimer=setTimeout(function(){toastEl.classList.remove('show');},2500);}
+
+  function toggleFS(){if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(function(){});else document.exitFullscreen();}
+
+  ctrlPlay.addEventListener('click',togglePlay);
+  ctrlNext.addEventListener('click',function(){go(cur+1,'left');});
+  ctrlPrev.addEventListener('click',function(){go(cur-1,'right');});
+  ctrlFS.addEventListener('click',toggleFS);btnFS.addEventListener('click',toggleFS);
+  btnReset.addEventListener('click',function(){go(0);playing=true;updateUI();startProgress();toast('Reiniciada');});
+  modeSlide.addEventListener('click',function(){setScrollMode(false);});
+  modeScroll.addEventListener('click',function(){setScrollMode(true);});
+  modeShare.addEventListener('click',shareURL);
+  progressWrap.addEventListener('click',function(e){var r=progressWrap.getBoundingClientRect();go(Math.max(0,Math.min(N-1,Math.floor((e.clientX-r.left)/r.width*N))));});
+
+  var touchX=0,touchY=0;
+  document.addEventListener('touchstart',function(e){touchX=e.changedTouches[0].clientX;touchY=e.changedTouches[0].clientY;},{passive:true});
+  document.addEventListener('touchend',function(e){if(isScrollMode)return;var dx=e.changedTouches[0].clientX-touchX,dy=e.changedTouches[0].clientY-touchY;if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){if(dx<0)go(cur+1,'left');else go(cur-1,'right');}},{passive:true});
+
+  document.addEventListener('keydown',function(e){if(isScrollMode)return;switch(e.key){case'ArrowRight':e.preventDefault();go(cur+1,'left');break;case'ArrowLeft':e.preventDefault();go(cur-1,'right');break;case' ':e.preventDefault();togglePlay();break;case'f':case'F':toggleFS();break;case'Home':e.preventDefault();go(0);break;case'End':e.preventDefault();go(N-1);break;}});
+
+  var cv=document.getElementById('ptc'),cx=cv.getContext('2d'),pts=[];
+  function rsCv(){cv.width=cv.parentElement.clientWidth;cv.height=cv.parentElement.clientHeight;}
+  function iP(){rsCv();pts=[];var n=Math.min(28,Math.floor(cv.width*cv.height/38000));for(var i=0;i<n;i++)pts.push({x:Math.random()*cv.width,y:Math.random()*cv.height,vx:(Math.random()-0.5)*0.14,vy:(Math.random()-0.5)*0.14,r:Math.max(0.5,Math.random()*1.3),o:Math.random()*0.10+0.02,h:38+Math.random()*20});}
+  function dP(){cx.clearRect(0,0,cv.width,cv.height);for(var i=0;i<pts.length;i++){var p=pts[i];p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=cv.width;if(p.x>cv.width)p.x=0;if(p.y<0)p.y=cv.height;if(p.y>cv.height)p.y=0;cx.beginPath();cx.arc(p.x,p.y,Math.max(0.5,p.r),0,Math.PI*2);cx.fillStyle='hsla('+p.h+',60%,55%,'+p.o+')';cx.fill();}requestAnimationFrame(dP);}
+  window.addEventListener('resize',rsCv);iP();dP();
+
+  updateUI();readHash();startProgress();
+  setTimeout(function(){toast('Desliza o usa flechas para navegar');},1000);
+})();
+</script>
+</body>
+</html>
