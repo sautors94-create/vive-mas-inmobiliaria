@@ -350,14 +350,20 @@ document.addEventListener('DOMContentLoaded', () => {
   cargarPropiedadesDestacadas();
   cargarEstadosDisponiblesInicio();
 
-  // Nav toggle mobile
+  // Nav toggle mobile — lista vertical, se cierra sola al tocar un enlace
   const toggle = document.getElementById('nav-toggle');
   const navLinks = document.querySelector('.nav-links');
   const navActions = document.querySelector('.nav-actions');
   if (toggle) {
     toggle.addEventListener('click', () => {
-      navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
-      navActions.style.display = navActions.style.display === 'flex' ? 'none' : 'flex';
+      navLinks.classList.toggle('mobile-open');
+      navActions.classList.toggle('mobile-open');
+    });
+    navLinks?.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        navLinks.classList.remove('mobile-open');
+        navActions.classList.remove('mobile-open');
+      });
     });
   }
 });

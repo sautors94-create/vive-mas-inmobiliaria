@@ -833,8 +833,14 @@
       navToggle.addEventListener('click', () => {
         const links = document.querySelector('.nav-links');
         const actions = document.querySelector('.nav-actions');
-        if (links) links.style.display = links.style.display === 'flex' ? 'none' : 'flex';
-        if (actions) actions.style.display = actions.style.display === 'flex' ? 'none' : 'flex';
+        links?.classList.toggle('mobile-open');
+        actions?.classList.toggle('mobile-open');
+      });
+      document.querySelector('.nav-links')?.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => {
+          document.querySelector('.nav-links')?.classList.remove('mobile-open');
+          document.querySelector('.nav-actions')?.classList.remove('mobile-open');
+        });
       });
     }
 
