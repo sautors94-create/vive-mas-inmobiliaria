@@ -173,6 +173,75 @@ app.post('/api/waitlist/premium', async (req, res) => {
 
 // Inicializar módulo de Marketing Automation
 iniciarMarketingAutomation();
+// ==========================================
+// SITEMAP XML PARA GOOGLE
+// ==========================================
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const propiedades = await Property.find({
+      status: 'aprobada'
+    })
+      .select('_id updatedAt')
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    const baseUrl = 'https://somosvivemas.com';
+
+    // Páginas principales
+    const urls = [
+      {
+        loc: `${baseUrl}/`,
+        changefreq: 'daily',
+        priority: '1.0'
+      }
+    ];
+
+    // Propiedades públicas
+    propiedades.forEach((p) => {
+      urls.push({
+        loc: `${baseUrl}/pages/propiedad.html?id=${p._id}`,
+        lastmod: p.updatedAt
+          ? new Date(p.updatedAt).toISOString().split('T')[0]
+          : undefined,
+        changefreq: 'weekly',
+        priority: '0.8'
+      });
+    });
+
+    const escapeXml = (value) => {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    };
+
+    const xmlUrls = urls.map((url) => {
+      return `
+  <url>
+    <loc>${escapeXml(url.loc)}</loc>
+    ${url.lastmod ? `<lastmod>${url.lastmod}</lastmod>` : ''}
+    <changefreq>${url.changefreq}</changefreq>
+    <priority>${url.priority}</priority>
+  </url>`;
+    }).join('');
+
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${xmlUrls}
+</urlset>`;
+
+    res.status(200);
+    res.set('Content-Type', 'application/xml; charset=UTF-8');
+    res.send(sitemap);
+
+  } catch (error) {
+    console.error('❌ Error generando sitemap:', error);
+    res.status(500).send('Error generando sitemap');
+  }
+});
 
 // ✅ CORRECCIÓN: Eliminé el middleware 404 duplicado que tenías
 // 404
