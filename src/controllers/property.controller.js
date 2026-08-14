@@ -4,6 +4,28 @@ const Message = require('../models/Message');
 const User = require('../models/User');
 const { validarPropiedadBasico } = require('../utils/Agentevalidacion');
 const { moderarPropiedadConIA } = require('../utils/Agentemoderacion');
+const mongoose = require('mongoose');
+
+// ==========================================
+// FUNCIÓN DE PRIVACIDAD (COORDENADAS PÚBLICAS)
+// ==========================================
+function calcularCoordPublica(coordExacta, id, index = 1) {
+  let hash = 0;
+  const str = `${id}${index}`;
+
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+
+  // Normalizar a 0..199 para evitar resultados negativos del operador %
+  const hashNormalizado = ((hash % 200) + 200) % 200;
+
+  // Aproximadamente ±80-90 metros
+  const offset = (hashNormalizado - 100) * 0.000008;
+
+  return Number(coordExacta) + offset;
+}
 
 const LIMITE_POR_PLAN = {
   gratuito: 3,
@@ -133,18 +155,62 @@ if (recamaras) filtro['caracteristicas.recamaras'] = { $gte: Number(recamaras) }
 
 const detallePropiedad = async (req, res) => {
   try {
+    // 1. Validar que el ID sea un ObjectId válido de MongoDB
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ ok: false, error: 'ID de propiedad inválido' });
+    }
+
+    // 2. Obtener el documento y convertirlo a objeto plano JS (.lean())
     const propiedad = await Property.findById(req.params.id)
-      .populate('propietario', 'nombre avatar');
-    if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
-    if (propiedad.status !== 'aprobada') return res.status(403).json({ error: 'Propiedad no disponible' });
-    // 'pausada' se oculta automáticamente porque solo se consultan propiedades con status 'aprobada'
+      .populate('propietario', 'nombre avatar')
+      .lean();
+
+    if (!propiedad) {
+      return res.status(404).json({ ok: false, error: 'Propiedad no encontrada' });
+    }
+
+    // 3. AUTORIZACIÓN (Seguridad estrictamente en servidor)
+    const propietarioId = propiedad.propietario?._id || propiedad.propietario;
+    
+    const esPropietario = 
+      Boolean(req.user) && 
+      String(propietarioId) === String(req.user.id);
+
+    const esAdmin = 
+      Boolean(req.user) && 
+      req.user.role === 'admin';
+
+    const puedeVerExactas = esPropietario || esAdmin;
+
+    // Si NO es dueño/admin y no está aprobada, bloqueamos (lógica original mejorada)
+    if (!puedeVerExactas && propiedad.status !== 'aprobada') {
+      return res.status(403).json({ ok: false, error: 'Propiedad no disponible' });
+    }
+
+    // 4. PRIVACIDAD DE UBICACIÓN
+    if (!puedeVerExactas && propiedad.ubicacion) {
+      const lat = Number(propiedad.ubicacion.lat);
+      const lng = Number(propiedad.ubicacion.lng);
+
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        propiedad.ubicacion.latPublica = calcularCoordPublica(lat, propiedad._id, 1);
+        propiedad.ubicacion.lngPublica = calcularCoordPublica(lng, propiedad._id, 2);
+      }
+
+      // Eliminalos ANTES de enviar al frontend
+      delete propiedad.ubicacion.lat;
+      delete propiedad.ubicacion.lng;
+      delete propiedad.ubicacion.direccion;
+    }
 
     // Contador de vistas real (no bloqueante, no afecta el tiempo de respuesta)
     Property.updateOne({ _id: propiedad._id }, { $inc: { vistas: 1 } }).catch(() => {});
 
-    res.json({ ok: true, propiedad });
+    // 5. Respuesta limpia
+    return res.json({ ok: true, propiedad });
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ ok: false, error: error.message });
   }
 };
 

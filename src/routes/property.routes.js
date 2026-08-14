@@ -1,3 +1,4 @@
+const optionalAuthMiddleware = require('../middleware/optionalAuth.middleware');
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth.middleware');
@@ -19,7 +20,7 @@ const { reintentarPublicacion } = require('../../services/marketingAutomation/ev
 router.get('/', listarPropiedades);
 router.get('/mis-propiedades', authMiddleware, misPropiedades);
 router.post('/registrar-busqueda', authMiddleware, registrarBusqueda);
-router.get('/:id', detallePropiedad);
+router.get('/:id', optionalAuthMiddleware, detallePropiedad);
 router.post('/', authMiddleware, crearPropiedad);
 router.put('/:id', authMiddleware, editarPropiedad);
 router.patch('/:id/pausar', authMiddleware, pausarPropiedad);
