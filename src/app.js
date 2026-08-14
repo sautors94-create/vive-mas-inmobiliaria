@@ -178,6 +178,42 @@ iniciarMarketingAutomation();
 // ==========================================
 app.get('/sitemap.xml', async (req, res) => {
   try {
+    const baseUrl = 'https://somosvivemas.com';
+
+    // ==========================================
+    // PÁGINAS PÚBLICAS PRINCIPALES
+    // ==========================================
+    const urls = [
+      {
+        loc: `${baseUrl}/`,
+        changefreq: 'daily',
+        priority: '1.0'
+      },
+      {
+        loc: `${baseUrl}/pages/catalogo.html`,
+        changefreq: 'daily',
+        priority: '0.9'
+      },
+      {
+        loc: `${baseUrl}/pages/nosotros.html`,
+        changefreq: 'monthly',
+        priority: '0.6'
+      },
+      {
+        loc: `${baseUrl}/pages/directorio.html`,
+        changefreq: 'weekly',
+        priority: '0.7'
+      },
+      {
+        loc: `${baseUrl}/pages/servicios.html`,
+        changefreq: 'monthly',
+        priority: '0.7'
+      }
+    ];
+
+    // ==========================================
+    // PROPIEDADES APROBADAS
+    // ==========================================
     const propiedades = await Property.find({
       status: 'aprobada'
     })
@@ -185,18 +221,6 @@ app.get('/sitemap.xml', async (req, res) => {
       .sort({ updatedAt: -1 })
       .lean();
 
-    const baseUrl = 'https://somosvivemas.com';
-
-    // Páginas principales
-    const urls = [
-      {
-        loc: `${baseUrl}/`,
-        changefreq: 'daily',
-        priority: '1.0'
-      }
-    ];
-
-    // Propiedades públicas
     propiedades.forEach((p) => {
       urls.push({
         loc: `${baseUrl}/pages/propiedad.html?id=${p._id}`,
@@ -208,6 +232,9 @@ app.get('/sitemap.xml', async (req, res) => {
       });
     });
 
+    // ==========================================
+    // ESCAPAR CARACTERES XML
+    // ==========================================
     const escapeXml = (value) => {
       return String(value)
         .replace(/&/g, '&amp;')
@@ -217,6 +244,9 @@ app.get('/sitemap.xml', async (req, res) => {
         .replace(/'/g, '&apos;');
     };
 
+    // ==========================================
+    // GENERAR XML
+    // ==========================================
     const xmlUrls = urls.map((url) => {
       return `
   <url>
@@ -228,8 +258,7 @@ app.get('/sitemap.xml', async (req, res) => {
     }).join('');
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset
-  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${xmlUrls}
 </urlset>`;
 
