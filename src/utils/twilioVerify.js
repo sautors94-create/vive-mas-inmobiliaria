@@ -3,7 +3,7 @@
 // ==========================================
 // Variables de entorno requeridas (ver .env del servidor):
 //   SID_TWILIO            (Account SID)
-//   Token_TWILIO           (Auth Token)
+//   TOKEN_TWILIO           (Auth Token)
 //   SID_SERVICIO_TWILIO    (Verify Service SID, empieza con "VA...")
 //
 // A diferencia del envío de SMS "a mano" (src/utils/sms.js, ya NO se usa
@@ -20,13 +20,13 @@ let clienteTwilio = null;
 let avisoMostrado = false;
 
 const twilioVerifyConfigurado = () =>
-  !!(process.env.SID_TWILIO && process.env.Token_TWILIO && process.env.SID_SERVICIO_TWILIO);
+  !!(process.env.SID_TWILIO && process.env.TOKEN_TWILIO && process.env.SID_SERVICIO_TWILIO);
 
 const obtenerCliente = () => {
   if (!twilioVerifyConfigurado()) return null;
   if (!clienteTwilio) {
     const twilio = require('twilio');
-    clienteTwilio = twilio(process.env.SID_TWILIO, process.env.Token_TWILIO);
+    clienteTwilio = twilio(process.env.SID_TWILIO, process.env.TOKEN_TWILIO);
   }
   return clienteTwilio;
 };
@@ -47,7 +47,7 @@ const normalizarTelefono = (telefono) => {
 const enviarOTP = async (telefono) => {
   if (!twilioVerifyConfigurado()) {
     if (!avisoMostrado) {
-      console.warn('⚠️ Twilio Verify no configurado (faltan SID_TWILIO / Token_TWILIO / SID_SERVICIO_TWILIO en .env). No se pudo enviar el código OTP por SMS.');
+      console.warn('⚠️ Twilio Verify no configurado (faltan SID_TWILIO / TOKEN_TWILIO / SID_SERVICIO_TWILIO en .env). No se pudo enviar el código OTP por SMS.');
       avisoMostrado = true;
     }
     return { ok: false, motivo: 'twilio_no_configurado' };
@@ -93,7 +93,7 @@ const verificarOTP = async (telefono, codigo) => {
 // de solo confirmar que las 3 variables existan.
 const verificarConexion = async () => {
   if (!twilioVerifyConfigurado()) {
-    return { ok: false, detalle: 'Faltan SID_TWILIO / Token_TWILIO / SID_SERVICIO_TWILIO en el .env' };
+    return { ok: false, detalle: 'Faltan SID_TWILIO / TOKEN_TWILIO / SID_SERVICIO_TWILIO en el .env' };
   }
   if (!process.env.SID_SERVICIO_TWILIO.startsWith('VA')) {
     return {
