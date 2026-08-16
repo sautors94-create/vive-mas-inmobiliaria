@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const Stripe = require('stripe');
 const { cloudinary } = require('../config/cloudinary');
 const { transporter, enviarCoincidenciaBusqueda, enviarNovedad } = require('../utils/email');
-const { twilioVerifyConfigurado } = require('../utils/twilioVerify');
+const { twilioVerifyConfigurado, verificarConexion } = require('../utils/twilioVerify');
 const { ejecutarModeracionCompleta } = require('./property.controller');
 const { eventBus } = require('../../services/marketingAutomation');
 
@@ -163,6 +163,7 @@ const getVerificaciones = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 // Estado de salud de los servicios externos de los que depende la plataforma.
 // Se ejecuta bajo demanda (botón "Verificar ahora" en el panel admin), no en
 // cada carga de página — por eso hace pings reales en vez de solo revisar
@@ -209,13 +210,17 @@ const getSalud = async (req, res) => {
     servicios.push({ nombre: 'Stripe', icono: '💳', ok: false, detalle: error.message });
   }
 
-  // Twilio Verify — solo confirma que las 3 variables estén configuradas
-  // (no dispara un envío real de SMS solo por revisar el estado)
-  servicios.push(
-    twilioVerifyConfigurado()
-      ? { nombre: 'Twilio Verify (SMS)', icono: '📱', ok: true, detalle: 'Configurado' }
-      : { nombre: 'Twilio Verify (SMS)', icono: '📱', ok: false, detalle: 'Faltan SID_TWILIO / Token_TWILIO / SID_SERVICIO_TWILIO' }
-  );
+  // Twilio Verify — prueba real contra la API (fetch del servicio, sin costo
+  // ni SMS enviado) para diagnosticar la causa exacta si algo falla
+  const inicioTwilio = Date.now();
+  const resultadoTwilio = await verificarConexion();
+  servicios.push({
+    nombre: 'Twilio Verify (SMS)',
+    icono: '📱',
+    ok: resultadoTwilio.ok,
+    detalle: resultadoTwilio.detalle,
+    latencia: resultadoTwilio.ok ? Date.now() - inicioTwilio : undefined
+  });
 
   // Email (SMTP) — verifica la conexión real con el servidor de correo
   const inicioEmail = Date.now();
@@ -228,6 +233,27 @@ const getSalud = async (req, res) => {
     }
   } catch (error) {
     servicios.push({ nombre: 'Correo (SMTP)', icono: '✉️', ok: false, detalle: error.message });
+  }
+
+  // Meta (Facebook/Instagram) — revisa si hay una página conectada y si el token sigue vigente
+  try {
+    const SocialConfig = require('../models/SocialConfig');
+    const config = await SocialConfig.findOne({ isConnected: true }).sort({ connectedAt: -1 });
+    if (!config) {
+      servicios.push({ nombre: 'Meta (Facebook/Instagram)', icono: '📱', ok: false, detalle: 'Ninguna página conectada' });
+    } else {
+      const tokenVencido = config.facebook?.pageTokenExpiresAt && new Date(config.facebook.pageTokenExpiresAt) < new Date();
+      servicios.push({
+        nombre: 'Meta (Facebook/Instagram)',
+        icono: '📱',
+        ok: !tokenVencido,
+        detalle: tokenVencido
+          ? `Token vencido — reconecta la página "${config.facebook?.pageName || 'sin nombre'}"`
+          : `Conectado: ${config.facebook?.pageName || 'página sin nombre'}${config.instagram?.username ? ` · IG @${config.instagram.username}` : ''}`
+      });
+    }
+  } catch (error) {
+    servicios.push({ nombre: 'Meta (Facebook/Instagram)', icono: '📱', ok: false, detalle: error.message });
   }
 
   const segundos = Math.floor(process.uptime());

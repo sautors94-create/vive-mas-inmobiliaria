@@ -87,4 +87,27 @@ const verificarOTP = async (telefono, codigo) => {
   }
 };
 
-module.exports = { enviarOTP, verificarOTP, twilioVerifyConfigurado, normalizarTelefono };
+// Verifica la conexión real contra Twilio (sin mandar SMS ni gastar saldo):
+// consulta los datos del Verify Service con las credenciales configuradas.
+// Se usa en el panel de Salud para diagnosticar con la causa exacta en vez
+// de solo confirmar que las 3 variables existan.
+const verificarConexion = async () => {
+  if (!twilioVerifyConfigurado()) {
+    return { ok: false, detalle: 'Faltan SID_TWILIO / Token_TWILIO / SID_SERVICIO_TWILIO en el .env' };
+  }
+  if (!process.env.SID_SERVICIO_TWILIO.startsWith('VA')) {
+    return {
+      ok: false,
+      detalle: `SID_SERVICIO_TWILIO no tiene el formato esperado (debe empezar con "VA...", el tuyo empieza con "${process.env.SID_SERVICIO_TWILIO.slice(0, 4)}") — revisa que no hayas puesto el Account SID (empieza con "AC...") por error`
+    };
+  }
+  try {
+    const client = obtenerCliente();
+    const servicio = await client.verify.v2.services(process.env.SID_SERVICIO_TWILIO).fetch();
+    return { ok: true, detalle: `Conectado — servicio "${servicio.friendlyName}"` };
+  } catch (error) {
+    return { ok: false, detalle: `Twilio rechazó la conexión: ${error.message}${error.code ? ` (código ${error.code})` : ''}` };
+  }
+};
+
+module.exports = { enviarOTP, verificarOTP, twilioVerifyConfigurado, normalizarTelefono, verificarConexion };
