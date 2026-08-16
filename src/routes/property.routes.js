@@ -1,4 +1,3 @@
-const optionalAuthMiddleware = require('../middleware/optionalAuth.middleware');
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth.middleware');
@@ -20,13 +19,32 @@ const { reintentarPublicacion } = require('../../services/marketingAutomation/ev
 router.get('/', listarPropiedades);
 router.get('/mis-propiedades', authMiddleware, misPropiedades);
 router.post('/registrar-busqueda', authMiddleware, registrarBusqueda);
-router.get('/:id', optionalAuthMiddleware, detallePropiedad);
+router.get('/:id', detallePropiedad);
 router.post('/', authMiddleware, crearPropiedad);
 router.put('/:id', authMiddleware, editarPropiedad);
 router.patch('/:id/pausar', authMiddleware, pausarPropiedad);
 router.patch('/:id/reactivar', authMiddleware, reactivarPropiedad);
 router.delete('/:id', authMiddleware, eliminarPropiedad);
-router.post('/:id/fotos', authMiddleware, upload.array('fotos', 15), subirFotos);
+router.post(
+  '/:id/fotos',
+  authMiddleware,
+  (req, res, next) => {
+    upload.array('fotos', 15)(req, res, (err) => {
+      if (!err) return next();
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'Una de las fotos pesa demasiado (máximo 10MB por imagen).' });
+      }
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ error: 'Máximo 15 fotos por propiedad.' });
+      }
+      if (err.message === 'Solo se permiten imágenes') {
+        return res.status(400).json({ error: 'Solo se permiten imágenes.' });
+      }
+      return res.status(400).json({ error: err.message || 'Error al subir las fotos.' });
+    });
+  },
+  subirFotos
+);
 router.post('/:id/reintentar-publicacion', authMiddleware, async (req, res) => {
   try {
     const { plataforma } = req.body;

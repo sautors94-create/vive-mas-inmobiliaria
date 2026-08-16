@@ -27,6 +27,12 @@ const metaOAuthRoutes = require('../services/marketingAutomation/auth/metaOAuth.
 
 const app = express();
 
+// Hostinger sirve la app detrás de un proxy (LiteSpeed). Sin esto, Express
+// ignora el header X-Forwarded-For y express-rate-limit no puede identificar
+// la IP real de cada usuario (los limitadores de abajo dependen de esto).
+// "1" = confiar solo en el primer proxy (el de Hostinger), no en cualquiera.
+app.set('trust proxy', 1);
+
 // ⚠️ CRÍTICO: el webhook de Stripe debe registrarse ANTES de express.json()
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), webhookStripe);
 
@@ -173,104 +179,6 @@ app.post('/api/waitlist/premium', async (req, res) => {
 
 // Inicializar módulo de Marketing Automation
 iniciarMarketingAutomation();
-// ==========================================
-// SITEMAP XML PARA GOOGLE
-// ==========================================
-app.get('/sitemap.xml', async (req, res) => {
-  try {
-    const baseUrl = 'https://somosvivemas.com';
-
-    // ==========================================
-    // PÁGINAS PÚBLICAS PRINCIPALES
-    // ==========================================
-    const urls = [
-      {
-        loc: `${baseUrl}/`,
-        changefreq: 'daily',
-        priority: '1.0'
-      },
-      {
-        loc: `${baseUrl}/pages/catalogo.html`,
-        changefreq: 'daily',
-        priority: '0.9'
-      },
-      {
-        loc: `${baseUrl}/pages/nosotros.html`,
-        changefreq: 'monthly',
-        priority: '0.6'
-      },
-      {
-        loc: `${baseUrl}/pages/directorio.html`,
-        changefreq: 'weekly',
-        priority: '0.7'
-      },
-      {
-        loc: `${baseUrl}/pages/servicios.html`,
-        changefreq: 'monthly',
-        priority: '0.7'
-      }
-    ];
-
-    // ==========================================
-    // PROPIEDADES APROBADAS
-    // ==========================================
-    const propiedades = await Property.find({
-      status: 'aprobada'
-    })
-      .select('_id updatedAt')
-      .sort({ updatedAt: -1 })
-      .lean();
-
-    propiedades.forEach((p) => {
-      urls.push({
-        loc: `${baseUrl}/pages/propiedad.html?id=${p._id}`,
-        lastmod: p.updatedAt
-          ? new Date(p.updatedAt).toISOString().split('T')[0]
-          : undefined,
-        changefreq: 'weekly',
-        priority: '0.8'
-      });
-    });
-
-    // ==========================================
-    // ESCAPAR CARACTERES XML
-    // ==========================================
-    const escapeXml = (value) => {
-      return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
-    };
-
-    // ==========================================
-    // GENERAR XML
-    // ==========================================
-    const xmlUrls = urls.map((url) => {
-      return `
-  <url>
-    <loc>${escapeXml(url.loc)}</loc>
-    ${url.lastmod ? `<lastmod>${url.lastmod}</lastmod>` : ''}
-    <changefreq>${url.changefreq}</changefreq>
-    <priority>${url.priority}</priority>
-  </url>`;
-    }).join('');
-
-    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${xmlUrls}
-</urlset>`;
-
-    res.status(200);
-    res.set('Content-Type', 'application/xml; charset=UTF-8');
-    res.send(sitemap);
-
-  } catch (error) {
-    console.error('❌ Error generando sitemap:', error);
-    res.status(500).send('Error generando sitemap');
-  }
-});
 
 // ✅ CORRECCIÓN: Eliminé el middleware 404 duplicado que tenías
 // 404
@@ -343,5 +251,28 @@ setTimeout(bajarPlanesVencidos, 5000);
 
 // Luego cada 6 horas
 setInterval(bajarPlanesVencidos, 6 * 60 * 60 * 1000);
+
+// ==========================================
+// MANEJADOR DE ERRORES GLOBAL — debe ir al final, después de todas las rutas.
+// Red de seguridad: cualquier error que ninguna ruta haya atrapado (Multer,
+// JSON mal formado, errores de Mongoose, etc.) termina aquí en vez de
+// tronar sin control. Siempre responde JSON, nunca la página de error
+// genérica de Express.
+// ==========================================
+app.use((err, req, res, next) => {
+  if (err && err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'El archivo es demasiado grande.' });
+  }
+  if (err && err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'La solicitud es demasiado grande.' });
+  }
+  if (err && err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'Solicitud mal formada.' });
+  }
+  console.error('❌ Error no controlado:', err);
+  res.status(err?.status || err?.statusCode || 500).json({
+    error: err?.message || 'Ocurrió un error inesperado. Intenta de nuevo.'
+  });
+});
 
 module.exports = app;

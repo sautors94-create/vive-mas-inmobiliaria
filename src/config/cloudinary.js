@@ -1,18 +1,18 @@
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const path = require('path');
- 
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
- 
+
 const storage = multer.memoryStorage();
- 
+
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB — 5MB se quedaba corto para fotos de celulares modernos
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -21,7 +21,7 @@ const upload = multer({
     }
   },
 });
- 
+
 // Para documentos KYB (Constancia de Situación Fiscal, Acta Constitutiva,
 // Comprobante de domicilio): PDF. Identificaciones (INE/Pasaporte): imagen.
 // Este middleware acepta ambos; cada endpoint valida qué campos son PDF y
@@ -37,7 +37,7 @@ const uploadDocumentos = multer({
     }
   },
 });
- 
+
 const subirACloudinary = (buffer, mimetype, folder = 'vive-mas/propiedades') => {
   const esPdf = mimetype === 'application/pdf';
   return new Promise((resolve, reject) => {
@@ -53,5 +53,5 @@ const subirACloudinary = (buffer, mimetype, folder = 'vive-mas/propiedades') => 
     stream.end(buffer);
   });
 };
- 
+
 module.exports = { cloudinary, upload, uploadDocumentos, subirACloudinary };
