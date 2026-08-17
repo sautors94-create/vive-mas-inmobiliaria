@@ -158,8 +158,8 @@ const reenviarCodigo = async (req, res) => {
     user.codigoVerificacion = codigo;
     user.codigoExpira = expira;
     await user.save();
-    await enviarCodigoPorCanal(user, codigo);
-    res.json({ ok: true, mensaje: 'Código reenviado exitosamente' });
+    const envio = await enviarCodigoPorCanal(user, codigo);
+    res.json({ ok: true, mensaje: 'Código reenviado exitosamente', canalVerificacion: envio.canal });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

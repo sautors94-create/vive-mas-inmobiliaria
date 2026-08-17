@@ -528,7 +528,10 @@
         successEl.textContent = '¡Cuenta creada! Te enviamos un código de verificación. Redirigiendo...';
         successEl.style.display = 'block';
         setTimeout(() => {
-          window.location.href = `verificar.html?email=${encodeURIComponent(email)}`;
+          const canal = data.canalVerificacion || 'email';
+          const params = new URLSearchParams({ email, canal });
+          if (canal === 'sms' && telefono) params.set('telefono', telefono);
+          window.location.href = `verificar.html?${params.toString()}`;
         }, 1500);
 
       } else {

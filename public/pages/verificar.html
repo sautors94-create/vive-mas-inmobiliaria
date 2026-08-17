@@ -110,10 +110,18 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     const email = params.get('email');
+    const canal = params.get('canal') || 'email';
+    const telefono = params.get('telefono');
     if (!email) window.location.href = 'registro.html';
 
-    document.getElementById('verificar-desc').textContent =
-      `Ingresa el código de 6 dígitos que enviamos a ${email}`;
+    if (canal === 'sms' && telefono) {
+      const ultimos4 = telefono.replace(/\D/g, '').slice(-4);
+      document.getElementById('verificar-desc').textContent =
+        `Ingresa el código de 6 dígitos que enviamos por SMS al celular terminado en ${ultimos4}`;
+    } else {
+      document.getElementById('verificar-desc').textContent =
+        `Ingresa el código de 6 dígitos que enviamos a ${email}`;
+    }
 
     const moverFoco = (actual, siguienteId) => {
       if (actual.value && siguienteId) {
@@ -188,7 +196,9 @@
       const data = await api.post('/auth/reenviar-codigo', { email });
       const successEl = document.getElementById('ver-success');
       if (data.ok) {
-        successEl.textContent = '¡Código reenviado! Revisa tu correo.';
+        successEl.textContent = data.canalVerificacion === 'sms'
+          ? '¡Código reenviado! Revisa tus mensajes SMS.'
+          : '¡Código reenviado! Revisa tu correo.';
         successEl.style.display = 'block';
         setTimeout(() => successEl.style.display = 'none', 3000);
       }
