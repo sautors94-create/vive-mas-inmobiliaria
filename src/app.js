@@ -25,6 +25,13 @@ const { webhookStripe } = require('./routes/pagos');
 const { iniciarMarketingAutomation } = require('../services/marketingAutomation');
 const metaOAuthRoutes = require('../services/marketingAutomation/auth/metaOAuth.routes');
 
+// ==========================================
+// MÓDULOS NUEVOS: AGENTES FUNDADORES & SEO
+// ==========================================
+const seoController = require('./nuevo-modulo/controllers/seoController');
+const foundersRoutes = require('./nuevo-modulo/routes/founders');
+const propertiesRoutes = require('./nuevo-modulo/routes/properties');
+
 const app = express();
 
 // Hostinger sirve la app detrás de un proxy (LiteSpeed). Sin esto, Express
@@ -104,7 +111,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', proyecto: 'Vive Mas Inmobiliaria', version: '1.0.0' });
 });
 
-// Rutas
+// Rutas principales
 app.use('/api/auth/meta', metaOAuthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -120,6 +127,9 @@ app.use('/api', pagoRoutes);
 // ==========================================
 // DIRECTORIO DE INMOBILIARIAS/AGENTES VERIFICADOS
 // ==========================================
+const User = require('./models/User');
+const Property = require('./models/Property');
+
 app.get('/api/directorio', async (req, res) => {
   try {
     const usuarios = await User.find({
@@ -180,6 +190,17 @@ app.post('/api/waitlist/premium', async (req, res) => {
 // Inicializar módulo de Marketing Automation
 iniciarMarketingAutomation();
 
+// ==========================================
+// RUTAS DEL MÓDULO AGENTES FUNDADORES
+// ==========================================
+app.use('/api/fundadores', foundersRoutes);
+app.use(propertiesRoutes); // Maneja /api/properties (nuevo) y /p/:slug
+
+// ==========================================
+// SEO MASIVO: Rutas dinámicas (Ej: /renta/departamentos/cdmx/polanco)
+// ==========================================
+app.get('/:operacion(renta|venta)/:tipo(departamentos|casas|terrenos|locales)/:estado?/:ciudad?', seoController.showDynamicSEOPage);
+
 // ✅ CORRECCIÓN: Eliminé el middleware 404 duplicado que tenías
 // 404
 app.use((req, res) => {
@@ -189,8 +210,6 @@ app.use((req, res) => {
 // ==========================================
 // CRON: Bajar a gratuito cuando vence el plan
 // ==========================================
-const User = require('./models/User');
-const Property = require('./models/Property');
 const { purgarMensajesAntiguos } = require('./controllers/message.controller');
 
 const ejecutarPurgaMensajes = async () => {
@@ -245,17 +264,12 @@ const bajarPlanesVencidos = async () => {
     console.error('❌ Error en cron de planes vencidos:', error.message);
   }
 };
-const seoController = require('./nuevo-modulo/controllers/seoController');
 
 // Luego cada 6 horas
 setInterval(bajarPlanesVencidos, 6 * 60 * 60 * 1000);
 
 // ==========================================
 // MANEJADOR DE ERRORES GLOBAL — debe ir al final, después de todas las rutas.
-// Red de seguridad: cualquier error que ninguna ruta haya atrapado (Multer,
-// JSON mal formado, errores de Mongoose, etc.) termina aquí en vez de
-// tronar sin control. Siempre responde JSON, nunca la página de error
-// genérica de Express.
 // ==========================================
 app.use((err, req, res, next) => {
   if (err && err.code === 'LIMIT_FILE_SIZE') {
