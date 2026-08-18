@@ -247,11 +247,6 @@ const bajarPlanesVencidos = async () => {
 };
 const seoController = require('./nuevo-modulo/controllers/seoController');
 
-// Ruta SEO Masivo: Acepta /renta/departamentos/cdmx/polanco o /venta/casas/queretaro
-app.get('/:operacion(renta|venta)/:tipo(departamentos|casas|terrenos|locales)/:estado?/:ciudad?', seoController.showDynamicSEOPage);
-// Ejecutar una vez al arrancar
-setTimeout(bajarPlanesVencidos, 5000);
-
 // Luego cada 6 horas
 setInterval(bajarPlanesVencidos, 6 * 60 * 60 * 1000);
 
