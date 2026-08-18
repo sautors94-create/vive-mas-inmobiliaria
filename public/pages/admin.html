@@ -91,25 +91,102 @@
         </div>
       </div>
 
-      <nav class="sidebar-nav">
-        <a href="#" class="sidebar-link active" onclick="mostrarSeccion('dashboard')">📊 Dashboard</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('verificaciones')">🪪 Verificaciones KYC/KYB</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('promociones')">🎁 Promociones</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('salud')">❤️ Salud del sistema</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('revision')">⏳ En revisión</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('propiedades')">🏠 Propiedades</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('leads')">📋 Leads</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('usuarios')">👥 Usuarios</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('temas')">🎨 Temas del sitio</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('destacadas')">⭐ Propiedades destacadas</a>
-<a href="#" class="sidebar-link" onclick="mostrarSeccion('pagos')">💳 Pagos y Conciliación</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('cupones')">🎟️ Cupones</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('bloqueos')">🛡️ Usuarios vetados</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('monitoreo')">🤖 Monitoreo de chats</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('novedades')">📰 Novedades</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('reportes')">🚩 Reportes</a>
-        <a href="#" class="sidebar-link" onclick="mostrarSeccion('presentaciones')">📽️ Presentaciones</a>
-      </nav>
+          <!-- PRINCIPAL -->
+    <div class="sidebar-section-title">🏠 PRINCIPAL</div>
+
+    <a href="#" class="sidebar-link active" onclick="mostrarSeccion('dashboard')">
+        📊 Inicio
+    </a>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('salud')">
+        🩺 Salud del sistema
+    </a>
+
+
+    <!-- OPERACIÓN -->
+    <div class="sidebar-section-title">🏢 OPERACIÓN</div>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('propiedades')">
+        🏠 Propiedades
+    </a>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('destacadas')">
+        ⭐ Propiedades destacadas
+    </a>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('leads')">
+        🎯 Leads
+    </a>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('revision')">
+        🔎 En revisión
+    </a>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('reportes')">
+        🚩 Reportes
+    </a>
+
+
+    <!-- USUARIOS Y SEGURIDAD -->
+    <div class="sidebar-section-title">👥 USUARIOS Y SEGURIDAD</div>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('usuarios')">
+        👥 Usuarios
+    </a>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('verificaciones')">
+        🪪 Verificaciones KYC/KYB
+    </a>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('bloqueos')">
+        🚫 Usuarios bloqueados
+    </a>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('monitoreo')">
+        💬 Monitoreo de chats
+    </a>
+
+
+    <!-- FINANZAS Y PROMOCIONES -->
+    <div class="sidebar-section-title">💳 FINANZAS Y PROMOCIONES</div>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('pagos')">
+        💳 Pagos y conciliación
+    </a>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('cupones')">
+        🎟️ Cupones
+    </a>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('promociones')">
+        🎁 Promociones
+    </a>
+
+
+    <!-- CRECIMIENTO -->
+    <div class="sidebar-section-title">🚀 CRECIMIENTO</div>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('fundadores')">
+        🚀 Agentes Fundadores
+    </a>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('novedades')">
+        📰 Novedades
+    </a>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('presentaciones')">
+        📽️ Presentaciones
+    </a>
+
+
+    <!-- CONFIGURACIÓN -->
+    <div class="sidebar-section-title">⚙️ CONFIGURACIÓN</div>
+
+    <a href="#" class="sidebar-link" onclick="mostrarSeccion('temas')">
+        🎨 Temas del sitio
+    </a>
+
+</nav>
     </aside>
 
     <!-- CONTENIDO -->
@@ -1053,6 +1130,65 @@
         </div>
 
       </section>
+          <!-- AGENTES FUNDADORES -->
+      <section id="sec-fundadores" class="dash-section" style="display:none">
+        <div class="mod-header">
+          <div>
+            <h2>🚀 Agentes Fundadores</h2>
+            <div class="mod-header-sub">Panel > Fundadores · Gestión del programa de agentes y generador de fichas</div>
+          </div>
+          <div class="mod-header-actions">
+            <button class="btn btn-outline" style="padding:8px 16px;font-size:13px" onclick="cargarFundadoresAdmin()">↻ Actualizar</button>
+            <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="exportarFundadoresExcel()">⬇ Exportar Excel</button>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="mod-kpis" id="fund-mod-kpis" style="grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 28px;">
+          <div class="mod-kpi-card"><div class="mod-kpi-num" id="fund-kpi-total">–</div><div class="mod-kpi-label">Agentes Totales</div></div>
+          <div class="mod-kpi-card"><div class="mod-kpi-num" id="fund-kpi-props">–</div><div class="mod-kpi-label">Fichas Generadas</div></div>
+          <div class="mod-kpi-card"><div class="mod-kpi-num" id="fund-kpi-oro">–</div><div class="mod-kpi-label">Rango Oro</div></div>
+          <div class="mod-kpi-card"><div class="mod-kpi-num" id="fund-kpi-elite">–</div><div class="mod-kpi-label">Rango Elite</div></div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="mod-filters">
+          <input type="text" id="fund-search" class="form-input" placeholder="Buscar agente..." style="width:220px;padding:8px 12px;font-size:13px" oninput="cargarFundadoresAdmin()">
+          <select id="fund-filtro-rango" class="filter-select" style="width:auto" onchange="cargarFundadoresAdmin()">
+            <option value="">Todos los rangos</option>
+            <option value="Fundador">Fundador</option>
+            <option value="Oro">Oro</option>
+            <option value="Elite">Elite</option>
+          </select>
+          <select id="fund-filtro-plan" class="filter-select" style="width:auto" onchange="cargarFundadoresAdmin()">
+            <option value="">Todos los planes</option>
+            <option value="basico">Básico</option>
+            <option value="premium">Premium</option>
+          </select>
+        </div>
+
+        <!-- Tabla de Agentes -->
+        <div style="overflow-x:auto; border: 1px solid var(--border); border-radius: 12px;">
+          <table class="admin-table" id="fund-mod-tabla">
+            <thead>
+              <tr>
+                <th>Agente</th>
+                <th>Ciudad</th>
+                <th>WhatsApp</th>
+                <th>Plan</th>
+                <th>Rango</th>
+                <th>Fichas</th>
+                <th>Referidos</th>
+                <th>Registro</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="fund-mod-tbody">
+              <tr><td colspan="9" style="padding:40px;text-align:center">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
     
   </div>
@@ -1206,5 +1342,105 @@
   <script src="../js/ui/topbar.js"></script>
   <script src="../js/chatbot.js"></script>
   <script src="../js/ui/admin-charts.js"></script>
+<script>
+  // ==========================================
+  // MÓDULO ADMIN: AGENTES FUNDADORES
+  // ==========================================
+  let fundadoresData = [];
+
+  async function cargarFundadoresAdmin() {
+    try {
+      const res = await fetch('/api/fundadores/admin-list');
+      const data = await res.json();
+      fundadoresData = data;
+      
+      // Actualizar KPIs
+      const total = data.length;
+      const totalFichas = data.reduce((acc, a) => acc + (a.propertiesCount || 0), 0);
+      const oros = data.filter(a => a.rank === 'Oro').length;
+      const elites = data.filter(a => a.rank === 'Elite').length;
+
+      document.getElementById('fund-kpi-total').textContent = total;
+      document.getElementById('fund-kpi-props').textContent = totalFichas;
+      document.getElementById('fund-kpi-oro').textContent = oros;
+      document.getElementById('fund-kpi-elite').textContent = elites;
+
+      // Aplicar filtros del frontend
+      const search = document.getElementById('fund-search').value.toLowerCase();
+      const filtroRango = document.getElementById('fund-filtro-rango').value;
+      
+      const filtered = data.filter(a => {
+        const matchSearch = a.name?.toLowerCase().includes(search) || a.city?.toLowerCase().includes(search);
+        const matchRango = !filtroRango || a.rank === filtroRango;
+        return matchSearch && matchRango;
+      });
+
+      // Renderizar Tabla
+      const tbody = document.getElementById('fund-mod-tbody');
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--text-light)">No se encontraron agentes</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(a => {
+        const fecha = new Date(a.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+        const rangoColor = a.rank === 'Elite' ? '#8B5CF6' : a.rank === 'Oro' ? '#F59E0B' : 'var(--primary)';
+        return `
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:50%;background:${rangoColor};color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">${a.name?.charAt(0) || 'A'}</div>
+                <div>
+                  <div style="font-weight:600;font-size:14px;color:var(--text)">${a.name || 'Sin nombre'}</div>
+                  <div style="font-size:11px;color:var(--text-light)">${a.email || 'Sin email'}</div>
+                </div>
+              </div>
+            </td>
+            <td style="font-size:13px">${a.city || '-'}</td>
+            <td style="font-size:13px">${a.phone || '-'}</td>
+            <td><span class="ds-badge ds-badge-soft" style="text-transform:capitalize">${a.plan || 'gratuito'}</span></td>
+            <td><span style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${rangoColor}15;color:${rangoColor};border:1px solid ${rangoColor}30">🏆 ${a.rank}</span></td>
+            <td style="font-weight:600;">${a.propertiesCount || 0}</td>
+            <td style="font-weight:600;">${a.referralsCount || 0}</td>
+            <td style="font-size:13px;color:var(--text-light)">${fecha}</td>
+            <td>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-outline" style="padding:6px 10px;font-size:11px" onclick="window.open('/agente/${a.referralCode}', '_blank')">Ver Perfil</button>
+                <button class="btn btn-outline" style="padding:6px 10px;font-size:11px;color:#dc2626;border-color:#fecaca" onclick="eliminarFundador('${a._id}')">🗑️</button>
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+    } catch (error) {
+      console.error('Error cargando fundadores:', error);
+      document.getElementById('fund-mod-tbody').innerHTML = '<tr><td colspan="9" style="padding:40px;text-align:center;color:#dc2626">Error al cargar datos</td></tr>';
+    }
+  }
+
+  async function eliminarFundador(id) {
+    if (!confirm('¿Estás seguro de eliminar a este agente fundador? Se le quitará el rango.')) return;
+    // Aquí iría tu fetch de eliminación si lo necesitas
+    alert('Función de eliminar pendiente de conectar con el backend');
+  }
+
+  function exportarFundadoresExcel() {
+    if (fundadoresData.length === 0) { alert('No hay datos para exportar'); return; }
+    // Lógica básica de exportación usando la librería SheetJS que ya tienes cargada
+    const ws = XLSX.utils.json_to_sheet(fundadoresData.map(d => ({
+      Nombre: d.name, Email: d.email, Teléfono: d.phone, Ciudad: d.city,
+      Plan: d.plan, Rango: d.rank, Fichas: d.propertiesCount, Referidos: d.referralsCount
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Fundadores");
+    XLSX.writeFile(wb, "Agentes_Fundadores_ViveMas.xlsx");
+  }
+
+  // Cargar automáticamente si el usuario entra a esa sección (opcional, o llamarlo en mostrarSeccion)
+  const originalMostrarSeccion = window.mostrarSeccion;
+  window.mostrarSeccion = function(seccion) {
+    if (originalMostrarSeccion) originalMostrarSeccion(seccion);
+    if (seccion === 'fundadores') cargarFundadoresAdmin();
+  };
+</script>
 </body>
 </html>

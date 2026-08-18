@@ -245,7 +245,10 @@ const bajarPlanesVencidos = async () => {
     console.error('❌ Error en cron de planes vencidos:', error.message);
   }
 };
+const seoController = require('./nuevo-modulo/controllers/seoController');
 
+// Ruta SEO Masivo: Acepta /renta/departamentos/cdmx/polanco o /venta/casas/queretaro
+app.get('/:operacion(renta|venta)/:tipo(departamentos|casas|terrenos|locales)/:estado?/:ciudad?', seoController.showDynamicSEOPage);
 // Ejecutar una vez al arrancar
 setTimeout(bajarPlanesVencidos, 5000);
 

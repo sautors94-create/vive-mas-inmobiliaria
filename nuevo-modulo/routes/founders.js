@@ -18,6 +18,9 @@ router.post('/register', founderController.register);
 // El .single('photo') significa que el input del HTML debe tener name="photo"
 router.post('/generate-card', upload.single('photo'), founderController.generateCard); 
 router.get('/stats', founderController.getDashboardData);
+router.get('/admin-list', founderController.getAdminList);
+router.get('/panel-data', founderController.getAgentPanelData);
+router.post('/view/:referralCode', founderController.trackProfileView);
 
 const path = require('path'); // Pon esto arriba del todo del archivo
 module.exports = router;

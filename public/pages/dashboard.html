@@ -539,11 +539,85 @@
       </section>
 
           <!-- AGENTE FUNDADOR (WIDGET GENERADOR) -->
+            <!-- AGENTE FUNDADOR & EMBAJADOR -->
       <section id="sec-agente-fundador" class="dash-section" style="display:none">
         <div class="dash-section-header">
-          <h2>🚀 Herramienta Agente Fundador</h2>
-          <span class="ds-badge ds-badge-primary">Gratis</span>
+          <h2>🚀 Centro de Agente Fundador</h2>
+          <span id="fund-badge-rango" class="ds-badge ds-badge-soft" style="display:none; font-size:14px; padding: 6px 14px;">Cargando...</span>
         </div>
+        
+        <!-- ESTADO: NO ES FUNDADOR -->
+        <div id="fund-no-fundador" style="display:none; text-align: center; padding: 40px;">
+          <div style="font-size: 48px; margin-bottom: 16px;">🚪</div>
+          <h2 style="color: var(--text);">Área exclusiva para Agentes Fundadores</h2>
+          <p style="color: var(--text-light); max-width: 500px; margin: 10px auto 30px;">Genera fichas profesionales gratis, accede a tu perfil público y sube de rango para ganar más visibilidad en el directorio.</p>
+          <button class="btn btn-primary" style="padding: 14px 32px;" onclick="activarFundador()">✨ Activar como Agente Fundador</button>
+        </div>
+
+        <!-- ESTADO: SÍ ES FUNDADOR -->
+        <div id="fund-si-fundador" style="display:none;">
+          
+          <!-- KPIs del Agente -->
+          <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+            <div class="stat-card" style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: var(--primary);" id="fund-kpi-fichas">0</div>
+              <div style="font-size: 12px; color: var(--text-light);">Fichas Creadas</div>
+            </div>
+            <div class="stat-card" style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: var(--primary);" id="fund-kpi-vistas">0</div>
+              <div style="font-size: 12px; color: var(--text-light);">Vistas a tu Perfil</div>
+            </div>
+            <div class="stat-card" style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: var(--primary);" id="fund-kpi-rango">1</div>
+              <div style="font-size: 12px; color: var(--text-light);">Nivel Actual</div>
+            </div>
+            <div class="stat-card" style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 700; color: var(--accent);" id="fund-kpi-proximo">0</div>
+              <div style="font-size: 12px; color: var(--text-light);">Para siguiente nivel</div>
+            </div>
+          </div>
+
+          <!-- GENERADOR DE FICHAS -->
+          <div class="form-card" style="margin-bottom: 24px;">
+            <h3 style="font-size: 16px; margin-bottom: 16px;">📸 Generador de Fichas Profesionales</h3>
+            <div class="form-grid">
+              <div class="form-grupo"><label>Precio *</label><input type="text" id="f-precio" class="form-input" placeholder="Ej: 15000"></div>
+              <div class="form-grupo"><label>Recámaras *</label><input type="text" id="f-recamaras" class="form-input" placeholder="Ej: 2"></div>
+              <div class="form-grupo" style="grid-column: 1/-1;"><label>Ubicación (Colonia, Ciudad) *</label><input type="text" id="f-ubicacion" class="form-input" placeholder="Ej: Polanco, CDMX"></div>
+              <div class="form-grupo" style="grid-column: 1/-1;"><label>Foto de la propiedad</label><input type="file" id="f-foto" class="form-input" accept="image/*"></div>
+              <div class="form-grupo" style="grid-column: 1/-1;"><label>O pega la URL de la foto</label><input type="text" id="f-url" class="form-input" placeholder="https://scontent..."></div>
+              <div style="grid-column: 1/-1;"><button class="btn btn-primary" onclick="generarFichaFundador()" style="width: 100%; padding: 14px;">✨ Generar Ficha para WhatsApp</button></div>
+            </div>
+            <!-- Resultados de la ficha (mantén el mismo div id="f-resultados" que tenías antes) -->
+            <div id="f-resultados" style="display: none; margin-top: 24px;">
+              <!-- ... Pega aquí el bloque de la imagen preview, link seo y texto viral que teníamos antes ... -->
+            </div>
+          </div>
+
+          <!-- TABLERO EMBAJADOR -->
+          <div class="form-card">
+            <h3 style="font-size: 16px; margin-bottom: 8px;">🤝 Tablero del Embajador</h3>
+            <p style="font-size: 13px; color: var(--text-light); margin-bottom: 20px;">Comparte tu enlace de embajador. Cuando otro agente se registre con tu enlace, obtendrás puntos para subir de rango más rápido.</p>
+            
+            <div class="form-grupo">
+              <label>Link de tu Perfil Público (Para clientes)</label>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="fund-link-perfil" class="form-input" readonly style="margin:0; background: var(--bg-secondary);">
+                <button class="btn btn-outline" onclick="copiarTexto('fund-link-perfil')">Copiar</button>
+              </div>
+            </div>
+
+            <div class="form-grupo" style="margin-top:16px;">
+              <label style="color: var(--primary); font-weight: 700;">Link de Embajador (Para invitar agentes)</label>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="fund-link-embajador" class="form-input" readonly style="margin:0; background: #f0fdf4; border-color: #bbf7d0;">
+                <button class="btn btn-primary" onclick="copiarTexto('fund-link-embajador')">Copiar</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
         
         <div class="form-card" style="margin-bottom: 24px; padding: 18px;">
           <p style="margin:0; color: var(--text-light); font-size: 14px;">
@@ -714,6 +788,71 @@
     </div>
   </div>
 </div>
-  <script src="../js/social-widget.js"></script>
+     // --- LÓGICA DEL CENTRO DE FUNDADORES ---
+    let currentFounderData = null;
+
+    async function cargarPanelFundador() {
+      try {
+        const res = await fetch('/api/fundadores/panel-data');
+        const data = await res.json();
+        currentFounderData = data;
+
+        if (!data.isFounder) {
+          document.getElementById('fund-no-fundador').style.display = 'block';
+          document.getElementById('fund-si-fundador').style.display = 'none';
+          document.getElementById('fund-badge-rango').style.display = 'none';
+          return;
+        }
+
+        // Mostrar panel de fundador
+        document.getElementById('fund-no-fundador').style.display = 'none';
+        document.getElementById('fund-si-fundador').style.display = 'block';
+        
+        // Actualizar KPIs
+        document.getElementById('fund-kpi-fichas').textContent = data.propertiesCount;
+        document.getElementById('fund-kpi-vistas').textContent = data.profileViews;
+        document.getElementById('fund-kpi-rango').textContent = `Nivel ${data.rank}`;
+        
+        const faltantes = data.nextRankProps ? data.nextRankProps - data.propertiesCount : 0;
+        document.getElementById('fund-kpi-proximo').textContent = faltantes > 0 ? `Faltan ${faltantes}` : '¡Máximo!';
+
+        // Badge
+        const badge = document.getElementById('fund-badge-rango');
+        badge.style.display = 'inline-flex';
+        badge.textContent = `🏆 Nivel ${data.rank}: ${data.rankTitle}`;
+        
+        // Links
+        document.getElementById('fund-link-perfil').value = data.referralLink;
+        document.getElementById('fund-link-embajador').value = data.ambassadorLink;
+
+      } catch (error) {
+        console.error('Error cargando panel fundador:', error);
+      }
+    }
+
+    async function activarFundador() {
+      const res = await fetch('/api/fundadores/upgrade', { method: 'POST' });
+      if (res.ok) {
+        cargarPanelFundador(); // Recargar para mostrar el panel
+      } else {
+        alert('Error al activar');
+      }
+    }
+
+    function copiarTexto(inputId) {
+      const input = document.getElementById(inputId);
+      input.select();
+      document.execCommand('copy');
+      const btn = event.target;
+      btn.innerText = '¡Copiado!';
+      setTimeout(() => btn.innerText = 'Copiar', 1500);
+    }
+
+    // Interceptamos el menú para cargar datos si es la sección de fundadores
+    const originalMostrarSeccion2 = window.mostrarSeccion;
+    window.mostrarSeccion = function(seccion) {
+      if (originalMostrarSeccion2) originalMostrarSeccion2(seccion);
+      if (seccion === 'agente-fundador') cargarPanelFundador();
+    };
 </body>
 </html>
