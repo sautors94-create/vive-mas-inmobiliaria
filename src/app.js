@@ -29,8 +29,8 @@ const metaOAuthRoutes = require('../services/marketingAutomation/auth/metaOAuth.
 // MÓDULOS NUEVOS: AGENTES FUNDADORES & SEO
 // ==========================================
 const seoController = require('./nuevo-modulo/controllers/seoController');
-const foundersRoutes = require('./nuevo-modulo/routes/founders');
-const propertiesRoutes = require('./nuevo-modulo/routes/properties');
+//const foundersRoutes = require('./nuevo-modulo/routes/founders');
+//const propertiesRoutes = require('./nuevo-modulo/routes/properties');
 
 const app = express();
 
@@ -193,8 +193,8 @@ iniciarMarketingAutomation();
 // ==========================================
 // RUTAS DEL MÓDULO AGENTES FUNDADORES
 // ==========================================
-app.use('/api/fundadores', foundersRoutes);
-app.use(propertiesRoutes); // Maneja /api/properties (nuevo) y /p/:slug
+// app.use('/api/fundadores', foundersRoutes);}
+// app.use(propertiesRoutes); // Maneja /api/properties (nuevo) y /p/:slug
 
 // ==========================================
 // SEO MASIVO: Rutas dinámicas (Ej: /renta/departamentos/cdmx/polanco)
