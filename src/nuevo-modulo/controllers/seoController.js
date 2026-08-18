@@ -1,4 +1,4 @@
-const Property = require('../models/Property');
+const Property = require('../../models/Property');
 
 // Ruta dinámica: /renta/departamentos/cdmx/polanco
 exports.showDynamicSEOPage = async (req, res) => {

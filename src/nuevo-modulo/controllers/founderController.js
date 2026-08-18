@@ -1,4 +1,4 @@
-const Property = require('../models/Property');
+const Property = require('../../models/Property');
 const Founder = require('../models/Founder');
 const User = require('../models/User'); // Ajusta la ruta a tu modelo real
 const { generatePropertyCard } = require('../services/imageGenerator');
