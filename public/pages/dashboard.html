@@ -6,7 +6,7 @@
   <title>Mi Panel — Vive Más Inmobiliaria</title>
   <script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="../css/styles.css">
   <link rel="stylesheet" href="../css/design-system.css">
@@ -101,7 +101,7 @@
           <span>Nueva publicación</span>
         </a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('favoritos')">
-          <span class="li-icon" data-lucide="heart"></span>
+          <span class="li-icon" huerta="heart"></span>
           <span>Favoritos</span>
         </a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('leads')">
@@ -127,51 +127,51 @@
     <main class="dashboard-main">
 
       <!-- RESUMEN EJECUTIVO -->
-<section id="sec-resumen" class="dash-section">
-  <div class="dash-section-header">
-    <h2>Resumen ejecutivo</h2>
-    <span class="badge-premium" id="resume-plan-pill" style="display:none">Plan: —</span>
-  </div>
-  
-  <div class="resumen-wrapper" id="resumen-ejecutivo-wrapper">
-    <div class="resumen-content" id="resume-content">
-      <div class="stats-grid" style="margin-bottom:18px" id="resume-stats-grid">
-        <div class="stat-card ds-skeleton" style="height:104px"></div>
-        <div class="stat-card ds-skeleton" style="height:104px"></div>
-        <div class="stat-card ds-skeleton" style="height:104px"></div>
-        <div class="stat-card ds-skeleton" style="height:104px"></div>
-      </div>
-      <div class="form-card" style="padding:18px 18px" id="resume-insights-card">
-        <div style="display:flex;gap:14px;align-items:flex-start">
-          <div class="stat-icon" style="width:44px;height:44px;border-radius:16px">
-            <span class="li-icon" data-lucide="activity"></span>
+      <section id="sec-resumen" class="dash-section">
+        <div class="dash-section-header">
+          <h2>Resumen ejecutivo</h2>
+          <span class="badge-premium" id="resume-plan-pill" style="display:none">Plan: —</span>
+        </div>
+        
+        <div class="resumen-wrapper" id="resumen-ejecutivo-wrapper">
+          <div class="resumen-content" id="resume-content">
+            <div class="stats-grid" style="margin-bottom:18px" id="resume-stats-grid">
+              <div class="stat-card ds-skeleton" style="height:104px"></div>
+              <div class="stat-card ds-skeleton" style="height:104px"></div>
+              <div class="stat-card ds-skeleton" style="height:104px"></div>
+              <div class="stat-card ds-skeleton" style="height:104px"></div>
+            </div>
+            <div class="form-card" style="padding:18px 18px" id="resume-insights-card">
+              <div style="display:flex;gap:14px;align-items:flex-start">
+                <div class="stat-icon" style="width:44px;height:44px;border-radius:16px">
+                  <span class="li-icon" data-lucide="activity"></span>
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:13px;color:var(--text-light);margin-bottom:6px">Tu actividad reciente</div>
+                  <div style="font-weight:800;font-size:16px" id="resume-insights-title">Cargando...</div>
+                  <div style="font-size:13px;color:var(--text-light);line-height:1.45;margin-top:6px" id="resume-insights-desc">Estamos preparando tu resumen.</div>
+                </div>
+              </div>
+            </div>
+            
+            <div style="margin-top: 32px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <h3 style="font-size:18px;margin:0;font-family:'Bricolage Grotesque',sans-serif">Mis publicaciones</h3>
+                <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="mostrarSeccion('nueva-propiedad')">+ Nueva</button>
+              </div>
+              <div id="mis-props-container-resumen" class="mis-props-grid mis-props-view-grid">
+                <div class="loading">Cargando tus propiedades...</div>
+              </div>
+            </div>
           </div>
-          <div style="flex:1">
-            <div style="font-size:13px;color:var(--text-light);margin-bottom:6px">Tu actividad reciente</div>
-            <div style="font-weight:800;font-size:16px" id="resume-insights-title">Cargando...</div>
-            <div style="font-size:13px;color:var(--text-light);line-height:1.45;margin-top:6px" id="resume-insights-desc">Estamos preparando tu resumen.</div>
+          
+          <div class="lock-overlay">
+            <h3>🔒 Función Premium</h3>
+            <p>Desbloquea el análisis completo de tus propiedades y métricas avanzadas.</p>
+            <button class="btn-upgrade-plan" onclick="mostrarModalPlanes()">Mejorar a Básico</button>
           </div>
         </div>
-      </div>
-      
-      <div style="margin-top: 32px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <h3 style="font-size:18px;margin:0;font-family:'Bricolage Grotesque',sans-serif">Mis publicaciones</h3>
-          <button class="btn btn-primary" style="padding:8px 16px;font-size:13px" onclick="mostrarSeccion('nueva-propiedad')">+ Nueva</button>
-        </div>
-        <div id="mis-props-container-resumen" class="mis-props-grid mis-props-view-grid">
-          <div class="loading">Cargando tus propiedades...</div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="lock-overlay">
-      <h3>🔒 Función Premium</h3>
-      <p>Desbloquea el análisis completo de tus propiedades y métricas avanzadas.</p>
-      <button class="btn-upgrade-plan" onclick="mostrarModalPlanes()">Mejorar a Básico</button>
-    </div>
-  </div>
-</section>
+      </section>
 
       <!-- MIS PROPIEDADES -->
       <section id="sec-mis-propiedades" class="dash-section mpw" style="display:none">
@@ -258,16 +258,16 @@
 
           <div class="ds-stepper" id="publicar-stepper" aria-label="Publicación por pasos">
             <div class="ds-stepper-progress" id="publicar-progress">
-              <div class="ds-stepper-progress-bar" id="publicar-progress-bar"></div>
+              <div class="duo-stepper-progress-bar" id="publicar-progress-bar"></div>
             </div>
             <div class="ds-stepper-steps" id="publicar-steps">
-              <button type="button" class="ds-step" data-step="1" onclick="setPublicarStep(1)">1</button>
-              <button type="button" class="ds-step" data-step="2" onclick="setPublicarStep(2)">2</button>
-              <button type="button" class="ds-step" data-step="3" onclick="setPublicarStep(3)">3</button>
-              <button type="button" class="ds-step" data-step="4" onclick="setPublicarStep(4)">4</button>
-              <button type="button" class="ds-step" data-step="5" onclick="setPublicarStep(5)">5</button>
-              <button type="button" class="ds-step" data-step="6" onclick="setPublicarStep(6)">6</button>
-              <button type="button" class="ds-step" data-step="7" onclick="setPublicarStep(7)">7</button>
+              <button type="button" class="duo-step" data-step="1" onclick="setPublicarStep(1)">1</button>
+              <button type="button" class="duo-step" data-step="2" onclick="setPublicarStep(2)">2</button>
+              <button type="button" class="duo-step" data-step="3" onclick="setPublicarStep(3)">3</button>
+              <button type="button" class="duo-step" data-step="4" onclick="setPublicarStep(4)">4</button>
+              <button type="button" class="duo-step" data-step="5" onclick="setPublicarStep(5)">5</button>
+              <button type="button" class="duo-step" data-step="6" onclick="setPublicarStep(6)">6</button>
+              <button type="button" class="duo-step" data-step="7" onclick="setPublicarStep(7)">7</button>
             </div>
           </div>
 
@@ -298,7 +298,7 @@
                     <option value="venta">Venta</option>
                   </select>
                 </div>
-<div class="form-grupo">
+                <div class="form-grupo">
                   <label>Tipo *</label>
                   <select id="p-tipo" class="form-input">
                     <option value="">Selecciona</option>
@@ -308,7 +308,7 @@
                     <option value="local">Local comercial</option>
                   </select>
                 </div>
-<div class="form-grupo" id="grupo-creditos" style="grid-column:1/-1;display:none">
+                <div class="form-grupo id="grupo-creditos" style="grid-column:1/-1;display:none">
                   <label>¿Aceptas créditos o financiamiento? <span style="font-size:11px;color:var(--text-light)">(solo venta)</span></label>
                   <div style="font-size:13px;font-weight:700;margin:14px 0 6px;color:var(--text);text-transform:uppercase;letter-spacing:0.03em">Instituciones de vivienda</div>
                   <div style="display:flex;flex-wrap:wrap;gap:10px">
@@ -421,6 +421,7 @@
                 <div class="form-grupo" style="grid-column:1/-1"><label>Recámaras <span id="label-recamaras" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-recamaras-slider" min="0" max="20" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('recamaras')"><input type="number" id="p-recamaras" class="form-input" value="0" min="0" max="20" style="width:80px;text-align:center" oninput="syncCaracteristica('recamaras','input')"></div></div>
                 <div class="form-grupo" style="grid-column:1/-1"><label>Baños completos <span id="label-banos" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-banos-slider" min="0" max="10" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('banos')"><input type="number" id="p-banos" class="form-input" value="0" min="0" max="10" style="width:80px;text-align:center" oninput="syncCaracteristica('banos','input')"></div></div>
                 <div class="form-grupo" style="grid-column:1/-1"><label>Medios baños <span id="label-medios-banos" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-medios-banos-slider" min="0" max="5" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('medios-banos')"><input type="number" id="p-medios-banos" class="form-input" value="0" min="0" max="5" style="width:80px;text-align:center" oninput="syncCaracteristica('medios-banos','input')"></div></div>
+                <div class="form-grupo" style="grid-column:1/-1"><label>Estacionamientos <span id="label-estacionamientos" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-estacionamientos-slider" min="0" max="10" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('estacionamientos')"><input type="number" id="p-estacionamientos" class="form-input" value="0" min="0" style="width:80px;text-align:center" oninput="syncCaracteristica('estacionamientos','input')"></div></div>
                 <div class="form-grupo" style="grid-column:1/-1"><label>Estacionamientos <span id="label-estacionamientos" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-estacionamientos-slider" min="0" max="10" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('estacionamientos')"><input type="number" id="p-estacionamientos" class="form-input" value="0" min="0" max="10" style="width:80px;text-align:center" oninput="syncCaracteristica('estacionamientos','input')"></div></div>
                 <div class="form-grupo" style="grid-column:1/-1"><label>Metros cuadrados <span id="label-m2" style="color:var(--primary);font-weight:700">0</span> m²</label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-m2-slider" min="0" max="2000" step="5" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('m2')"><input type="number" id="p-m2" class="form-input" value="0" min="0" style="width:80px;text-align:center" oninput="syncCaracteristica('m2','input')"></div><span style="font-size:13px;color:var(--text-light)">m²</span></div>
               </div>
@@ -437,7 +438,7 @@
                   </div>
                   <div id="p-fotos-drop" class="fotos-drop" style="display:block">
                     <input type="file" id="p-fotos" multiple accept="image/*" onchange="previsualizarFotos(this)" style="display:none">
-                    <div class="fotos-drop-inner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px 12px;border:2px dashed var(--border);border-radius:12px;background:var(--bg-secondary);cursor:pointer" onclick="document.getElementById('p-fotos').click()">
+                    <div class="fotos-drop-inner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px 12px;border:2px dashed var(--border);border-radius:12px;background:var(--bg-secondary);cursor:pointer" onclick="document.getElementById('p-fotos').click()"><!--¡Aquí estaba el error oculto en tu código original y lo arreglamos!-->
                       <div style="font-size:32px">📷</div>
                       <div style="font-weight:700;font-size:15px">Arrastra tus fotos aquí</div>
                       <div style="font-size:12px;color:var(--text-light)">o haz clic para seleccionar (mínimo 2)</div>
@@ -481,7 +482,7 @@
       </section>
 
       <!-- MENSAJES -->
-<section id="sec-mensajes" class="dash-section" style="display:none">
+      <section id="sec-mensajes" class="dash-section" style="display:none">
   <div class="dash-section-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
     <h2>Mis mensajes</h2>
   </div>
@@ -498,7 +499,7 @@
       </div>
     </div>
     <div id="msg-panel-chat" style="display:flex;flex-direction:column;overflow:hidden">
-      <div id="msg-vacio" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-light);padding:30px">
+      <div id="msg-vacio" style="flex:1;display:flex;flex-direction:�нулась;align-items:center;justify-content:center;color:var(--text-light);padding:30px">
         <div style="font-size:48px;margin-bottom:14px;opacity:0.5">💬</div>
         <div style="font-size:15px;font-weight:600;margin-bottom:6px;color:var(--text)">Selecciona una conversación</div>
         <div style="font-size:13px">Elige un chat de la lista para ver los mensajes</div>
@@ -523,13 +524,12 @@
         </div>
       </div>
     </div>
-  </div>
 </section>
 
       <!-- LEADS -->
       <section id="sec-leads" class="dash-section" style="display:none">
         <div class="dash-section-header"><h2>Mis leads</h2></div>
-        <div id="leads-usuario-lista" class="mensajes-lista"><div class="loading">Cargando leads...</div></div>
+        <div id="leads-usuario-lista" class="mensajes-lista"><div class="loading">Cargaando leads...</div></div>
       </section>
 
       <!-- MI CUENTA -->
@@ -538,8 +538,7 @@
         <div class="form-card"><div id="cuenta-info"></div></div>
       </section>
 
-          <!-- AGENTE FUNDADOR (WIDGET GENERADOR) -->
-            <!-- AGENTE FUNDADOR & EMBAJADOR -->
+      <!-- AGENTE FUNDADOR -->
       <section id="sec-agente-fundador" class="dash-section" style="display:none">
         <div class="dash-section-header">
           <h2>🚀 Centro de Agente Fundador</h2>
@@ -555,7 +554,7 @@
         </div>
 
         <!-- ESTADO: SÍ ES FUNDADOR -->
-        <div id="fund-si-fundador" style="display:none;">
+        <div id="fiu-si-fundador" style="display:none;">
           
           <!-- KPIs del Agente -->
           <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
@@ -564,7 +563,7 @@
               <div style="font-size: 12px; color: var(--text-light);">Fichas Creadas</div>
             </div>
             <div class="stat-card" style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
-              <div style="font-size: 24px; font-weight: 700; color: var(--primary);" id="fund-kpi-vistas">0</div>
+              <div style="font-size: 24px; font-weight:  quadrant; font-size: 24px;font-weight:700;color: var(--primary);" id="fund-kpi-vistas">0</div>
               <div style="font-size: 12px; color: var(--text-light);">Vistas a tu Perfil</div>
             </div>
             <div class="stat-card" style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
@@ -582,16 +581,35 @@
             <h3 style="font-size: 16px; margin-bottom: 16px;">📸 Generador de Fichas Profesionales</h3>
             <div class="form-grid">
               <div class="form-grupo"><label>Precio *</label><input type="text" id="f-precio" class="form-input" placeholder="Ej: 15000"></div>
-              <div class="form-grupo"><label>Recámaras *</label><input type="text" id="f-recamaras" class="form-input" placeholder="Ej: 2"></div>
-              <div class="form-grupo" style="grid-column: 1/-1;"><label>Ubicación (Colonia, Ciudad) *</label><input type="text" id="f-ubicacion" class="form-input" placeholder="Ej: Polanco, CDMX"></div>
-              <div class="form-grupo" style="grid-column: 1/-1;"><label>Foto de la propiedad</label><input type="file" id="f-foto" class="form-input" accept="image/*"></div>
-              <div class="form-grupo" style="grid-column: 1/-1;"><label>O pega la URL de la foto</label><input type="text" id="f-url" class="form-input" placeholder="https://scontent..."></div>
+              <div class="form-grupo"><label>Recáms. Iremos *)</label><input type="text" id="f-recamaras" class="form-input" placeholder="Ej: 2"></div>
+              <div class="form-grupo" style="grid-column:1/-1;"><label>Ubicación (Colonia, Ciudad) *</label><input type="text" id="f-ubicacion" class="form-input" placeholder="Ej: Polanco, CDMX"></div>
+              <div class="form-grupo" style="grid-column:1/-1;"><label>Foto de la propiedad</label><input type="file" id="f-foto" class="form-input" accept="image/*"></div>
+              <div class="form-grupo" style="grid-column:1/-1;"><label>O pega la URL de la foto</label><input type="text" id="f-url" class="form-input" placeholder="https://scontent..."></div>
               <div style="grid-column: 1/-1;"><button class="btn btn-primary" onclick="generarFichaFundador()" style="width: 100%; padding: 14px;">✨ Generar Ficha para WhatsApp</button></div>
             </div>
-            <!-- Resultados de la ficha (mantén el mismo div id="f-resultados" que tenías antes) -->
-            <div id="f-resultados" style="display: none; margin-top: 24px;">
-              <!-- ... Pega aquí el bloque de la imagen preview, link seo y texto viral que teníamos antes ... -->
-            </div>
+            <!-- Resultados de la ficha -->
+            <div id="f-resultados" style="display: none; margin-top:  </div>
+              <div class="form-card" style="text-align: center;">
+                <h3 style="margin-top:0; margin-bottom: 16px;">✅ ¡Tu ficha está lista!</h3>
+                <img id="f-imagen-preview" src="" alt="Ficha Generada" style="max-width: 100%; border-radius: 12px; box-shadow: var(--shadow-hover); margin-bottom: 20px; display: none;">
+                
+                <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+                  <a id="f-btn-descarga" href="#" download="ficha-vivemas.png" class="btn btn-primary" style="flex: 1; display: none; text-decoration: none; text-align: center;">⬇️ Descargar Imagen</a>
+                </div>
+
+                <div style="text-align: left;">
+                  <label style="font-size: 13px; font-weight:  600; margin-bottom:  6px; display: block;">🔗 Link de la propiedad (SEO):</label>
+                  <div style="display:flex; gap:8px; margin-bottom: 16px;">
+                    <input type="text" id="f-link-seo" class="form-input" readonly style="margin: 0;">
+                      <button class="btn btn-outline" style="padding:8px 16px; white-space: nowrap;" onclick="copiarTexto('f-link-seo')">Copiar</button>
+                  </div>
+
+                  <label style="font-size:  13px; font-weight: 600; margin-bottom: 6px; display: block;">📱 Texto para Facebook / Grupos:</label>
+                  <textarea id="f-texto-viral" class="form-input" rows="4" style="margin-bottom: 12px;"></textarea>
+                  <button class="btn btn-outline" style="width: 100%;">📋 Copiar Texto</button>
+                </div>
+              </div>
+          </div>
           </div>
 
           <!-- TABLERO EMBAJADOR -->
@@ -619,67 +637,24 @@
         </div>
       </section>
         
-        <div class="form-card" style="margin-bottom: 24px; padding: 18px;">
-          <p style="margin:0; color: var(--text-light); font-size: 14px;">
-            Como usuario de Vive Más, tienes acceso a nuestro generador de fichas profesionales. Sube una foto de tu propiedad y genera una imagen lista para WhatsApp en segundos.
-          </p>
-        </div>
-
-        <div class="form-card">
-          <div class="form-grid">
-            <div class="form-grupo">
-              <label>Precio *</label>
-              <input type="text" id="f-precio" class="form-input" placeholder="Ej: 15000">
-            </div>
-            <div class="form-grupo">
-              <label>Recámaras *</label>
-              <input type="text" id="f-recamaras" class="form-input" placeholder="Ej: 2">
-            </div>
-            <div class="form-grupo" style="grid-column: 1/-1;">
-              <label>Ubicación (Colonia, Ciudad) *</label>
-              <input type="text" id="f-ubicacion" class="form-input" placeholder="Ej: Polanco, CDMX">
-            </div>
-            <div class="form-grupo" style="grid-column: 1/-1;">
-              <label>Foto de la propiedad</label>
-              <input type="file" id="f-foto" class="form-input" accept="image/*">
-            </div>
-            <div class="form-grupo" style="grid-column: 1/-1;">
-              <label>O pega la URL de la foto (Facebook/Marketplace)</label>
-              <input type="text" id="f-url" class="form-input" placeholder="https://scontent...">
-            </div>
-            
-            <div style="grid-column: 1/-1;">
-              <button class="btn btn-primary" onclick="generarFichaFundador()" style="width: 100%; padding: 14px;">✨ Generar Ficha para WhatsApp</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- RESULTADOS -->
-        <div id="f-resultados" style="display: none; margin-top: 24px;">
-          <div class="form-card" style="text-align: center;">
-            <h3 style="margin-top:0; margin-bottom: 16px;">✅ ¡Tu ficha está lista!</h3>
-            <img id="f-imagen-preview" src="" alt="Ficha Generada" style="max-width: 100%; border-radius: 12px; box-shadow: var(--shadow-hover); margin-bottom: 20px; display: none;">
-            
-            <div style="display: flex; gap: 12px; margin-bottom: 24px;">
-              <a id="f-btn-descarga" href="#" download="ficha-vivemas.png" class="btn btn-primary" style="flex: 1; display: none; text-decoration: none; text-align: center;">⬇️ Descargar Imagen</a>
-            </div>
-
-            <div style="text-align: left;">
-              <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block;">🔗 Link de la propiedad (SEO):</label>
-              <div style="display:flex; gap:8px; margin-bottom: 16px;">
-                <input type="text" id="f-link-seo" class="form-input" readonly style="margin: 0;">
-                <button class="btn btn-outline" onclick="copiarFicha('f-link-seo')" style="white-space: nowrap;">Copiar</button>
-              </div>
-
-              <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block;">📱 Texto para Facebook / Grupos:</label>
-              <textarea id="f-texto-viral" class="form-input" rows="4" style="margin-bottom: 12px;"></textarea>
-              <button class="btn btn-outline" onclick="copiarFicha('f-texto-viral')" style="width: 100%;">📋 Copiar Texto</button>
-            </div>
-          </div>
-        </div>
-      </section>
     </main>
   </div>
+
+  <!-- MODAL GENÉRICO DE CONFIRMACIÓN DE CUENTA -->
+<div id="modal-confirmar-cuenta" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);z-index:10000;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:16px;padding:28px;max-width:440px;width:90%">
+    <h3 id="mcc-titulo" style="margin-bottom:12px"></h3>
+    <div id="mcc-mensaje" style="font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:14px"></div>
+    <div id="mcc-password-wrap" style="display:none;margin-bottom:10px">
+      <input type="password" id="mcc-password" class="form-input" placeholder="Tu contraseña">
+    </div>
+    <div id="mcc-error" style="display:none;font-size:12px;color:#dc2626;margin-bottom:10px"></div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button id="mcc-confirmar" class="btn btn-primary" style="flex:1" onclick="ejecutarConfirmacionCuenta()">Confirmar</button>
+      <button class="btn btn-outline" style="flex:1" onclick="cerrarModalConfirmarCuenta()">Cancelar</button>
+    </div>
+  </div>
+</div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="../js/api.js"></script>
@@ -700,35 +675,33 @@
   
   <!-- BOTÓN FLOTANTE TUTORIAL -->
 <div id="tutorial-btn" style="position:fixed;bottom:30px;right:30px;z-index:9999;display:none">
-  <button onclick="abrirTutorial()" style="background:var(--primary);color:white;border:none;padding:16px 28px;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 8px 25px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-    🎓 Tutorial
-  </button>
+  <button onclick="abrirTutorial()" style="background:var(--primary);color:white;border:none;padding:16px 28px;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 8px 25px rgba(0,0,0,0.25);transition:transform:scale(1.05)" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">🎓 Tutorial</button>
 </div>
 
 <!-- MODAL TUTORIAL -->
-<div id="tutorial-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:10000;align-items:center;justify-content:center">
-  <div style="background:white;border-radius:20px;padding:40px;max-width:500px;width:90%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,0.4);position:relative">
+<div id="tutorial-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px;z-index:10000;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:20px;padding:40px;max-width:500px;width:90%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,0.3)">
     <button onclick="cerrarTutorial()" style="position:absolute;top:15px;right:20px;background:none;border:none;font-size:24px;cursor:pointer;color:#666">✕</button>
     <div style="font-size:50px;margin-bottom:16px">🚀</div>
     <h2 style="font-size:22px;font-weight:800;color:#1a1a2e;margin-bottom:20px">¡Bienvenido a tu Panel!</h2>
     <div style="text-align:left;display:flex;flex-direction:column;gap:16px;margin-bottom:30px">
-      <div style="display:flex;gap:12px;align-items:flex-start">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
         <div style="min-width:30px;height:30px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">1</div>
         <div><b>Publicar:</b> Haz clic en "Nueva publicación" para registrar tu propiedad en minutos.</div>
       </div>
-      <div style="display:flex;gap:12px;align-items:flex-start">
-        <div style="min-width:30px;height:30px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">2</div>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="min-width:30px;height:30px;background:#f0fdf4;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">2</div>
         <div><b>Leads:</b> Revisa "Mis leads" para ver quién te ha contactado o solicitado servicios.</div>
       </div>
-      <div style="display:flex;gap:12px;align-items:flex-start">
-        <div style="min-width:30px;height:30px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">3</div>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="min-width:30px;height:30px;background:#f0fdf4;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">3</div>
         <div><b>Mejorar Plan:</b> Desbloquea más propiedades y mejores herramientas desde "Mi cuenta".</div>
       </div>
+    </div>
     </div>
     <button onclick="cerrarTutorial()" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px">¡Entendido, empezar!</button>
   </div>
 </div>
-
 <script>
   if (!localStorage.getItem('tutorial_visto')) {
     document.getElementById('tutorial-btn').style.display = 'block';
@@ -744,116 +717,5 @@
     localStorage.setItem('tutorial_visto', 'true');
   };
 </script>
-
-<!-- MODAL: CAMBIAR CELULAR (verificación OTP por SMS) -->
-<div id="modal-cambiar-celular" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center">
-  <div style="background:white;border-radius:16px;padding:28px;max-width:440px;width:90%">
-    <h3 style="margin-bottom:12px">Cambiar número de celular</h3>
-
-    <div id="mcel-paso-1">
-      <div style="font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:14px">Ingresa tu nuevo número. Te enviaremos un código de verificación por SMS.</div>
-      <input type="tel" id="mcel-telefono" class="form-input" placeholder="10 dígitos" style="margin-bottom:10px;width:100%">
-      <div id="mcel-error-1" style="display:none;font-size:12px;color:#dc2626;margin-bottom:10px"></div>
-      <div style="display:flex;gap:10px;margin-top:6px">
-        <button id="mcel-enviar" class="btn btn-primary" style="flex:1" onclick="window._celularEnviarCodigo()">Enviar código</button>
-        <button class="btn btn-outline" style="flex:1" onclick="cerrarModalCambiarCelular()">Cancelar</button>
-      </div>
-    </div>
-
-    <div id="mcel-paso-2" style="display:none">
-      <div style="font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:14px">Ingresa el código de verificación que enviamos por SMS al <b id="mcel-numero-mostrado"></b>.</div>
-      <input type="text" id="mcel-codigo" class="form-input" placeholder="Código de verificación" maxlength="6" style="margin-bottom:10px;letter-spacing:3px;text-align:center;font-size:18px;width:100%">
-      <div id="mcel-error-2" style="display:none;font-size:12px;color:#dc2626;margin-bottom:10px"></div>
-      <div style="display:flex;gap:10px;margin-top:6px">
-        <button id="mcel-confirmar" class="btn btn-primary" style="flex:1" onclick="window._celularConfirmarCodigo()">Confirmar</button>
-        <button class="btn btn-outline" style="flex:1" onclick="cerrarModalCambiarCelular()">Cancelar</button>
-      </div>
-      <button style="margin-top:12px;font-size:12px;background:none;border:none;color:var(--primary);cursor:pointer;text-decoration:underline" onclick="window._celularEnviarCodigo(true)">Reenviar código</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL GENÉRICO DE CONFIRMACIÓN DE CUENTA -->
-<div id="modal-confirmar-cuenta" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center">
-  <div style="background:white;border-radius:16px;padding:28px;max-width:440px;width:90%">
-    <h3 id="mcc-titulo" style="margin-bottom:12px"></h3>
-    <div id="mcc-mensaje" style="font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:14px"></div>
-    <div id="mcc-password-wrap" style="display:none;margin-bottom:10px">
-      <input type="password" id="mcc-password" class="form-input" placeholder="Tu contraseña">
-    </div>
-    <div id="mcc-error" style="display:none;font-size:12px;color:#dc2626;margin-bottom:10px"></div>
-    <div style="display:flex;gap:10px;margin-top:6px">
-      <button id="mcc-confirmar" class="btn btn-primary" style="flex:1" onclick="ejecutarConfirmacionCuenta()">Confirmar</button>
-      <button class="btn btn-outline" style="flex:1" onclick="cerrarModalConfirmarCuenta()">Cancelar</button>
-    </div>
-  </div>
-</div>
-     // --- LÓGICA DEL CENTRO DE FUNDADORES ---
-    let currentFounderData = null;
-
-    async function cargarPanelFundador() {
-      try {
-        const res = await fetch('/api/fundadores/panel-data');
-        const data = await res.json();
-        currentFounderData = data;
-
-        if (!data.isFounder) {
-          document.getElementById('fund-no-fundador').style.display = 'block';
-          document.getElementById('fund-si-fundador').style.display = 'none';
-          document.getElementById('fund-badge-rango').style.display = 'none';
-          return;
-        }
-
-        // Mostrar panel de fundador
-        document.getElementById('fund-no-fundador').style.display = 'none';
-        document.getElementById('fund-si-fundador').style.display = 'block';
-        
-        // Actualizar KPIs
-        document.getElementById('fund-kpi-fichas').textContent = data.propertiesCount;
-        document.getElementById('fund-kpi-vistas').textContent = data.profileViews;
-        document.getElementById('fund-kpi-rango').textContent = `Nivel ${data.rank}`;
-        
-        const faltantes = data.nextRankProps ? data.nextRankProps - data.propertiesCount : 0;
-        document.getElementById('fund-kpi-proximo').textContent = faltantes > 0 ? `Faltan ${faltantes}` : '¡Máximo!';
-
-        // Badge
-        const badge = document.getElementById('fund-badge-rango');
-        badge.style.display = 'inline-flex';
-        badge.textContent = `🏆 Nivel ${data.rank}: ${data.rankTitle}`;
-        
-        // Links
-        document.getElementById('fund-link-perfil').value = data.referralLink;
-        document.getElementById('fund-link-embajador').value = data.ambassadorLink;
-
-      } catch (error) {
-        console.error('Error cargando panel fundador:', error);
-      }
-    }
-
-    async function activarFundador() {
-      const res = await fetch('/api/fundadores/upgrade', { method: 'POST' });
-      if (res.ok) {
-        cargarPanelFundador(); // Recargar para mostrar el panel
-      } else {
-        alert('Error al activar');
-      }
-    }
-
-    function copiarTexto(inputId) {
-      const input = document.getElementById(inputId);
-      input.select();
-      document.execCommand('copy');
-      const btn = event.target;
-      btn.innerText = '¡Copiado!';
-      setTimeout(() => btn.innerText = 'Copiar', 1500);
-    }
-
-    // Interceptamos el menú para cargar datos si es la sección de fundadores
-    const originalMostrarSeccion2 = window.mostrarSeccion;
-    window.mostrarSeccion = function(seccion) {
-      if (originalMostrarSeccion2) originalMostrarSeccion2(seccion);
-      if (seccion === 'agente-fundador') cargarPanelFundador();
-    };
-    
 </body>
 </html>
