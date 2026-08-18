@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agente Fundador - SomosViveMás</title>
+    <!-- Bootstrap 5 para que se vea bien al probarlo solo -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                
+                <!-- TARJETA 1: REGISTRO -->
+                <div class="card mb-4 shadow-sm" id="registerForm">
+                    <div class="card-header bg-white">
+                        <h4 class="mb-0">🎯 Programa Agente Fundador</h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Sé de los primeros 1,000 y obtén beneficios de por vida.</p>
+                        <div class="mb-3">
+                            <label class="form-label">Tu nombre</label>
+                            <input type="text" id="name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">WhatsApp (ej: 5512345678)</label>
+                            <input type="tel" id="phone" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ciudad principal</label>
+                            <input type="text" id="city" class="form-control" required>
+                        </div>
+                        <button onclick="registerAgent()" class="btn btn-primary w-100 fw-bold">Ser Agente Fundador</button>
+                    </div>
+                </div>
+
+                <!-- TARJETA 2: GENERADOR (Oculta al inicio) -->
+                <div class="card shadow-sm" id="result" style="display: none;">
+                    <div class="card-header bg-white">
+                        <h4 class="mb-0">✅ ¡Genera tu ficha profesional!</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Precio (ej: 15000)</label>
+                            <input type="text" id="price" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Recámaras</label>
+                            <input type="text" id="rooms" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Colonia, Ciudad</label>
+                            <input type="text" id="location" class="form-control">
+                        </div>
+                        
+                        <!-- NUEVO: SUBIDA DE FOTO DESDE CELULAR/PC -->
+                        <div class="mb-3">
+                            <label class="form-label">Foto de la propiedad</label>
+                            <input type="file" id="photo" class="form-control" accept="image/*">
+                            <div class="form-text">Recomendado si estás desde tu celular.</div>
+                        </div>
+
+                        <!-- OPCIONAL: URL DE FACEBOOK -->
+                        <div class="mb-3">
+                            <label class="form-label">O pega la URL de la foto (Facebook/Marketplace)</label>
+                            <input type="text" id="imageUrl" class="form-control" placeholder="https://scontent...">
+                            <div class="form-text">Solo si no subiste una foto arriba.</div>
+                        </div>
+                        
+                        <button onclick="createCard()" class="btn btn-success w-100 mb-4 fw-bold">Generar Ficha para WhatsApp</button>
+                        
+                        <!-- RESULTADO IMAGEN -->
+                        <img id="propertyImage" src="" alt="Ficha" class="img-fluid rounded mb-3" style="display:none;">
+                        
+                        <div id="downloadLinkContainer" style="display: none;" class="mb-4">
+                            <a id="downloadLink" href="#" download="ficha-somosvivemas.png" class="btn btn-warning w-100">⬇️ Descargar Imagen</a>
+                        </div>
+
+                        <hr>
+
+                        <!-- RESULTADO VIRAL -->
+                        <div id="viralTextSection" style="display: none;">
+                            <label class="form-label fw-bold">🔗 Link SEO de la propiedad:</label>
+                            <div class="input-group mb-3">
+                                <input type="text" id="seoLink" class="form-control" readonly>
+                                <button class="btn btn-outline-secondary" type="button" onclick="copyLink()">Copiar</button>
+                            </div>
+                            
+                            <label class="form-label fw-bold">📱 Texto para Facebook / Grupos:</label>
+                            <textarea id="viralTextArea" class="form-control mb-2" rows="4"></textarea>
+                            <button onclick="copyText()" class="btn btn-outline-primary w-100">📋 Copiar Texto</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Si lo pruebas en local, usa localhost. Si ya lo subiste, quita el localhost
+        const API_URL = 'http://localhost:3000/api/fundadores'; 
+        let currentAgentRef = '';
+
+        async function registerAgent() {
+            const data = {
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                city: document.getElementById('city').value,
+                referredBy: new URLSearchParams(window.location.search).get('ref')
+            };
+            
+            try {
+                const res = await fetch(`${API_URL}/register`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(data) 
+                });
+                
+                if (res.ok) {
+                    const result = await res.json();
+                    currentAgentRef = result.data.referralCode;
+                    document.getElementById('registerForm').style.display = 'none';
+                    document.getElementById('result').style.display = 'block';
+                } else {
+                    alert('Error al registrar');
+                }
+            } catch (error) {
+                alert('Error de conexión con el servidor');
+            }
+        }
+
+        async function createCard() {
+            // 1. Recoger datos de los inputs
+            const price = document.getElementById('price').value;
+            const rooms = document.getElementById('rooms').value;
+            const location = document.getElementById('location').value;
+            const imageUrl = document.getElementById('imageUrl').value;
+            const city = document.getElementById('city').value;
+            const photoInput = document.getElementById('photo');
+
+            const data = {
+                price: price,
+                rooms: rooms,
+                baths: '2', 
+                m2: '100', 
+                location: location,
+                imageUrl: imageUrl,
+                type: 'renta', 
+                propertyType: 'Departamento',
+                city: city
+            };
+
+            try {
+                // 2. Guardar en BD (Esto sigue siendo JSON porque MongoDB no guarda archivos)
+                const resDB = await fetch(`http://localhost:3000/api/properties`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(data) 
+                });
+                const dbData = await resDB.json();
+
+                // 3. Generar Imagen (AHORA USA FORMDATA PARA PODER MANDAR LA FOTO DEL CELULAR)
+                const formData = new FormData();
+                
+                // Agregamos todos los campos de texto al formData
+                formData.append('price', price);
+                formData.append('rooms', rooms);
+                formData.append('baths', '2');
+                formData.append('m2', '100');
+                formData.append('location', location);
+                formData.append('imageUrl', imageUrl);
+                formData.append('type', 'renta');
+                formData.append('propertyType', 'Departamento');
+                formData.append('city', city);
+
+                // Si el usuario seleccionó una foto de su celular/galería, la agregamos al paquete
+                if (photoInput.files && photoInput.files.length > 0) {
+                    formData.append('photo', photoInput.files[0]);
+                }
+
+                // Hacemos la petición. 
+                // ¡OJO! NO ponemos 'Content-Type': 'application/json' aquí. 
+                // El navegador lo hace automáticamente con un "boundary" especial para archivos.
+                const resImg = await fetch(`${API_URL}/generate-card`, { 
+                    method: 'POST', 
+                    body: formData 
+                });
+
+                if (resImg.ok) {
+                    const blob = await resImg.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    
+                    const img = document.getElementById('propertyImage');
+                    img.src = url; 
+                    img.style.display = 'block';
+                    
+                    const link = document.getElementById('downloadLink');
+                    link.href = url;
+                    document.getElementById('downloadLinkContainer').style.display = 'block';
+
+                    // 4. Mostrar Links Virales
+                    document.getElementById('viralTextSection').style.display = 'block';
+                    document.getElementById('seoLink').value = dbData.url;
+                    
+                    const textToCopy = `🏠 ${location} - $${price}\n🛏 ${rooms} Recámaras\n\nVer detalles:\n${dbData.url}\n\nPublica gratis en SomosViveMás:\nhttp://localhost:3000/agentes-fundadores?ref=${currentAgentRef}`;
+                    document.getElementById('viralTextArea').value = textToCopy;
+                } else {
+                    const errorData = await resImg.json();
+                    alert('Error al generar imagen: ' + (errorData.error || 'Error desconocido'));
+                }
+            } catch (error) {
+                alert('Error al generar la ficha. Revisa que el servidor esté corriendo.');
+                console.error(error);
+            }
+        }
+
+        function copyText() { 
+            document.getElementById('viralTextArea').select(); 
+            document.execCommand('copy'); 
+        }
+        function copyLink() { 
+            document.getElementById('seoLink').select(); 
+            document.execCommand('copy'); 
+        }
+    </script>
+</body>
+</html>

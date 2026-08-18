@@ -113,6 +113,10 @@
           <span style="flex:1;min-width:0">Mensajes</span>
           <span id="mensajes-badge" class="nav-badge" style="display:none">0</span>
         </a>
+        <a href="#" class="sidebar-link" onclick="mostrarSeccion('agente-fundador')">
+          <span class="li-icon" data-lucide="rocket"></span>
+          <span>Agente Fundador</span>
+        </a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('mi-cuenta')">
           <span class="li-icon" data-lucide="user"></span>
           <span>Mi cuenta</span>
@@ -534,6 +538,72 @@
         <div class="form-card"><div id="cuenta-info"></div></div>
       </section>
 
+          <!-- AGENTE FUNDADOR (WIDGET GENERADOR) -->
+      <section id="sec-agente-fundador" class="dash-section" style="display:none">
+        <div class="dash-section-header">
+          <h2>🚀 Herramienta Agente Fundador</h2>
+          <span class="ds-badge ds-badge-primary">Gratis</span>
+        </div>
+        
+        <div class="form-card" style="margin-bottom: 24px; padding: 18px;">
+          <p style="margin:0; color: var(--text-light); font-size: 14px;">
+            Como usuario de Vive Más, tienes acceso a nuestro generador de fichas profesionales. Sube una foto de tu propiedad y genera una imagen lista para WhatsApp en segundos.
+          </p>
+        </div>
+
+        <div class="form-card">
+          <div class="form-grid">
+            <div class="form-grupo">
+              <label>Precio *</label>
+              <input type="text" id="f-precio" class="form-input" placeholder="Ej: 15000">
+            </div>
+            <div class="form-grupo">
+              <label>Recámaras *</label>
+              <input type="text" id="f-recamaras" class="form-input" placeholder="Ej: 2">
+            </div>
+            <div class="form-grupo" style="grid-column: 1/-1;">
+              <label>Ubicación (Colonia, Ciudad) *</label>
+              <input type="text" id="f-ubicacion" class="form-input" placeholder="Ej: Polanco, CDMX">
+            </div>
+            <div class="form-grupo" style="grid-column: 1/-1;">
+              <label>Foto de la propiedad</label>
+              <input type="file" id="f-foto" class="form-input" accept="image/*">
+            </div>
+            <div class="form-grupo" style="grid-column: 1/-1;">
+              <label>O pega la URL de la foto (Facebook/Marketplace)</label>
+              <input type="text" id="f-url" class="form-input" placeholder="https://scontent...">
+            </div>
+            
+            <div style="grid-column: 1/-1;">
+              <button class="btn btn-primary" onclick="generarFichaFundador()" style="width: 100%; padding: 14px;">✨ Generar Ficha para WhatsApp</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RESULTADOS -->
+        <div id="f-resultados" style="display: none; margin-top: 24px;">
+          <div class="form-card" style="text-align: center;">
+            <h3 style="margin-top:0; margin-bottom: 16px;">✅ ¡Tu ficha está lista!</h3>
+            <img id="f-imagen-preview" src="" alt="Ficha Generada" style="max-width: 100%; border-radius: 12px; box-shadow: var(--shadow-hover); margin-bottom: 20px; display: none;">
+            
+            <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+              <a id="f-btn-descarga" href="#" download="ficha-vivemas.png" class="btn btn-primary" style="flex: 1; display: none; text-decoration: none; text-align: center;">⬇️ Descargar Imagen</a>
+            </div>
+
+            <div style="text-align: left;">
+              <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block;">🔗 Link de la propiedad (SEO):</label>
+              <div style="display:flex; gap:8px; margin-bottom: 16px;">
+                <input type="text" id="f-link-seo" class="form-input" readonly style="margin: 0;">
+                <button class="btn btn-outline" onclick="copiarFicha('f-link-seo')" style="white-space: nowrap;">Copiar</button>
+              </div>
+
+              <label style="font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block;">📱 Texto para Facebook / Grupos:</label>
+              <textarea id="f-texto-viral" class="form-input" rows="4" style="margin-bottom: 12px;"></textarea>
+              <button class="btn btn-outline" onclick="copiarFicha('f-texto-viral')" style="width: 100%;">📋 Copiar Texto</button>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 

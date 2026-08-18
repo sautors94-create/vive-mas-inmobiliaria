@@ -520,11 +520,30 @@
       <!-- Grid -->
       <div id="cardsGrid" class="directorio-grid hidden"></div>
 
-      <!-- Empty -->
+
+           <!-- EMPTY -->
       <div id="emptyState" class="empty-state hidden">
         <div class="icono">🔎</div>
         <h3>Sin resultados</h3>
         <p>Intenta con otros términos de búsqueda o filtros.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================= -->
+  <!-- NUEVA SECCIÓN: AGENTES FUNDADORES -->
+  <!-- ================================================= -->
+  <section class="section" style="padding-top: 20px; padding-bottom: 80px; border-top: 2px solid var(--border); margin-top: 40px;">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 40px;">
+        <h2 style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 28px; color: var(--text); margin-bottom: 10px;">🚀 Agentes Fundadores SomosViveMás</h2>
+        <p style="color: var(--text-light); max-width: 600px; margin: 0 auto;">Los primeros asesores independientes construyendo el nuevo ecosistema inmobiliario. ¡Contáctalos directamente!</p>
+      </div>
+      
+      <div id="foundersGrid" class="directorio-grid">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
       </div>
     </div>
   </section>
@@ -843,9 +862,55 @@
         });
       });
     }
+    // ==================== FUNDADORES ====================
+    async function cargarFundadores() {
+      try {
+        const res = await fetch(`${API_URL}/api/fundadores/directory-list`);
+        const founders = await res.json();
+        const grid = document.getElementById('foundersGrid');
+        
+        if (founders.length === 0) {
+          grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1"><div class="icono">🚀</div><h3>Próximamente</h3><p>Los primeros agentes fundadores se unirán muy pronto.</p></div>';
+          return;
+        }
+
+        grid.innerHTML = founders.map(f => {
+          const nombre = (f.name || 'Agente Fundador').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          // Usamos la misma estructura de agency-card pero con datos de fundador
+          return `
+            <div class="agency-card" data-id="${f._id}">
+              <div class="agency-img" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); display: flex; align-items: center; justify-content: center;">
+                <div style="font-size: 60px; color: white; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif;">${nombre.charAt(0)}</div>
+                <span class="agency-badge agente">👤 Agente</span>
+                <span class="agency-verified" style="background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3);">🏆 Fundador</span>
+              </div>
+              <div class="agency-body">
+                <h3>${nombre}</h3>
+                <div class="agency-location">📍 ${f.city || 'México'}</div>
+                <p class="agency-desc">Asesor inmobiliario independiente verificado como Agente Fundador en SomosViveMás.</p>
+                <div class="agency-tags">
+                  <span>Aliado ViveMás</span>
+                  <span>${f.rank}</span>
+                </div>
+                <div class="agency-contact">
+                  <div>📞 ${f.phone || 'Disponible vía perfil'}</div>
+                </div>
+                <div class="agency-actions">
+                  <a href="/agente/${f.referralCode}" class="btn btn-primary" style="flex:1; text-align:center; text-decoration:none;">
+                    Ver Perfil y Propiedades
+                  </a>
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+      } catch (e) {
+        console.error('Error cargando fundadores:', e);
+      }
+    }
 
     // ==================== INIT ====================
     cargarDirectorio();
+    cargarFundadores();
   </script>
   <script src="../js/social-widget.js"></script>
 </body>
