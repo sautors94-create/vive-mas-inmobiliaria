@@ -28,7 +28,7 @@ const metaOAuthRoutes = require('../services/marketingAutomation/auth/metaOAuth.
 // ==========================================
 // MÓDULOS NUEVOS: AGENTES FUNDADORES & SEO
 // ==========================================
-const seoController = require('./nuevo-modulo/controllers/seoController');
+//const seoController = require('./nuevo-modulo/controllers/seoController');
 const foundersRoutes = require('./nuevo-modulo/routes/founders');
 const propertiesRoutes = require('./nuevo-modulo/routes/properties');
 
@@ -199,7 +199,7 @@ app.use(propertiesRoutes); // Maneja /api/properties (nuevo) y /p/:slug
 // ==========================================
 // SEO MASIVO: Rutas dinámicas (Ej: /renta/departamentos/cdmx/polanco)
 // ==========================================
-app.get('/:operacion(renta|venta)/:tipo(departamentos|casas|terrenos|locales)/:estado?/:ciudad?', seoController.showDynamicSEOPage);
+//app.get('/:operacion(renta|venta)/:tipo(departamentos|casas|terrenos|locales)/:estado?/:ciudad?', seoController.showDynamicSEOPage);
 
 // ✅ CORRECCIÓN: Eliminé el middleware 404 duplicado que tenías
 // 404
