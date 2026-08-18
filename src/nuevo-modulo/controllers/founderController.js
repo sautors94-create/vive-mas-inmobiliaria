@@ -1,6 +1,6 @@
 const Property = require('../../models/Property');
 const Founder = require('../models/Founder');
-const User = require('../.../models/User'); // Ajusta la ruta a tu modelo real
+const User = require('../../models/User'); // Ajusta la ruta a tu modelo real
 const { generatePropertyCard } = require('../services/imageGenerator');
 
 // 1. Obtener estado del panel del Agente (Vistas, Links, Rango)
