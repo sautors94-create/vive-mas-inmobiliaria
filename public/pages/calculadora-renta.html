@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora: ¿Cuánto cobrar de renta? | SomosViveMás</title>
+    <meta name="description" content="Calcula un estimado de cuánto deberías cobrar de renta por tu propiedad, gratis y sin registro.">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="text-center mb-4">
+                    <h2>🧮 ¿Cuánto deberías cobrar de renta?</h2>
+                    <p class="text-muted">Estimado gratuito basado en el valor comercial de tu propiedad.</p>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Valor comercial estimado de la propiedad (MXN)</label>
+                            <input type="number" id="valor" class="form-control" placeholder="Ej: 2500000">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de propiedad</label>
+                            <select id="tipo" class="form-select">
+                                <option value="0.006">Departamento</option>
+                                <option value="0.0055">Casa</option>
+                                <option value="0.007">Local comercial</option>
+                            </select>
+                        </div>
+                        <button onclick="calcular()" class="btn btn-primary w-100 fw-bold">Calcular renta estimada</button>
+
+                        <div id="resultado" class="alert alert-success mt-4 text-center" style="display:none;">
+                            <div class="small text-muted">Renta mensual estimada</div>
+                            <h2 class="mb-0" id="rentaResultado">$0</h2>
+                            <div class="small text-muted mt-1">Rango sugerido: <span id="rangoResultado"></span></div>
+                        </div>
+
+                        <p class="small text-muted mt-3 mb-0">
+                            *Estimado orientativo (0.55%–0.7% del valor comercial mensual, según tipo de propiedad y zona). No sustituye un avalúo profesional.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <a href="/agentes-fundadores" class="btn btn-outline-success">
+                        📢 Publica esta propiedad gratis en SomosViveMás
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calcular() {
+            const valor = parseFloat(document.getElementById('valor').value);
+            const porcentaje = parseFloat(document.getElementById('tipo').value);
+
+            if (!valor || valor <= 0) {
+                alert('Ingresa el valor comercial de la propiedad.');
+                return;
+            }
+
+            const renta = Math.round(valor * porcentaje);
+            const rangoMin = Math.round(renta * 0.9);
+            const rangoMax = Math.round(renta * 1.15);
+
+            document.getElementById('rentaResultado').textContent = '$' + renta.toLocaleString('es-MX') + ' MXN/mes';
+            document.getElementById('rangoResultado').textContent = `$${rangoMin.toLocaleString('es-MX')} - $${rangoMax.toLocaleString('es-MX')} MXN`;
+            document.getElementById('resultado').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Panel - Agente Fundador SomosViveMás</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-7">
+
+                <!-- Acceso: pide el código si no viene en la URL -->
+                <div id="loginBox" class="card shadow-sm mb-4" style="display:none;">
+                    <div class="card-body">
+                        <h5>Entrar a mi panel</h5>
+                        <p class="text-muted small">Tu código de agente te lo dimos al registrarte (va en tu enlace de invitación).</p>
+                        <div class="input-group">
+                            <input type="text" id="refInput" class="form-control" placeholder="tu-codigo-de-agente">
+                            <button class="btn btn-primary" onclick="cargarConCodigo()">Entrar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="panelBox" style="display:none;">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body text-center py-4">
+                            <h3 id="pName">-</h3>
+                            <span class="badge bg-warning text-dark me-1" id="pRank">-</span>
+                            <span class="badge bg-success" id="pAmbassador" style="display:none;"></span>
+
+                            <div class="row mt-4 text-center">
+                                <div class="col-4 border-end">
+                                    <h4 class="mb-0" id="pProps">0</h4>
+                                    <small class="text-muted">Propiedades</small>
+                                </div>
+                                <div class="col-4 border-end">
+                                    <h4 class="mb-0" id="pViews">0</h4>
+                                    <small class="text-muted">Vistas</small>
+                                </div>
+                                <div class="col-4">
+                                    <h4 class="mb-0" id="pRefs">0</h4>
+                                    <small class="text-muted">Agentes invitados</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <h6>🔗 Tu perfil público</h6>
+                            <div class="input-group mb-3">
+                                <input type="text" id="pProfileLink" class="form-control" readonly>
+                                <button class="btn btn-outline-secondary" onclick="copiar('pProfileLink')">Copiar</button>
+                            </div>
+                            <h6>👥 Tu enlace para invitar agentes</h6>
+                            <div class="input-group">
+                                <input type="text" id="pInviteLink" class="form-control" readonly>
+                                <button class="btn btn-outline-secondary" onclick="copiar('pInviteLink')">Copiar</button>
+                            </div>
+                            <p class="small text-muted mt-2 mb-0" id="pNextAmbassador"></p>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <a id="pGenerarFicha" href="/agentes-fundadores" class="btn btn-success">+ Generar nueva ficha de propiedad</a>
+                    </div>
+                </div>
+
+                <div id="errorBox" class="alert alert-danger" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function cargarPanel(ref) {
+            try {
+                const res = await fetch(`/api/fundadores/panel-data/${ref}`);
+                if (!res.ok) throw new Error('Agente no encontrado');
+                const data = await res.json();
+
+                document.getElementById('loginBox').style.display = 'none';
+                document.getElementById('panelBox').style.display = 'block';
+
+                document.getElementById('pName').textContent = data.name;
+                document.getElementById('pRank').textContent = data.rankTitle;
+                document.getElementById('pProps').textContent = data.propertiesCount;
+                document.getElementById('pViews').textContent = data.profileViews;
+                document.getElementById('pRefs').textContent = data.referralsCount || 0;
+
+                if (data.ambassadorTitle) {
+                    const badge = document.getElementById('pAmbassador');
+                    badge.textContent = data.ambassadorTitle;
+                    badge.style.display = 'inline-block';
+                }
+
+                document.getElementById('pProfileLink').value = `${window.location.origin}/agente/${ref}`;
+                document.getElementById('pInviteLink').value = data.ambassadorLink;
+
+                if (data.nextAmbassadorRefs) {
+                    const faltan = data.nextAmbassadorRefs - (data.referralsCount || 0);
+                    document.getElementById('pNextAmbassador').textContent = `Invita a ${faltan} agente(s) más para tu siguiente nivel de Embajador.`;
+                }
+            } catch (e) {
+                document.getElementById('errorBox').style.display = 'block';
+                document.getElementById('errorBox').textContent = 'No encontramos ese código de agente.';
+                document.getElementById('loginBox').style.display = 'block';
+            }
+        }
+
+        function copiar(id) {
+            const el = document.getElementById(id);
+            el.select();
+            document.execCommand('copy');
+        }
+
+        function cargarConCodigo() {
+            const ref = document.getElementById('refInput').value.trim();
+            if (ref) cargarPanel(ref);
+        }
+
+        // El código llega como /panel/:referralCode
+        const partes = window.location.pathname.split('/').filter(Boolean);
+        const refDeUrl = partes[partes.length - 1] !== 'panel' ? partes[partes.length - 1] : null;
+        if (refDeUrl) cargarPanel(refDeUrl);
+        else document.getElementById('loginBox').style.display = 'block';
+    </script>
+</body>
+</html>

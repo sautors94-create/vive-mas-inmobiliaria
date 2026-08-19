@@ -1,26 +1,25 @@
 const express = require('express');
-const router = express.Router();
+const path = require('path');
 const multer = require('multer');
+const router = express.Router();
 const founderController = require('../controllers/founderController');
 
-// Configuración de Multer (Dónde guarda las fotos que suban del celular)
+// Carpeta temporal para fotos subidas desde el formulario (celular/PC)
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'tmp_uploads/'); // Asegúrate de crear esta carpeta en tu proyecto
+    cb(null, path.join(__dirname, '../../../tmp_uploads/'));
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + path.extname(file.originalname));
-  }
+  },
 });
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 router.post('/register', founderController.register);
-// El .single('photo') significa que el input del HTML debe tener name="photo"
-router.post('/generate-card', upload.single('photo'), founderController.generateCard); 
+router.post('/generate-card', upload.single('photo'), founderController.generateCard);
 router.get('/stats', founderController.getDashboardData);
 router.get('/admin-list', founderController.getAdminList);
-router.get('/panel-data', founderController.getAgentPanelData);
+router.get('/panel-data/:referralCode', founderController.getAgentPanelData);
 router.post('/view/:referralCode', founderController.trackProfileView);
 
-const path = require('path'); // Pon esto arriba del todo del archivo
 module.exports = router;

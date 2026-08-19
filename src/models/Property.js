@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const propertySchema = new mongoose.Schema({
   titulo: { type: String, required: true, trim: true },
+  slug: { type: String, unique: true, sparse: true, index: true },
   descripcion: { type: String, required: true },
   precio: { type: Number, required: true },
   operacion: { type: String, enum: ['renta', 'venta'], required: true },
@@ -103,5 +104,25 @@ const propertySchema = new mongoose.Schema({
 propertySchema.index({ 'ubicacion.estado': 1, 'ubicacion.ciudad': 1 });
 propertySchema.index({ operacion: 1, tipo: 1, precio: 1 });
 propertySchema.index({ titulo: 'text', descripcion: 'text' });
+
+// Genera un slug único y legible (para páginas SEO y links compartibles /p/:slug)
+// solo la primera vez que se crea la propiedad; no se toca en ediciones posteriores
+// para no romper links ya compartidos.
+propertySchema.pre('save', function (next) {
+  if (this.slug) return next();
+
+  const base = [this.tipo, this.ubicacion?.ciudad, this.titulo]
+    .filter(Boolean)
+    .join('-')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'propiedad';
+
+  this.slug = `${base}-${this._id.toString().slice(-6)}`;
+  next();
+});
 
 module.exports = mongoose.model('Property', propertySchema);

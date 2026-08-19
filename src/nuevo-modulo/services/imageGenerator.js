@@ -1,4 +1,7 @@
-const { createCanvas, loadImage } = require('canvas');
+// @napi-rs/canvas en vez de "canvas": trae binarios precompilados y no
+// necesita compilar nada nativo (importante en hosting compartido como
+// Hostinger, donde no hay acceso root para instalar libcairo/libpango).
+const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const axios = require('axios');
 const path = require('path');
 

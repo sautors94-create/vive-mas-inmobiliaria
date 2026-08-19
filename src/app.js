@@ -28,9 +28,11 @@ const metaOAuthRoutes = require('../services/marketingAutomation/auth/metaOAuth.
 // ==========================================
 // MÓDULOS NUEVOS: AGENTES FUNDADORES & SEO
 // ==========================================
+const path = require('path');
 const seoController = require('./nuevo-modulo/controllers/seoController');
-//const foundersRoutes = require('./nuevo-modulo/routes/founders');
-//const propertiesRoutes = require('./nuevo-modulo/routes/properties');
+const founderController = require('./nuevo-modulo/controllers/founderController');
+const foundersRoutes = require('./nuevo-modulo/routes/founders');
+const propertiesRoutes = require('./nuevo-modulo/routes/properties');
 
 const app = express();
 
@@ -193,8 +195,27 @@ iniciarMarketingAutomation();
 // ==========================================
 // RUTAS DEL MÓDULO AGENTES FUNDADORES
 // ==========================================
-// app.use('/api/fundadores', foundersRoutes);}
-// app.use(propertiesRoutes); // Maneja /api/properties (nuevo) y /p/:slug
+app.use('/api/fundadores', foundersRoutes);
+app.use(propertiesRoutes); // Maneja /p/:slug (página pública compartible)
+
+// Páginas del landing de Agentes Fundadores (registro público, sin login)
+app.get('/agentes-fundadores', (req, res) => {
+  res.sendFile(path.join(__dirname, 'nuevo-modulo/views/founders.html'));
+});
+app.get('/admin/agentes-fundadores', (req, res) => {
+  res.sendFile(path.join(__dirname, 'nuevo-modulo/views/dashboard.html'));
+});
+
+// Perfil público del agente (SSR, con og: para compartir bien el link)
+app.get('/agente/:referralCode', founderController.getPublicProfile);
+
+// Panel personal del agente (ve su rango, referidos, enlaces)
+app.get('/agentes-fundadores/panel/:referralCode', (req, res) => {
+  res.sendFile(path.join(__dirname, 'nuevo-modulo/views/panel.html'));
+});
+app.get('/agentes-fundadores/panel', (req, res) => {
+  res.sendFile(path.join(__dirname, 'nuevo-modulo/views/panel.html'));
+});
 
 // ==========================================
 // SEO MASIVO: Rutas dinámicas (Ej: /renta/departamentos/cdmx/polanco)

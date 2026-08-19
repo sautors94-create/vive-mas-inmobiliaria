@@ -42,6 +42,17 @@
                         <h4 class="mb-0">✅ ¡Genera tu ficha profesional!</h4>
                     </div>
                     <div class="card-body">
+                        <!-- Enlace de invitación: motor Embajador (invita a 5 y subes de nivel) -->
+                        <div class="alert alert-success">
+                            <strong>🔗 Tu enlace de invitación</strong>
+                            <p class="small text-muted mb-2">Compártelo con otros agentes. Al llegar a 5 invitados subes a "Embajador", a 10 "Embajador Oro", a 25 "Embajador Élite".</p>
+                            <div class="input-group mb-2">
+                                <input type="text" id="myInviteLink" class="form-control" readonly>
+                                <button class="btn btn-outline-secondary" type="button" onclick="copyInviteLink()">Copiar</button>
+                            </div>
+                            <a id="miPanelLink" href="#" class="small">Ver mi panel de agente →</a>
+                        </div>
+
                         <div class="mb-3">
                             <label class="form-label">Precio (ej: 15000)</label>
                             <input type="text" id="price" class="form-control">
@@ -101,7 +112,7 @@
 
     <script>
         // Si lo pruebas en local, usa localhost. Si ya lo subiste, quita el localhost
-        const API_URL = 'http://localhost:3000/api/fundadores'; 
+        const API_URL = '/api/fundadores';
         let currentAgentRef = '';
 
         async function registerAgent() {
@@ -124,6 +135,8 @@
                     currentAgentRef = result.data.referralCode;
                     document.getElementById('registerForm').style.display = 'none';
                     document.getElementById('result').style.display = 'block';
+                    document.getElementById('myInviteLink').value = `${window.location.origin}/agentes-fundadores?ref=${currentAgentRef}`;
+                    document.getElementById('miPanelLink').href = `/agentes-fundadores/panel/${currentAgentRef}`;
                 } else {
                     alert('Error al registrar');
                 }
@@ -133,79 +146,57 @@
         }
 
         async function createCard() {
-            // 1. Recoger datos de los inputs
             const price = document.getElementById('price').value;
             const rooms = document.getElementById('rooms').value;
             const location = document.getElementById('location').value;
             const imageUrl = document.getElementById('imageUrl').value;
-            const city = document.getElementById('city').value;
             const photoInput = document.getElementById('photo');
 
-            const data = {
-                price: price,
-                rooms: rooms,
-                baths: '2', 
-                m2: '100', 
-                location: location,
-                imageUrl: imageUrl,
-                type: 'renta', 
-                propertyType: 'Departamento',
-                city: city
-            };
+            if (!currentAgentRef) {
+                alert('Primero regístrate como Agente Fundador.');
+                return;
+            }
 
             try {
-                // 2. Guardar en BD (Esto sigue siendo JSON porque MongoDB no guarda archivos)
-                const resDB = await fetch(`http://localhost:3000/api/properties`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(data) 
-                });
-                const dbData = await resDB.json();
-
-                // 3. Generar Imagen (AHORA USA FORMDATA PARA PODER MANDAR LA FOTO DEL CELULAR)
+                // Un solo endpoint: genera la imagen Y guarda la ficha rápida,
+                // identificando al agente por su referralCode (sin login).
                 const formData = new FormData();
-                
-                // Agregamos todos los campos de texto al formData
+                formData.append('referralCode', currentAgentRef);
                 formData.append('price', price);
                 formData.append('rooms', rooms);
                 formData.append('baths', '2');
-                formData.append('m2', '100');
                 formData.append('location', location);
                 formData.append('imageUrl', imageUrl);
                 formData.append('type', 'renta');
-                formData.append('propertyType', 'Departamento');
-                formData.append('city', city);
 
-                // Si el usuario seleccionó una foto de su celular/galería, la agregamos al paquete
                 if (photoInput.files && photoInput.files.length > 0) {
                     formData.append('photo', photoInput.files[0]);
                 }
 
-                // Hacemos la petición. 
-                // ¡OJO! NO ponemos 'Content-Type': 'application/json' aquí. 
+                // ¡OJO! NO ponemos 'Content-Type': 'application/json' aquí.
                 // El navegador lo hace automáticamente con un "boundary" especial para archivos.
-                const resImg = await fetch(`${API_URL}/generate-card`, { 
-                    method: 'POST', 
-                    body: formData 
+                const resImg = await fetch(`${API_URL}/generate-card`, {
+                    method: 'POST',
+                    body: formData
                 });
 
                 if (resImg.ok) {
+                    const fichaUrl = resImg.headers.get('X-Ficha-Url') || '';
                     const blob = await resImg.blob();
                     const url = window.URL.createObjectURL(blob);
-                    
+
                     const img = document.getElementById('propertyImage');
-                    img.src = url; 
+                    img.src = url;
                     img.style.display = 'block';
-                    
+
                     const link = document.getElementById('downloadLink');
                     link.href = url;
                     document.getElementById('downloadLinkContainer').style.display = 'block';
 
-                    // 4. Mostrar Links Virales
                     document.getElementById('viralTextSection').style.display = 'block';
-                    document.getElementById('seoLink').value = dbData.url;
-                    
-                    const textToCopy = `🏠 ${location} - $${price}\n🛏 ${rooms} Recámaras\n\nVer detalles:\n${dbData.url}\n\nPublica gratis en SomosViveMás:\nhttp://localhost:3000/agentes-fundadores?ref=${currentAgentRef}`;
+                    document.getElementById('seoLink').value = fichaUrl;
+
+                    const textToCopy = `🏠 ${location} - $${price}\n🛏 ${rooms} Recámaras\n\nVer detalles:\n${fichaUrl}\n\nPublica gratis en SomosViveMás:\n${window.location.origin}/agentes-fundadores?ref=${currentAgentRef}`;
                     document.getElementById('viralTextArea').value = textToCopy;
                 } else {
                     const errorData = await resImg.json();
@@ -224,6 +215,10 @@
         function copyLink() { 
             document.getElementById('seoLink').select(); 
             document.execCommand('copy'); 
+        }
+        function copyInviteLink() {
+            document.getElementById('myInviteLink').select();
+            document.execCommand('copy');
         }
     </script>
 </body>

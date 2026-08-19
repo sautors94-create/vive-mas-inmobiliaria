@@ -1,9 +1,14 @@
+require('dotenv').config();
 const readline = require('readline');
 const { exec } = require('child_process');
 const OpenAI = require('openai');
 
-// PON TU API KEY AQUÍ
-const openai = new OpenAI({ apiKey: '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' }); 
+// La API key SIEMPRE debe venir de una variable de entorno, nunca hardcodeada
+// en el código. Ponla en tu .env como OPENAI_API_KEY=sk-...
+if (!process.env.OPENAI_API_KEY) {
+  console.log('⚠️  Falta OPENAI_API_KEY en tu .env. El bot funcionará con el extractor local (gratis) en vez de IA.');
+}
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -89,7 +94,10 @@ async function main() {
   const phone = await ask(`\n2. WhatsApp del publicador:\n> `);
   if (!phone || phone.replace(/\D/g, '').length < 10) { console.log("❌ Número inválido."); rl.close(); return; }
 
-  const linkRegistro = "http://localhost:3000/admin/agentes-fundadores"; // Cambia a tu dominio real
+  // Va al formulario público de registro, NO al dashboard de admin
+  const linkRegistro = process.env.SITE_URL
+    ? `${process.env.SITE_URL}/agentes-fundadores`
+    : "http://localhost:3000/agentes-fundadores"; // Cambia SITE_URL en tu .env cuando subas a producción
 
   const mensaje = `Hola, vi tu publicación del ${data.tipo_propiedad} en ${data.ubicacion} (${data.precio_estimado}). 
   
