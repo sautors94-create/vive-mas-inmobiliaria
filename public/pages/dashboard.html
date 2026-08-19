@@ -6,7 +6,7 @@
   <title>Mi Panel — Vive Más Inmobiliaria</title>
   <script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&family=Playfair+Display:wght@600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="../css/styles.css">
   <link rel="stylesheet" href="../css/design-system.css">
@@ -14,6 +14,69 @@
   <link rel="stylesheet" href="../css/dashboard.css">
   <link rel="stylesheet" href="../css/mis-propiedades-workspace.css">
   <link rel="stylesheet" href="../css/topbar-premium.css">
+
+  <!-- ===== ESTILOS DEL PROGRAMA DE EMBAJADORES ===== -->
+  <style>
+    /* Badge circular de nivel */
+    .emb-badge-circle{
+      width:80px;height:80px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;flex-direction:column;
+      border:2.5px solid;flex-shrink:0;
+    }
+    .emb-badge-circle .emb-bc-icon{font-size:26px;line-height:1}
+    .emb-badge-circle .emb-bc-label{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;margin-top:2px}
+
+    /* Barra de progreso */
+    .emb-progress-track{height:10px;background:var(--bg-secondary,#f3f4f6);border-radius:50px;overflow:hidden}
+    .emb-progress-fill{height:100%;border-radius:50px;transition:width .8s ease;position:relative}
+    .emb-progress-fill::after{content:'';position:absolute;right:0;top:0;bottom:0;width:20px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35));border-radius:50px}
+    .emb-progress-locked .emb-progress-fill{background:#e5e7eb!important}
+    .emb-progress-locked .emb-progress-fill::after{display:none}
+
+    /* Roadmap de 5 niveles */
+    .emb-levels-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+    .emb-level-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px 8px;text-align:center;position:relative;transition:all .2s}
+    .emb-level-card.current{box-shadow:0 0 0 2px var(--lc-color,var(--primary))}
+    .emb-level-card.locked{opacity:.4}
+    .emb-lc-check{position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;background:#22c55e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px}
+    .emb-lc-lock{position:absolute;top:8px;right:8px;font-size:11px;color:#9ca3af}
+
+    /* Botones de compartir */
+    .emb-share-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;text-decoration:none}
+    .emb-share-btn:hover{border-color:var(--primary);color:var(--primary)}
+
+    /* Botones de plantilla */
+    .emb-tpl-btn{padding:6px 14px;border:1px solid var(--border);border-radius:50px;background:#fff;font-family:inherit;font-size:12px;font-weight:500;color:var(--text-light);cursor:pointer;transition:all .2s}
+    .emb-tpl-btn.active{border-color:var(--primary);color:var(--primary);background:rgba(0,0,0,.03)}
+
+    /* Preview del generador */
+    .emb-gen-preview{background:var(--bg-secondary,#f9fafb);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;align-items:center;justify-content:center;min-height:240px;margin-bottom:14px;overflow:hidden}
+    .emb-gen-preview img{max-width:100%;max-height:380px;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.12)}
+
+    /* Info cards de la landing */
+    .emb-info-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:24px 20px;transition:all .2s}
+    .emb-info-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06);transform:translateY(-2px)}
+    .emb-info-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:14px}
+    .emb-info-card h4{font-size:15px;font-weight:700;margin-bottom:10px}
+    .emb-info-card ul{list-style:none;padding:0}
+    .emb-info-card ul li{font-size:13px;color:var(--text-light);padding:3px 0 3px 16px;position:relative;line-height:1.5}
+    .emb-info-card ul li::before{content:'';position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:#d1d5db}
+
+    /* Welcome bar */
+    .emb-welcome{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:20px}
+    .emb-code-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(0,0,0,.03);border:1px solid var(--border);padding:7px 14px;border-radius:8px;font-size:13px;font-weight:700;color:var(--primary);letter-spacing:.5px}
+    .emb-code-badge i{cursor:pointer;opacity:.5;transition:opacity .2s}
+    .emb-code-badge i:hover{opacity:1}
+
+    /* Nivel hero */
+    .emb-level-hero{display:flex;align-items:center;gap:24px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:20px}
+    .emb-lock-notice{display:flex;align-items:center;gap:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:12px;color:#991b1b;margin-top:12px}
+
+    /* Responsive */
+    @media(max-width:900px){.emb-levels-row{grid-template-columns:repeat(3,1fr)}.emb-level-hero{flex-direction:column;text-align:center;gap:16px}.emb-welcome{flex-direction:column;align-items:flex-start}}
+    @media(max-width:600px){.emb-levels-row{grid-template-columns:repeat(2,1fr)}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+  </style>
 </head>
 <body>
 
@@ -101,7 +164,7 @@
           <span>Nueva publicación</span>
         </a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('favoritos')">
-          <span class="li-icon" huerta="heart"></span>
+          <span class="li-icon" data-lucide="heart"></span>
           <span>Favoritos</span>
         </a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('leads')">
@@ -115,7 +178,7 @@
         </a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('agente-fundador')">
           <span class="li-icon" data-lucide="rocket"></span>
-          <span>Agente Fundador</span>
+          <span>Embajadores</span>
         </a>
         <a href="#" class="sidebar-link" onclick="mostrarSeccion('mi-cuenta')">
           <span class="li-icon" data-lucide="user"></span>
@@ -308,7 +371,7 @@
                     <option value="local">Local comercial</option>
                   </select>
                 </div>
-                <div class="form-grupo id="grupo-creditos" style="grid-column:1/-1;display:none">
+                <div class="form-grupo" style="grid-column:1/-1;display:none">
                   <label>¿Aceptas créditos o financiamiento? <span style="font-size:11px;color:var(--text-light)">(solo venta)</span></label>
                   <div style="font-size:13px;font-weight:700;margin:14px 0 6px;color:var(--text);text-transform:uppercase;letter-spacing:0.03em">Instituciones de vivienda</div>
                   <div style="display:flex;flex-wrap:wrap;gap:10px">
@@ -421,7 +484,6 @@
                 <div class="form-grupo" style="grid-column:1/-1"><label>Recámaras <span id="label-recamaras" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-recamaras-slider" min="0" max="20" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('recamaras')"><input type="number" id="p-recamaras" class="form-input" value="0" min="0" max="20" style="width:80px;text-align:center" oninput="syncCaracteristica('recamaras','input')"></div></div>
                 <div class="form-grupo" style="grid-column:1/-1"><label>Baños completos <span id="label-banos" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-banos-slider" min="0" max="10" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('banos')"><input type="number" id="p-banos" class="form-input" value="0" min="0" max="10" style="width:80px;text-align:center" oninput="syncCaracteristica('banos','input')"></div></div>
                 <div class="form-grupo" style="grid-column:1/-1"><label>Medios baños <span id="label-medios-banos" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-medios-banos-slider" min="0" max="5" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('medios-banos')"><input type="number" id="p-medios-banos" class="form-input" value="0" min="0" max="5" style="width:80px;text-align:center" oninput="syncCaracteristica('medios-banos','input')"></div></div>
-                <div class="form-grupo" style="grid-column:1/-1"><label>Estacionamientos <span id="label-estacionamientos" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-estacionamientos-slider" min="0" max="10" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('estacionamientos')"><input type="number" id="p-estacionamientos" class="form-input" value="0" min="0" style="width:80px;text-align:center" oninput="syncCaracteristica('estacionamientos','input')"></div></div>
                 <div class="form-grupo" style="grid-column:1/-1"><label>Estacionamientos <span id="label-estacionamientos" style="color:var(--primary);font-weight:700">0</span></label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-estacionamientos-slider" min="0" max="10" step="1" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('estacionamientos')"><input type="number" id="p-estacionamientos" class="form-input" value="0" min="0" max="10" style="width:80px;text-align:center" oninput="syncCaracteristica('estacionamientos','input')"></div></div>
                 <div class="form-grupo" style="grid-column:1/-1"><label>Metros cuadrados <span id="label-m2" style="color:var(--primary);font-weight:700">0</span> m²</label><div style="display:flex;align-items:center;gap:12px"><input type="range" id="p-m2-slider" min="0" max="2000" step="5" value="0" style="flex:1;accent-color:var(--primary)" oninput="syncCaracteristica('m2')"><input type="number" id="p-m2" class="form-input" value="0" min="0" style="width:80px;text-align:center" oninput="syncCaracteristica('m2','input')"></div><span style="font-size:13px;color:var(--text-light)">m²</span></div>
               </div>
@@ -438,7 +500,7 @@
                   </div>
                   <div id="p-fotos-drop" class="fotos-drop" style="display:block">
                     <input type="file" id="p-fotos" multiple accept="image/*" onchange="previsualizarFotos(this)" style="display:none">
-                    <div class="fotos-drop-inner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px 12px;border:2px dashed var(--border);border-radius:12px;background:var(--bg-secondary);cursor:pointer" onclick="document.getElementById('p-fotos').click()"><!--¡Aquí estaba el error oculto en tu código original y lo arreglamos!-->
+                    <div class="fotos-drop-inner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px 12px;border:2px dashed var(--border);border-radius:12px;background:var(--bg-secondary);cursor:pointer" onclick="document.getElementById('p-fotos').click()">
                       <div style="font-size:32px">📷</div>
                       <div style="font-weight:700;font-size:15px">Arrastra tus fotos aquí</div>
                       <div style="font-size:12px;color:var(--text-light)">o haz clic para seleccionar (mínimo 2)</div>
@@ -499,7 +561,7 @@
       </div>
     </div>
     <div id="msg-panel-chat" style="display:flex;flex-direction:column;overflow:hidden">
-      <div id="msg-vacio" style="flex:1;display:flex;flex-direction:�нулась;align-items:center;justify-content:center;color:var(--text-light);padding:30px">
+      <div id="msg-vacio" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-light);padding:30px">
         <div style="font-size:48px;margin-bottom:14px;opacity:0.5">💬</div>
         <div style="font-size:15px;font-weight:600;margin-bottom:6px;color:var(--text)">Selecciona una conversación</div>
         <div style="font-size:13px">Elige un chat de la lista para ver los mensajes</div>
@@ -529,7 +591,7 @@
       <!-- LEADS -->
       <section id="sec-leads" class="dash-section" style="display:none">
         <div class="dash-section-header"><h2>Mis leads</h2></div>
-        <div id="leads-usuario-lista" class="mensajes-lista"><div class="loading">Cargaando leads...</div></div>
+        <div id="leads-usuario-lista" class="mensajes-lista"><div class="loading">Cargando leads...</div></div>
       </section>
 
       <!-- MI CUENTA -->
@@ -538,104 +600,264 @@
         <div class="form-card"><div id="cuenta-info"></div></div>
       </section>
 
-      <!-- AGENTE FUNDADOR -->
+      <!-- ============================================================ -->
+      <!-- PROGRAMA DE EMBAJADORES (reemplaza la sección anterior)      -->
+      <!-- ============================================================ -->
       <section id="sec-agente-fundador" class="dash-section" style="display:none">
         <div class="dash-section-header">
-          <h2>🚀 Centro de Agente Fundador</h2>
+          <h2>Programa de Embajadores</h2>
           <span id="fund-badge-rango" class="ds-badge ds-badge-soft" style="display:none; font-size:14px; padding: 6px 14px;">Cargando...</span>
         </div>
-        
-        <!-- ESTADO: NO ES FUNDADOR -->
-        <div id="fund-no-fundador" style="display:none; text-align: center; padding: 40px;">
-          <div style="font-size: 48px; margin-bottom: 16px;">🚪</div>
-          <h2 style="color: var(--text);">Área exclusiva para Agentes Fundadores</h2>
-          <p style="color: var(--text-light); max-width: 500px; margin: 10px auto 30px;">Genera fichas profesionales gratis, accede a tu perfil público y sube de rango para ganar más visibilidad en el directorio.</p>
-          <button class="btn btn-primary" style="padding: 14px 32px;" onclick="activarFundador()">✨ Activar como Agente Fundador</button>
-        </div>
 
-        <!-- ESTADO: SÍ ES FUNDADOR -->
-        <div id="fiu-si-fundador" style="display:none;">
-          
-          <!-- KPIs del Agente -->
-          <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
-            <div class="stat-card" style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
-              <div style="font-size: 24px; font-weight: 700; color: var(--primary);" id="fund-kpi-fichas">0</div>
-              <div style="font-size: 12px; color: var(--text-light);">Fichas Creadas</div>
+        <!-- ===== LANDING: No inscrito ===== -->
+        <div id="emb-landing">
+          <div style="text-align:center; padding: 32px 0 24px;">
+            <span class="ds-badge ds-badge-primary" style="font-size:11px; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:14px; display:inline-block;">Programa exclusivo</span>
+            <h3 style="font-size:clamp(24px,4vw,32px); font-weight:700; margin-bottom:8px; font-family:'Bricolage Grotesque',sans-serif;">Conviértete en <span style="color:var(--primary)">Embajador</span></h3>
+            <p style="color:var(--text-light); max-width:520px; margin:0 auto; font-size:15px;">Crece tu red profesional, obtén reconocimiento y desbloquea beneficios exclusivos como miembro del programa.</p>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:28px;">
+            <!-- Bases -->
+            <div class="emb-info-card">
+              <div class="emb-info-icon" style="background:rgba(0,0,0,.04); color:var(--primary); border:1px solid rgba(0,0,0,.08);"><i class="fa-solid fa-scale-balanced"></i></div>
+              <h4>Bases del Programa</h4>
+              <ul>
+                <li>Abierto a todos los agentes registrados</li>
+                <li>Inscripción gratuita y permanente</li>
+                <li>Se asigna un código único de embajador</li>
+                <li>Los rangos se obtienen por propiedades publicadas</li>
+                <li>El progreso se activa al registrar tu código de referido</li>
+                <li>Los beneficios son acumulables e irrevocables</li>
+              </ul>
             </div>
-            <div class="stat-card" style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
-              <div style="font-size: 24px; font-weight:  quadrant; font-size: 24px;font-weight:700;color: var(--primary);" id="fund-kpi-vistas">0</div>
-              <div style="font-size: 12px; color: var(--text-light);">Vistas a tu Perfil</div>
+            <!-- Cómo funciona -->
+            <div class="emb-info-card">
+              <div class="emb-info-icon" style="background:rgba(34,197,94,.06); color:#16a34a; border:1px solid rgba(34,197,94,.15);"><i class="fa-solid fa-route"></i></div>
+              <h4>Cómo Funciona</h4>
+              <ul>
+                <li>Da clic en inscribirte — sin formularios</li>
+                <li>Recibirás tu código: EMBAJADOR-XXXX</li>
+                <li>Ingresa el código de quien te invitó</li>
+                <li>Publica propiedades para subir de rango</li>
+                <li>Comparte tu enlace en redes sociales</li>
+                <li>Genera imágenes de campaña al instante</li>
+              </ul>
             </div>
-            <div class="stat-card" style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
-              <div style="font-size: 24px; font-weight: 700; color: var(--primary);" id="fund-kpi-rango">1</div>
-              <div style="font-size: 12px; color: var(--text-light);">Nivel Actual</div>
-            </div>
-            <div class="stat-card" style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
-              <div style="font-size: 24px; font-weight: 700; color: var(--accent);" id="fund-kpi-proximo">0</div>
-              <div style="font-size: 12px; color: var(--text-light);">Para siguiente nivel</div>
+            <!-- Beneficios -->
+            <div class="emb-info-card">
+              <div class="emb-info-icon" style="background:rgba(168,85,247,.06); color:#9333ea; border:1px solid rgba(168,85,247,.15);"><i class="fa-solid fa-trophy"></i></div>
+              <h4>Beneficios por Nivel</h4>
+              <ul>
+                <li><b>Bronce:</b> Insignia digital y perfil en directorio</li>
+                <li><b>Plata:</b> Prioridad en listados de búsqueda</li>
+                <li><b>Oro:</b> Badge verificado y mención destacada</li>
+                <li><b>Diamante:</b> Sin límites de propiedades premium</li>
+                <li><b>Élite:</b> Asesoría personalizada y red exclusiva</li>
+              </ul>
             </div>
           </div>
 
-          <!-- GENERADOR DE FICHAS -->
-          <div class="form-card" style="margin-bottom: 24px;">
-            <h3 style="font-size: 16px; margin-bottom: 16px;">📸 Generador de Fichas Profesionales</h3>
+          <div style="text-align:center; padding: 8px 0 32px;">
+            <button class="btn btn-primary" style="padding:14px 36px; font-size:15px;" onclick="emb_inscribirse()">Inscribirme como Embajador</button>
+            <p style="font-size:12px; color:var(--text-light); margin-top:10px;">Sin costos. Sin compromisos. Un solo clic.</p>
+          </div>
+        </div>
+
+        <!-- ===== DASHBOARD: Inscrito ===== -->
+        <div id="emb-dashboard" style="display:none;">
+
+          <!-- Bienvenida + Código -->
+          <div class="emb-welcome">
+            <div>
+              <div style="font-size:18px; font-weight:700;" id="emb-nombre">Embajador</div>
+              <div style="font-size:13px; color:var(--text-light);">Panel de tu programa de embajadores</div>
+            </div>
+            <div class="emb-code-badge">
+              <i class="fa-solid fa-fingerprint"></i>
+              <span id="emb-codigo">EMBAJADOR-0000</span>
+              <i class="fa-regular fa-copy" onclick="emb_copiarCodigo()" title="Copiar código"></i>
+            </div>
+          </div>
+
+          <!-- 4 Stats -->
+          <div class="stats-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:20px;">
+            <div class="stat-card">
+              <div style="font-size:24px; font-weight:700; color:var(--primary);" id="emb-stat-props">0</div>
+              <div style="font-size:12px; color:var(--text-light); text-transform:uppercase; letter-spacing:.5px;">Propiedades</div>
+            </div>
+            <div class="stat-card">
+              <div style="font-size:24px; font-weight:700;" id="emb-stat-nivel">Bronce</div>
+              <div style="font-size:12px; color:var(--text-light); text-transform:uppercase; letter-spacing:.5px;">Nivel actual</div>
+            </div>
+            <div class="stat-card">
+              <div style="font-size:24px; font-weight:700; color:var(--primary);" id="emb-stat-vistas">0</div>
+              <div style="font-size:12px; color:var(--text-light); text-transform:uppercase; letter-spacing:.5px;">Vistas perfil</div>
+            </div>
+            <div class="stat-card">
+              <div style="font-size:24px; font-weight:700; color:var(--text-light);" id="emb-stat-faltantes">0</div>
+              <div style="font-size:12px; color:var(--text-light); text-transform:uppercase; letter-spacing:.5px;">Para siguiente</div>
+            </div>
+          </div>
+
+          <!-- Nivel actual (badge grande + progreso) -->
+          <div class="emb-level-hero" id="emb-level-hero">
+            <div class="emb-badge-circle" id="emb-badge-large">
+              <span class="emb-bc-icon"><i class="fa-solid fa-shield-halved"></i></span>
+              <span class="emb-bc-label">BRONCE</span>
+            </div>
+            <div style="flex:1;">
+              <h3 style="font-size:18px; font-weight:700; margin-bottom:4px;" id="emb-level-title">Rango Bronce</h3>
+              <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;" id="emb-level-desc">Tu camino como embajador comienza aquí.</p>
+              <div class="emb-progress-track" id="emb-progress-wrap">
+                <div class="emb-progress-fill" id="emb-progress-fill" style="width:0%"></div>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-light); margin-top:5px;">
+                <span id="emb-progress-text">0 / 5 propiedades</span>
+                <span id="emb-progress-pct">0%</span>
+              </div>
+              <div class="emb-lock-notice" id="emb-lock-notice">
+                <i class="fa-solid fa-lock"></i>
+                <span>Ingresa tu código de referido para activar tu progreso</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Roadmap de 5 niveles -->
+          <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-light); margin-bottom:12px; display:flex; align-items:center; gap:10px;">Rangos del Programa<span style="flex:1; height:1px; background:var(--border); display:block;"></span></div>
+          <div class="emb-levels-row" id="emb-levels-row" style="margin-bottom:24px;"></div>
+
+          <!-- Código de referido (una sola vez) -->
+          <div class="form-card" id="emb-referral-section" style="margin-bottom:20px;">
+            <h4 style="font-size:16px; font-weight:700; margin-bottom:4px;"><i class="fa-solid fa-link" style="color:var(--primary); margin-right:6px;"></i>Registrar mi Referido</h4>
+            <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;">Ingresa el código del embajador que te invitó. Esta acción es permanente y solo se realiza una vez.</p>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <input type="text" id="emb-input-referido" class="form-input" placeholder="Ej: EMBAJADOR-1038" autocomplete="off" spellcheck="false" style="flex:1; min-width:200px;" onkeydown="if(event.key==='Enter')emb_registrarReferido()">
+              <button class="btn btn-primary" onclick="emb_registrarReferido()">Registrar</button>
+            </div>
+            <p style="font-size:11px; color:var(--text-light); margin-top:8px;"><i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>Una vez registrado, esta sección desaparecerá permanentemente.</p>
+          </div>
+
+          <!-- Redes sociales -->
+          <div class="form-card" style="margin-bottom:20px;">
+            <h4 style="font-size:16px; font-weight:700; margin-bottom:4px;"><i class="fa-solid fa-share-nodes" style="color:var(--primary); margin-right:6px;"></i>Mis Redes Sociales</h4>
+            <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;">Estas redes aparecerán en tu perfil del directorio de embajadores.</p>
+            <div class="form-grid">
+              <div class="form-grupo">
+                <label><i class="fa-brands fa-facebook-f" style="color:#1877f2; margin-right:4px;"></i>Facebook</label>
+                <input type="url" id="emb-input-fb" class="form-input" placeholder="https://facebook.com/tu-perfil">
+              </div>
+              <div class="form-grupo">
+                <label><i class="fa-brands fa-instagram" style="color:#e1306c; margin-right:4px;"></i>Instagram</label>
+                <input type="url" id="emb-input-ig" class="form-input" placeholder="https://instagram.com/tu-perfil">
+              </div>
+              <div class="form-grupo" style="grid-column:1/-1;">
+                <label><i class="fa-solid fa-globe" style="color:var(--primary); margin-right:4px;"></i>Sitio web</label>
+                <input type="url" id="emb-input-web" class="form-input" placeholder="https://tu-sitio-web.com">
+              </div>
+            </div>
+            <button class="btn btn-outline" style="margin-top:12px;" onclick="emb_guardarRedes()"><i class="fa-solid fa-floppy-disk" style="margin-right:4px;"></i>Guardar redes</button>
+          </div>
+
+          <!-- Compartir perfil -->
+          <div class="form-card" style="margin-bottom:20px;">
+            <h4 style="font-size:16px; font-weight:700; margin-bottom:4px;"><i class="fa-solid fa-bullhorn" style="color:var(--primary); margin-right:6px;"></i>Compartir mi Perfil</h4>
+            <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;">Comparte tu enlace de embajador para que te sigan y te encuentren en el directorio.</p>
+            <div style="display:flex; gap:8px; align-items:center; margin-bottom:14px;">
+              <input type="text" id="emb-profile-link" class="form-input" readonly style="margin:0; background:var(--bg-secondary);">
+              <button class="btn btn-outline" style="white-space:nowrap;" onclick="emb_copiarLink()"><i class="fa-regular fa-copy"></i> Copiar</button>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <a class="emb-share-btn" id="emb-share-wa" href="#" target="_blank"><i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> WhatsApp</a>
+              <a class="emb-share-btn" id="emb-share-fb" href="#" target="_blank"><i class="fa-brands fa-facebook-f" style="color:#1877f2;"></i> Facebook</a>
+              <button class="emb-share-btn" onclick="emb_compartirIG()"><i class="fa-brands fa-instagram" style="color:#e1306c;"></i> Instagram</button>
+              <button class="emb-share-btn" onclick="emb_compartirNativo()"><i class="fa-solid fa-arrow-up-from-bracket"></i> Compartir</button>
+            </div>
+          </div>
+
+          <!-- Generador de imágenes de campaña -->
+          <div class="form-card" style="margin-bottom:20px;">
+            <h4 style="font-size:16px; font-weight:700; margin-bottom:4px;"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--primary); margin-right:6px;"></i>Generador de Imágenes</h4>
+            <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;">Crea imágenes de campaña para compartir en tus redes sociales. Se generan al instante en tu dispositivo.</p>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+              <button class="emb-tpl-btn active" data-tpl="story" onclick="emb_selTpl(this,'story')">Historia WhatsApp</button>
+              <button class="emb-tpl-btn" data-tpl="post" onclick="emb_selTpl(this,'post')">Post Instagram / FB</button>
+              <button class="emb-tpl-btn" data-tpl="card" onclick="emb_selTpl(this,'card')">Tarjeta de Referido</button>
+            </div>
+            <div class="emb-gen-preview" id="emb-gen-preview">
+              <div id="emb-gen-placeholder" style="text-align:center; color:var(--text-light);">
+                <div style="font-size:36px; margin-bottom:10px; opacity:.4;"><i class="fa-regular fa-image"></i></div>
+                <p style="font-size:13px;">Selecciona una plantilla y genera tu imagen</p>
+              </div>
+              <img id="emb-gen-image" src="" alt="Imagen generada" style="display:none;">
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+              <button class="btn btn-primary" onclick="emb_generarImagen()"><i class="fa-solid fa-bolt" style="margin-right:4px;"></i>Generar Imagen</button>
+              <button class="btn btn-outline" id="emb-btn-download" style="display:none;" onclick="emb_descargarImagen()"><i class="fa-solid fa-download" style="margin-right:4px;"></i>Descargar</button>
+              <button class="btn btn-outline" id="emb-btn-share-img" style="display:none;" onclick="emb_compartirImagen()"><i class="fa-solid fa-share" style="margin-right:4px;"></i>Compartir</button>
+            </div>
+          </div>
+
+          <!-- Generador de Fichas Profesionales (existente) -->
+          <div class="form-card" style="margin-bottom:20px;">
+            <h3 style="font-size:16px; margin-bottom:16px;">Generador de Fichas Profesionales</h3>
             <div class="form-grid">
               <div class="form-grupo"><label>Precio *</label><input type="text" id="f-precio" class="form-input" placeholder="Ej: 15000"></div>
-              <div class="form-grupo"><label>Recáms. Iremos *)</label><input type="text" id="f-recamaras" class="form-input" placeholder="Ej: 2"></div>
+              <div class="form-grupo"><label>Recámaras *</label><input type="text" id="f-recamaras" class="form-input" placeholder="Ej: 2"></div>
               <div class="form-grupo" style="grid-column:1/-1;"><label>Ubicación (Colonia, Ciudad) *</label><input type="text" id="f-ubicacion" class="form-input" placeholder="Ej: Polanco, CDMX"></div>
               <div class="form-grupo" style="grid-column:1/-1;"><label>Foto de la propiedad</label><input type="file" id="f-foto" class="form-input" accept="image/*"></div>
               <div class="form-grupo" style="grid-column:1/-1;"><label>O pega la URL de la foto</label><input type="text" id="f-url" class="form-input" placeholder="https://scontent..."></div>
-              <div style="grid-column: 1/-1;"><button class="btn btn-primary" onclick="generarFichaFundador()" style="width: 100%; padding: 14px;">✨ Generar Ficha para WhatsApp</button></div>
+              <div style="grid-column:1/-1;"><button class="btn btn-primary" onclick="generarFichaFundador()" style="width:100%; padding:14px;">Generar Ficha para WhatsApp</button></div>
             </div>
-            <!-- Resultados de la ficha -->
-            <div id="f-resultados" style="display: none; margin-top:  </div>
-              <div class="form-card" style="text-align: center;">
-                <h3 style="margin-top:0; margin-bottom: 16px;">✅ ¡Tu ficha está lista!</h3>
-                <img id="f-imagen-preview" src="" alt="Ficha Generada" style="max-width: 100%; border-radius: 12px; box-shadow: var(--shadow-hover); margin-bottom: 20px; display: none;">
-                
-                <div style="display: flex; gap: 12px; margin-bottom: 24px;">
-                  <a id="f-btn-descarga" href="#" download="ficha-vivemas.png" class="btn btn-primary" style="flex: 1; display: none; text-decoration: none; text-align: center;">⬇️ Descargar Imagen</a>
+            <div id="f-resultados" style="display:none; margin-top:16px;">
+              <div class="form-card" style="text-align:center;">
+                <h3 style="margin-top:0; margin-bottom:16px;">Tu ficha está lista</h3>
+                <img id="f-imagen-preview" src="" alt="Ficha Generada" style="max-width:100%; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,.1); margin-bottom:20px; display:none;">
+                <div style="display:flex; gap:12px; margin-bottom:24px;">
+                  <a id="f-btn-descarga" href="#" download="ficha-vivemas.png" class="btn btn-primary" style="flex:1; display:none; text-decoration:none; text-align:center;">Descargar Imagen</a>
                 </div>
-
-                <div style="text-align: left;">
-                  <label style="font-size: 13px; font-weight:  600; margin-bottom:  6px; display: block;">🔗 Link de la propiedad (SEO):</label>
-                  <div style="display:flex; gap:8px; margin-bottom: 16px;">
-                    <input type="text" id="f-link-seo" class="form-input" readonly style="margin: 0;">
-                      <button class="btn btn-outline" style="padding:8px 16px; white-space: nowrap;" onclick="copiarTexto('f-link-seo')">Copiar</button>
+                <div style="text-align:left;">
+                  <label style="font-size:13px; font-weight:600; margin-bottom:6px; display:block;">Link de la propiedad (SEO):</label>
+                  <div style="display:flex; gap:8px; margin-bottom:16px;">
+                    <input type="text" id="f-link-seo" class="form-input" readonly style="margin:0;">
+                    <button class="btn btn-outline" style="padding:8px 16px; white-space:nowrap;" onclick="copiarTexto('f-link-seo')">Copiar</button>
                   </div>
-
-                  <label style="font-size:  13px; font-weight: 600; margin-bottom: 6px; display: block;">📱 Texto para Facebook / Grupos:</label>
-                  <textarea id="f-texto-viral" class="form-input" rows="4" style="margin-bottom: 12px;"></textarea>
-                  <button class="btn btn-outline" style="width: 100%;">📋 Copiar Texto</button>
+                  <label style="font-size:13px; font-weight:600; margin-bottom:6px; display:block;">Texto para Facebook / Grupos:</label>
+                  <textarea id="f-texto-viral" class="form-input" rows="4" style="margin-bottom:12px;"></textarea>
+                  <button class="btn btn-outline" style="width:100%;" onclick="copiarTexto('f-texto-viral')">Copiar Texto</button>
                 </div>
               </div>
-          </div>
+            </div>
           </div>
 
-          <!-- TABLERO EMBAJADOR -->
-          <div class="form-card">
-            <h3 style="font-size: 16px; margin-bottom: 8px;">🤝 Tablero del Embajador</h3>
-            <p style="font-size: 13px; color: var(--text-light); margin-bottom: 20px;">Comparte tu enlace de embajador. Cuando otro agente se registre con tu enlace, obtendrás puntos para subir de rango más rápido.</p>
-            
+          <!-- Links de Embajador (existente, mejorado) -->
+          <div class="form-card" style="margin-bottom:20px;">
+            <h4 style="font-size:16px; font-weight:700; margin-bottom:8px;">Links de Embajador</h4>
+            <p style="font-size:13px; color:var(--text-light); margin-bottom:16px;">Comparte tu enlace de embajador. Cuando otro agente se registre con tu enlace, obtendrás puntos para subir de rango.</p>
             <div class="form-grupo">
               <label>Link de tu Perfil Público (Para clientes)</label>
               <div style="display:flex; gap:8px;">
-                <input type="text" id="fund-link-perfil" class="form-input" readonly style="margin:0; background: var(--bg-secondary);">
+                <input type="text" id="fund-link-perfil" class="form-input" readonly style="margin:0; background:var(--bg-secondary);">
                 <button class="btn btn-outline" onclick="copiarTexto('fund-link-perfil')">Copiar</button>
               </div>
             </div>
-
-            <div class="form-grupo" style="margin-top:16px;">
-              <label style="color: var(--primary); font-weight: 700;">Link de Embajador (Para invitar agentes)</label>
+            <div class="form-grupo" style="margin-top:12px;">
+              <label style="color:var(--primary); font-weight:700;">Link de Embajador (Para invitar agentes)</label>
               <div style="display:flex; gap:8px;">
-                <input type="text" id="fund-link-embajador" class="form-input" readonly style="margin:0; background: #f0fdf4; border-color: #bbf7d0;">
+                <input type="text" id="fund-link-embajador" class="form-input" readonly style="margin:0; background:#f0fdf4; border-color:#bbf7d0;">
                 <button class="btn btn-primary" onclick="copiarTexto('fund-link-embajador')">Copiar</button>
               </div>
             </div>
           </div>
 
+          <!-- Botón reset demo (solo desarrollo, casi invisible) -->
+          <div style="text-align:center; margin-top:24px;">
+            <button class="btn btn-outline" onclick="emb_reset()" style="opacity:.2; font-size:11px; padding:4px 12px;">Reiniciar demo</button>
+          </div>
+
         </div>
       </section>
+      <!-- ===== FIN PROGRAMA DE EMBAJADORES ===== -->
         
     </main>
   </div>
@@ -667,55 +889,500 @@
   <script src="../js/ui/lucide.js"></script>
   <script src="../js/ui/topbar.js"></script>
   <script src="../js/chatbot.js"></script>
+
+  <!-- Font Awesome para iconos del programa de embajadores -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- ===== LÓGICA DEL PROGRAMA DE EMBAJADORES ===== -->
+  <script>
+  (function(){
+    'use strict';
+
+    /* ── Configuración de niveles ── */
+    var EMB_NIVELES = [
+      { nombre:'Bronce',   icono:'fa-shield-halved', desde:0,  hasta:5,  color:'#CD7F32', bg:'rgba(205,127,50,0.07)' },
+      { nombre:'Plata',    icono:'fa-shield-halved', desde:5,  hasta:12, color:'#9CA3AF', bg:'rgba(156,163,175,0.07)' },
+      { nombre:'Oro',      icono:'fa-crown',         desde:12, hasta:19, color:'#EAB308', bg:'rgba(234,179,8,0.07)' },
+      { nombre:'Diamante', icono:'fa-gem',           desde:19, hasta:26, color:'#06B6D4', bg:'rgba(6,182,212,0.07)' },
+      { nombre:'Elite',    icono:'fa-star',          desde:26, hasta:36, color:'#A855F7', bg:'rgba(168,85,247,0.07)' }
+    ];
+    var PROPS_MAX = 36;
+    var DESCRIPCIONES = [
+      'Tu camino como embajador comienza aqui. Publica propiedades para desbloquear el siguiente rango.',
+      'Estas ganando visibilidad. Sigue publicando para acceder a beneficios de prioridad.',
+      'Eres un embajador destacado. Tu badge verificado te diferencia en el directorio.',
+      'Estas en el nivel mas alto de exposicion. Sin limites en propiedades premium.',
+      'Has alcanzado la cuspide del programa. Asesoria exclusiva y red de elite.'
+    ];
+
+    /* ── Estado ── */
+    var embState = embLoad();
+    var selectedTpl = 'story';
+    var genImageURL = null;
+
+    function embDefaults(){
+      return {
+        inscrito: false,
+        nombre: 'Carlos Mendoza',
+        codigoEmbajador: 'EMBAJADOR-1042',
+        propiedades: 3,
+        codigoReferidoIngresado: false,
+        referidoPor: null,
+        redes: { facebook:'', instagram:'', sitioWeb:'' },
+        perfilSlug: 'carlos-mendoza',
+        vistasPerfil: 47
+      };
+    }
+    function embLoad(){
+      try { var s = localStorage.getItem('emb_state'); if(s) { var p = JSON.parse(s); var d = embDefaults(); for(var k in d) if(p[k]===undefined) p[k]=d[k]; return p; } } catch(e){}
+      return embDefaults();
+    }
+    function embSave(){ localStorage.setItem('emb_state', JSON.stringify(embState)); }
+
+    function getNivelIdx(props){
+      for(var i=EMB_NIVELES.length-1; i>=0; i--) if(props>=EMB_NIVELES[i].desde) return i;
+      return 0;
+    }
+
+    /* ── Render principal ── */
+    function embRender(){
+      var landing = document.getElementById('emb-landing');
+      var dash = document.getElementById('emb-dashboard');
+      if(!embState.inscrito){ landing.style.display=''; dash.style.display='none'; return; }
+      landing.style.display='none'; dash.style.display='';
+
+      var ni = getNivelIdx(embState.propiedades);
+      var nv = EMB_NIVELES[ni];
+
+      // Bienvenida
+      document.getElementById('emb-nombre').textContent = embState.nombre;
+      document.getElementById('emb-codigo').textContent = embState.codigoEmbajador;
+
+      // Stats
+      document.getElementById('emb-stat-props').textContent = embState.propiedades;
+      var statNivel = document.getElementById('emb-stat-nivel');
+      statNivel.textContent = nv.nombre;
+      statNivel.style.color = nv.color;
+      document.getElementById('emb-stat-vistas').textContent = embState.vistasPerfil;
+      var falt = ni<EMB_NIVELES.length-1 ? Math.max(0, nv.hasta-embState.propiedades) : Math.max(0, PROPS_MAX-embState.propiedades);
+      document.getElementById('emb-stat-faltantes').textContent = falt;
+
+      // Badge grande
+      var badge = document.getElementById('emb-badge-large');
+      badge.style.borderColor = nv.color;
+      badge.style.background = nv.bg;
+      badge.style.color = nv.color;
+      badge.innerHTML = '<span class="emb-bc-icon"><i class="fa-solid '+nv.icono+'"></i></span><span class="emb-bc-label">'+nv.nombre.toUpperCase()+'</span>';
+
+      var hero = document.getElementById('emb-level-hero');
+      hero.style.borderColor = nv.color;
+      hero.style.borderWidth = '2px';
+      document.getElementById('emb-level-title').textContent = 'Rango '+nv.nombre;
+      document.getElementById('emb-level-title').style.color = nv.color;
+      document.getElementById('emb-level-desc').textContent = DESCRIPCIONES[ni];
+
+      // Progreso
+      var pWrap = document.getElementById('emb-progress-wrap');
+      var pFill = document.getElementById('emb-progress-fill');
+      var lock = document.getElementById('emb-lock-notice');
+      if(!embState.codigoReferidoIngresado){
+        pWrap.classList.add('emb-progress-locked');
+        pFill.style.width = '0%';
+        lock.style.display = 'flex';
+        document.getElementById('emb-progress-text').textContent = 'Progreso bloqueado';
+        document.getElementById('emb-progress-pct').textContent = '--';
+      } else {
+        pWrap.classList.remove('emb-progress-locked');
+        var enNivel = embState.propiedades - nv.desde;
+        var reqNivel = nv.hasta - nv.desde;
+        var pct = Math.min(100, (enNivel/reqNivel)*100);
+        pFill.style.width = pct+'%';
+        pFill.style.background = nv.color;
+        lock.style.display = 'none';
+        document.getElementById('emb-progress-text').textContent = embState.propiedades+' / '+nv.hasta+' propiedades';
+        document.getElementById('emb-progress-pct').textContent = Math.round(pct)+'%';
+      }
+
+      // Badge en header
+      var hdrBadge = document.getElementById('fund-badge-rango');
+      hdrBadge.style.display = '';
+      hdrBadge.textContent = nv.nombre;
+      hdrBadge.style.color = nv.color;
+      hdrBadge.style.borderColor = nv.color;
+      hdrBadge.style.border = '1px solid '+nv.color;
+
+      // Roadmap
+      var row = document.getElementById('emb-levels-row');
+      row.innerHTML = '';
+      for(var i=0; i<EMB_NIVELES.length; i++){
+        var n = EMB_NIVELES[i];
+        var done = embState.propiedades >= n.hasta || (i===EMB_NIVELES.length-1 && embState.propiedades>=PROPS_MAX);
+        var cur = i===ni;
+        var lok = i>ni;
+        var card = document.createElement('div');
+        card.className = 'emb-level-card'+(done?' completed':'')+(cur?' current':'')+(lok?' locked':'');
+        if(cur) card.style.setProperty('--lc-color', n.color);
+        var extra = done?'<div class="emb-lc-check"><i class="fa-solid fa-check"></i></div>': lok?'<div class="emb-lc-lock"><i class="fa-solid fa-lock"></i></div>':'';
+        card.innerHTML = extra+'<div style="font-size:20px; color:'+(lok?'#9ca3af':n.color)+'; margin-bottom:6px;"><i class="fa-solid '+n.icono+'"></i></div><div style="font-size:12px; font-weight:700; color:'+(lok?'#9ca3af':n.color)+';">'+n.nombre+'</div><div style="font-size:10px; color:var(--text-light);">'+n.desde+'+ props</div>';
+        row.appendChild(card);
+      }
+
+      // Referido (una sola vez)
+      document.getElementById('emb-referral-section').style.display = embState.codigoReferidoIngresado ? 'none' : '';
+
+      // Redes
+      document.getElementById('emb-input-fb').value = embState.redes.facebook||'';
+      document.getElementById('emb-input-ig').value = embState.redes.instagram||'';
+      document.getElementById('emb-input-web').value = embState.redes.sitioWeb||'';
+
+      // Link perfil
+      var pURL = 'https://tu-sitio.com/directorio/embajador/'+embState.perfilSlug;
+      document.getElementById('emb-profile-link').value = pURL;
+      var shareText = encodeURIComponent('Conoce al Embajador '+embState.nombre+' - Codigo: '+embState.codigoEmbajador);
+      var shareURL = encodeURIComponent(pURL);
+      document.getElementById('emb-share-wa').href = 'https://wa.me/?text='+shareText+'%20'+shareURL;
+      document.getElementById('emb-share-fb').href = 'https://www.facebook.com/sharer/sharer.php?u='+shareURL;
+
+      // Links embajador
+      document.getElementById('fund-link-perfil').value = pURL;
+      document.getElementById('fund-link-embajador').value = 'https://tu-sitio.com/embajadores?ref='+embState.codigoEmbajador;
+
+      // Reset generador
+      document.getElementById('emb-gen-image').style.display = 'none';
+      document.getElementById('emb-gen-placeholder').style.display = '';
+      document.getElementById('emb-btn-download').style.display = 'none';
+      document.getElementById('emb-btn-share-img').style.display = 'none';
+      genImageURL = null;
+    }
+
+    /* ── Acciones públicas ── */
+    window.emb_inscribirse = function(){
+      embState.inscrito = true;
+      // En produccion: fetch('/api/founders/register', { method:'POST' })
+      embSave();
+      embRender();
+      embConfetti();
+      embToast('Te has inscrito como Embajador. Bienvenido al programa.','success');
+    };
+
+    window.emb_registrarReferido = function(){
+      var input = document.getElementById('emb-input-referido');
+      var codigo = input.value.trim().toUpperCase();
+      if(!codigo){ embToast('Ingresa un codigo de embajador','error'); input.focus(); return; }
+      if(codigo.indexOf('EMBAJADOR-')!==0){ embToast('El codigo debe comenzar con EMBAJADOR-','error'); input.focus(); return; }
+      if(codigo === embState.codigoEmbajador){ embToast('No puedes registrar tu propio codigo','error'); input.focus(); return; }
+      embState.codigoReferidoIngresado = true;
+      embState.referidoPor = codigo;
+      // En produccion: fetch('/api/founders/set-referrer', { method:'POST', body:JSON.stringify({codigo}) })
+      embSave();
+      embRender();
+      embToast('Referido registrado: '+codigo+'. Tu progreso ahora esta activo.','success');
+    };
+
+    window.emb_guardarRedes = function(){
+      embState.redes.facebook = document.getElementById('emb-input-fb').value.trim();
+      embState.redes.instagram = document.getElementById('emb-input-ig').value.trim();
+      embState.redes.sitioWeb = document.getElementById('emb-input-web').value.trim();
+      // En produccion: fetch('/api/founders/update-socials', { method:'PUT', body:JSON.stringify(embState.redes) })
+      embSave();
+      embToast('Redes sociales guardadas correctamente','success');
+    };
+
+    window.emb_copiarCodigo = function(){
+      embCopy(embState.codigoEmbajador);
+      embToast('Codigo copiado al portapapeles','success');
+    };
+
+    window.emb_copiarLink = function(){
+      embCopy(document.getElementById('emb-profile-link').value);
+      embToast('Enlace de perfil copiado','success');
+    };
+
+    window.emb_compartirIG = function(){
+      embCopy(document.getElementById('emb-profile-link').value);
+      embToast('Enlace copiado. Pegalo en tu historia o bio de Instagram','info');
+    };
+
+    window.emb_compartirNativo = async function(){
+      var link = document.getElementById('emb-profile-link').value;
+      if(navigator.share){
+        try{ await navigator.share({ title:'Embajador '+embState.nombre, text:'Codigo: '+embState.codigoEmbajador, url:link }); }catch(e){}
+      } else { embCopy(link); embToast('Enlace copiado al portapapeles','info'); }
+    };
+
+    window.emb_selTpl = function(btn, tpl){
+      document.querySelectorAll('.emb-tpl-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      selectedTpl = tpl;
+    };
+
+    window.emb_generarImagen = async function(){
+      await document.fonts.ready;
+      var canvas = document.getElementById('embCanvas');
+      var ctx = canvas.getContext('2d');
+      if(selectedTpl==='story'){ canvas.width=1080; canvas.height=1920; drawStory(ctx,1080,1920); }
+      else if(selectedTpl==='post'){ canvas.width=1080; canvas.height=1080; drawPost(ctx,1080,1080); }
+      else { canvas.width=1200; canvas.height=630; drawCard(ctx,1200,630); }
+      genImageURL = canvas.toDataURL('image/png');
+      var img = document.getElementById('emb-gen-image');
+      img.src = genImageURL; img.style.display = '';
+      document.getElementById('emb-gen-placeholder').style.display = 'none';
+      document.getElementById('emb-btn-download').style.display = '';
+      document.getElementById('emb-btn-share-img').style.display = '';
+      embToast('Imagen generada correctamente','success');
+    };
+
+    window.emb_descargarImagen = function(){
+      if(!genImageURL) return;
+      var a = document.createElement('a');
+      a.href = genImageURL;
+      a.download = 'embajador-'+embState.codigoEmbajador+'-'+selectedTpl+'.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      embToast('Imagen descargada','success');
+    };
+
+    window.emb_compartirImagen = async function(){
+      if(!genImageURL) return;
+      try{
+        var res = await fetch(genImageURL);
+        var blob = await res.blob();
+        var file = new File([blob], 'embajador.png', {type:'image/png'});
+        if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+          await navigator.share({ title:'Embajador '+embState.nombre, files:[file] });
+        } else { window.emb_descargarImagen(); embToast('Tu navegador no permite compartir imagenes directamente. Se ha descargado.','info'); }
+      }catch(e){ window.emb_descargarImagen(); }
+    };
+
+    window.emb_reset = function(){
+      localStorage.removeItem('emb_state');
+      embState = embDefaults();
+      embRender();
+      embToast('Demo reiniciado','info');
+    };
+
+    /* ── Dibujo Canvas: Story (1080x1920) ── */
+    function drawStory(ctx, w, h){
+      var ni = getNivelIdx(embState.propiedades);
+      var nv = EMB_NIVELES[ni];
+      var gold = '#c9a84c', goldL = '#e4c76b';
+
+      // Fondo
+      var bg = ctx.createLinearGradient(0,0,w*0.3,h);
+      bg.addColorStop(0,'#0a0a14'); bg.addColorStop(0.5,'#0f0f1c'); bg.addColorStop(1,'#0a0a14');
+      ctx.fillStyle = bg; ctx.fillRect(0,0,w,h);
+
+      // Lineas verticales sutiles
+      ctx.strokeStyle = 'rgba(201,168,76,0.03)'; ctx.lineWidth = 1;
+      for(var x=0;x<w;x+=60){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+
+      // Linea dorada superior
+      var lg = ctx.createLinearGradient(0,0,w,0);
+      lg.addColorStop(0,'rgba(201,168,76,0)'); lg.addColorStop(0.3,'rgba(201,168,76,0.6)'); lg.addColorStop(0.7,'rgba(201,168,76,0.6)'); lg.addColorStop(1,'rgba(201,168,76,0)');
+      ctx.strokeStyle = lg; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0,120); ctx.lineTo(w,120); ctx.stroke();
+      drawDiamond(ctx,w/2,120,8,gold);
+
+      // Titulo
+      ctx.textAlign = 'center';
+      ctx.fillStyle = gold; ctx.font = '600 28px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('PROGRAMA DE', w/2, 240);
+      ctx.fillStyle = '#ffffff'; ctx.font = '800 72px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('EMBAJADORES', w/2, 330);
+
+      // Sub-linea
+      var lg2 = ctx.createLinearGradient(w*0.25,0,w*0.75,0);
+      lg2.addColorStop(0,'rgba(201,168,76,0)'); lg2.addColorStop(0.5,'rgba(201,168,76,0.5)'); lg2.addColorStop(1,'rgba(201,168,76,0)');
+      ctx.strokeStyle = lg2; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(w*0.25,370); ctx.lineTo(w*0.75,370); ctx.stroke();
+
+      // Badge nivel
+      ctx.fillStyle = nv.bg; ctx.beginPath(); ctx.arc(w/2,500,70,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = nv.color; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = nv.color; ctx.font = '800 28px "Bricolage Grotesque", sans-serif';
+      ctx.fillText(nv.nombre.toUpperCase(), w/2, 495);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '400 14px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('RANGO ACTUAL', w/2, 520);
+
+      // Nombre
+      ctx.fillStyle = '#ffffff'; ctx.font = '300 32px "Bricolage Grotesque", sans-serif';
+      ctx.fillText(embState.nombre, w/2, 640);
+      ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '400 18px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('Embajador Certificado', w/2, 680);
+
+      // Caja codigo
+      var bx=(w-500)/2, by=740;
+      ctx.fillStyle = 'rgba(201,168,76,0.06)'; ctx.strokeStyle = 'rgba(201,168,76,0.3)'; ctx.lineWidth = 1.5;
+      rRect(ctx,bx,by,500,90,16); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '500 14px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('TU CODIGO DE EMBAJADOR', w/2, by+30);
+      ctx.fillStyle = goldL; ctx.font = '800 30px "Bricolage Grotesque", sans-serif';
+      ctx.fillText(embState.codigoEmbajador, w/2, by+65);
+
+      // Linea inferior
+      ctx.strokeStyle = lg; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0,h-400); ctx.lineTo(w,h-400); ctx.stroke();
+      drawDiamond(ctx,w/2,h-400,8,gold);
+
+      // CTA
+      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '500 20px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('Unete al programa de embajadores', w/2, h-320);
+      ctx.fillStyle = gold; ctx.font = '700 22px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('tu-sitio.com/embajadores', w/2, h-280);
+
+      // Borde y esquinas
+      ctx.strokeStyle = 'rgba(201,168,76,0.1)'; ctx.lineWidth = 2;
+      rRect(ctx,40,40,w-80,h-80,20); ctx.stroke();
+      drawCorner(ctx,40,40,30,gold,'tl'); drawCorner(ctx,w-40,40,30,gold,'tr');
+      drawCorner(ctx,40,h-40,30,gold,'bl'); drawCorner(ctx,w-40,h-40,30,gold,'br');
+    }
+
+    /* ── Dibujo Canvas: Post (1080x1080) ── */
+    function drawPost(ctx, w, h){
+      var ni = getNivelIdx(embState.propiedades);
+      var nv = EMB_NIVELES[ni];
+      var gold = '#c9a84c', goldL = '#e4c76b';
+
+      var bg = ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,w*0.7);
+      bg.addColorStop(0,'#12121f'); bg.addColorStop(1,'#08080f');
+      ctx.fillStyle = bg; ctx.fillRect(0,0,w,h);
+
+      ctx.fillStyle = nv.bg; ctx.beginPath(); ctx.arc(w/2,h/2-40,220,0,Math.PI*2); ctx.fill();
+
+      ctx.textAlign = 'center';
+      ctx.fillStyle = gold; ctx.font = '600 22px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('PROGRAMA DE', w/2, 160);
+      ctx.fillStyle = '#ffffff'; ctx.font = '800 56px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('EMBAJADORES', w/2, 225);
+
+      var lg = ctx.createLinearGradient(w*0.3,0,w*0.7,0);
+      lg.addColorStop(0,'rgba(201,168,76,0)'); lg.addColorStop(0.5,'rgba(201,168,76,0.5)'); lg.addColorStop(1,'rgba(201,168,76,0)');
+      ctx.strokeStyle = lg; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(w*0.3,255); ctx.lineTo(w*0.7,255); ctx.stroke();
+
+      ctx.fillStyle = nv.color; ctx.font = '800 24px "Bricolage Grotesque", sans-serif';
+      ctx.fillText(nv.nombre.toUpperCase(), w/2, 360);
+      ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '400 14px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('RANGO ACTUAL', w/2, 385);
+
+      ctx.fillStyle = '#ffffff'; ctx.font = '300 28px "Bricolage Grotesque", sans-serif';
+      ctx.fillText(embState.nombre, w/2, 470);
+
+      var bx=(w-420)/2, by=520;
+      ctx.fillStyle = 'rgba(201,168,76,0.06)'; ctx.strokeStyle = 'rgba(201,168,76,0.3)'; ctx.lineWidth = 1.5;
+      rRect(ctx,bx,by,420,80,14); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '500 12px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('CODIGO DE EMBAJADOR', w/2, by+26);
+      ctx.fillStyle = goldL; ctx.font = '800 26px "Bricolage Grotesque", sans-serif';
+      ctx.fillText(embState.codigoEmbajador, w/2, by+58);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '500 18px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('tu-sitio.com/embajadores', w/2, 680);
+
+      ctx.strokeStyle = 'rgba(201,168,76,0.1)'; ctx.lineWidth = 2;
+      rRect(ctx,30,30,w-60,h-60,16); ctx.stroke();
+    }
+
+    /* ── Dibujo Canvas: Tarjeta (1200x630) ── */
+    function drawCard(ctx, w, h){
+      var ni = getNivelIdx(embState.propiedades);
+      var nv = EMB_NIVELES[ni];
+      var gold = '#c9a84c', goldL = '#e4c76b';
+
+      var bg = ctx.createLinearGradient(0,0,w,h);
+      bg.addColorStop(0,'#0a0a14'); bg.addColorStop(1,'#0f0f1c');
+      ctx.fillStyle = bg; ctx.fillRect(0,0,w,h);
+
+      ctx.fillStyle = gold; ctx.fillRect(0,0,6,h);
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = gold; ctx.font = '600 14px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('EMBAJADOR CERTIFICADO', 50, 60);
+      ctx.fillStyle = '#ffffff'; ctx.font = '800 48px "Bricolage Grotesque", sans-serif';
+      ctx.fillText(embState.nombre, 50, 125);
+      ctx.fillStyle = nv.color; ctx.font = '700 18px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('Rango '+nv.nombre, 50, 170);
+
+      var lg = ctx.createLinearGradient(50,0,500,0);
+      lg.addColorStop(0,'rgba(201,168,76,0.4)'); lg.addColorStop(1,'rgba(201,168,76,0)');
+      ctx.strokeStyle = lg; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(50,195); ctx.lineTo(500,195); ctx.stroke();
+
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.font = '500 14px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('CODIGO', w-50, 80);
+      ctx.fillStyle = goldL; ctx.font = '800 36px "Bricolage Grotesque", sans-serif';
+      ctx.fillText(embState.codigoEmbajador, w-50, 125);
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '400 16px "Bricolage Grotesque", sans-serif';
+      ctx.fillText('Unete como embajador  |  tu-sitio.com/embajadores', 50, h-50);
+      ctx.fillStyle = gold; ctx.fillRect(0,h-3,w,3);
+    }
+
+    /* ── Utilidades de dibujo ── */
+    function rRect(ctx,x,y,w,h,r){
+      r=Math.max(0,Math.min(r,Math.min(w,h)/2));
+      ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+      ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h);
+      ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+    }
+    function drawDiamond(ctx,cx,cy,s,c){
+      s=Math.max(1,s); ctx.fillStyle=c; ctx.beginPath(); ctx.moveTo(cx,cy-s); ctx.lineTo(cx+s,cy);
+      ctx.lineTo(cx,cy+s); ctx.lineTo(cx-s,cy); ctx.closePath(); ctx.fill();
+    }
+    function drawCorner(ctx,x,y,s,c,p){
+      s=Math.max(1,s); ctx.strokeStyle=c; ctx.lineWidth=2; ctx.beginPath();
+      if(p==='tl'){ctx.moveTo(x,y+s);ctx.lineTo(x,y);ctx.lineTo(x+s,y);}
+      if(p==='tr'){ctx.moveTo(x-s,y);ctx.lineTo(x,y);ctx.lineTo(x,y+s);}
+      if(p==='bl'){ctx.moveTo(x,y-s);ctx.lineTo(x,y);ctx.lineTo(x+s,y);}
+      if(p==='br'){ctx.moveTo(x-s,y);ctx.lineTo(x,y);ctx.lineTo(x,y-s);}
+      ctx.stroke();
+    }
+
+    /* ── Utilidades generales ── */
+    function embCopy(text){
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text); }
+      else { var t=document.createElement('textarea'); t.value=text; t.style.position='fixed'; t.style.left='-9999px'; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); }
+    }
+    function embToast(msg, type){
+      // Usar el sistema de toasts existente si está disponible
+      if(window.showToast){ window.showToast(msg, type==='error'?'error':type==='info'?'info':'success'); return; }
+      // Fallback simple
+      var c = document.getElementById('toast-container') || (function(){ var d=document.createElement('div'); d.id='toast-container'; d.style.cssText='position:fixed;bottom:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:8px;'; document.body.appendChild(d); return d; })();
+      var colors = { success:'#065f46', error:'#7f1d1d', info:'#1e1b4b' };
+      var borders = { success:'#059669', error:'#dc2626', info:'#4f46e5' };
+      var texts = { success:'#a7f3d0', error:'#fca5a5', info:'#c7d2fe' };
+      var t = document.createElement('div');
+      t.style.cssText = 'padding:12px 18px;border-radius:8px;font-size:13px;font-family:inherit;color:'+texts[type||'success']+';background:'+colors[type||'success']+';border:1px solid '+borders[type||'success']+';box-shadow:0 8px 24px rgba(0,0,0,0.3);transform:translateX(120%);transition:transform .3s;';
+      t.textContent = msg;
+      c.appendChild(t);
+      requestAnimationFrame(function(){ t.style.transform='translateX(0)'; });
+      setTimeout(function(){ t.style.transform='translateX(120%)'; setTimeout(function(){ t.remove(); },300); }, 3500);
+    }
+    function embConfetti(){
+      var c = document.createElement('div');
+      c.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:99998;overflow:hidden;';
+      document.body.appendChild(c);
+      var colors = ['#c9a84c','#e4c76b','#FFD700','#CD7F32','#ffffff','#A855F7','#06B6D4'];
+      for(var i=0;i<50;i++){
+        var p = document.createElement('div');
+        p.style.cssText = 'position:absolute;width:'+(5+Math.random()*8)+'px;height:'+(5+Math.random()*8)+'px;top:-10px;left:'+Math.random()*100+'%;background:'+colors[Math.floor(Math.random()*colors.length)]+';border-radius:'+(Math.random()>.5?'50%':'2px')+';animation:embFall '+(2+Math.random()*2)+'s ease-in '+(Math.random()*1.5)+'s forwards;';
+        c.appendChild(p);
+      }
+      if(!document.getElementById('emb-confetti-style')){
+        var s = document.createElement('style'); s.id='emb-confetti-style';
+        s.textContent='@keyframes embFall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}';
+        document.head.appendChild(s);
+      }
+      setTimeout(function(){ c.remove(); }, 5000);
+    }
+
+    /* ── Init ── */
+    embRender();
+  })();
+  </script>
+
+  <!-- Canvas oculto para generar imágenes del programa de embajadores -->
+  <canvas id="embCanvas" style="display:none;"></canvas>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       if (window.initFotosPublicar) window.initFotosPublicar();
-    });
   </script>
-  
-  <!-- BOTÓN FLOTANTE TUTORIAL -->
-<div id="tutorial-btn" style="position:fixed;bottom:30px;right:30px;z-index:9999;display:none">
-  <button onclick="abrirTutorial()" style="background:var(--primary);color:white;border:none;padding:16px 28px;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 8px 25px rgba(0,0,0,0.25);transition:transform:scale(1.05)" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">🎓 Tutorial</button>
-</div>
-
-<!-- MODAL TUTORIAL -->
-<div id="tutorial-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px;z-index:10000;align-items:center;justify-content:center">
-  <div style="background:white;border-radius:20px;padding:40px;max-width:500px;width:90%;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,0.3)">
-    <button onclick="cerrarTutorial()" style="position:absolute;top:15px;right:20px;background:none;border:none;font-size:24px;cursor:pointer;color:#666">✕</button>
-    <div style="font-size:50px;margin-bottom:16px">🚀</div>
-    <h2 style="font-size:22px;font-weight:800;color:#1a1a2e;margin-bottom:20px">¡Bienvenido a tu Panel!</h2>
-    <div style="text-align:left;display:flex;flex-direction:column;gap:16px;margin-bottom:30px">
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="min-width:30px;height:30px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">1</div>
-        <div><b>Publicar:</b> Haz clic en "Nueva publicación" para registrar tu propiedad en minutos.</div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="min-width:30px;height:30px;background:#f0fdf4;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">2</div>
-        <div><b>Leads:</b> Revisa "Mis leads" para ver quién te ha contactado o solicitado servicios.</div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="min-width:30px;height:30px;background:#f0fdf4;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">3</div>
-        <div><b>Mejorar Plan:</b> Desbloquea más propiedades y mejores herramientas desde "Mi cuenta".</div>
-      </div>
-    </div>
-    </div>
-    <button onclick="cerrarTutorial()" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px">¡Entendido, empezar!</button>
-  </div>
-</div>
-<script>
-  if (!localStorage.getItem('tutorial_visto')) {
-    document.getElementById('tutorial-btn').style.display = 'block';
-  }
-
-  const abrirTutorial = () => {
-    document.getElementById('tutorial-modal').style.display = 'flex';
-  };
-
-  const cerrarTutorial = () => {
-    document.getElementById('tutorial-modal').style.display = 'none';
-    document.getElementById('tutorial-btn').style.display = 'none';
-    localStorage.setItem('tutorial_visto', 'true');
-  };
-</script>
 </body>
 </html>
