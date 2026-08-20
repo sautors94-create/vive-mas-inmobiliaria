@@ -19,8 +19,8 @@ exports.showDynamicSEOPage = async (req, res) => {
       status: 'aprobada',
     };
 
-    if (ciudad) filter['ubicacion.ciudad'] = { $regex: new RegExp(ciudad, 'i') };
-    else if (estado) filter['ubicacion.estado'] = { $regex: new RegExp(estado, 'i') };
+    if (ciudad) filter['ubicacion.ciudad'] = { $regex: new RegExp(ciudad.replace(/-/g, ' '), 'i') };
+    else if (estado) filter['ubicacion.estado'] = { $regex: new RegExp(estado.replace(/-/g, ' '), 'i') };
 
     const propiedades = await Property.find(filter).sort({ createdAt: -1 }).limit(50).lean();
 
