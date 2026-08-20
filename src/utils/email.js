@@ -1,16 +1,13 @@
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
+  host: 'smtp.zoho.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  tls: {
-    rejectUnauthorized: false
-  }
 });
 
 const generarCodigo = () => {
@@ -245,7 +242,7 @@ const enviarNotificacionMensaje = async (emailPropietario, nombrePropietario, no
 };
 
 // ==========================================
-// ✅ NUEVA: RECUPERAR CONTRASEÑA
+// RECUPERAR CONTRASEÑA
 // ==========================================
 const enviarEnlaceRecuperacion = async (email, nombre, token) => {
   const enlace = `${process.env.APP_URL || 'http://localhost:3000'}/pages/nueva-contrasena.html?token=${token}`;
@@ -300,7 +297,7 @@ const enviarEnlaceRecuperacion = async (email, nombre, token) => {
 };
 
 // ==========================================
-// ✅ NUEVA: ALERTA 2FA DESACTIVADO
+// ALERTA 2FA DESACTIVADO
 // ==========================================
 const enviarAlerta2FADesactivado = async (email, nombre) => {
   const html = `
@@ -358,7 +355,7 @@ const enviarAlerta2FADesactivado = async (email, nombre) => {
 };
 
 // ==========================================
-// NOVEDAD / CAMPAÑA (enviada por el admin a todos los suscritos)
+// NOVEDAD / CAMPAÑA
 // ==========================================
 const enviarNovedad = async (email, nombre, novedad) => {
   const html = `
@@ -411,7 +408,7 @@ const enviarNovedad = async (email, nombre, novedad) => {
 };
 
 // ==========================================
-// COINCIDENCIA DE BÚSQUEDA (nueva propiedad que coincide con una búsqueda reciente)
+// COINCIDENCIA DE BÚSQUEDA
 // ==========================================
 const enviarCoincidenciaBusqueda = async (email, nombre, propiedad) => {
   const url = `${process.env.APP_URL || 'http://localhost:3000'}/pages/propiedad.html?id=${propiedad._id}`;
