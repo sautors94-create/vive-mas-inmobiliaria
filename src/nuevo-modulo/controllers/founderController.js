@@ -1,7 +1,30 @@
 const Property = require('../../models/Property');
+const User = require('../../models/User');
 const Founder = require('../models/Founder');
 const FichaRapida = require('../models/FichaRapida');
 const { generatePropertyCard } = require('../services/imageGenerator');
+
+// Arma la respuesta de estadísticas que usan tanto el panel público (por
+// referralCode) como el panel del usuario logueado (por su sesión).
+function buildPanelPayload(req, founder) {
+  return {
+    isFounder: true,
+    name: founder.name,
+    rank: founder.rank,
+    rankTitle: founder.rankTitle,
+    propertiesCount: founder.propertiesCount,
+    profileViews: founder.profileViews,
+    referralsCount: founder.referralsCount,
+    ambassadorTitle: founder.ambassadorTitle,
+    referredBy: founder.referredBy,
+    social: founder.social,
+    referralCode: founder.referralCode,
+    referralLink: `${req.protocol}://${req.get('host')}/agente/${founder.referralCode}`,
+    ambassadorLink: `${req.protocol}://${req.get('host')}/agentes-fundadores?ref=${founder.referralCode}`,
+    nextRankProps: founder.rank === 1 ? 5 : founder.rank === 2 ? 12 : founder.rank === 3 ? 19 : founder.rank === 4 ? 26 : null,
+    nextAmbassadorRefs: founder.referralsCount < 5 ? 5 : founder.referralsCount < 10 ? 10 : founder.referralsCount < 25 ? 25 : null,
+  };
+}
 
 // 1. Registro rápido de Agente Fundador (sin login, un solo paso)
 exports.register = async (req, res) => {
@@ -224,6 +247,137 @@ exports.getPublicProfile = async (req, res) => {
     res.status(500).send('Error del servidor');
   }
 };
+
+// 8. Obtener (o crear) el Founder ligado al usuario logueado — para la
+//    sección "Programa de Embajadores" dentro del dashboard real (con sesión)
+exports.getOrCreateMine = async (req, res) => {
+  try {
+    let founder = await Founder.findOne({ userId: req.user.id });
+
+    if (!founder) {
+      const user = await User.findById(req.user.id).select('nombre telefono direccion.ciudad');
+      if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+      if (!user.telefono) {
+        // Sin teléfono no podemos generar su enlace de WhatsApp ni fichas.
+        return res.json({ isFounder: false, needsPhone: true });
+      }
+
+      const existentePorTelefono = await Founder.findOne({ phone: user.telefono });
+      if (existentePorTelefono && !existentePorTelefono.userId) {
+        // Ya se había registrado antes desde el flujo público con este mismo teléfono: lo ligamos.
+        existentePorTelefono.userId = user._id;
+        founder = await existentePorTelefono.save();
+      } else if (!existentePorTelefono) {
+        founder = await new Founder({
+          userId: user._id,
+          name: user.nombre,
+          phone: user.telefono,
+          city: user.direccion?.ciudad || 'CDMX',
+        }).save();
+      } else {
+        founder = existentePorTelefono; // Ya ligado a otro usuario (caso raro), lo devolvemos tal cual
+      }
+    }
+
+    res.json(buildPanelPayload(req, founder));
+  } catch (error) {
+    console.error('Error en getOrCreateMine:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// 9. Registrar el código de quien invitó al usuario logueado (una sola vez)
+exports.setReferrer = async (req, res) => {
+  try {
+    const { referralCode } = req.body;
+    if (!referralCode) return res.status(400).json({ error: 'Falta el código de referido' });
+
+    const founder = await Founder.findOne({ userId: req.user.id });
+    if (!founder) return res.status(404).json({ error: 'Primero inscríbete al programa' });
+    if (founder.referredBy) return res.status(409).json({ error: 'Ya registraste tu código de referido antes, no se puede cambiar' });
+
+    if (referralCode === founder.referralCode) {
+      return res.status(400).json({ error: 'No puedes usar tu propio código' });
+    }
+
+    const referente = await Founder.findOne({ referralCode });
+    if (!referente) return res.status(404).json({ error: 'Ese código de embajador no existe' });
+
+    founder.referredBy = referralCode;
+    await founder.save();
+
+    referente.referralsCount = (referente.referralsCount || 0) + 1;
+    await referente.save();
+
+    res.json(buildPanelPayload(req, founder));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// 10. Guardar redes sociales del agente logueado
+exports.updateSocial = async (req, res) => {
+  try {
+    const { facebook, instagram, website } = req.body;
+    const founder = await Founder.findOneAndUpdate(
+      { userId: req.user.id },
+      { social: { facebook: facebook || '', instagram: instagram || '', website: website || '' } },
+      { new: true }
+    );
+    if (!founder) return res.status(404).json({ error: 'Primero inscríbete al programa' });
+    res.json({ social: founder.social });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// 11. Generar ficha para el agente logueado (misma lógica que generateCard,
+//     pero identificando al agente por sesión en vez de por referralCode en el body)
+exports.generateCardMine = async (req, res) => {
+  try {
+    const founder = await Founder.findOne({ userId: req.user.id });
+    if (!founder) return res.status(404).json({ error: 'Primero inscríbete al programa de Embajadores' });
+
+    const { price, rooms, baths, location, imageUrl, type } = req.body;
+
+    const cardData = {
+      price: price || 0,
+      rooms: rooms || 0,
+      baths: baths || 0,
+      location: location || founder.city,
+      imageUrl: imageUrl || null,
+    };
+
+    const imageBuffer = await generatePropertyCard(cardData, req.file ? req.file.path : null);
+
+    const ficha = new FichaRapida({
+      founder: founder._id,
+      operacion: type === 'venta' ? 'venta' : 'renta',
+      precio: Number(price) || 0,
+      recamaras: Number(rooms) || 0,
+      banos: Number(baths) || 0,
+      ubicacion: location || founder.city,
+      imagenUrl: imageUrl || null,
+    });
+    await ficha.save();
+
+    founder.propertiesCount += 1;
+    await founder.save();
+
+    res.set({
+      'Content-Type': 'image/png',
+      'Content-Disposition': 'attachment; filename=ficha-somosvivemas.png',
+      'X-Ficha-Url': `${req.protocol}://${req.get('host')}/ficha/${ficha.slug}`,
+    });
+    res.send(imageBuffer);
+  } catch (error) {
+    console.error('Error en generateCardMine:', error);
+    res.status(500).json({ error: 'Error al generar imagen' });
+  }
+};
+
+// 5. Listado para el admin
 exports.getAdminList = async (req, res) => {
   try {
     const agents = await Founder.find().sort({ createdAt: -1 });
@@ -238,8 +392,44 @@ exports.getDashboardData = async (req, res) => {
   try {
     const totalAgents = await Founder.countDocuments();
     const totalProperties = await Property.countDocuments();
-    const recentAgents = await Founder.find().sort({ createdAt: -1 }).limit(5).select('name city createdAt rank rankTitle');
-    res.json({ totalAgents, totalProperties, recentAgents });
+    const totalFichas = await FichaRapida.countDocuments();
+    const totalReferrals = await Founder.countDocuments({ referredBy: { $ne: null } });
+    const linkedToRealUsers = await Founder.countDocuments({ userId: { $ne: null } });
+
+    const recentAgents = await Founder.find().sort({ createdAt: -1 }).limit(5).select('name city createdAt rank rankTitle referralsCount ambassadorTitle');
+
+    const porRango = await Founder.aggregate([
+      { $group: { _id: '$rankTitle', total: { $sum: 1 } } },
+    ]);
+
+    const porNivelEmbajador = await Founder.aggregate([
+      { $match: { ambassadorTitle: { $ne: null } } },
+      { $group: { _id: '$ambassadorTitle', total: { $sum: 1 } } },
+    ]);
+
+    const topAgentesPorPropiedades = await Founder.find().sort({ propertiesCount: -1 }).limit(10).select('name city propertiesCount rankTitle');
+    const topEmbajadoresPorReferidos = await Founder.find({ referralsCount: { $gt: 0 } }).sort({ referralsCount: -1 }).limit(10).select('name city referralsCount ambassadorTitle');
+
+    // Ciudades con más agentes (para saber dónde ya tenemos densidad, del plan original)
+    const porCiudad = await Founder.aggregate([
+      { $group: { _id: '$city', total: { $sum: 1 } } },
+      { $sort: { total: -1 } },
+      { $limit: 10 },
+    ]);
+
+    res.json({
+      totalAgents,
+      totalProperties,
+      totalFichas,
+      totalReferrals,
+      linkedToRealUsers,
+      recentAgents,
+      porRango,
+      porNivelEmbajador,
+      topAgentesPorPropiedades,
+      topEmbajadoresPorReferidos,
+      porCiudad,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

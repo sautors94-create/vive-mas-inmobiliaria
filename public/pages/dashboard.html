@@ -916,28 +916,59 @@
     ];
 
     /* ── Estado ── */
-    var embState = embLoad();
+    var embState = embDefaults();
     var selectedTpl = 'story';
     var genImageURL = null;
 
     function embDefaults(){
       return {
         inscrito: false,
-        nombre: 'Carlos Mendoza',
-        codigoEmbajador: 'EMBAJADOR-1042',
-        propiedades: 3,
+        needsPhone: false,
+        nombre: '',
+        codigoEmbajador: '',
+        propiedades: 0,
         codigoReferidoIngresado: false,
         referidoPor: null,
         redes: { facebook:'', instagram:'', sitioWeb:'' },
-        perfilSlug: 'carlos-mendoza',
-        vistasPerfil: 47
+        perfilSlug: '',
+        vistasPerfil: 0
       };
     }
-    function embLoad(){
-      try { var s = localStorage.getItem('emb_state'); if(s) { var p = JSON.parse(s); var d = embDefaults(); for(var k in d) if(p[k]===undefined) p[k]=d[k]; return p; } } catch(e){}
-      return embDefaults();
+
+    // Trae el estado real del agente (o lo crea) desde el backend.
+    // Ya no usamos localStorage como fuente de verdad: el servidor manda.
+    async function embFetchReal(){
+      try {
+        var data = await api.get('/fundadores/mine');
+        if (data.needsPhone) {
+          embState = embDefaults();
+          embState.needsPhone = true;
+          return;
+        }
+        if (!data.isFounder) {
+          embState = embDefaults();
+          return;
+        }
+        embState = {
+          inscrito: true,
+          needsPhone: false,
+          nombre: data.name,
+          codigoEmbajador: data.referralCode,
+          propiedades: data.propertiesCount,
+          codigoReferidoIngresado: !!data.referredBy,
+          referidoPor: data.referredBy,
+          redes: {
+            facebook: (data.social && data.social.facebook) || '',
+            instagram: (data.social && data.social.instagram) || '',
+            sitioWeb: (data.social && data.social.website) || ''
+          },
+          perfilSlug: data.referralCode,
+          vistasPerfil: data.profileViews
+        };
+      } catch (e) {
+        embState = embDefaults();
+      }
     }
-    function embSave(){ localStorage.setItem('emb_state', JSON.stringify(embState)); }
 
     function getNivelIdx(props){
       for(var i=EMB_NIVELES.length-1; i>=0; i--) if(props>=EMB_NIVELES[i].desde) return i;
@@ -948,6 +979,14 @@
     function embRender(){
       var landing = document.getElementById('emb-landing');
       var dash = document.getElementById('emb-dashboard');
+
+      if (embState.needsPhone) {
+        landing.style.display='';
+        dash.style.display='none';
+        landing.innerHTML = '<div style="text-align:center; padding:40px 20px;"><h3 style="margin-bottom:10px;">Agrega tu WhatsApp para continuar</h3><p style="color:var(--text-light); max-width:420px; margin:0 auto 16px;">Necesitamos tu número de WhatsApp para generar tu enlace de contacto y tu perfil público. Agrégalo en tu perfil y vuelve a esta sección.</p><a href="perfil.html" class="btn btn-primary">Ir a mi perfil</a></div>';
+        return;
+      }
+
       if(!embState.inscrito){ landing.style.display=''; dash.style.display='none'; return; }
       landing.style.display='none'; dash.style.display='';
 
@@ -1036,7 +1075,7 @@
       document.getElementById('emb-input-web').value = embState.redes.sitioWeb||'';
 
       // Link perfil
-      var pURL = 'https://tu-sitio.com/directorio/embajador/'+embState.perfilSlug;
+      var pURL = window.location.origin + '/agente/' + embState.perfilSlug;
       document.getElementById('emb-profile-link').value = pURL;
       var shareText = encodeURIComponent('Conoce al Embajador '+embState.nombre+' - Codigo: '+embState.codigoEmbajador);
       var shareURL = encodeURIComponent(pURL);
@@ -1045,7 +1084,7 @@
 
       // Links embajador
       document.getElementById('fund-link-perfil').value = pURL;
-      document.getElementById('fund-link-embajador').value = 'https://tu-sitio.com/embajadores?ref='+embState.codigoEmbajador;
+      document.getElementById('fund-link-embajador').value = window.location.origin + '/agentes-fundadores?ref=' + embState.codigoEmbajador;
 
       // Reset generador
       document.getElementById('emb-gen-image').style.display = 'none';
@@ -1056,36 +1095,49 @@
     }
 
     /* ── Acciones públicas ── */
-    window.emb_inscribirse = function(){
-      embState.inscrito = true;
-      // En produccion: fetch('/api/founders/register', { method:'POST' })
-      embSave();
-      embRender();
-      embConfetti();
-      embToast('Te has inscrito como Embajador. Bienvenido al programa.','success');
+    window.emb_inscribirse = async function(){
+      try {
+        var data = await api.get('/fundadores/mine'); // se auto-crea si no existía
+        if (data.needsPhone) {
+          embToast('Agrega tu número de WhatsApp en tu perfil antes de inscribirte','error');
+          embFetchReal().then(embRender);
+          return;
+        }
+        await embFetchReal();
+        embRender();
+        embConfetti();
+        embToast('Te has inscrito como Embajador. Bienvenido al programa.','success');
+      } catch (e) {
+        embToast('No se pudo completar la inscripción. Intenta de nuevo.','error');
+      }
     };
 
-    window.emb_registrarReferido = function(){
+    window.emb_registrarReferido = async function(){
       var input = document.getElementById('emb-input-referido');
-      var codigo = input.value.trim().toUpperCase();
+      var codigo = input.value.trim().toLowerCase();
       if(!codigo){ embToast('Ingresa un codigo de embajador','error'); input.focus(); return; }
-      if(codigo.indexOf('EMBAJADOR-')!==0){ embToast('El codigo debe comenzar con EMBAJADOR-','error'); input.focus(); return; }
       if(codigo === embState.codigoEmbajador){ embToast('No puedes registrar tu propio codigo','error'); input.focus(); return; }
-      embState.codigoReferidoIngresado = true;
-      embState.referidoPor = codigo;
-      // En produccion: fetch('/api/founders/set-referrer', { method:'POST', body:JSON.stringify({codigo}) })
-      embSave();
-      embRender();
-      embToast('Referido registrado: '+codigo+'. Tu progreso ahora esta activo.','success');
+      try {
+        await api.post('/fundadores/mine/referrer', { referralCode: codigo });
+        await embFetchReal();
+        embRender();
+        embToast('Referido registrado: '+codigo+'. Tu progreso ahora esta activo.','success');
+      } catch (e) {
+        embToast('Ese código no es válido o ya registraste uno antes','error');
+      }
     };
 
-    window.emb_guardarRedes = function(){
-      embState.redes.facebook = document.getElementById('emb-input-fb').value.trim();
-      embState.redes.instagram = document.getElementById('emb-input-ig').value.trim();
-      embState.redes.sitioWeb = document.getElementById('emb-input-web').value.trim();
-      // En produccion: fetch('/api/founders/update-socials', { method:'PUT', body:JSON.stringify(embState.redes) })
-      embSave();
-      embToast('Redes sociales guardadas correctamente','success');
+    window.emb_guardarRedes = async function(){
+      var facebook = document.getElementById('emb-input-fb').value.trim();
+      var instagram = document.getElementById('emb-input-ig').value.trim();
+      var website = document.getElementById('emb-input-web').value.trim();
+      try {
+        await api.patch('/fundadores/mine/social', { facebook: facebook, instagram: instagram, website: website });
+        embState.redes = { facebook: facebook, instagram: instagram, sitioWeb: website };
+        embToast('Redes sociales guardadas correctamente','success');
+      } catch (e) {
+        embToast('No se pudieron guardar tus redes. Intenta de nuevo.','error');
+      }
     };
 
     window.emb_copiarCodigo = function(){
@@ -1154,10 +1206,90 @@
     };
 
     window.emb_reset = function(){
-      localStorage.removeItem('emb_state');
-      embState = embDefaults();
-      embRender();
-      embToast('Demo reiniciado','info');
+      embFetchReal().then(embRender);
+      embToast('Datos recargados','info');
+    };
+
+    // Genera la ficha profesional real (llama al backend, con la sesión del usuario)
+    window.generarFichaFundador = async function(){
+      var precio = document.getElementById('f-precio').value.trim();
+      var recamaras = document.getElementById('f-recamaras').value.trim();
+      var ubicacion = document.getElementById('f-ubicacion').value.trim();
+      var fotoInput = document.getElementById('f-foto');
+      var urlFoto = document.getElementById('f-url').value.trim();
+
+      if(!precio || !recamaras || !ubicacion){
+        embToast('Completa precio, recámaras y ubicación','error');
+        return;
+      }
+
+      var boton = document.querySelector('button[onclick="generarFichaFundador()"]');
+      var textoOriginal = boton ? boton.textContent : '';
+      if (boton) { boton.disabled = true; boton.textContent = 'Generando...'; }
+
+      try {
+        var formData = new FormData();
+        formData.append('price', precio);
+        formData.append('rooms', recamaras);
+        formData.append('baths', '2');
+        formData.append('location', ubicacion);
+        formData.append('imageUrl', urlFoto);
+        formData.append('type', 'renta');
+        if (fotoInput.files && fotoInput.files.length > 0) {
+          formData.append('photo', fotoInput.files[0]);
+        }
+
+        var res = await fetch(`${API_URL}/api/fundadores/mine/generate-card`, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + localStorage.getItem('accessToken') },
+          body: formData
+        });
+
+        if (!res.ok) {
+          var err = await res.json().catch(function(){ return {}; });
+          throw new Error(err.error || 'Error al generar la ficha');
+        }
+
+        var fichaUrl = res.headers.get('X-Ficha-Url') || '';
+        var blob = await res.blob();
+        var url = window.URL.createObjectURL(blob);
+
+        document.getElementById('f-imagen-preview').src = url;
+        document.getElementById('f-imagen-preview').style.display = '';
+
+        var btnDescarga = document.getElementById('f-btn-descarga');
+        btnDescarga.href = url;
+        btnDescarga.style.display = '';
+
+        document.getElementById('f-link-seo').value = fichaUrl;
+        document.getElementById('f-texto-viral').value =
+          '🏠 ' + ubicacion + ' - $' + precio + '\n🛏 ' + recamaras + ' Recámaras\n\nVer detalles:\n' + fichaUrl +
+          '\n\nPublica gratis en SomosViveMás:\n' + window.location.origin + '/agentes-fundadores?ref=' + embState.codigoEmbajador;
+
+        document.getElementById('f-resultados').style.display = '';
+        embState.propiedades += 1;
+        embRender();
+        embToast('Tu ficha está lista','success');
+      } catch (e) {
+        embToast(e.message || 'No se pudo generar la ficha. Intenta de nuevo.', 'error');
+      } finally {
+        if (boton) { boton.disabled = false; boton.textContent = textoOriginal; }
+      }
+    };
+
+    // Copia el contenido de un input/textarea al portapapeles (usado en varios botones "Copiar")
+    window.copiarTexto = function(id){
+      var el = document.getElementById(id);
+      if (!el || !el.value) { embToast('No hay nada que copiar todavía','error'); return; }
+      el.select();
+      el.setSelectionRange(0, 99999);
+      try {
+        document.execCommand('copy');
+        embToast('Copiado al portapapeles','success');
+      } catch (e) {
+        if (navigator.clipboard) navigator.clipboard.writeText(el.value);
+        embToast('Copiado al portapapeles','success');
+      }
     };
 
     /* ── Dibujo Canvas: Story (1080x1920) ── */
@@ -1224,7 +1356,7 @@
       ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '500 20px "Bricolage Grotesque", sans-serif';
       ctx.fillText('Unete al programa de embajadores', w/2, h-320);
       ctx.fillStyle = gold; ctx.font = '700 22px "Bricolage Grotesque", sans-serif';
-      ctx.fillText('tu-sitio.com/embajadores', w/2, h-280);
+      ctx.fillText(window.location.host+'/agentes-fundadores', w/2, h-280);
 
       // Borde y esquinas
       ctx.strokeStyle = 'rgba(201,168,76,0.1)'; ctx.lineWidth = 2;
@@ -1272,7 +1404,7 @@
       ctx.fillText(embState.codigoEmbajador, w/2, by+58);
 
       ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '500 18px "Bricolage Grotesque", sans-serif';
-      ctx.fillText('tu-sitio.com/embajadores', w/2, 680);
+      ctx.fillText(window.location.host+'/agentes-fundadores', w/2, 680);
 
       ctx.strokeStyle = 'rgba(201,168,76,0.1)'; ctx.lineWidth = 2;
       rRect(ctx,30,30,w-60,h-60,16); ctx.stroke();
@@ -1310,7 +1442,7 @@
 
       ctx.textAlign = 'left';
       ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '400 16px "Bricolage Grotesque", sans-serif';
-      ctx.fillText('Unete como embajador  |  tu-sitio.com/embajadores', 50, h-50);
+      ctx.fillText('Unete como embajador  |  '+window.location.host+'/agentes-fundadores', 50, h-50);
       ctx.fillStyle = gold; ctx.fillRect(0,h-3,w,3);
     }
 
@@ -1373,7 +1505,18 @@
     }
 
     /* ── Init ── */
-    embRender();
+    // Solo cargamos datos reales cuando el usuario abre esta sección
+    // (no todos los usuarios son agentes, evita una llamada de más en cada carga del dashboard)
+    var embYaCargado = false;
+    var sidebarEmbLink = document.querySelector('a[onclick*="agente-fundador"]');
+    if (sidebarEmbLink) {
+      sidebarEmbLink.addEventListener('click', function(){
+        if (embYaCargado) return;
+        embYaCargado = true;
+        embFetchReal().then(embRender);
+      });
+    }
+    embRender(); // primer render con estado vacío mientras se abre la sección
   })();
   </script>
 
@@ -1383,6 +1526,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       if (window.initFotosPublicar) window.initFotosPublicar();
+    });
   </script>
 </body>
 </html>

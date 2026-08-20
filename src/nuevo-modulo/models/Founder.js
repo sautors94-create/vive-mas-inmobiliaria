@@ -19,6 +19,12 @@ const founderSchema = new mongoose.Schema({
   // Sistema de Embajador: nivel por agentes NUEVOS invitados (no por propiedades)
   referralsCount: { type: Number, default: 0 },
   ambassadorTitle: { type: String, default: null }, // null | 'Embajador' | 'Embajador Oro' | 'Embajador Élite'
+
+  social: {
+    facebook: { type: String, default: '' },
+    instagram: { type: String, default: '' },
+    website: { type: String, default: '' },
+  },
 }, { timestamps: true });
 
 founderSchema.pre('save', function(next) {
