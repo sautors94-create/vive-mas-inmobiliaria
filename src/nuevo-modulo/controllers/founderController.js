@@ -127,9 +127,6 @@ exports.generateCard = async (req, res) => {
     const founder = await Founder.findOne({ referralCode });
     if (!founder) return res.status(403).json({ error: 'Agente Fundador no encontrado. Regístrate primero.' });
 
-    let filePath = null;
-    if (req.file) filePath = req.file.path;
-
     const cardData = {
       price: price || 0,
       rooms: rooms || 0,
@@ -138,7 +135,7 @@ exports.generateCard = async (req, res) => {
       imageUrl: imageUrl || null,
     };
 
-    const imageBuffer = await generatePropertyCard(cardData, filePath);
+    const imageBuffer = await generatePropertyCard(cardData, req.file ? req.file.buffer : null);
 
     // Guardamos la ficha rápida y subimos el contador de propiedades del agente (para su rango)
     const ficha = new FichaRapida({
@@ -349,7 +346,7 @@ exports.generateCardMine = async (req, res) => {
       imageUrl: imageUrl || null,
     };
 
-    const imageBuffer = await generatePropertyCard(cardData, req.file ? req.file.path : null);
+    const imageBuffer = await generatePropertyCard(cardData, req.file ? req.file.buffer : null);
 
     const ficha = new FichaRapida({
       founder: founder._id,

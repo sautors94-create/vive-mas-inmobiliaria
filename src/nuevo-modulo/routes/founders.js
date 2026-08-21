@@ -1,20 +1,20 @@
 const express = require('express');
-const path = require('path');
 const multer = require('multer');
 const router = express.Router();
 const founderController = require('../controllers/founderController');
 const authMiddleware = require('../../middleware/auth.middleware');
 
-// Carpeta temporal para fotos subidas desde el formulario (celular/PC)
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../../../tmp_uploads/'));
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
+// Guardamos el archivo subido EN MEMORIA (no en disco). Esto evita por
+// completo el error "ENOENT: no such file or directory ... tmp_uploads/..."
+// que da en Hostinger: su hosting despliega cada versión en una carpeta
+// nueva (hbuilds/versions/<hash>/...) y una carpeta vacía como tmp_uploads
+// no siempre sobrevive el despliegue. Como la imagen se procesa al vuelo
+// (se dibuja en el canvas y no se vuelve a necesitar), no hace falta
+// escribirla a disco en ningún momento.
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB máx por foto
 });
-const upload = multer({ storage });
 
 // --- Flujo público, sin login (recruiting externo: Marketplace, grupos de FB) ---
 router.post('/register', founderController.register);
