@@ -56,7 +56,7 @@ metaConfig.getAuthUrl = (state) => {
     response_type: 'code',
     state,
   });
-  return `https://www.facebook.com/${metaConfig.apiVersion}/dialog/oauth?${params.toString()}`;
+  return `https://www.facebook.com/dialog/oauth?${params.toString()}`;
 };
 
 module.exports = metaConfig;
