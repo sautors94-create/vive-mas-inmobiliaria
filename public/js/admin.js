@@ -126,6 +126,7 @@ const cargarSalud = async () => {
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">
         ${servicios.map(s => {
           const ok = s.estado === 'ok' || s.ok;
+          const esMeta = (s.nombre || '').includes('Meta');
           return `
             <div style="padding:18px;background:white;border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -135,6 +136,7 @@ const cargarSalud = async () => {
               <div style="font-weight:700;font-size:14px">${escapeHtml(s.nombre || 'Servicio')}</div>
               <div style="font-size:12px;color:var(--text-light);margin-top:4px">${escapeHtml(s.detalle || '')}</div>
               ${s.latencia ? `<div style="font-size:12px;color:var(--text-light);margin-top:4px">⏱ ${s.latencia}ms</div>` : ''}
+              ${esMeta ? `<button class="btn btn-primary" style="width:100%;margin-top:12px;padding:8px;font-size:13px" onclick="conectarMeta()">${ok ? 'Reconectar con Facebook' : 'Conectar con Facebook'}</button>` : ''}
             </div>`;
         }).join('')}
       </div>
@@ -144,6 +146,37 @@ const cargarSalud = async () => {
     content.innerHTML = '<div style="padding:20px;background:#fdecea;border:1px solid #f5c2c0;border-radius:12px;color:#7a2a27;font-size:14px">Error de conexión al verificar la salud del sistema.</div>';
   }
 };
+
+// Inicia el flujo de OAuth con Facebook: pide la URL de autorización al
+// backend (ya construida con el App ID y el config_id correctos) y
+// redirige el navegador ahí. Facebook te regresa a /api/auth/meta/callback,
+// que guarda el token y te redirige de vuelta aquí con ?meta=conectado.
+const conectarMeta = async () => {
+  try {
+    const data = await api.get('/auth/meta/connect');
+    if (data.ok && data.authUrl) {
+      window.location.href = data.authUrl;
+    } else {
+      alert('No se pudo generar el enlace de conexión con Facebook: ' + (data.error || 'error desconocido'));
+    }
+  } catch (e) {
+    alert('Error al iniciar la conexión con Facebook. Revisa la consola para más detalle.');
+    console.error(e);
+  }
+};
+
+// Si Facebook nos regresó aquí después de conectar (o de un error), avisa
+// y recarga el panel de salud para reflejar el nuevo estado.
+(function checkMetaCallback() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('meta') === 'conectado') {
+    alert('¡Cuenta de Facebook conectada correctamente!');
+    window.history.replaceState({}, '', window.location.pathname);
+  } else if (params.get('meta') === 'error') {
+    alert('Error al conectar con Facebook: ' + (params.get('msg') || 'desconocido'));
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+})();
 
 const cargarDashboard = async () => {
   const grid = document.getElementById('stats-grid');
