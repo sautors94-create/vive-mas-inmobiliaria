@@ -6,14 +6,44 @@ let propiedadArechazar = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   cargarDashboard();
+  restaurarEstadoSidebar();
 });
+
+// Colapsar/expandir un grupo del sidebar, recordando la preferencia entre
+// sesiones (localStorage) para que no se tenga que volver a acomodar cada vez.
+const toggleSidebarGroup = (grupo) => {
+  const el = document.querySelector(`.sidebar-group[data-group="${grupo}"]`);
+  if (!el) return;
+  el.classList.toggle('collapsed');
+
+  const colapsados = JSON.parse(localStorage.getItem('vm_admin_sidebar_colapsado') || '[]');
+  const idx = colapsados.indexOf(grupo);
+  if (el.classList.contains('collapsed')) {
+    if (idx === -1) colapsados.push(grupo);
+  } else if (idx !== -1) {
+    colapsados.splice(idx, 1);
+  }
+  localStorage.setItem('vm_admin_sidebar_colapsado', JSON.stringify(colapsados));
+};
+
+const restaurarEstadoSidebar = () => {
+  const colapsados = JSON.parse(localStorage.getItem('vm_admin_sidebar_colapsado') || '[]');
+  colapsados.forEach(grupo => {
+    const el = document.querySelector(`.sidebar-group[data-group="${grupo}"]`);
+    if (el) el.classList.add('collapsed');
+  });
+};
 
 const mostrarSeccion = (seccion) => {
   document.querySelectorAll('.dash-section').forEach(s => s.style.display = 'none');
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
   const sec = document.getElementById(`sec-${seccion}`);
   if (sec) sec.style.display = 'block';
-  event.target.closest('.sidebar-link')?.classList.add('active');
+  const link = event.target.closest('.sidebar-link');
+  link?.classList.add('active');
+  // Si el link vive dentro de un grupo colapsado, lo expandimos para que se vea
+  const grupo = link?.closest('.sidebar-group');
+  if (grupo?.classList.contains('collapsed')) toggleSidebarGroup(grupo.dataset.group);
   if (seccion === 'dashboard') cargarDashboard();
   if (seccion === 'verificaciones') cargarVerificaciones();
   if (seccion === 'salud') cargarSalud();
@@ -1764,6 +1794,67 @@ const descargarPlantillaUsuarios = async () => {
   }
 };
 
+const cambiarTabUsuarios = (tab) => {
+  const esMasivo = tab === 'masivo';
+  document.getElementById('tab-masivo').style.display = esMasivo ? 'flex' : 'none';
+  document.getElementById('tab-manual').style.display = esMasivo ? 'none' : 'flex';
+  document.getElementById('tab-btn-masivo').style.color = esMasivo ? '#1a472a' : '#94a3b8';
+  document.getElementById('tab-btn-masivo').style.borderBottomColor = esMasivo ? '#1a472a' : 'transparent';
+  document.getElementById('tab-btn-manual').style.color = esMasivo ? '#94a3b8' : '#1a472a';
+  document.getElementById('tab-btn-manual').style.borderBottomColor = esMasivo ? 'transparent' : '#1a472a';
+};
+
+const crearUsuarioManual = async () => {
+  const nombre = document.getElementById('manual-nombre').value.trim();
+  const email = document.getElementById('manual-email').value.trim();
+  const telefono = document.getElementById('manual-telefono').value.trim();
+  const plan = document.getElementById('manual-plan').value;
+  const rfc = document.getElementById('manual-rfc').value.trim();
+  const tipoCuenta = document.getElementById('manual-tipo-cuenta').value;
+
+  if (!email || !email.includes('@')) {
+    dsToast({ title: 'Falta el email', message: 'Ingresa un email válido.', type: 'error' });
+    return;
+  }
+
+  const btn = document.getElementById('btn-crear-manual');
+  btn.disabled = true;
+  btn.textContent = '⏳ Creando...';
+
+  const resultadoDiv = document.getElementById('manual-resultado');
+  try {
+    const data = await api.post('/admin/usuarios/manual', { nombre, email, telefono, plan, rfc, tipoCuenta });
+    resultadoDiv.style.display = 'block';
+    if (data.ok) {
+      const u = data.usuario;
+      resultadoDiv.style.background = '#f0fdf4';
+      resultadoDiv.style.border = '1px solid #bbf7d0';
+      resultadoDiv.innerHTML = `
+        <div style="font-weight:700;color:#166534;margin-bottom:8px">✓ Usuario creado correctamente</div>
+        <div><strong>Nombre:</strong> ${escapeHtml(u.nombre)}</div>
+        <div><strong>Email:</strong> ${escapeHtml(u.email)}</div>
+        <div><strong>Contraseña temporal:</strong> <span style="font-family:monospace;font-weight:700;background:#dcfce7;padding:2px 8px;border-radius:4px">${escapeHtml(u.passwordTemporal)}</span></div>
+        <div><strong>Plan:</strong> ${escapeHtml(u.plan)}</div>`;
+      // Limpiar el formulario para poder crear otro de inmediato
+      ['manual-nombre','manual-email','manual-telefono','manual-rfc'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('manual-plan').value = 'gratuito';
+      document.getElementById('manual-tipo-cuenta').value = 'persona';
+      cargarUsuarios();
+    } else {
+      resultadoDiv.style.background = '#fef2f2';
+      resultadoDiv.style.border = '1px solid #fecaca';
+      resultadoDiv.innerHTML = `<strong style="color:#991b1b">Error:</strong> ${escapeHtml(data.error || 'No se pudo crear el usuario')}`;
+    }
+  } catch (error) {
+    resultadoDiv.style.display = 'block';
+    resultadoDiv.style.background = '#fef2f2';
+    resultadoDiv.style.border = '1px solid #fecaca';
+    resultadoDiv.innerHTML = `<strong style="color:#991b1b">Error:</strong> ${escapeHtml(error.message || 'Error de conexión')}`;
+  }
+  btn.disabled = false;
+  btn.textContent = '➕ Crear usuario';
+};
+
 // ==================== MÓDULO DE PAGOS Y CONCILIACIÓN ====================
 let pagoModData = [];
 window.cargarPagosAdmin = async () => {
@@ -1974,15 +2065,26 @@ window.cargarCuponesAdmin = async () => {
         <td style="font-weight:700">${escapeHtml(c.codigo)}</td>
         <td><span class="status-badge" style="background:${c.tipo === 'basico_plus' ? '#fef3c7' : '#eff6ff'};color:${c.tipo === 'basico_plus' ? '#92400e' : '#1d4ed8'}">${c.tipo === 'basico_plus' ? '🎁 Básico Plus' : '💳 Stripe'}</span></td>
         <td>${escapeHtml(c.descripcion || '—')}</td>
-        <td>${c.tipo === 'basico_plus' ? `${c.dias || 360} días` : (c.stripe_coupon_id || '—')}</td>
-        <td>${c.usosActuales}${c.usosMaximos ? ` / ${c.usosMaximos}` : ''}</td>
         <td>
           <span class="status-badge" style="background:${c.activo ? '#f0fdf4' : '#f3f4f6'};color:${c.activo ? '#166534' : '#6b7280'}">${c.activo ? 'Activo' : 'Inactivo'}</span>
+        </td>
+        <td style="font-size:12px;color:var(--text-light)">${c.createdAt ? new Date(c.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</td>
+        <td>${c.stripe_price_link
+          ? `<button class="btn btn-outline" style="padding:6px 12px;font-size:12px" onclick="copiarUrlCupon('${escapeHtml(c.stripe_price_link)}')">📋 Copiar URL</button>`
+          : '<span style="color:var(--text-light);font-size:12px">—</span>'}
         </td>
       </tr>`).join('');
   } catch (error) {
     tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:#c62828">Error al cargar cupones.</td></tr>';
   }
+};
+
+window.copiarUrlCupon = (url) => {
+  navigator.clipboard.writeText(url).then(() => {
+    dsToast({ title: 'URL copiada', message: 'El enlace de pago se copió al portapapeles.', type: 'success' });
+  }).catch(() => {
+    prompt('Copia el enlace manualmente:', url);
+  });
 };
 
 window.abrirFormCupon = () => {

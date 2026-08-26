@@ -247,39 +247,56 @@ exports.getPublicProfile = async (req, res) => {
 
 // 8. Obtener (o crear) el Founder ligado al usuario logueado — para la
 //    sección "Programa de Embajadores" dentro del dashboard real (con sesión)
-exports.getOrCreateMine = async (req, res) => {
+// 8a. Solo CONSULTA si el usuario logueado ya es Founder — NUNCA crea uno.
+//     Se usa al abrir la sección (sidebar) para decidir si mostrar la
+//     pantalla de inscripción o el dashboard. Antes esto lo hacía
+//     getOrCreateMine, que auto-registraba a cualquiera con solo abrir la
+//     sección — bug real reportado por el usuario.
+exports.getMineStatus = async (req, res) => {
+  try {
+    const founder = await Founder.findOne({ userId: req.user.id });
+    if (!founder) return res.json({ isFounder: false });
+    res.json(buildPanelPayload(req, founder));
+  } catch (error) {
+    console.error('Error en getMineStatus:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// 8b. Inscribe de verdad al usuario logueado (crea su Founder si no existe).
+//     Solo se llama cuando el usuario da clic explícito en "Inscribirme".
+exports.registerMine = async (req, res) => {
   try {
     let founder = await Founder.findOne({ userId: req.user.id });
+    if (founder) return res.json(buildPanelPayload(req, founder)); // ya estaba inscrito
 
-    if (!founder) {
-      const user = await User.findById(req.user.id).select('nombre telefono direccion.ciudad');
-      if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const user = await User.findById(req.user.id).select('nombre telefono direccion.ciudad');
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-      if (!user.telefono) {
-        // Sin teléfono no podemos generar su enlace de WhatsApp ni fichas.
-        return res.json({ isFounder: false, needsPhone: true });
-      }
+    if (!user.telefono) {
+      // Sin teléfono no podemos generar su enlace de WhatsApp ni fichas.
+      return res.json({ isFounder: false, needsPhone: true });
+    }
 
-      const existentePorTelefono = await Founder.findOne({ phone: user.telefono });
-      if (existentePorTelefono && !existentePorTelefono.userId) {
-        // Ya se había registrado antes desde el flujo público con este mismo teléfono: lo ligamos.
-        existentePorTelefono.userId = user._id;
-        founder = await existentePorTelefono.save();
-      } else if (!existentePorTelefono) {
-        founder = await new Founder({
-          userId: user._id,
-          name: user.nombre,
-          phone: user.telefono,
-          city: user.direccion?.ciudad || 'CDMX',
-        }).save();
-      } else {
-        founder = existentePorTelefono; // Ya ligado a otro usuario (caso raro), lo devolvemos tal cual
-      }
+    const existentePorTelefono = await Founder.findOne({ phone: user.telefono });
+    if (existentePorTelefono && !existentePorTelefono.userId) {
+      // Ya se había registrado antes desde el flujo público con este mismo teléfono: lo ligamos.
+      existentePorTelefono.userId = user._id;
+      founder = await existentePorTelefono.save();
+    } else if (!existentePorTelefono) {
+      founder = await new Founder({
+        userId: user._id,
+        name: user.nombre,
+        phone: user.telefono,
+        city: user.direccion?.ciudad || 'CDMX',
+      }).save();
+    } else {
+      founder = existentePorTelefono; // Ya ligado a otro usuario (caso raro), lo devolvemos tal cual
     }
 
     res.json(buildPanelPayload(req, founder));
   } catch (error) {
-    console.error('Error en getOrCreateMine:', error);
+    console.error('Error en registerMine:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -377,8 +394,33 @@ exports.generateCardMine = async (req, res) => {
 // 5. Listado para el admin
 exports.getAdminList = async (req, res) => {
   try {
-    const agents = await Founder.find().sort({ createdAt: -1 });
-    res.json(agents);
+    // populate trae el email y el plan reales del usuario ligado (cuando lo
+    // hay — un agente reclutado externamente vía el flujo público, sin
+    // cuenta en la plataforma, no tiene userId y esos campos quedan vacíos)
+    const agents = await Founder.find()
+      .sort({ createdAt: -1 })
+      .populate('userId', 'email plan')
+      .lean();
+
+    const agentsConDatos = agents.map((a) => ({
+      ...a,
+      email: a.userId?.email || null,
+      plan: a.userId?.plan || null,
+    }));
+
+    res.json(agentsConDatos);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Elimina a un Agente Fundador (le quita su rango/progreso). No borra al
+// usuario de la plataforma si tenía cuenta — solo su registro de Founder.
+exports.eliminarFundador = async (req, res) => {
+  try {
+    const founder = await Founder.findByIdAndDelete(req.params.id);
+    if (!founder) return res.status(404).json({ error: 'Agente Fundador no encontrado' });
+    res.json({ ok: true, mensaje: 'Agente Fundador eliminado' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

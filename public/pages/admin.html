@@ -91,102 +91,81 @@
         </div>
       </div>
 
-          <!-- PRINCIPAL -->
-    <div class="sidebar-section-title">🏠 PRINCIPAL</div>
+      <nav class="sidebar-nav">
 
-    <a href="#" class="sidebar-link active" onclick="mostrarSeccion('dashboard')">
-        📊 Inicio
-    </a>
+        <div class="sidebar-group" data-group="principal">
+          <div class="sidebar-section-title" onclick="toggleSidebarGroup('principal')">
+            <span>🏠 Principal</span>
+            <span class="chevron">▼</span>
+          </div>
+          <div class="sidebar-group-links">
+            <a href="#" class="sidebar-link active" onclick="mostrarSeccion('dashboard')">📊 Inicio</a>
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('salud')">🩺 Salud del sistema</a>
+          </div>
+        </div>
 
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('salud')">
-        🩺 Salud del sistema
-    </a>
+        <div class="sidebar-group" data-group="operacion">
+          <div class="sidebar-section-title" onclick="toggleSidebarGroup('operacion')">
+            <span>🏢 Operación</span>
+            <span class="chevron">▼</span>
+          </div>
+          <div class="sidebar-group-links">
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('propiedades')">🏠 Propiedades</a>
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('destacadas')">⭐ Propiedades destacadas</a>
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('leads')">🎯 Leads</a>
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('revision')">🔎 En revisión</a>
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('reportes')">🚩 Reportes</a>
+          </div>
+        </div>
 
+        <div class="sidebar-group" data-group="usuarios">
+          <div class="sidebar-section-title" onclick="toggleSidebarGroup('usuarios')">
+            <span>👥 Usuarios y seguridad</span>
+            <span class="chevron">▼</span>
+          </div>
+          <div class="sidebar-group-links">
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('usuarios')">👥 Usuarios</a>
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('verificaciones')">🪪 Verificaciones KYC/KYB</a>
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('bloqueos')">🚫 Usuarios bloqueados</a>
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('monitoreo')">💬 Monitoreo de chats</a>
+          </div>
+        </div>
 
-    <!-- OPERACIÓN -->
-    <div class="sidebar-section-title">🏢 OPERACIÓN</div>
+        <div class="sidebar-group" data-group="finanzas">
+          <div class="sidebar-section-title" onclick="toggleSidebarGroup('finanzas')">
+            <span>💳 Finanzas y promociones</span>
+            <span class="chevron">▼</span>
+          </div>
+          <div class="sidebar-group-links">
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('pagos')">💳 Pagos y conciliación</a>
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('cupones')">🎟️ Cupones</a>
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('promociones')">🎁 Promociones</a>
+          </div>
+        </div>
 
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('propiedades')">
-        🏠 Propiedades
-    </a>
+        <div class="sidebar-group" data-group="crecimiento">
+          <div class="sidebar-section-title" onclick="toggleSidebarGroup('crecimiento')">
+            <span>🚀 Crecimiento</span>
+            <span class="chevron">▼</span>
+          </div>
+          <div class="sidebar-group-links">
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('fundadores')">🚀 Agentes Fundadores</a>
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('novedades')">📰 Novedades</a>
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('presentaciones')">📽️ Presentaciones</a>
+          </div>
+        </div>
 
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('destacadas')">
-        ⭐ Propiedades destacadas
-    </a>
+        <div class="sidebar-group" data-group="configuracion">
+          <div class="sidebar-section-title" onclick="toggleSidebarGroup('configuracion')">
+            <span>⚙️ Configuración</span>
+            <span class="chevron">▼</span>
+          </div>
+          <div class="sidebar-group-links">
+            <a href="#" class="sidebar-link" onclick="mostrarSeccion('temas')">🎨 Temas del sitio</a>
+          </div>
+        </div>
 
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('leads')">
-        🎯 Leads
-    </a>
-
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('revision')">
-        🔎 En revisión
-    </a>
-
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('reportes')">
-        🚩 Reportes
-    </a>
-
-
-    <!-- USUARIOS Y SEGURIDAD -->
-    <div class="sidebar-section-title">👥 USUARIOS Y SEGURIDAD</div>
-
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('usuarios')">
-        👥 Usuarios
-    </a>
-
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('verificaciones')">
-        🪪 Verificaciones KYC/KYB
-    </a>
-
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('bloqueos')">
-        🚫 Usuarios bloqueados
-    </a>
-
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('monitoreo')">
-        💬 Monitoreo de chats
-    </a>
-
-
-    <!-- FINANZAS Y PROMOCIONES -->
-    <div class="sidebar-section-title">💳 FINANZAS Y PROMOCIONES</div>
-
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('pagos')">
-        💳 Pagos y conciliación
-    </a>
-
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('cupones')">
-        🎟️ Cupones
-    </a>
-
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('promociones')">
-        🎁 Promociones
-    </a>
-
-
-    <!-- CRECIMIENTO -->
-    <div class="sidebar-section-title">🚀 CRECIMIENTO</div>
-
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('fundadores')">
-        🚀 Agentes Fundadores
-    </a>
-
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('novedades')">
-        📰 Novedades
-    </a>
-
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('presentaciones')">
-        📽️ Presentaciones
-    </a>
-
-
-    <!-- CONFIGURACIÓN -->
-    <div class="sidebar-section-title">⚙️ CONFIGURACIÓN</div>
-
-    <a href="#" class="sidebar-link" onclick="mostrarSeccion('temas')">
-        🎨 Temas del sitio
-    </a>
-
-</nav>
+      </nav>
     </aside>
 
     <!-- CONTENIDO -->
@@ -836,7 +815,7 @@
         <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px">
           <table class="data-table">
             <thead>
-              <tr><th>Código</th><th>Tipo</th><th>Descripción</th><th>Detalle</th><th>Usos</th><th>Estado</th></tr>
+              <tr><th>Código</th><th>Tipo</th><th>Descripción</th><th>Estado</th><th>Fecha</th><th>Enlace</th></tr>
             </thead>
             <tbody id="cupones-admin-tbody">
               <tr><td colspan="6" style="padding:40px;text-align:center">Cargando...</td></tr>
@@ -1156,9 +1135,11 @@
           <input type="text" id="fund-search" class="form-input" placeholder="Buscar agente..." style="width:220px;padding:8px 12px;font-size:13px" oninput="cargarFundadoresAdmin()">
           <select id="fund-filtro-rango" class="filter-select" style="width:auto" onchange="cargarFundadoresAdmin()">
             <option value="">Todos los rangos</option>
-            <option value="Fundador">Fundador</option>
+            <option value="Bronce">Bronce</option>
+            <option value="Plata">Plata</option>
             <option value="Oro">Oro</option>
-            <option value="Elite">Elite</option>
+            <option value="Diamante">Diamante</option>
+            <option value="Élite">Élite</option>
           </select>
           <select id="fund-filtro-plan" class="filter-select" style="width:auto" onchange="cargarFundadoresAdmin()">
             <option value="">Todos los planes</option>
@@ -1262,17 +1243,24 @@
   <!-- MODAL IMPORTAR USUARIOS -->
 <div id="modal-importar" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(3px);z-index:10500;align-items:center;justify-content:center">
   <div style="background:white;border-radius:18px;padding:0;max-width:850px;width:95%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,0.3)">
-    
+
     <!-- Header -->
     <div style="padding:20px 24px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
       <div>
-        <h2 style="font-size:18px;font-weight:700;color:#0f172a;margin:0">📦 Importar usuarios masivamente</h2>
-        <p style="font-size:13px;color:#64748b;margin:4px 0 0">Sube un archivo Excel (.xlsx) o CSV con los datos</p>
+        <h2 style="font-size:18px;font-weight:700;color:#0f172a;margin:0">👥 Agregar usuarios</h2>
+        <p style="font-size:13px;color:#64748b;margin:4px 0 0">Por archivo (varios a la vez) o uno por uno, manualmente</p>
       </div>
       <button onclick="cerrarModalImportar()" style="width:36px;height:36px;border:none;background:#f1f5f9;border-radius:10px;cursor:pointer;font-size:18px;color:#475569">✕</button>
     </div>
 
-    <!-- Body con scroll -->
+    <!-- Tabs -->
+    <div style="display:flex;gap:4px;padding:12px 24px 0;border-bottom:1px solid #e5e7eb;flex-shrink:0">
+      <button id="tab-btn-masivo" onclick="cambiarTabUsuarios('masivo')" style="padding:10px 18px;border:none;background:none;font-size:13px;font-weight:600;color:#1a472a;border-bottom:2px solid #1a472a;cursor:pointer">📦 Por archivo</button>
+      <button id="tab-btn-manual" onclick="cambiarTabUsuarios('manual')" style="padding:10px 18px;border:none;background:none;font-size:13px;font-weight:600;color:#94a3b8;border-bottom:2px solid transparent;cursor:pointer">➕ Manual (1 usuario)</button>
+    </div>
+
+    <!-- TAB: Por archivo -->
+    <div id="tab-masivo" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
     <div style="padding:24px;overflow-y:auto;flex:1">
       
       <!-- Opciones -->
@@ -1303,7 +1291,7 @@
         <input type="file" id="importar-file-input" accept=".xlsx,.csv" style="display:none" onchange="seleccionarArchivoImportar(this)">
         <div style="font-size:36px;margin-bottom:8px">📁</div>
         <div id="archivo-seleccionado" style="font-size:14px;font-weight:600;color:#334155">Haz clic para seleccionar archivo</div>
-        <div style="font-size:12px;color:#94a3b8;margin-top:4px">Solo .xlsx o .csv</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:4px">Solo .xlsx o .csv · <a href="#" onclick="event.stopPropagation();descargarPlantillaUsuarios();return false" style="color:#1a472a">Descargar plantilla actualizada</a></div>
       </div>
 
       <!-- Vista previa -->
@@ -1319,6 +1307,54 @@
       <button id="btn-importar" disabled onclick="importarUsuarios()" style="padding:10px 24px;border:none;border-radius:10px;background:#1a472a;color:white;font-size:14px;font-weight:600;cursor:pointer;opacity:0.5;transition:opacity 0.2s">
         ⬆️ Importar usuarios
       </button>
+    </div>
+    </div>
+
+    <!-- TAB: Manual -->
+    <div id="tab-manual" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div style="padding:24px;overflow-y:auto;flex:1">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Nombre</label>
+            <input type="text" id="manual-nombre" placeholder="Juan Pérez (opcional, se genera del email si se deja vacío)" style="width:100%;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Email *</label>
+            <input type="email" id="manual-email" placeholder="juan@ejemplo.com" style="width:100%;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Teléfono</label>
+            <input type="text" id="manual-telefono" placeholder="5512345678" style="width:100%;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Plan</label>
+            <select id="manual-plan" style="width:100%;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none;cursor:pointer">
+              <option value="gratuito">Gratuito</option>
+              <option value="basico">Básico</option>
+              <option value="premium">Premium</option>
+              <option value="ilimitado">🎁 Gratuito Ilimitado (solo admin)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">RFC (opcional)</label>
+            <input type="text" id="manual-rfc" placeholder="GAMA850101ABC" style="width:100%;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none;text-transform:uppercase">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Tipo de cuenta</label>
+            <select id="manual-tipo-cuenta" style="width:100%;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none;cursor:pointer">
+              <option value="persona">Persona</option>
+              <option value="empresa">Empresa</option>
+            </select>
+          </div>
+        </div>
+        <div id="manual-resultado" style="display:none;margin-top:16px;padding:16px;border-radius:12px;font-size:13px;line-height:1.6"></div>
+      </div>
+      <div style="padding:16px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;background:#f8fafc">
+        <button onclick="cerrarModalImportar()" style="padding:10px 20px;border:2px solid #e5e7eb;border-radius:10px;background:white;font-size:14px;font-weight:600;cursor:pointer;color:#475569">Cancelar</button>
+        <button id="btn-crear-manual" onclick="crearUsuarioManual()" style="padding:10px 24px;border:none;border-radius:10px;background:#1a472a;color:white;font-size:14px;font-weight:600;cursor:pointer">
+          ➕ Crear usuario
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -1350,15 +1386,14 @@
 
   async function cargarFundadoresAdmin() {
     try {
-      const res = await fetch('/api/fundadores/admin-list');
-      const data = await res.json();
+      const data = await api.get('/fundadores/admin-list');
       fundadoresData = data;
-      
+
       // Actualizar KPIs
       const total = data.length;
       const totalFichas = data.reduce((acc, a) => acc + (a.propertiesCount || 0), 0);
-      const oros = data.filter(a => a.rank === 'Oro').length;
-      const elites = data.filter(a => a.rank === 'Elite').length;
+      const oros = data.filter(a => a.rankTitle === 'Oro' || a.rankTitle === 'Diamante').length;
+      const elites = data.filter(a => a.rankTitle === 'Élite').length;
 
       document.getElementById('fund-kpi-total').textContent = total;
       document.getElementById('fund-kpi-props').textContent = totalFichas;
@@ -1368,11 +1403,13 @@
       // Aplicar filtros del frontend
       const search = document.getElementById('fund-search').value.toLowerCase();
       const filtroRango = document.getElementById('fund-filtro-rango').value;
-      
+      const filtroPlan = document.getElementById('fund-filtro-plan').value;
+
       const filtered = data.filter(a => {
         const matchSearch = a.name?.toLowerCase().includes(search) || a.city?.toLowerCase().includes(search);
-        const matchRango = !filtroRango || a.rank === filtroRango;
-        return matchSearch && matchRango;
+        const matchRango = !filtroRango || a.rankTitle === filtroRango;
+        const matchPlan = !filtroPlan || a.plan === filtroPlan;
+        return matchSearch && matchRango && matchPlan;
       });
 
       // Renderizar Tabla
@@ -1384,22 +1421,22 @@
 
       tbody.innerHTML = filtered.map(a => {
         const fecha = new Date(a.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
-        const rangoColor = a.rank === 'Elite' ? '#8B5CF6' : a.rank === 'Oro' ? '#F59E0B' : 'var(--primary)';
+        const rangoColor = a.rankTitle === 'Élite' ? '#8B5CF6' : (a.rankTitle === 'Oro' || a.rankTitle === 'Diamante') ? '#F59E0B' : 'var(--primary)';
         return `
           <tr>
             <td>
               <div style="display:flex;align-items:center;gap:10px;">
                 <div style="width:36px;height:36px;border-radius:50%;background:${rangoColor};color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">${a.name?.charAt(0) || 'A'}</div>
                 <div>
-                  <div style="font-weight:600;font-size:14px;color:var(--text)">${a.name || 'Sin nombre'}</div>
-                  <div style="font-size:11px;color:var(--text-light)">${a.email || 'Sin email'}</div>
+                  <div style="font-weight:600;font-size:14px;color:var(--text)">${escapeHtml(a.name || 'Sin nombre')}</div>
+                  <div style="font-size:11px;color:var(--text-light)">${escapeHtml(a.email || (a.userId ? 'Sin email' : 'Sin cuenta en la plataforma'))}</div>
                 </div>
               </div>
             </td>
-            <td style="font-size:13px">${a.city || '-'}</td>
-            <td style="font-size:13px">${a.phone || '-'}</td>
+            <td style="font-size:13px">${escapeHtml(a.city || '-')}</td>
+            <td style="font-size:13px">${escapeHtml(a.phone || '-')}</td>
             <td><span class="ds-badge ds-badge-soft" style="text-transform:capitalize">${a.plan || 'gratuito'}</span></td>
-            <td><span style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${rangoColor}15;color:${rangoColor};border:1px solid ${rangoColor}30">🏆 ${a.rank}</span></td>
+            <td><span style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${rangoColor}15;color:${rangoColor};border:1px solid ${rangoColor}30">🏆 ${escapeHtml(a.rankTitle || '-')}</span></td>
             <td style="font-weight:600;">${a.propertiesCount || 0}</td>
             <td style="font-weight:600;">${a.referralsCount || 0}</td>
             <td style="font-size:13px;color:var(--text-light)">${fecha}</td>
@@ -1419,8 +1456,17 @@
 
   async function eliminarFundador(id) {
     if (!confirm('¿Estás seguro de eliminar a este agente fundador? Se le quitará el rango.')) return;
-    // Aquí iría tu fetch de eliminación si lo necesitas
-    alert('Función de eliminar pendiente de conectar con el backend');
+    try {
+      const data = await api.delete(`/fundadores/admin/${id}`);
+      if (data.ok) {
+        dsToast({ title: 'Agente eliminado', message: 'Se quitó del programa de Fundadores.', type: 'success' });
+        cargarFundadoresAdmin();
+      } else {
+        alert(data.error || 'No se pudo eliminar');
+      }
+    } catch (error) {
+      alert('Error al eliminar el agente');
+    }
   }
 
   function exportarFundadoresExcel() {

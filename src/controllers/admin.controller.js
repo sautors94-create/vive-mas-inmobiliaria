@@ -1001,6 +1001,9 @@ const crearUsuariosMasivo = async (req, res) => {
       let email = (fila.email || fila.correo || fila.Email || fila.Correo || '').toString().trim().toLowerCase();
       let nombre = (fila.nombre || fila.Nombre || '').toString().trim();
       const telefono = (fila.telefono || fila.Telefono || '').toString().trim();
+      const rfc = (fila.rfc || fila.RFC || '').toString().trim().toUpperCase();
+      const tipoCuentaFila = (fila.tipoCuenta || fila.TipoCuenta || '').toString().trim().toLowerCase();
+      const tipoCuenta = tipoCuentaFila === 'empresa' ? 'empresa' : 'persona';
       
       // Plan: usar el forzado si viene, si no el del archivo, si no gratuito
       let plan = planForzar && planesValidos.includes(planForzar)
@@ -1069,6 +1072,8 @@ const crearUsuariosMasivo = async (req, res) => {
           nombre,
           email,
           telefono,
+          rfc: rfc || null,
+          tipoCuenta,
           password: passwordTemporal,
           plan: esIlimitado ? 'gratuito' : plan,
           role: esIlimitado ? 'basico_plus' : 'user',
@@ -1110,16 +1115,90 @@ const descargarPlantillaUsuarios = async (req, res) => {
   try {
     const XLSX = require('xlsx');
     const datos = [
-      { nombre: 'Juan Pérez', email: 'juan@ejemplo.com', telefono: '5523456789', plan: 'basico' },
-      { nombre: 'María García', email: 'maria@ejemplo.com', telefono: '5512345678', plan: 'premium' }
+      { nombre: 'Juan Pérez', email: 'juan@ejemplo.com', telefono: '5523456789', plan: 'gratuito', rfc: '', tipoCuenta: 'persona' },
+      { nombre: 'María García', email: 'maria@ejemplo.com', telefono: '5512345678', plan: 'basico', rfc: 'GAMA850101ABC', tipoCuenta: 'persona' },
+      { nombre: 'Roberto Sánchez', email: 'roberto@ejemplo.com', telefono: '5598765432', plan: 'premium', rfc: '', tipoCuenta: 'persona' },
+      { nombre: 'Inmobiliaria del Valle SA', email: 'contacto@inmovalle.com', telefono: '5511223344', plan: 'ilimitado', rfc: 'IVA100101XYZ', tipoCuenta: 'empresa' },
     ];
     const hoja = XLSX.utils.json_to_sheet(datos);
+    hoja['!cols'] = [{ wch: 26 }, { wch: 26 }, { wch: 14 }, { wch: 12 }, { wch: 16 }, { wch: 12 }];
+
+    // Segunda hoja con la guía de valores válidos, para que no se tenga
+    // que adivinar qué escribir en "plan" o "tipoCuenta".
+    const guia = XLSX.utils.aoa_to_sheet([
+      ['Columna', 'Obligatoria', 'Valores permitidos / notas'],
+      ['nombre', 'No', 'Si se omite, se genera del email'],
+      ['email', 'Sí', 'Debe ser único; fila se rechaza si ya existe (salvo "Permitir duplicados")'],
+      ['telefono', 'No', 'Solo dígitos, sin espacios ni guiones'],
+      ['plan', 'No', 'gratuito | basico | premium | ilimitado (default: gratuito)'],
+      ['rfc', 'No', 'RFC del usuario o de la empresa'],
+      ['tipoCuenta', 'No', 'persona | empresa (default: persona)'],
+    ]);
+    guia['!cols'] = [{ wch: 14 }, { wch: 12 }, { wch: 60 }];
+
     const libro = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(libro, hoja, 'Usuarios');
+    XLSX.utils.book_append_sheet(libro, guia, 'Guía de columnas');
     const buffer = XLSX.write(libro, { bookType: 'xlsx', type: 'buffer' });
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=plantilla_usuarios.xlsx');
     res.send(buffer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Crea UN solo usuario manualmente desde el panel (sin necesidad de subir
+// un Excel para 1 o 2 personas). Reutiliza las mismas reglas que la
+// importación masiva: contraseña temporal generada, plan "ilimitado" se
+// traduce a plan=gratuito + role=basico_plus.
+const crearUsuarioManual = async (req, res) => {
+  try {
+    const planesValidos = ['gratuito', 'basico', 'premium', 'ilimitado'];
+    let { nombre, email, telefono, plan, rfc, tipoCuenta } = req.body;
+
+    email = (email || '').toString().trim().toLowerCase();
+    nombre = (nombre || '').toString().trim();
+    telefono = (telefono || '').toString().trim();
+    rfc = (rfc || '').toString().trim().toUpperCase();
+    tipoCuenta = tipoCuenta === 'empresa' ? 'empresa' : 'persona';
+    plan = planesValidos.includes((plan || '').toLowerCase()) ? plan.toLowerCase() : 'gratuito';
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Email inválido o faltante' });
+    }
+    if (!nombre) {
+      const parte = email.split('@')[0];
+      nombre = parte.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ]/g, ' ') || 'usuario';
+      nombre = nombre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+
+    const existeEmail = await User.findOne({ email });
+    if (existeEmail) {
+      return res.status(409).json({ error: 'Ya existe un usuario con ese email' });
+    }
+
+    const passwordTemporal = Math.random().toString(36).slice(-8);
+    const esIlimitado = plan === 'ilimitado';
+
+    const nuevoUsuario = await User.create({
+      nombre,
+      email,
+      telefono: telefono || null,
+      rfc: rfc || null,
+      tipoCuenta,
+      password: passwordTemporal,
+      plan: esIlimitado ? 'gratuito' : plan,
+      role: esIlimitado ? 'basico_plus' : 'user',
+      verificado: true,
+      status: 'activo',
+    });
+
+    res.status(201).json({
+      ok: true,
+      mensaje: 'Usuario creado correctamente',
+      usuario: { nombre, email, telefono, plan, passwordTemporal, id: nuevoUsuario._id },
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1556,6 +1635,7 @@ module.exports = {
   bloquearPropiedad, 
   dashboard, 
   crearUsuariosMasivo, 
+  crearUsuarioManual,
   descargarPlantillaUsuarios,
   verPropiedadAdmin,
   getUsuariosVetados,

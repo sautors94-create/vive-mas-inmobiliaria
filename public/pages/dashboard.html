@@ -1097,7 +1097,7 @@
     /* ── Acciones públicas ── */
     window.emb_inscribirse = async function(){
       try {
-        var data = await api.get('/fundadores/mine'); // se auto-crea si no existía
+        var data = await api.post('/fundadores/mine/register', {}); // inscripción explícita, ya no se auto-crea al solo abrir la sección
         if (data.needsPhone) {
           embToast('Agrega tu número de WhatsApp en tu perfil antes de inscribirte','error');
           embFetchReal().then(embRender);

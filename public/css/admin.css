@@ -255,3 +255,60 @@
 @media (max-width: 700px) {
   .mod-kpis { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ==========================================
+   SIDEBAR: grupos colapsables + estilo de título
+   (antes .sidebar-section-title no tenía NINGÚN estilo — texto plano
+   pegado a los links, sin jerarquía visual)
+   ========================================== */
+.sidebar-group { margin-bottom: 4px; }
+
+.sidebar-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 16px 18px 8px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-light);
+  cursor: pointer;
+  user-select: none;
+  transition: color 150ms var(--ds-transition, ease);
+}
+
+.sidebar-section-title:hover {
+  color: var(--primary);
+}
+
+.sidebar-section-title .chevron {
+  font-size: 10px;
+  transition: transform 200ms var(--ds-transition, ease);
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+
+.sidebar-group.collapsed .sidebar-section-title .chevron {
+  transform: rotate(-90deg);
+}
+
+.sidebar-group-links {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 600px;
+  transition: max-height 260ms var(--ds-transition, ease), opacity 200ms var(--ds-transition, ease);
+  opacity: 1;
+}
+
+.sidebar-group.collapsed .sidebar-group-links {
+  max-height: 0;
+  opacity: 0;
+}
+
+.sidebar-link {
+  white-space: nowrap;
+}
