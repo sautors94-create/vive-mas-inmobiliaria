@@ -543,6 +543,77 @@ router.post('/admin/cupones', authMiddlewareAdmin, requireRole('admin'), async (
   }
 });
 
+// Carga (o actualiza) los 5 Payment Links reales del Plan Básico como
+// registros de Cupon, de un solo clic desde el panel — sin necesitar
+// terminal ni scripts sueltos (que en Hostinger compartido pueden toparse
+// con el límite de procesos/fork). Es seguro darle clic más de una vez:
+// si el código ya existe, solo actualiza sus datos (no duplica).
+router.post('/admin/cupones/seed-planes-iniciales', authMiddlewareAdmin, requireRole('admin'), async (req, res) => {
+  try {
+    const LINKS = [
+      {
+        codigo: 'PLAN-1MES-GRATIS',
+        descripcion: 'PLAN BASICO VIVE MAS 1 MES GRATIS — Prueba de 30 días (luego MXN 99.00/mes)',
+        stripe_price_link: 'https://buy.stripe.com/14AfZic36fSf6jYcnE2Ji04',
+        createdAt: new Date('2026-08-07T06:06:00-06:00'),
+      },
+      {
+        codigo: 'PLAN-15-ANUAL',
+        descripcion: 'Plan Básico 15% Anual — MXN 849.00',
+        stripe_price_link: 'https://buy.stripe.com/3cI5kEc36bBZ37MfzQ2Ji03',
+        createdAt: new Date('2026-08-07T05:25:00-06:00'),
+      },
+      {
+        codigo: 'PLAN-10-ANUAL',
+        descripcion: 'Plan Básico 10% Anual — MXN 899.00',
+        stripe_price_link: 'https://buy.stripe.com/00wfZic36fSffUycnE2Ji02',
+        createdAt: new Date('2026-08-07T05:23:00-06:00'),
+      },
+      {
+        codigo: 'PLAN-ANUAL-999',
+        descripcion: 'Plan Básico Anual ($999) — MXN 999.00',
+        stripe_price_link: 'https://buy.stripe.com/14AaEYaZ20Xl0ZEcnE2Ji01',
+        createdAt: new Date('2026-08-06T09:18:00-06:00'),
+      },
+      {
+        codigo: 'PLAN-MENSUAL-99',
+        descripcion: 'PLAN BASICO VIVE MAS — MXN 99.00/mes',
+        stripe_price_link: 'https://buy.stripe.com/3cIeVeebe5dBfUyevM2Ji00',
+        createdAt: new Date('2026-08-06T09:18:00-06:00'),
+      },
+    ];
+
+    const resultado = { creados: [], actualizados: [] };
+
+    for (const link of LINKS) {
+      const existente = await Cupon.findOne({ codigo: link.codigo });
+      if (existente) {
+        existente.descripcion = link.descripcion;
+        existente.stripe_price_link = link.stripe_price_link;
+        existente.tipo = 'stripe';
+        existente.activo = true;
+        await existente.save();
+        resultado.actualizados.push(link.codigo);
+      } else {
+        await Cupon.create({
+          codigo: link.codigo,
+          tipo: 'stripe',
+          descripcion: link.descripcion,
+          stripe_price_link: link.stripe_price_link,
+          activo: true,
+          createdAt: link.createdAt,
+          creadoPor: req.user.id,
+        });
+        resultado.creados.push(link.codigo);
+      }
+    }
+
+    res.json({ ok: true, mensaje: `${resultado.creados.length} creados, ${resultado.actualizados.length} actualizados`, resultado });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.patch('/admin/cupones/:id', authMiddlewareAdmin, requireRole('admin'), async (req, res) => {
   try {
     const { descripcion, dias, stripe_coupon_id, stripe_price_link, expiraEn, usosMaximos, activo } = req.body;

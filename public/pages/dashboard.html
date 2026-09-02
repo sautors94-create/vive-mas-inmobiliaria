@@ -1098,6 +1098,24 @@
     window.emb_inscribirse = async function(){
       try {
         var data = await api.post('/fundadores/mine/register', {}); // inscripción explícita, ya no se auto-crea al solo abrir la sección
+
+        // api.post() no lanza error en respuestas fallidas (401/404/500) —
+        // solo devuelve el JSON tal cual, así que hay que revisar
+        // explícitamente si vino un error antes de festejar.
+        if (data && data.error) {
+          console.error('Error al inscribirse como Embajador:', data.error);
+          embToast(data.error, 'error');
+          return;
+        }
+        if (data && data.sessionExpired) {
+          embToast('Tu sesión expiró. Vuelve a iniciar sesión e intenta de nuevo.', 'error');
+          return;
+        }
+        if (!data || !data.isFounder && !data.needsPhone) {
+          console.error('Respuesta inesperada al inscribirse:', data);
+          embToast('No se pudo completar la inscripción. Intenta de nuevo.','error');
+          return;
+        }
         if (data.needsPhone) {
           embToast('Agrega tu número de WhatsApp en tu perfil antes de inscribirte','error');
           embFetchReal().then(embRender);
@@ -1108,6 +1126,7 @@
         embConfetti();
         embToast('Te has inscrito como Embajador. Bienvenido al programa.','success');
       } catch (e) {
+        console.error('Error de red al inscribirse:', e);
         embToast('No se pudo completar la inscripción. Intenta de nuevo.','error');
       }
     };
@@ -1118,7 +1137,11 @@
       if(!codigo){ embToast('Ingresa un codigo de embajador','error'); input.focus(); return; }
       if(codigo === embState.codigoEmbajador){ embToast('No puedes registrar tu propio codigo','error'); input.focus(); return; }
       try {
-        await api.post('/fundadores/mine/referrer', { referralCode: codigo });
+        var data = await api.post('/fundadores/mine/referrer', { referralCode: codigo });
+        if (data && data.error) {
+          embToast(data.error, 'error');
+          return;
+        }
         await embFetchReal();
         embRender();
         embToast('Referido registrado: '+codigo+'. Tu progreso ahora esta activo.','success');
@@ -1132,7 +1155,11 @@
       var instagram = document.getElementById('emb-input-ig').value.trim();
       var website = document.getElementById('emb-input-web').value.trim();
       try {
-        await api.patch('/fundadores/mine/social', { facebook: facebook, instagram: instagram, website: website });
+        var data = await api.patch('/fundadores/mine/social', { facebook: facebook, instagram: instagram, website: website });
+        if (data && data.error) {
+          embToast(data.error, 'error');
+          return;
+        }
         embState.redes = { facebook: facebook, instagram: instagram, sitioWeb: website };
         embToast('Redes sociales guardadas correctamente','success');
       } catch (e) {

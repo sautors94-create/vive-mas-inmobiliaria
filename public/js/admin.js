@@ -2087,6 +2087,26 @@ window.copiarUrlCupon = (url) => {
   });
 };
 
+// Carga los 5 Payment Links reales del Plan Básico con un solo clic.
+// Corre DENTRO del servidor que ya está corriendo (una petición HTTP más,
+// como cualquier otra acción del panel) — nunca abre una terminal ni
+// lanza un proceso nuevo, así que no topa con el límite de procesos de
+// Hostinger. Seguro de usar más de una vez: si ya existen, solo actualiza.
+window.sembrarPlanesIniciales = async () => {
+  if (!confirm('Esto va a cargar (o actualizar) tus 5 Payment Links del Plan Básico en Cupones. ¿Continuar?')) return;
+  try {
+    const data = await api.post('/admin/cupones/seed-planes-iniciales', {});
+    if (data.ok) {
+      dsToast({ title: 'Listo', message: data.mensaje, type: 'success' });
+      cargarCuponesAdmin();
+    } else {
+      alert(data.error || 'No se pudo completar');
+    }
+  } catch (error) {
+    alert('Error al cargar los links: ' + (error.message || 'error de conexión'));
+  }
+};
+
 window.abrirFormCupon = () => {
   document.getElementById('cupon-form').style.display = 'block';
 };
