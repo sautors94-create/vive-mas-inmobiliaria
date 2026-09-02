@@ -268,22 +268,36 @@ exports.getMineStatus = async (req, res) => {
 exports.registerMine = async (req, res) => {
   try {
     let founder = await Founder.findOne({ userId: req.user.id });
-    if (founder) return res.json(buildPanelPayload(req, founder)); // ya estaba inscrito
+    if (founder) {
+      console.log(`[registerMine] Usuario ${req.user.id} ya tenía Founder ${founder._id}`);
+      return res.json(buildPanelPayload(req, founder));
+    }
 
     const user = await User.findById(req.user.id).select('nombre telefono direccion.ciudad');
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
     if (!user.telefono) {
       // Sin teléfono no podemos generar su enlace de WhatsApp ni fichas.
+      console.log(`[registerMine] Usuario ${req.user.id} sin teléfono, no se puede inscribir`);
       return res.json({ isFounder: false, needsPhone: true });
     }
 
     const existentePorTelefono = await Founder.findOne({ phone: user.telefono });
+
     if (existentePorTelefono && !existentePorTelefono.userId) {
-      // Ya se había registrado antes desde el flujo público con este mismo teléfono: lo ligamos.
-      existentePorTelefono.userId = user._id;
-      founder = await existentePorTelefono.save();
+      // Ya se había registrado antes desde el flujo público con este mismo
+      // teléfono: lo ligamos. Usamos findOneAndUpdate (atómico) en vez de
+      // mutar+.save() para eliminar cualquier duda de que el cambio se
+      // aplique de verdad, y pedimos el documento actualizado de vuelta.
+      console.log(`[registerMine] Ligando Founder existente ${existentePorTelefono._id} (tel ${user.telefono}) al usuario ${req.user.id}`);
+      founder = await Founder.findOneAndUpdate(
+        { _id: existentePorTelefono._id },
+        { $set: { userId: user._id, name: user.nombre } },
+        { new: true }
+      );
+      console.log(`[registerMine] Resultado tras ligar: userId=${founder?.userId}`);
     } else if (!existentePorTelefono) {
+      console.log(`[registerMine] Creando Founder nuevo para usuario ${req.user.id} (tel ${user.telefono})`);
       founder = await new Founder({
         userId: user._id,
         name: user.nombre,
@@ -291,7 +305,14 @@ exports.registerMine = async (req, res) => {
         city: user.direccion?.ciudad || 'CDMX',
       }).save();
     } else {
-      founder = existentePorTelefono; // Ya ligado a otro usuario (caso raro), lo devolvemos tal cual
+      // Ya ligado a OTRO usuario distinto — caso raro (2 cuentas con mismo teléfono)
+      console.log(`[registerMine] Teléfono ${user.telefono} ya ligado a otro usuario (${existentePorTelefono.userId}), no se puede re-ligar a ${req.user.id}`);
+      return res.status(409).json({ error: 'Ese número de WhatsApp ya está inscrito con otra cuenta de la plataforma' });
+    }
+
+    if (!founder) {
+      console.error('[registerMine] founder quedó undefined tras todas las ramas — esto no debería pasar');
+      return res.status(500).json({ error: 'No se pudo completar la inscripción, intenta de nuevo' });
     }
 
     res.json(buildPanelPayload(req, founder));
