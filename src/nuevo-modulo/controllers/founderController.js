@@ -131,6 +131,23 @@ exports.trackProfileView = async (req, res) => {
   }
 };
 
+// NUEVA FUNCIÓN: Listado para el directorio público
+exports.getDirectoryList = async (req, res) => {
+  try {
+    // Buscamos todos los agentes. Puedes agregar un filtro si quieres que solo salgan los activos
+    const agentes = await Founder.find()
+      // Ordenamos por rango y propiedades para mostrar primero a los más activos
+      .sort({ rank: -1, propertiesCount: -1 })
+      // SELECCIONAMOS SOLO CAMPOS PÚBLICOS (NUNCA el teléfono)
+      .select('name city rankTitle ambassadorTitle propertiesCount profileViews referralCode social');
+      
+    res.json(agentes);
+  } catch (error) {
+    console.error('Error en getDirectoryList:', error);
+    res.status(500).json({ error: 'Error al obtener el directorio de agentes' });
+  }
+};
+
 // 4. Generar la ficha/imagen para compartir + guardar la ficha rápida
 //    (identifica al agente por su referralCode, no por sesión/login)
 exports.generateCard = async (req, res) => {
