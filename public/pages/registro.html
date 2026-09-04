@@ -260,6 +260,14 @@
   <script>
     if (auth.isLoggedIn()) window.location.href = auth.isAdmin() ? 'admin.html' : 'dashboard.html';
 
+    // Si llegó con ?ref=CODIGO (invitación de un Agente Fundador) y por
+    // alguna razón no pasó antes por embajador-invitacion.html, guardamos
+    // el código igual — se usa justo después de verificar la cuenta.
+    (function () {
+      const ref = new URLSearchParams(window.location.search).get('ref');
+      if (ref) localStorage.setItem('vm_ref_fundador', ref);
+    })();
+
     // ==========================================
     // VALIDACIÓN DE CONTRASEÑA SEGURA
     // ==========================================

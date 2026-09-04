@@ -27,7 +27,20 @@ function buildPanelPayload(req, founder) {
 }
 
 // 1. Registro rápido de Agente Fundador (sin login, un solo paso)
+// DESACTIVADO: el registro al programa de Agentes Fundadores ya no se
+// hace sin cuenta. Ahora todo agente necesita una cuenta gratuita real de
+// la plataforma (ver registerMine, más abajo, y embajador-invitacion.html
+// en el frontend). Se deja la función original renombrada por si en algún
+// momento se necesita recuperar el histórico de cómo funcionaba, pero la
+// ruta pública ya no la usa.
 exports.register = async (req, res) => {
+  return res.status(410).json({
+    error: 'El registro directo ya no está disponible. Crea una cuenta gratuita en SomosViveMás para unirte al programa de Agentes Fundadores.',
+    registroUrl: '/pages/registro.html',
+  });
+};
+
+exports._registerLegacySinUsar = async (req, res) => {
   try {
     const { name, phone, city, referredBy } = req.body;
 

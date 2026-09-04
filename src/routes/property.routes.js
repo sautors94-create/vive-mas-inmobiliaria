@@ -8,6 +8,7 @@ const {
   detallePropiedad,
   editarPropiedad,
   eliminarPropiedad,
+  eliminarFoto,
   pausarPropiedad,
   reactivarPropiedad,
   misPropiedades,
@@ -25,6 +26,7 @@ router.put('/:id', authMiddleware, editarPropiedad);
 router.patch('/:id/pausar', authMiddleware, pausarPropiedad);
 router.patch('/:id/reactivar', authMiddleware, reactivarPropiedad);
 router.delete('/:id', authMiddleware, eliminarPropiedad);
+router.delete('/:id/fotos', authMiddleware, eliminarFoto);
 router.post(
   '/:id/fotos',
   authMiddleware,

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Únete al Programa de Agentes Fundadores | SomosViveMás</title>
+    <meta name="description" content="Publica tus propiedades gratis en SomosViveMás y gana rango como Agente Fundador.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+      .inv-hero{max-width:560px;margin:60px auto;padding:0 20px;text-align:center}
+      .inv-card{background:white;border:1px solid var(--border,#e5e7eb);border-radius:20px;padding:36px 30px;box-shadow:0 10px 30px rgba(0,0,0,0.06)}
+      .inv-badge{display:inline-flex;align-items:center;gap:8px;background:var(--primary-light,#e6f2ea);color:var(--primary);padding:8px 16px;border-radius:20px;font-weight:700;font-size:13px;margin-bottom:18px}
+      .inv-avatar{width:64px;height:64px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;font-family:'Bricolage Grotesque',sans-serif;margin:0 auto 12px}
+      .inv-beneficios{text-align:left;margin:22px 0;padding:0;list-style:none}
+      .inv-beneficios li{padding:8px 0;font-size:14px;display:flex;gap:10px;align-items:flex-start}
+      .inv-cta{display:block;width:100%;padding:15px;background:var(--primary);color:white;border:none;border-radius:12px;font-weight:700;font-size:15px;text-decoration:none;text-align:center;margin-top:10px}
+      .inv-cta-secundario{display:block;width:100%;padding:13px;background:transparent;color:var(--primary);border:1px solid var(--border,#e5e7eb);border-radius:12px;font-weight:600;font-size:14px;text-decoration:none;text-align:center;margin-top:10px}
+    </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container nav-content">
+      <a href="/" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <span class="logo-sub">Inmobiliaria</span>
+      </a>
+    </div>
+  </nav>
+
+  <div class="inv-hero">
+    <div class="inv-card">
+      <div id="inv-quien-invita" style="display:none">
+        <div class="inv-avatar" id="inv-inicial">A</div>
+        <div class="inv-badge">🏆 <span id="inv-nombre-invita">Un Agente Fundador</span> te invitó</div>
+      </div>
+
+      <h1 style="font-family:'Bricolage Grotesque',sans-serif;font-size:24px;margin-bottom:8px">Únete al Programa de Agentes Fundadores</h1>
+      <p style="color:#6b7280;font-size:14px;margin-bottom:0">Publica propiedades gratis, genera fichas profesionales para WhatsApp y sube de rango.</p>
+
+      <ul class="inv-beneficios">
+        <li>✅ Publicaciones gratuitas ilimitadas</li>
+        <li>✅ Perfil profesional público con tu propio link</li>
+        <li>✅ Fichas de propiedades listas para compartir</li>
+        <li>✅ Sube de rango y gana el título de Embajador</li>
+      </ul>
+
+      <p style="font-size:12px;color:#9ca3af;margin-bottom:0">Todo agente fundador necesita una cuenta gratuita en SomosViveMás — así protegemos tu perfil y tus propiedades.</p>
+
+      <a href="registro.html" id="inv-btn-registro" class="inv-cta">Crear mi cuenta gratis y unirme</a>
+      <a href="login.html" class="inv-cta-secundario">Ya tengo cuenta, iniciar sesión</a>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+
+      if (ref) {
+        // Guardamos el código de quien invitó para usarlo justo después de
+        // que la persona termine de crear su cuenta y verificarla — ahí
+        // (en dashboard.html) se completa la inscripción automática al
+        // programa y se le da el crédito al agente que invitó.
+        localStorage.setItem('vm_ref_fundador', ref);
+
+        document.getElementById('inv-btn-registro').href = 'registro.html?ref=' + encodeURIComponent(ref);
+
+        // Mostramos quién invitó, si el código es válido (dato público, sin login)
+        fetch(`/api/fundadores/panel-data/${encodeURIComponent(ref)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(data => {
+            if (data && data.isFounder !== false && data.name) {
+              document.getElementById('inv-nombre-invita').textContent = data.name;
+              document.getElementById('inv-inicial').textContent = data.name.charAt(0).toUpperCase();
+              document.getElementById('inv-quien-invita').style.display = 'block';
+            }
+          })
+          .catch(() => {});
+      }
+    })();
+  </script>
+</body>
+</html>

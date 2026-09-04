@@ -234,15 +234,21 @@ async function generatePropertyCard(propertyData, imageBufferOrNull = null) {
   ctx.fillStyle = BRAND.greyText;
   ctx.fillText(propertyData.type === 'venta' ? 'MXN' : 'MXN / mes', 50 + precioW + 14, cursorY);
 
-  // Recámaras / Baños (íconos vectoriales, no emoji)
-  cursorY += 85;
-  drawBedIcon(ctx, 52, cursorY - 15, 24, BRAND.gold);
-  ctx.font = `600 30px ${F('SemiBold')}`;
-  ctx.fillStyle = BRAND.white;
-  ctx.fillText(`${propertyData.rooms || 0} Recámaras`, 105, cursorY);
+  // Recámaras / Baños (íconos vectoriales, no emoji) — se omite por
+  // completo esta línea cuando no aplica (terreno, local comercial)
+  const tieneRecamaras = propertyData.rooms !== null && propertyData.rooms !== undefined;
+  if (tieneRecamaras) {
+    cursorY += 85;
+    drawBedIcon(ctx, 52, cursorY - 15, 24, BRAND.gold);
+    ctx.font = `600 30px ${F('SemiBold')}`;
+    ctx.fillStyle = BRAND.white;
+    ctx.fillText(`${propertyData.rooms || 0} Recámaras`, 105, cursorY);
 
-  drawBathIcon(ctx, 445, cursorY - 15, 24, BRAND.gold);
-  ctx.fillText(`${propertyData.baths || 0} Baños`, 498, cursorY);
+    drawBathIcon(ctx, 445, cursorY - 15, 24, BRAND.gold);
+    ctx.fillText(`${propertyData.baths || 0} Baños`, 498, cursorY);
+  } else {
+    cursorY += 30; // menos espacio, ya que no hay línea de recámaras/baños
+  }
 
   // Ubicación
   cursorY += 65;

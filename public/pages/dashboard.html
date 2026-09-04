@@ -1553,7 +1553,53 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       if (window.initFotosPublicar) window.initFotosPublicar();
+      completarInscripcionFundadorPendiente();
     });
+
+    // Si esta persona llegó a la plataforma a través de un link de
+    // invitación de un Agente Fundador (?ref=CODIGO guardado en
+    // embajador-invitacion.html o registro.html), y ya tiene sesión
+    // iniciada, la inscribimos automáticamente al programa y le damos el
+    // crédito a quien la invitó. Así, todo agente entra por cuenta real
+    // de la plataforma — no hay otra forma de unirse.
+    async function completarInscripcionFundadorPendiente() {
+      const ref = localStorage.getItem('vm_ref_fundador');
+      if (!ref) return;
+      if (!localStorage.getItem('accessToken')) return; // aún no verificado/logueado
+
+      try {
+        const registro = await api.post('/fundadores/mine/register', {});
+        if (registro && registro.error) {
+          // Puede pasar si su teléfono ya está ligado a otra cuenta, etc. —
+          // no lo intentamos de nuevo en cada carga de página.
+          console.warn('No se pudo auto-inscribir al programa de Fundadores:', registro.error);
+          localStorage.removeItem('vm_ref_fundador');
+          return;
+        }
+        if (registro && registro.needsPhone) {
+          // Sin teléfono no podemos vincularlo todavía — reintentamos la
+          // próxima vez que cargue el dashboard (después de que agregue su
+          // teléfono en su perfil), así que NO borramos vm_ref_fundador aún.
+          return;
+        }
+
+        // Ya es Fundador (recién inscrito, o ya lo era de antes). Si
+        // todavía no tiene un referente registrado, le damos el crédito al
+        // código guardado.
+        if (!registro.referredBy && registro.referralCode !== ref) {
+          const conReferido = await api.post('/fundadores/mine/referrer', { referralCode: ref });
+          if (conReferido && !conReferido.error && window.dsToast) {
+            dsToast({ title: '¡Bienvenido al programa de Agentes Fundadores!', message: 'Tu invitación quedó registrada — tú y quien te invitó ya suman puntos.', type: 'success' });
+          }
+        } else if (window.dsToast) {
+          dsToast({ title: '¡Ya eres Agente Fundador!', message: 'Ve a la sección de Embajadores para ver tu perfil.', type: 'success' });
+        }
+      } catch (e) {
+        console.warn('Error al completar inscripción de Fundador pendiente:', e);
+      } finally {
+        localStorage.removeItem('vm_ref_fundador');
+      }
+    }
   </script>
 </body>
 </html>

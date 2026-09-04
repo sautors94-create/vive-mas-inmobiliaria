@@ -223,7 +223,7 @@ const editarPropiedad = async (req, res) => {
     }
     const actualizada = await Property.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, status: 'revision' },
+      { ...req.body, status: 'revision', motivo_rechazo: null },
       { new: true }
     );
     res.json({ ok: true, mensaje: 'Propiedad actualizada y enviada a revisión', propiedad: actualizada });
@@ -239,7 +239,12 @@ const eliminarPropiedad = async (req, res) => {
     if (propiedad.propietario.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'No tienes permiso para eliminar esta propiedad' });
     }
-    await Property.findByIdAndUpdate(req.params.id, { status: 'rechazada' });
+    // Antes esto solo ponía status:'rechazada' — no borraba nada de verdad,
+    // así que la propiedad seguía apareciendo en "Mis propiedades" (las
+    // rechazadas se muestran ahí a propósito, para que el usuario las
+    // pueda corregir). Ahora sí se elimina permanentemente, igual que
+    // hace el admin.
+    await Property.findByIdAndDelete(req.params.id);
     res.json({ ok: true, mensaje: 'Propiedad eliminada correctamente' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -394,6 +399,25 @@ const subirFotos = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const eliminarFoto = async (req, res) => {
+  try {
+    const propiedad = await Property.findById(req.params.id);
+    if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
+    if (propiedad.propietario.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes permiso' });
+    }
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: 'Falta la URL de la foto a eliminar' });
+
+    propiedad.fotos = propiedad.fotos.filter(f => f !== url);
+    await propiedad.save();
+
+    res.json({ ok: true, mensaje: 'Foto eliminada', fotos: propiedad.fotos });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const registrarBusqueda = async (req, res) => {
   try {
     const { estado, ciudad, operacion, tipo, precioMax } = req.body;
@@ -421,4 +445,4 @@ const registrarBusqueda = async (req, res) => {
   }
 };
 
-module.exports = { crearPropiedad, listarPropiedades, detallePropiedad, editarPropiedad, eliminarPropiedad, pausarPropiedad, reactivarPropiedad, misPropiedades, subirFotos, registrarBusqueda, ejecutarModeracionCompleta };
+module.exports = { crearPropiedad, listarPropiedades, detallePropiedad, editarPropiedad, eliminarPropiedad, eliminarFoto, pausarPropiedad, reactivarPropiedad, misPropiedades, subirFotos, registrarBusqueda, ejecutarModeracionCompleta };

@@ -199,8 +199,13 @@ app.use('/api/fundadores', foundersRoutes);
 app.use(propertiesRoutes); // Maneja /p/:slug (página pública compartible)
 
 // Páginas del landing de Agentes Fundadores (registro público, sin login)
+// Antes esto mandaba al formulario público sin cuenta (founders.html). Ya
+// no: todo registro al programa de Agentes Fundadores debe pasar por una
+// cuenta gratuita real de la plataforma — esta página explica el programa
+// y manda a crear cuenta (o iniciar sesión), guardando el código de quien
+// invitó para dar el crédito automáticamente tras el registro.
 app.get('/agentes-fundadores', (req, res) => {
-  res.sendFile(path.join(__dirname, 'nuevo-modulo/views/founders.html'));
+  res.sendFile(path.join(__dirname, '../public/pages/embajador-invitacion.html'));
 });
 app.get('/admin/agentes-fundadores', (req, res) => {
   res.sendFile(path.join(__dirname, 'nuevo-modulo/views/dashboard.html'));

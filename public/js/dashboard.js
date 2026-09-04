@@ -386,7 +386,7 @@ const mostrarSeccion = window.mostrarSeccion = (seccion) => {
   if (seccion === 'favoritos') cargarFavoritos();
   if (seccion === 'leads') cargarLeadsUsuario();
   if (seccion === 'mensajes') cargarMensajes();
-  if (seccion === 'nueva-propiedad') iniciarMapaPublicar();
+  if (seccion === 'nueva-propiedad') { resetFormularioPropiedad(); iniciarMapaPublicar(); }
   if (seccion === 'mi-cuenta') cargarCuenta();
   if (seccion === 'resumen') cargarResumenUsuario();
 };
@@ -1282,8 +1282,102 @@ const reactivarMiPropiedad = async (id) => {
   }
 };
 
+let propiedadEditandoId = null; // null = modo "nueva propiedad"; con valor = editando esa propiedad
+
 const editarPropiedad = (id) => {
-  window.location.href = `propiedad.html?id=${id}&editar=1`;
+  mostrarSeccion('nueva-propiedad');
+  cargarPropiedadParaEditar(id);
+};
+
+// Deja el formulario listo para publicar algo nuevo (limpia cualquier
+// resto de una edición anterior). Se llama cada vez que se navega a
+// "nueva-propiedad" SIN pasar por editarPropiedad().
+const resetFormularioPropiedad = () => {
+  propiedadEditandoId = null;
+  const titulo = document.getElementById('nueva-propiedad-titulo');
+  const aviso = document.getElementById('edicion-aviso');
+  const fotosWrap = document.getElementById('fotos-existentes-wrap');
+  if (titulo) titulo.textContent = 'Nueva publicación';
+  if (aviso) aviso.style.display = 'none';
+  if (fotosWrap) fotosWrap.style.display = 'none';
+  ['p-titulo','p-precio','p-operacion','p-tipo','p-descripcion','p-estado','p-ciudad','p-colonia','p-direccion','p-recamaras','p-banos','p-medios-banos','p-estacionamientos','p-m2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.querySelectorAll('.credito-checkbox').forEach(c => c.checked = false);
+};
+
+const cargarPropiedadParaEditar = async (id) => {
+  const data = await api.get(`/propiedades/${id}`);
+  const p = data.propiedad || data; // detallePropiedad puede devolver directo o envuelto
+  if (!p || !p._id) {
+    dsToast({ title: 'Error', message: 'No se pudo cargar la propiedad para editar.', type: 'error' });
+    mostrarSeccion('mis-propiedades');
+    return;
+  }
+
+  propiedadEditandoId = id;
+  document.getElementById('nueva-propiedad-titulo').textContent = 'Editar publicación';
+  document.getElementById('edicion-aviso').style.display = 'block';
+
+  document.getElementById('p-titulo').value = p.titulo || '';
+  document.getElementById('p-precio').value = p.precio || '';
+  document.getElementById('p-operacion').value = p.operacion || '';
+  document.getElementById('p-tipo').value = p.tipo || '';
+  document.getElementById('p-descripcion').value = p.descripcion || '';
+  document.getElementById('p-estado').value = p.ubicacion?.estado || '';
+  document.getElementById('p-ciudad').value = p.ubicacion?.ciudad || '';
+  document.getElementById('p-colonia').value = p.ubicacion?.colonia || '';
+  document.getElementById('p-direccion').value = p.ubicacion?.direccion || '';
+  document.getElementById('p-recamaras').value = p.caracteristicas?.recamaras || '';
+  document.getElementById('p-banos').value = p.caracteristicas?.banos || '';
+  document.getElementById('p-medios-banos').value = p.caracteristicas?.mediosBanos || '';
+  document.getElementById('p-estacionamientos').value = p.caracteristicas?.estacionamientos || '';
+  document.getElementById('p-m2').value = p.caracteristicas?.m2 || '';
+  if (document.getElementById('p-lat')) document.getElementById('p-lat').value = p.ubicacion?.lat || '';
+  if (document.getElementById('p-lng')) document.getElementById('p-lng').value = p.ubicacion?.lng || '';
+
+  (p.creditosAceptados || []).forEach(c => {
+    const check = document.querySelector(`.credito-checkbox[value="${CSS.escape(c)}"]`);
+    if (check) check.checked = true;
+  });
+
+  renderFotosExistentes(p.fotos || [], id);
+
+  if (typeof setPublicarStep === 'function') setPublicarStep(1);
+};
+
+// Muestra las fotos ya subidas a Cloudinary con un botón para quitar la
+// que causó el rechazo, sin tener que volver a subir todas de cero.
+const renderFotosExistentes = (fotos, propiedadId) => {
+  const wrap = document.getElementById('fotos-existentes-wrap');
+  const cont = document.getElementById('fotos-existentes');
+  if (!fotos || fotos.length === 0) {
+    wrap.style.display = 'none';
+    cont.innerHTML = '';
+    return;
+  }
+  wrap.style.display = 'block';
+  cont.innerHTML = fotos.map((url, idx) => `
+    <div style="position:relative;width:90px;height:90px" data-foto-url="${escapeHtmlLocal(url)}">
+      <img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+      ${idx === 0 ? '<span style="position:absolute;bottom:2px;left:2px;background:var(--primary);color:white;font-size:9px;padding:2px 6px;border-radius:4px">Portada</span>' : ''}
+      <button type="button" onclick="quitarFotoExistente('${propiedadId}', this)" title="Eliminar esta foto" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#dc2626;color:white;border:2px solid white;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center">×</button>
+    </div>`).join('');
+};
+
+const quitarFotoExistente = async (propiedadId, btnEl) => {
+  const contenedor = btnEl.closest('[data-foto-url]');
+  const url = contenedor.dataset.fotoUrl;
+  const ok = await dsConfirm({ title: '¿Quitar esta foto?', message: 'Se eliminará de la propiedad permanentemente.', confirmText: 'Quitar', danger: true });
+  if (!ok) return;
+  const data = await api.delete(`/propiedades/${propiedadId}/fotos`, { url });
+  if (data.ok) {
+    contenedor.remove();
+    dsToast({ title: 'Foto eliminada', message: 'Ya puedes subir una nueva para reemplazarla.', type: 'success' });
+  } else {
+    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
 };
 
 const eliminarMiPropiedad = async (id, titulo) => {

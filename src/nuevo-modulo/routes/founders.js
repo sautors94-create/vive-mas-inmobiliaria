@@ -22,6 +22,7 @@ router.post('/register', founderController.register);
 router.post('/generate-card', upload.single('photo'), founderController.generateCard);
 router.get('/panel-data/:referralCode', founderController.getAgentPanelData);
 router.post('/view/:referralCode', founderController.trackProfileView);
+router.get('/directory-list', founderController.getDirectoryList); // directorio.html público
 
 // --- Solo admin (antes sin protección — cualquiera podía ver teléfonos de
 // todos los agentes en /admin-list sin loguearse) ---
