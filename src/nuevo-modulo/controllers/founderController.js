@@ -217,112 +217,126 @@ exports.getPublicProfile = async (req, res) => {
       <title>${founder.name} - Asesor Inmobiliario en ${founder.city} | SomosViveMás</title>
       <meta name="description" content="${founder.name}, asesor inmobiliario en ${founder.city}. ${founder.propertiesCount} propiedades publicadas. Contacta directo por WhatsApp.">
       <link rel="preconnect" href="https://fonts.googleapis.com">
-      <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-      <link rel="stylesheet" href="/css/styles.css">
+      <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
+        
+        /* NAVBAR MINIMALISTA */
+        .nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.8); backdrop-filter: blur(12px); box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .logo { text-decoration: none; font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        .logo-vive { color: var(--primary, #10b981); }
+        .logo-mas { color: #0f172a; }
+        .nav-btn { padding: 10px 20px; background: #0f172a; color: white; border-radius: 10px; text-decoration: none; font-size: 14px; font-weight: 600; transition: transform 0.2s; }
+        .nav-btn:hover { transform: translateY(-2px); }
+        
+        /* HERO PROFILE - SaaS STYLE */
+        .profile-container { max-width: 800px; margin: -30px auto 60px; padding: 0 20px; position: relative; z-index: 10; }
+        .profile-card { background: white; border-radius: 24px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e2e8f0; }
+        .profile-header { background: linear-gradient(135deg, var(--bg-dark, #0f172a) 0%, var(--primary, #10b981) 100%); padding: 60px 40px 40px; text-align: center; position: relative; }
+        
+        .avatar-circle { width: 110px; height: 110px; border-radius: 50%; background: white; color: var(--primary, #10b981); display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; margin: 0 auto 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 4px solid rgba(255,255,255,0.3); }
+        .profile-name { color: white; font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+        .profile-location { color: rgba(255,255,255,0.9); font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500; }
+        
+        .badges { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
+        .badge { padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; backdrop-filter: blur(10px); display: flex; align-items: center; gap: 6px; }
+        .badge-rank { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); }
+        .badge-amb { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        
+        .profile-body { padding: 40px; }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .stat-box { background: #f8fafc; padding: 24px; border-radius: 16px; text-align: center; border: 1px solid #e2e8f0; transition: transform 0.2s; }
+        .stat-box:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .stat-value { font-size: 32px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; color: var(--primary, #10b981); line-height: 1; }
+        .stat-label { font-size: 13px; color: #64748b; margin-top: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .whatsapp-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 18px; background: #22c55e; color: white; text-decoration: none; border-radius: 14px; font-weight: 600; font-size: 16px; transition: all 0.3s; box-shadow: 0 10px 20px -5px rgba(34, 197, 94, 0.4); }
+        .whatsapp-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(34, 197, 94, 0.5); background: #20a54e; }
+        
+        .section-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 700; margin: 50px 0 20px; color: #0f172a; }
+        
+        .fichas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+        .ficha-card { background: white; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; transition: all 0.3s; }
+        .ficha-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-color: var(--primary, #10b981); }
+        .ficha-img { width: 100%; height: 180px; object-fit: cover; background: #e2e8f0; }
+        .ficha-body { padding: 20px; }
+        .ficha-price { font-size: 20px; font-weight: 700; color: #16a34a; margin-bottom: 8px; font-family: 'Bricolage Grotesque', sans-serif; }
+        .ficha-loc { font-size: 14px; color: #64748b; display: flex; align-items: center; gap: 4px; }
+        
+        .footer-link { text-align: center; margin-top: 60px; padding-bottom: 40px; }
+        .footer-link a { color: #64748b; text-decoration: none; font-size: 14px; font-weight: 500; padding: 12px 24px; border: 1px solid #e2e8f0; border-radius: 30px; transition: all 0.2s; }
+        .footer-link a:hover { background: #0f172a; color: white; border-color: #0f172a; }
+
+        @media (max-width: 600px) {
+          .nav { padding: 15px 20px; }
+          .profile-header { padding: 40px 20px 30px; }
+          .profile-name { font-size: 26px; }
+          .profile-body { padding: 20px; }
+          .stat-value { font-size: 26px; }
+        }
+      </style>
     </head>
     <body>
-
-      <!-- NAVBAR -->
-      <nav class="navbar">
-        <div class="container nav-content">
-          <a href="/" class="logo">
-            <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
-            <span class="logo-sub">Inmobiliaria</span>
-          </a>
-          <ul class="nav-links">
-            <li><a href="/">Inicio</a></li>
-            <li><a href="/pages/catalogo.html">Catálogo</a></li>
-            <li><a href="/pages/herramientas.html">Herramientas</a></li>
-            <li><a href="/pages/servicios.html">Servicios</a></li>
-            <li><a href="/pages/nosotros.html">Nosotros</a></li>
-            <li><a href="/pages/directorio.html">Directorio</a></li>
-          </ul>
-          <div class="nav-actions">
-            <a href="/pages/login.html" class="btn btn-outline" id="btn-login">Iniciar sesión</a>
-            <a href="/pages/registro.html" class="btn btn-primary">Publicar</a>
-          </div>
-          <button class="nav-toggle" id="nav-toggle">&#9776;</button>
-        </div>
+      
+      <nav class="nav">
+        <a href="/" class="logo">
+          <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        </a>
+        <a href="/pages/registro.html" class="nav-btn">Crear cuenta</a>
       </nav>
 
-      <!-- PERFIL AGENTE -->
-      <section class="section" style="padding-top: 80px;">
-        <div class="container">
-          <div class="directorio-grid" style="grid-template-columns: 1fr; max-width: 800px; margin: 0 auto;">
-            <div class="agency-card">
-              <div class="agency-img" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); display: flex; align-items: center; justify-content: center; height: 200px;">
-                <div style="font-size: 80px; color: white; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif;">${founder.name.charAt(0).toUpperCase()}</div>
-                <span class="agency-verified" style="background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3);">🏆 Fundador</span>
-              </div>
-              <div class="agency-body" style="text-align: center;">
-                <h2 style="font-family: 'Bricolage Grotesque', sans-serif; margin-bottom: 5px;">${founder.name}</h2>
-                <div class="agency-location" style="justify-content: center; margin-bottom: 15px;">📍 ${founder.city}</div>
-                
-                <div style="margin-bottom: 20px;">
-                  <span class="badge bg-warning text-dark me-1" style="padding: 8px 15px; font-size: 14px;">${founder.rankTitle}</span>
-                  ${founder.ambassadorTitle ? `<span class="badge bg-success" style="padding: 8px 15px; font-size: 14px;">${founder.ambassadorTitle}</span>` : ''}
-                </div>
-
-                <div class="row mt-4" style="border-top: 1px solid var(--border); padding-top: 20px; max-width: 400px; margin: 0 auto;">
-                  <div class="col-6" style="border-right: 1px solid var(--border);">
-                    <h4 class="mb-0">${founder.propertiesCount}</h4>
-                    <small style="color: var(--text-light);">Propiedades</small>
-                  </div>
-                  <div class="col-6">
-                    <h4 class="mb-0">${founder.profileViews}</h4>
-                    <small style="color: var(--text-light);">Vistas de perfil</small>
-                  </div>
-                </div>
-
-                <a href="${whatsappLink}" target="_blank" class="btn btn-primary" style="width: 100%; margin-top: 25px; font-weight: bold;">💬 Contactar por WhatsApp</a>
-              </div>
-            </div>
-
-            ${fichas.length > 0 ? `
-            <h3 style="font-family: 'Bricolage Grotesque', sans-serif; margin-top: 40px; margin-bottom: 20px;">Propiedades recientes de ${founder.name}</h3>
-            <div class="directorio-grid">
-              ${fichas.map(f => `
-                <div class="agency-card">
-                  <div class="agency-img">
-                    <img src="${f.imagenUrl || 'https://via.placeholder.com/300x180?text=Sin+Imagen'}" style="width: 100%; height: 140px; object-fit: cover;">
-                  </div>
-                  <div class="agency-body">
-                    <div class="fw-bold text-success" style="font-size: 18px;">$${Number(f.precio).toLocaleString('es-MX')}</div>
-                    <div class="small text-muted">📍 ${f.ubicacion}</div>
-                  </div>
-                </div>
-              `).join('')}
-            </div>` : ''}
-
-            <div class="text-center" style="margin-top: 40px; padding-bottom: 60px;">
-              <a href="/agentes-fundadores?ref=${founder.referralCode}" class="text-decoration-none small text-muted">¿Eres asesor? Publica gratis en SomosViveMás →</a>
+      <div class="profile-container">
+        <div class="profile-card">
+          <div class="profile-header">
+            <div class="avatar-circle">${founder.name.charAt(0).toUpperCase()}</div>
+            <h1 class="profile-name">${founder.name}</h1>
+            <div class="profile-location">📍 ${founder.city}</div>
+            <div class="badges">
+              <span class="badge badge-rank">🏆 ${founder.rankTitle}</span>
+              ${founder.ambassadorTitle ? `<span class="badge badge-amb">⭐ ${founder.ambassadorTitle}</span>` : ''}
             </div>
           </div>
-        </div>
-      </section>
-
-      <!-- FOOTER -->
-      <footer class="footer">
-        <div class="container footer-content">
-          <div class="footer-brand">
-            <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
-            <p>La plataforma inmobiliaria más confiable de México.</p>
+          
+          <div class="profile-body">
+            <div class="stats-grid">
+              <div class="stat-box">
+                <div class="stat-value">${founder.propertiesCount}</div>
+                <div class="stat-label">Propiedades</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-value">${founder.profileViews}</div>
+                <div class="stat-label">Vistas</div>
+              </div>
+            </div>
+            
+            <a href="${whatsappLink}" target="_blank" class="whatsapp-btn">
+              💬 Contactar por WhatsApp
+            </a>
           </div>
-          <div class="footer-links">
-            <a href="/pages/catalogo.html">Catálogo</a>
-            <a href="/pages/servicios.html">Servicios</a>
-            <a href="/pages/nosotros.html">Nosotros</a>
-            <a href="/legal/normas-generales/terminos.html">Términos y condiciones</a>
-          </div>
         </div>
-        <div class="footer-bottom">
-          <p>© 2024 Vive Más Inmobiliaria. Todos los derechos reservados.</p>
-        </div>
-      </footer>
 
-      <script src="/js/api.js"></script>
-      <script src="/js/auth.js"></script>
-      <script src="/js/main.js"></script>
+        ${fichas.length > 0 ? `
+          <h3 class="section-title">Propiedades recientes</h3>
+          <div class="fichas-grid">
+            ${fichas.map(f => `
+              <div class="ficha-card">
+                <img src="${f.imagenUrl || 'https://via.placeholder.com/300x180?text=Sin+Imagen'}" class="ficha-img" alt="Propiedad">
+                <div class="ficha-body">
+                  <div class="ficha-price">$${Number(f.precio).toLocaleString('es-MX')}</div>
+                  <div class="ficha-loc">📍 ${f.ubicacion}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        <div class="footer-link">
+          <a href="/agentes-fundadores?ref=${founder.referralCode}">¿Eres asesor? Únete al programa →</a>
+        </div>
+      </div>
+
     </body>
     </html>`;
     res.send(html);

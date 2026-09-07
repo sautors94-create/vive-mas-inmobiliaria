@@ -15,6 +15,21 @@
   <link rel="stylesheet" href="../css/dashboard.css">
   <link rel="stylesheet" href="../css/admin.css">
   <link rel="stylesheet" href="../css/topbar-premium.css">
+  <style>
+    /* CSS PARA COMPRIMIR EL SIDEBAR */
+    .sidebar-collapsed .dashboard-sidebar { width: 70px !important; overflow: hidden; }
+    .sidebar-collapsed .dashboard-sidebar .user-info,
+    .sidebar-collapsed .dashboard-sidebar .sidebar-section-title span,
+    .sidebar-collapsed .dashboard-sidebar .sidebar-link span,
+    .sidebar-collapsed .dashboard-sidebar .sidebar-group-links { display: none !important; }
+    .sidebar-collapsed .dashboard-sidebar .sidebar-link { text-align: center; font-size: 20px; padding: 15px 0; }
+    .sidebar-collapsed .dashboard-sidebar .sidebar-section-title { text-align: center; font-size: 20px; }
+    .sidebar-collapsed .dashboard-sidebar .sidebar-user { justify-content: center; }
+    .sidebar-collapsed .dashboard-sidebar .user-avatar { margin: 0 auto; }
+    @media (min-width: 769px) {
+      .sidebar-collapsed .dashboard-main { margin-left: 70px !important; }
+    }
+  </style>
 </head>
 <body>
 
@@ -83,6 +98,9 @@
 
     <!-- SIDEBAR -->
     <aside class="dashboard-sidebar">
+      
+      <button id="btn-colapsar-sidebar" style="width: calc(100% - 30px); margin: 0 15px 15px 15px; background: var(--bg-secondary); border: 1px solid var(--border); padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; color: var(--text-light);">☰ Comprimir menú</button>
+
       <div class="sidebar-user">
         <div class="user-avatar" style="background:var(--accent-dark)">A</div>
         <div class="user-info">
@@ -539,32 +557,32 @@
         <div class="temas-grid" id="temas-grid">
           <div class="tema-card" onclick="aplicarTema('default')" id="tema-default">
             <div class="tema-preview" style="background:linear-gradient(135deg,#0f1923,#1a472a)"></div>
-            <div class="tema-nombre">Verde bosque</div>
+            <div class="tema-nome">Verde bosque</div>
             <div class="tema-desc">Tema original</div>
           </div>
           <div class="tema-card" onclick="aplicarTema('azul')" id="tema-azul">
             <div class="tema-preview" style="background:linear-gradient(135deg,#0a1628,#1a3a6e)"></div>
-            <div class="tema-nombre">Azul océano</div>
+            <div class="tema-nome">Azul océano</div>
             <div class="tema-desc">Profesional y moderno</div>
           </div>
           <div class="tema-card" onclick="aplicarTema('dorado')" id="tema-dorado">
             <div class="tema-preview" style="background:linear-gradient(135deg,#1a1200,#8B6914)"></div>
-            <div class="tema-nombre">Dorado luxury</div>
+            <div class="tema-nome">Dorado luxury</div>
             <div class="tema-desc">Elegante y premium</div>
           </div>
           <div class="tema-card" onclick="aplicarTema('rojo')" id="tema-rojo">
             <div class="tema-preview" style="background:linear-gradient(135deg,#1a0000,#8B1414)"></div>
-            <div class="tema-nombre">Rojo pasión</div>
+            <div class="tema-nome">Rojo pasión</div>
             <div class="tema-desc">Impactante y dinámico</div>
           </div>
           <div class="tema-card" onclick="aplicarTema('navidad')" id="tema-navidad">
             <div class="tema-preview" style="background:linear-gradient(135deg,#0d1f0d,#8B0000)"></div>
-            <div class="tema-nombre">Navidad</div>
+            <div class="tema-nome">Navidad</div>
             <div class="tema-desc">Temporada decembrina</div>
           </div>
           <div class="tema-card" onclick="aplicarTema('morado')" id="tema-morado">
             <div class="tema-preview" style="background:linear-gradient(135deg,#0f0a1a,#3d1a6e)"></div>
-            <div class="tema-nombre">Morado real</div>
+            <div class="tema-nome">Morado real</div>
             <div class="tema-desc">Sofisticado y único</div>
           </div>
         </div>
@@ -803,7 +821,7 @@
             </div>
             <div class="form-grupo"><label>Usos máximos (vacío = ilimitado)</label><input type="number" id="cupon-usos-max" class="form-input" placeholder="Ilimitado"></div>
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)">
-              <input type="checkbox" id="cupon-activo" checked>
+              <input type="checkbox" id="cupon-ativo" checked>
               Activo
             </label>
           </div>
@@ -1325,7 +1343,7 @@
           </div>
           <div>
             <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Teléfono</label>
-            <input type="text" id="manual-telefono" placeholder="5512345678" style="width:100%;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none">
+            <input type="text" id="manual-telefone" placeholder="5512345678" style="width:100%;padding:10px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none">
           </div>
           <div>
             <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Plan</label>
@@ -1352,7 +1370,7 @@
       </div>
       <div style="padding:16px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;background:#f8fafc">
         <button onclick="cerrarModalImportar()" style="padding:10px 20px;border:2px solid #e5e7eb;border-radius:10px;background:white;font-size:14px;font-weight:600;cursor:pointer;color:#475569">Cancelar</button>
-        <button id="btn-crear-manual" onclick="crearUsuarioManual()" style="padding:10px 24px;border:none;border-radius:10px;background:#1a472a;color:white;font-size:14px;font-weight:600;cursor:pointer">
+        <button id="btn-criar-manual" onclick="criarUsuarioManual()" style="padding:10px 24px;border:none;border-radius:10px;background:#1a472a;color:white;font-size:14px;font-weight:600;cursor:pointer">
           ➕ Crear usuario
         </button>
       </div>
@@ -1489,5 +1507,17 @@
     if (seccion === 'fundadores') cargarFundadoresAdmin();
   };
 </script>
+  <!-- JAVASCRIPT PARA COMPRIMIR SIDEBAR -->
+  <script>
+    document.getElementById('btn-colapsar-sidebar')?.addEventListener('click', () => {
+      document.querySelector('.dashboard-layout').classList.toggle('sidebar-collapsed');
+      const btn = document.getElementById('btn-colapsar-sidebar');
+      if (document.querySelector('.dashboard-layout').classList.contains('sidebar-collapsed')) {
+        btn.innerHTML = '☰';
+      } else {
+        btn.innerHTML = '☰ Comprimir menú';
+      }
+    });
+  </script>
 </body>
 </html>

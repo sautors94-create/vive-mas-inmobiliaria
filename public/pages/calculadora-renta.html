@@ -7,9 +7,23 @@
     <title>Calculadora: ¿Cuánto cobrar de renta? | SomosViveMás</title>
     <meta name="description" content="Calcula gratis y sin registro cuánto deberías cobrar de renta por tu propiedad, comparando con rentas reales publicadas en tu zona.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/herramientas.css">
+    <style>
+      /* CLASES SASS/FINTECH INYECTADAS */
+      .herr-hero { padding-top: 120px; padding-bottom: 40px; }
+      .back-btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--text-light); font-weight: 600; font-size: 14px; margin-bottom: 20px; transition: color 0.2s; }
+      .back-btn:hover { color: var(--primary); }
+      .herr-card { border: 1px solid #e5e7eb; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01); border-radius: 20px; padding: 36px; background: white; }
+      .form-grupo { margin-bottom: 20px; }
+      .form-grupo label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px; letter-spacing: 0.2px; }
+      .form-input { width: 100%; padding: 14px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; font-family: 'Inter', sans-serif; color: #111827; background: #f9fafb; transition: all 0.2s; outline: none; box-sizing: border-box; }
+      .form-input:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(26, 71, 42, 0.1); }
+      .herr-btn { width: 100%; padding: 16px; font-size: 16px; font-weight: 700; border-radius: 12px; margin-top: 10px; border: none; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; }
+      .herr-btn:hover { transform: translateY(-1px); box-shadow: 0 7px 14px rgba(0,0,0,0.1); }
+      .herr-resultado { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 16px; padding: 30px; text-align: center; margin-top: 25px; }
+    </style>
 </head>
 <body>
   <nav class="navbar">
@@ -33,6 +47,7 @@
 
   <div class="herr-hero">
     <div class="container">
+      <a href="herramientas.html" class="back-btn">← Volver a Herramientas</a>
       <span class="herr-tag">🧮 Herramienta gratuita · Sin registro</span>
       <h1>¿Cuánto deberías cobrar de renta?</h1>
       <p>Comparamos con rentas reales ya publicadas en tu zona para darte un estimado confiable — no es una fórmula inventada.</p>

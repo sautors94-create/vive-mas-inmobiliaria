@@ -864,11 +864,10 @@
       });
     }
     // ==================== FUNDADORES ====================
-        // ==================== FUNDADORES ====================
     async function cargarFundadores() {
       try {
-        // CAMBIO: Asegúrate de que la ruta coincida con tu server.js (normalmente es /api/founders)
-        const res = await fetch(`${API_URL}/api/founders/directory-list`);
+        // CORREGIDO: Apuntando a /api/fundadores como lo tienes en tu server.js
+        const res = await fetch(`${API_URL}/api/fundadores/directory-list`);
         const founders = await res.json();
         const grid = document.getElementById('foundersGrid');
         
