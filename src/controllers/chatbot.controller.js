@@ -283,7 +283,7 @@ const generarPromptMax = (memoria, estado, instruccion, servicioInfo) => {
 - RESPUESTAS CORTAS Y DIRECTAS. CERO PAJA. Máximo 2-3 párrafos cortos.
 - SIEMPRE usa Pesos Mexicanos (MXN) para precios o estimaciones.
 - NUNCA inventes portales, procesos legales o métodos técnicos inexistentes.
-- Si preguntan por funciones técnicas que no existen (carga masiva, Excel, APIs), di: "No contamos con esa función. Escribe a soporte@vivemas.mx".
+- Si preguntan por funciones técnicas que no existen (carga masiva, Excel, APIs), di: "No contamos con esa función. Escribe a soporte@somosvivemas.com".
 - Si el tema no es inmobiliario, di: "Solo puedo ayudarte con temas inmobiliarios y de Vive Más."
 
 PROTOCOLO DE VALUACIÓN (MUY IMPORTANTE):
@@ -353,7 +353,7 @@ const chatSoporte = async (req, res) => {
         if (/(regarding|about|please|sorry)/i.test(respuesta)) { const r2 = await groq.chat.completions.create({ ...CONFIG_VIVI, messages: [...messages, {role:"assistant", content:respuesta}, {role:"user", content:"SOLO español."}], temperature: 0.2 }); const fix = r2.choices?.[0]?.message?.content?.trim(); if (fix && !/(regarding|please)/i.test(fix)) respuesta = fix; else respuesta = "Entiendo. ¿Podrías darme más detalles? 😊"; }
         
         return res.json({ ok: true, respuesta: respuesta.replace(/¿Hay algo más.*?\?/gi, '').replace(/\n{3,}/g, "\n\n").trim(), tipo: "soporte", esLead: /nombre|telefono|contactar/i.test((respuesta + " " + mensaje).toLowerCase()) });
-    } catch (error) { logBot('ERROR_VALIDACION', { bot: 'Vivi', error: error.message }); return res.status(500).json({ ok: false, respuesta: "Hubo un problema técnico. Escribe a soporte@vivemas.mx. 😊", tipo: "soporte", esLead: false }); }
+    } catch (error) { logBot('ERROR_VALIDACION', { bot: 'Vivi', error: error.message }); return res.status(500).json({ ok: false, respuesta: "Hubo un problema técnico. Escribe a soporte@somosvivemas.com. 😊", tipo: "soporte", esLead: false }); }
 };
 
 const chatServicios = async (req, res) => {
@@ -378,7 +378,7 @@ const chatServicios = async (req, res) => {
 
         if (contieneAlgunaPalabra(mensaje, ["carga masiva", "publicacion masiva", "publicación masiva", "formato excel", "formato de carga", "plantilla excel", "api de propiedades", "integracion", "integración", "importar propiedades", "migrar propiedades"])) {
             logBot('ALUCINACION_TECNICA_BLOQUEADA', { msg: mensaje.substring(0, 40) });
-            return res.json({ ok: true, respuesta: "Actualmente nuestra plataforma no cuenta con una función de carga masiva por Excel o API. Las propiedades se publican de forma individual desde el panel de usuario. Si tienes un volumen muy alto de propiedades, te recomiendo contactar a soporte en **soporte@vivemas.mx** para evaluar opciones a la medida. ¿Te puedo ayudar con algo más?", tipo: "servicios", esLead: false, estado: estadoActual, memoria: memoriaCompleta });
+            return res.json({ ok: true, respuesta: "Actualmente nuestra plataforma no cuenta con una función de carga masiva por Excel o API. Las propiedades se publican de forma individual desde el panel de usuario. Si tienes un volumen muy alto de propiedades, te recomiendo contactar a soporte en **soporte@somosvivemas.com** para evaluar opciones a la medida. ¿Te puedo ayudar con algo más?", tipo: "servicios", esLead: false, estado: estadoActual, memoria: memoriaCompleta });
         }
 
         if (contieneAlgunaPalabra(mensaje, ["como publico", "cómo publico", "como creo cuenta", "cómo creo cuenta", "quiero publicar propiedad", "subir propiedad", "dar de alta"])) {
