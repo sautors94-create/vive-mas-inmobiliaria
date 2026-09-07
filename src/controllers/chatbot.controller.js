@@ -8,9 +8,9 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 /* ==========================================================
    CONFIGURACIONES DE MODELO
 ========================================================== */
-// llama-3.3-70b-versatile fue dado de baja por Groq (agosto 2026). Migrado a su reemplazo recomendado.
-const CONFIG_VIVI = { model: "openai/gpt-oss-120b", temperature: 0.5, top_p: 0.85, frequency_penalty: 0.5, presence_penalty: 0.2, max_tokens: 250 };
-const CONFIG_MAX = { model: "openai/gpt-oss-120b", temperature: 0.6, top_p: 0.85, frequency_penalty: 0.4, presence_penalty: 0.1, max_tokens: 300 };
+// Ajustado: Menos tokens máximos y mayor penalización por repetición para evitar respuestas largas y "paja".
+const CONFIG_VIVI = { model: "openai/gpt-oss-120b", temperature: 0.4, top_p: 0.8, frequency_penalty: 0.6, presence_penalty: 0.3, max_tokens: 150 };
+const CONFIG_MAX = { model: "openai/gpt-oss-120b", temperature: 0.4, top_p: 0.8, frequency_penalty: 0.6, presence_penalty: 0.3, max_tokens: 200 };
 
 /* ==========================================================
    SISTEMA DE LOGS ESTRUCTURADOS
@@ -261,57 +261,65 @@ const gestionarFlujo = (m, e, mem) => {
     return mem.tipoFlujo === 'propiedad' ? FLUJO_PROPIEDAD.transicionar(m, e, mem) : FLUJO_SERVICIO.transicionar(m, e, mem);
 };
 
+// Respuestas humanizadas y concisas
 const RESPUESTAS_DIRECTAS = { 
     pedir_uso: ["¿Es para vivir o como inversión?"], 
     pedir_presupuesto: ["¿Cuál es tu presupuesto aproximado?"], 
     pedir_datos: ["Perfecto. Para que un asesor te contacte, ¿me compartes tu nombre, teléfono y correo?"],
     cerrar: [
-        "¡Perfecto! Ya tengo tus datos. Un asesor se pondrá en contacto contigo pronto.",
-        "Excelente. Un asesor te llamará próximamente para ayudarte.",
-        "Listo, ya guardé tu información. Un asesor te contactará muy pronto."
+        "¡Listo! Un asesor se pondrá en contacto contigo muy pronto.",
+        "Perfecto, ya tengo tus datos. Un asesor te llamará en breve.",
+        "Listo. Un asesor te contactará próximamente."
     ]
 };
 const obtenerRespuestaDirecta = (i) => { const o = RESPUESTAS_DIRECTAS[i]; return o ? o[Math.floor(Math.random() * o.length)] : null; };
 
 /* ==========================================================
-   PROMPT DE MAX
+   PROMPT DE MAX (Humanizado, Conciso y con Lógica de Valuación)
 ========================================================== */
 const generarPromptMax = (memoria, estado, instruccion, servicioInfo) => {
-    let p = `REGLAS DE SEGURIDAD:
-- SOLO español. NUNCA digas que eres IA.
-- NUNCA inventes portales, procesos legales o métodos.
-- Si el usuario habla de temas NO relacionados (deportes, clima, recetas, política), responde ÚNICAMENTE: "Puedo ayudarte únicamente con servicios inmobiliarios, administración y soporte de Vive Más. ¿Tienes alguna consulta sobre esto?"
-- ANTI-ALUCINACIONES TÉCNICAS: Si el usuario pregunta por FUNCIONES TÉCNICAS de la plataforma que NO estén en tu información (ej: "carga masiva", "subir Excel", "APIs", "formato de carga", "migrar datos", "publicar masivo"), NUNCA las inventes. Di: "Actualmente no contamos con esa función. Te recomiendo escribir a soporte@vivemas.mx para ver opciones a la medida."
-- Si el usuario muestra frustración ("no sirves", "no me ayudas"), discúlpate y ofrece hablar con un humano. NUNCA respondas de forma robótica.
+    let p = `REGLAS ESTRICTAS DE COMPORTAMIENTO:
+- NUNCA digas que eres una IA. Eres Max, asesor inmobiliario de Vive Más.
+- RESPUESTAS CORTAS Y DIRECTAS. CERO PAJA. Máximo 2-3 párrafos cortos.
+- SIEMPRE usa Pesos Mexicanos (MXN) para precios o estimaciones.
+- NUNCA inventes portales, procesos legales o métodos técnicos inexistentes.
+- Si preguntan por funciones técnicas que no existen (carga masiva, Excel, APIs), di: "No contamos con esa función. Escribe a soporte@vivemas.mx".
+- Si el tema no es inmobiliario, di: "Solo puedo ayudarte con temas inmobiliarios y de Vive Más."
 
-Eres Max, asesor inmobiliario de Vive Más.`;
+PROTOCOLO DE VALUACIÓN (MUY IMPORTANTE):
+Si el usuario pide un avalúo, estimado de valor, o cuánto cobrar de renta:
+PASO 1: Da un "Pronóstico Rápido". Usa tu conocimiento del mercado inmobiliario mexicano para dar un rango de precio en MXN basado en la zona, tipo de propiedad y metros cuadrados. (Ej: "Para un local de 6m2 en Tlalpan, el rango de renta estimado es de $5,000 a $8,000 MXN mensuales").
+PASO 2: Inmediatamente después del estimado, pregunta: "¿Te gustaría que un asesor certificado te contacte para un avalúo profesional exacto? Si es así, dime tu nombre y WhatsApp".
+PASO 3: NUNCA pidas datos de contacto ANTES de haber dado el estimado rápido al usuario.`;
     
     if (servicioInfo) {
-        p += `\n\n--- INFORMACIÓN EXACTA ---\nServicio: ${servicioInfo.nombre}\nPara quién: ${servicioInfo.objetivo}\nBeneficio: ${servicioInfo.beneficio}\nIncluye: ${servicioInfo.incluye.join(', ')}\n${servicioInfo.precio ? `Precio: ${servicioInfo.precio}` : (servicioInfo.requiereCotizacion ? 'Precio: Requiere cotización personalizada.' : '')}\nCTA: "${servicioInfo.cta}"\n--- FIN ---\nExplica esto destacando el BENEFICIO, usa el CTA y pregunta la ciudad.`;
+        p += `\n\n--- SERVICIO DETECTADO ---\nServicio: ${servicioInfo.nombre}\nBeneficio: ${servicioInfo.beneficio}\nIncluye: ${servicioInfo.incluye.join(', ')}\n`;
+        if (servicioInfo.precio) p += `Precio: ${servicioInfo.precio}\n`;
+        p += `\nINSTRUCCIÓN: Responde a la duda del usuario. Si pide valuación, dala. Si pide info, da el beneficio y usa el CTA: "${servicioInfo.cta}"`;
     }
 
-    p += `\n\nMEMORIA:\n✅ Servicio: ${memoria.servicio ? SERVICIOS_VIVE_MAS[memoria.servicio]?.nombre : 'Por detectar'}\n✅ Ciudad: ${memoria.ciudad || 'No'}\n`;
-    if (memoria.tipoFlujo === 'propiedad') p += `✅ Uso: ${memoria.uso || 'No'}\n✅ Presupuesto: ${memoria.presupuesto || 'No'}\n`;
-    p += `✅ Nombre: ${memoria.nombre || 'No'}\n✅ Tel: ${memoria.telefono || 'No'}\n✅ Email: ${memoria.email || 'No'}\n\nESTADO: ${estado}`;
+    p += `\n\n--- MEMORIA ---\nServicio: ${memoria.servicio ? SERVICIOS_VIVE_MAS[memoria.servicio]?.nombre : 'Por detectar'}\nCiudad: ${memoria.ciudad || 'No'}\n`;
+    if (memoria.tipoFlujo === 'propiedad') p += `Uso: ${memoria.uso || 'No'}\nPresupuesto: ${memoria.presupuesto || 'No'}\n`;
+    p += `Nombre: ${memoria.nombre || 'No'}\nTel: ${memoria.telefono || 'No'}\nEmail: ${memoria.email || 'No'}\nEstado: ${estado}`;
 
     const inst = { 
-        pedir_uso: "Confirma ciudad. Pregunta si es para vivir o inversión.", 
-        pedir_presupuesto: "Confirma uso. Pregunta presupuesto.", 
-        pedir_datos: "Confirma datos. Pide nombre, teléfono y email.", 
-        explicar_servicio: "Explica servicio mencionando objetivo y beneficio. Usa CTA y pregunta ciudad.",
-        cerrar: "Confirma datos del usuario. Dile que un asesor se contactará pronto. NO expliques el proceso.",
-        esperar_ciudad: "Confirma brevemente que entendiste al usuario. Después pregunta en qué ciudad o zona busca la propiedad.",
-        esperar_uso: "Confirma brevemente la ciudad. Después pregunta si la propiedad es para vivir o como inversión.",
-        esperar_presupuesto: "Confirma brevemente el uso. Después pregunta cuál es su presupuesto aproximado."
+        pedir_uso: "Confirma brevemente la ciudad. Pregunta si es para vivir o inversión.", 
+        pedir_presupuesto: "Confirma el uso. Pregunta el presupuesto aproximado.", 
+        pedir_datos: "Pide nombre, teléfono y email para contactarlo.", 
+        explicar_servicio: "Responde a su duda, menciona el beneficio y pregunta la ciudad.",
+        cerrar: "Confirma que un asesor lo contactará. No expliques más el proceso.",
+        esperar_ciudad: "Confirma brevemente. Pregunta en qué ciudad o zona.",
+        esperar_uso: "Confirma la ciudad. Pregunta si es para vivir o inversión.",
+        esperar_presupuesto: "Confirma el uso. Pregunta el presupuesto."
     };
     
-    if (inst[instruccion]) p += `\n\nINSTRUCCIÓN: ${inst[instruccion]}`;
+    if (inst[instruccion]) p += `\nACCIÓN ACTUAL: ${inst[instruccion]}`;
     
     if (memoria.uso === 'No especificado' || memoria.presupuesto === 'No especificado') {
-        p += `\n\n¡IMPORTANTE! El usuario previamente respondió "no importa" o similar para un dato. NO vuelvas a preguntar sobre ese tema. Avanza a la siguiente pregunta pendiente.`;
+        p += `\n\n¡IMPORTANTE! El usuario respondió "no importa" a una pregunta previa. NO vuelvas a preguntar eso. Avanza al siguiente paso.`;
     }
     
-    p += `\n\nFecha: ${getFechaActual()}`;
+    p += `\n\nFecha de hoy: ${getFechaActual()}`;
     return p;
 };
 
@@ -358,33 +366,26 @@ const chatServicios = async (req, res) => {
 
         const memoriaCompleta = sanitizarMemoria(memoriaRaw);
 
-        // MANEJO INTELIGENTE DE INTENCIONES (Sin pasar al LLM)
-        
-        // 1. Despedidas
         if (contieneAlgunaPalabra(mensaje, ["gracias", "muchas gracias", "adios", "adiós", "nos vemos", "bye", "hasta luego", "que tengas buen dia"])) {
             logBot('DESPEDIDA_DETECTADA', { msg: mensaje.substring(0, 30) });
             return res.json({ ok: true, respuesta: "¡Hasta luego! Si necesitas algo más en el futuro, aquí estaré. ¡Que tengas un excelente día! 😊", tipo: "servicios", esLead: false, estado: estadoActual, memoria: memoriaCompleta });
         }
 
-        // 2. Frustración directa
         if (contieneAlgunaPalabra(mensaje, ["no sirves", "no me sirves", "eres inutil", "eres inútil", "no sabes", "no me ayudaste", "malo", "pesimo", "pésimo"])) {
             logBot('FRUSTRACION_DETECTADA', { msg: mensaje.substring(0, 30) });
             return res.json({ ok: true, respuesta: "Lamento mucho no haber podido ayudarte como esperabas. Si quieres, puedo conectarte con un asesor humano que tal vez tenga una solución diferente para ti. ¿O prefieres intentar con otra consulta?", tipo: "servicios", esLead: true, redireccion: { tipo: "humano" }, estado: estadoActual, memoria: memoriaCompleta });
         }
 
-        // 3. Preguntas técnicas inexistentes
         if (contieneAlgunaPalabra(mensaje, ["carga masiva", "publicacion masiva", "publicación masiva", "formato excel", "formato de carga", "plantilla excel", "api de propiedades", "integracion", "integración", "importar propiedades", "migrar propiedades"])) {
             logBot('ALUCINACION_TECNICA_BLOQUEADA', { msg: mensaje.substring(0, 40) });
             return res.json({ ok: true, respuesta: "Actualmente nuestra plataforma no cuenta con una función de carga masiva por Excel o API. Las propiedades se publican de forma individual desde el panel de usuario. Si tienes un volumen muy alto de propiedades, te recomiendo contactar a soporte en **soporte@vivemas.mx** para evaluar opciones a la medida. ¿Te puedo ayudar con algo más?", tipo: "servicios", esLead: false, estado: estadoActual, memoria: memoriaCompleta });
         }
 
-        // 4. Preguntas sobre la plataforma
         if (contieneAlgunaPalabra(mensaje, ["como publico", "cómo publico", "como creo cuenta", "cómo creo cuenta", "quiero publicar propiedad", "subir propiedad", "dar de alta"])) {
             logBot('CONSULTA_PLATAFORMA');
             return res.json({ ok: true, respuesta: "Para publicar propiedades en Vive Más, primero debes crear tu cuenta en nuestra plataforma desde la página principal. Una vez dentro de tu panel, puedes agregar tus propiedades individualmente llenando los datos y subiendo las fotos. Si tienes dudas sobre los planes disponibles, con gusto te las explico. ¿Te gustaría saber sobre nuestros planes?", tipo: "servicios", esLead: false, estado: estadoActual, memoria: memoriaCompleta });
         }
 
-        // 5. PETICIÓN DIRECTA DE ASESOR
         const quiereAsesorExplicito = contieneAlgunaPalabra(mensaje, [
             "quiero un asesor", "me gustaria un asesor", "me gustaría un asesor", 
             "necesito un asesor", "asignar asesor", "hablar con asesor", "contactar asesor",
@@ -436,7 +437,6 @@ const chatServicios = async (req, res) => {
             });
         }
 
-        // 6. Manejo de baja confianza en servicios
         if (!memoriaCompleta.servicio) {
             const deteccion = detectarTipoServicio(mensaje);
             if (deteccion && deteccion.aclarar) {
@@ -446,7 +446,6 @@ const chatServicios = async (req, res) => {
             }
         }
 
-        // Preguntar por PRECIO usando datos estructurados
         if (memoriaCompleta.servicio && esPreguntaDePrecio(mensaje)) {
             const servicio = SERVICIOS_VIVE_MAS[memoriaCompleta.servicio];
             if (servicio) {
@@ -455,7 +454,6 @@ const chatServicios = async (req, res) => {
             }
         }
 
-        // Buscar en FAQ usando sinónimos
         if (memoriaCompleta.servicio) {
             const respFAQ = buscarEnFAQ(mensaje, memoriaCompleta.servicio);
             if (respFAQ) {
@@ -482,7 +480,6 @@ const chatServicios = async (req, res) => {
             respuesta = respuesta.replace(/¿Hay algo más.*?\?/gi, "").replace(/\n{3,}/g, "\n\n").trim();
         }
 
-        // Generar folio si tenemos datos completos
         const tieneDatosCompletos = memoriaCompleta.nombre && memoriaCompleta.telefono;
         const llmIntentoCerrar = contieneAlgunaPalabra(respuesta, ["contactara pronto", "te contactara", "te llamar", "te llamaremos", "te pondra en contacto"]);
         
