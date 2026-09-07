@@ -11,10 +11,15 @@
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/herramientas.css">
     <style>
-      /* CLASES SASS/FINTECH INYECTADAS */
       .herr-hero { padding-top: 120px; padding-bottom: 40px; }
-      .back-btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--text-light); font-weight: 600; font-size: 14px; margin-bottom: 20px; transition: color 0.2s; }
-      .back-btn:hover { color: var(--primary); }
+      .back-btn {
+        display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+        color: var(--primary); background: white; padding: 10px 18px;
+        border-radius: 30px; border: 1px solid #e5e7eb; font-weight: 600;
+        font-size: 14px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        transition: all 0.2s;
+      }
+      .back-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 14px rgba(0,0,0,0.1); border-color: var(--primary); }
       .herr-card { border: 1px solid #e5e7eb; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01); border-radius: 20px; padding: 36px; background: white; }
       .form-grupo { margin-bottom: 20px; }
       .form-grupo label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px; letter-spacing: 0.2px; }
@@ -90,16 +95,12 @@
         <div class="herr-resultado-meta" id="resultado-meta"></div>
       </div>
 
-      <div id="sin-datos" class="herr-aviso" style="display:none">
-        Todavía no tenemos suficientes propiedades en venta publicadas en tu zona para un estimado confiable. Solicita un avalúo real con uno de nuestros asesores — es gratis.
-      </div>
-
       <p class="herr-disclaimer">
         ⚠️ Este es solo un <strong>pronóstico orientativo</strong> basado en propiedades comparables, <strong>no es un avalúo real ni un dictamen certificado</strong>. El valor final depende de una inspección física, documentación, ubicación exacta y condiciones del mercado al momento de vender.
       </p>
 
       <div class="herr-ctas">
-        <button onclick="pedirAvaluoReal()" class="btn btn-accent herr-btn">📋 Solicitar avalúo real con un asesor</button>
+        <button onclick="pedirAvaluoReal()" class="btn btn-accent herr-btn">📋 Solicitar avalúo profesional con un asesor</button>
         <a href="registro.html" class="btn btn-outline">📢 Publicar esta propiedad gratis en SomosViveMás</a>
       </div>
     </div>
@@ -142,19 +143,19 @@
       const estado = document.getElementById('estado').value.trim();
       const ciudad = document.getElementById('ciudad').value.trim();
 
-      const resultadoEl = document.getElementById('resultado');
-      const sinDatosEl = document.getElementById('sin-datos');
-      resultadoEl.style.display = 'none';
-      sinDatosEl.style.display = 'none';
-
       if (!estado || !ciudad) {
-        alert('Ingresa el estado y la ciudad de la propiedad.');
+        alert('Ingresa el estado y la ciudad de la propiedad para calcular.');
         return;
       }
 
       const btn = document.getElementById('btn-calcular');
       btn.disabled = true;
-      btn.textContent = 'Calculando...';
+      btn.textContent = 'Buscando datos...';
+
+      const resultadoEl = document.getElementById('resultado');
+      resultadoEl.style.display = 'none';
+
+      let usoDatosReales = false;
 
       try {
         const params = new URLSearchParams({ operacion: 'venta', tipo, estado, ciudad });
@@ -162,29 +163,51 @@
         const res = await fetch(`/api/herramientas/avaluo?${params.toString()}`);
         const data = await res.json();
 
-        if (data.ok && data.encontrados >= 3) {
+        if (data.ok && data.estimado) {
           document.getElementById('resultado-fuente').textContent =
-            `Comparado con ${data.encontrados} propiedades reales en tu ${data.ambito === 'ciudad' ? 'ciudad' : 'estado'}`;
+            `Estimado basado en ${data.encontrados} propiedades reales en tu ${data.ambito === 'ciudad' ? 'ciudad' : 'estado'}`;
           document.getElementById('valorResultado').textContent = '$' + data.estimado.toLocaleString('es-MX') + ' MXN';
-          document.getElementById('rangoResultado').textContent =
-            `$${data.rangoBajo.toLocaleString('es-MX')} - $${data.rangoAlto.toLocaleString('es-MX')} MXN`;
-          document.getElementById('resultado-meta').textContent = data.confiable ? '' : 'Muestra pequeña — toma este número con cautela.';
+          
+          const rangoBajo = data.rangoBajo || Math.round(data.estimado * 0.9);
+          const rangoAlto = data.rangoAlto || Math.round(data.estimado * 1.1);
+          document.getElementById('rangoResultado').textContent = `$${rangoBajo.toLocaleString('es-MX')} - $${rangoAlto.toLocaleString('es-MX')} MXN`;
+          document.getElementById('resultado-meta').textContent = data.confiable ? '' : 'Estimación preliminar (pocos comparables en la zona).';
           resultadoEl.style.display = 'block';
-        } else {
-          sinDatosEl.style.display = 'block';
+          usoDatosReales = true;
         }
-      } catch (e) {
-        sinDatosEl.style.display = 'block';
-      }
+      } catch (e) { /* si falla, pasa al bot */ }
 
-      btn.disabled = false;
-      btn.textContent = 'Calcular valor estimado';
+      // SI NO HAY DATOS EN LA ZONA, MANDAMOS DIRECTO AL BOT MAX
+      if (!usoDatosReales) {
+        btn.textContent = 'Conectando con Max...';
+        const mensaje = `Hola Max. Intenté calcular el avalúo de un ${tipo} en ${ciudad}, ${estado}${m2 ? ` de ${m2} m2` : ''}, pero no hay suficientes datos en la zona. ¿Me ayudas a conseguir un estimado o un avalúo profesional?`;
+        
+        setTimeout(() => {
+          if (window.chatbots && window.chatbots['servicios']) {
+            window.chatbots['servicios'].toggle();
+            setTimeout(() => {
+              const input = document.getElementById('chatbot-servicios-input');
+              if (input) {
+                input.value = mensaje;
+                window.chatbots['servicios'].enviar();
+              }
+            }, 400);
+          } else {
+            alert('No encontramos datos en esta zona. Por favor contáctanos por WhatsApp para ayudarte.');
+          }
+          btn.disabled = false;
+          btn.textContent = 'Calcular valor estimado';
+        }, 800);
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Calcular valor estimado';
+      }
     }
 
     function pedirAvaluoReal() {
       const tipo = document.getElementById('tipo').value;
       const ciudad = document.getElementById('ciudad').value.trim();
-      const mensaje = `Hola, quiero solicitar un avalúo real de mi ${tipo}${ciudad ? ' en ' + ciudad : ''}. Ya usé la calculadora del sitio y quiero información más precisa.`;
+      const mensaje = `Hola Max, quiero solicitar un avalúo profesional de mi ${tipo}${ciudad ? ' en ' + ciudad : ''}.`;
       if (window.chatbots && window.chatbots['servicios']) {
         window.chatbots['servicios'].toggle();
         setTimeout(() => {

@@ -11,10 +11,15 @@
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/herramientas.css">
     <style>
-      /* CLASES SASS/FINTECH INYECTADAS */
       .herr-hero { padding-top: 120px; padding-bottom: 40px; }
-      .back-btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--text-light); font-weight: 600; font-size: 14px; margin-bottom: 20px; transition: color 0.2s; }
-      .back-btn:hover { color: var(--primary); }
+      .back-btn {
+        display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+        color: var(--primary); background: white; padding: 10px 18px;
+        border-radius: 30px; border: 1px solid #e5e7eb; font-weight: 600;
+        font-size: 14px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        transition: all 0.2s;
+      }
+      .back-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 14px rgba(0,0,0,0.1); border-color: var(--primary); }
       .herr-card { border: 1px solid #e5e7eb; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01); border-radius: 20px; padding: 36px; background: white; }
       .form-grupo { margin-bottom: 20px; }
       .form-grupo label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px; letter-spacing: 0.2px; }
@@ -93,10 +98,6 @@
         <div class="herr-resultado-meta" id="resultado-meta"></div>
       </div>
 
-      <div id="sin-datos" class="herr-aviso" style="display:none">
-        Todavía no tenemos suficientes rentas publicadas en tu zona para un estimado confiable. Solicita información con uno de nuestros asesores.
-      </div>
-
       <p class="herr-disclaimer">
         ⚠️ Este es un <strong>pronóstico orientativo</strong>, no un avalúo profesional. Los precios reales dependen de condiciones, amenidades y ubicación exacta.
       </p>
@@ -135,7 +136,7 @@
         const estados = [...new Set(ciudadesCache.map(c => c.estado))];
         document.getElementById('lista-estados').innerHTML = estados.map(e => `<option value="${e}">`).join('');
         document.getElementById('lista-ciudades').innerHTML = ciudadesCache.map(c => `<option value="${c.ciudad}">`).join('');
-      } catch (e) { /* silencioso: la calculadora sigue funcionando con el heurístico */ }
+      } catch (e) { /* silencioso */ }
     }
     cargarCiudades();
 
@@ -146,48 +147,59 @@
       const ciudad = document.getElementById('ciudad').value.trim();
       const valorComercial = parseFloat(document.getElementById('valor').value);
 
-      const resultadoEl = document.getElementById('resultado');
-      const sinDatosEl = document.getElementById('sin-datos');
-      resultadoEl.style.display = 'none';
-      sinDatosEl.style.display = 'none';
+      if (!estado || !ciudad) {
+        alert('Ingresa el estado y la ciudad de la propiedad para calcular.');
+        return;
+      }
 
       const btn = document.getElementById('btn-calcular');
       btn.disabled = true;
-      btn.textContent = 'Calculando...';
+      btn.textContent = 'Buscando datos...';
+
+      const resultadoEl = document.getElementById('resultado');
+      resultadoEl.style.display = 'none';
 
       let usoDatosReales = false;
 
       try {
-        if (estado && ciudad) {
-          const params = new URLSearchParams({ operacion: 'renta', tipo, estado, ciudad });
-          if (m2) params.set('m2', m2);
-          const res = await fetch(`/api/herramientas/avaluo?${params.toString()}`);
-          const data = await res.json();
+        const params = new URLSearchParams({ operacion: 'renta', tipo, estado, ciudad });
+        if (m2) params.set('m2', m2);
+        const res = await fetch(`/api/herramientas/avaluo?${params.toString()}`);
+        const data = await res.json();
 
-          if (data.ok && data.encontrados >= 3) {
-            mostrarResultado(data.estimado, data.rangoBajo, data.rangoAlto,
-              `Comparado con ${data.encontrados} rentas reales en tu ${data.ambito === 'ciudad' ? 'ciudad' : 'estado'}`,
-              data.confiable ? '' : 'Muestra pequeña — toma este número con cautela.');
-            usoDatosReales = true;
-          }
+        if (data.ok && data.estimado) {
+          mostrarResultado(data.estimado, data.rangoBajo, data.rangoAlto,
+            `Comparado con ${data.encontrados} rentas reales en tu ${data.ambito === 'ciudad' ? 'ciudad' : 'estado'}`,
+            data.confiable ? '' : 'Muestra pequeña — toma este número con cautela.');
+          usoDatosReales = true;
         }
-      } catch (e) { /* seguimos al heurístico */ }
+      } catch (e) { /* si falla, pasa al bot */ }
 
+      // SI NO HAY DATOS EN LA ZONA, MANDAMOS DIRECTO AL BOT MAX
       if (!usoDatosReales) {
-        if (!valorComercial || valorComercial <= 0) {
-          sinDatosEl.style.display = 'block';
+        btn.textContent = 'Conectando con Max...';
+        const mensaje = `Hola Max. Intenté calcular la renta de un ${tipo} en ${ciudad}, ${estado}${m2 ? ` de ${m2} m2` : ''}${valorComercial ? ` (valor aprox: $${valorComercial})` : ''}, pero no hay suficientes datos en la zona. ¿Me ayudas a conseguir un estimado de renta?`;
+        
+        setTimeout(() => {
+          if (window.chatbots && window.chatbots['servicios']) {
+            window.chatbots['servicios'].toggle();
+            setTimeout(() => {
+              const input = document.getElementById('chatbot-servicios-input');
+              if (input) {
+                input.value = mensaje;
+                window.chatbots['servicios'].enviar();
+              }
+            }, 400);
+          } else {
+            alert('No encontramos datos en esta zona. Por favor contáctanos por WhatsApp para ayudarte.');
+          }
           btn.disabled = false;
           btn.textContent = 'Calcular renta estimada';
-          return;
-        }
-        const porcentajes = { departamento: 0.006, casa: 0.0055, local: 0.007 };
-        const renta = Math.round(valorComercial * (porcentajes[tipo] || 0.006));
-        mostrarResultado(renta, Math.round(renta * 0.9), Math.round(renta * 1.15),
-          'Estimado con base en el valor comercial (aún no hay suficientes rentas similares en tu zona)', '');
+        }, 800);
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Calcular renta estimada';
       }
-
-      btn.disabled = false;
-      btn.textContent = 'Calcular renta estimada';
     }
 
     function mostrarResultado(estimado, bajo, alto, fuente, meta) {
@@ -201,7 +213,7 @@
     function pedirAvaluoReal() {
       const tipo = document.getElementById('tipo').value;
       const ciudad = document.getElementById('ciudad').value.trim();
-      const mensaje = `Hola, quiero información sobre cuánto podría rentar mi ${tipo}${ciudad ? ' en ' + ciudad : ''}. ¿Me pueden ayudar con un avalúo real?`;
+      const mensaje = `Hola Max, quiero información sobre cuánto podría rentar mi ${tipo}${ciudad ? ' en ' + ciudad : ''}.`;
       if (window.chatbots && window.chatbots['servicios']) {
         window.chatbots['servicios'].toggle();
         setTimeout(() => {
