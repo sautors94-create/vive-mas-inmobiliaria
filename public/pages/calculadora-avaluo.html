@@ -4,8 +4,8 @@
     <script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora: ¿Cuánto cobrar de renta? | SomosViveMás</title>
-    <meta name="description" content="Calcula gratis y sin registro cuánto deberías cobrar de renta por tu propiedad, comparando con rentas reales publicadas en tu zona.">
+    <title>Calculadora de Avalúo: ¿Cuánto vale tu propiedad? | SomosViveMás</title>
+    <meta name="description" content="Calcula gratis y sin registro un estimado del valor de venta de tu casa, departamento, terreno o local, comparando con propiedades reales en tu zona.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/styles.css">
@@ -33,9 +33,9 @@
 
   <div class="herr-hero">
     <div class="container">
-      <span class="herr-tag">🧮 Herramienta gratuita · Sin registro</span>
-      <h1>¿Cuánto deberías cobrar de renta?</h1>
-      <p>Comparamos con rentas reales ya publicadas en tu zona para darte un estimado confiable — no es una fórmula inventada.</p>
+      <span class="herr-tag">📊 Herramienta gratuita · Sin registro</span>
+      <h1>¿Cuánto vale tu propiedad?</h1>
+      <p>Comparamos con propiedades reales en venta en tu zona para darte un rango de precio orientativo — construir patrimonio empieza por conocer su valor real.</p>
     </div>
   </div>
 
@@ -45,55 +45,52 @@
         <div class="form-grupo">
           <label>Tipo de propiedad</label>
           <select id="tipo" class="form-input">
-            <option value="departamento">Departamento</option>
             <option value="casa">Casa</option>
+            <option value="departamento">Departamento</option>
+            <option value="terreno">Terreno</option>
             <option value="local">Local comercial</option>
           </select>
         </div>
         <div class="form-grupo">
-          <label>Metros cuadrados (opcional, mejora la precisión)</label>
-          <input type="number" id="m2" class="form-input" placeholder="Ej: 85">
+          <label>Metros cuadrados (mejora mucho la precisión)</label>
+          <input type="number" id="m2" class="form-input" placeholder="Ej: 180">
         </div>
         <div class="form-grupo">
           <label>Estado</label>
-          <input type="text" id="estado" class="form-input" list="lista-estados" placeholder="Ej: Ciudad de México" autocomplete="off">
+          <input type="text" id="estado" class="form-input" list="lista-estados" placeholder="Ej: Jalisco" autocomplete="off">
           <datalist id="lista-estados"></datalist>
         </div>
         <div class="form-grupo">
           <label>Ciudad / Municipio</label>
-          <input type="text" id="ciudad" class="form-input" list="lista-ciudades" placeholder="Ej: Coyoacán" autocomplete="off">
+          <input type="text" id="ciudad" class="form-input" list="lista-ciudades" placeholder="Ej: Zapopan" autocomplete="off">
           <datalist id="lista-ciudades"></datalist>
         </div>
-        <div class="form-grupo" style="grid-column:1/-1">
-          <label>Valor comercial aproximado (opcional — se usa si no hay suficientes rentas similares en tu zona)</label>
-          <input type="number" id="valor" class="form-input" placeholder="Ej: 2500000">
-        </div>
       </div>
-      <button onclick="calcularRenta()" class="btn btn-primary herr-btn" id="btn-calcular">Calcular renta estimada</button>
+      <button onclick="calcularAvaluo()" class="btn btn-primary herr-btn" id="btn-calcular">Calcular valor estimado</button>
 
       <div id="resultado" class="herr-resultado" style="display:none">
-        <div class="herr-resultado-label" id="resultado-fuente">Estimado basado en rentas similares en tu zona</div>
-        <div class="herr-resultado-precio" id="rentaResultado">$0</div>
-        <div class="herr-resultado-rango">Rango sugerido: <span id="rangoResultado"></span></div>
+        <div class="herr-resultado-label" id="resultado-fuente">Comparado con propiedades reales en tu zona</div>
+        <div class="herr-resultado-precio" id="valorResultado">$0</div>
+        <div class="herr-resultado-rango">Rango estimado: <span id="rangoResultado"></span></div>
         <div class="herr-resultado-meta" id="resultado-meta"></div>
       </div>
 
       <div id="sin-datos" class="herr-aviso" style="display:none">
-        Todavía no tenemos suficientes rentas publicadas en tu zona para un estimado confiable. Solicita información con uno de nuestros asesores.
+        Todavía no tenemos suficientes propiedades en venta publicadas en tu zona para un estimado confiable. Solicita un avalúo real con uno de nuestros asesores — es gratis.
       </div>
 
       <p class="herr-disclaimer">
-        ⚠️ Este es un <strong>pronóstico orientativo</strong>, no un avalúo profesional. Los precios reales dependen de condiciones, amenidades y ubicación exacta.
+        ⚠️ Este es solo un <strong>pronóstico orientativo</strong> basado en propiedades comparables, <strong>no es un avalúo real ni un dictamen certificado</strong>. El valor final depende de una inspección física, documentación, ubicación exacta y condiciones del mercado al momento de vender.
       </p>
 
       <div class="herr-ctas">
-        <button onclick="pedirAvaluoReal()" class="btn btn-outline">💬 Hablar con un asesor sobre mi propiedad</button>
-        <a href="registro.html" class="btn btn-primary">📢 Publicar gratis en SomosViveMás</a>
+        <button onclick="pedirAvaluoReal()" class="btn btn-accent herr-btn">📋 Solicitar avalúo real con un asesor</button>
+        <a href="registro.html" class="btn btn-outline">📢 Publicar esta propiedad gratis en SomosViveMás</a>
       </div>
     </div>
 
     <div class="herr-otra">
-      ¿Quieres vender en vez de rentar? Prueba la <a href="calculadora-avaluo.html">Calculadora de Avalúo →</a>
+      ¿Vas a rentar en vez de vender? Prueba la <a href="calculadora-renta.html">Calculadora de Renta →</a>
     </div>
   </div>
 
@@ -120,73 +117,59 @@
         const estados = [...new Set(ciudadesCache.map(c => c.estado))];
         document.getElementById('lista-estados').innerHTML = estados.map(e => `<option value="${e}">`).join('');
         document.getElementById('lista-ciudades').innerHTML = ciudadesCache.map(c => `<option value="${c.ciudad}">`).join('');
-      } catch (e) { /* silencioso: la calculadora sigue funcionando con el heurístico */ }
+      } catch (e) { /* silencioso */ }
     }
     cargarCiudades();
 
-    async function calcularRenta() {
+    async function calcularAvaluo() {
       const tipo = document.getElementById('tipo').value;
       const m2 = document.getElementById('m2').value;
       const estado = document.getElementById('estado').value.trim();
       const ciudad = document.getElementById('ciudad').value.trim();
-      const valorComercial = parseFloat(document.getElementById('valor').value);
 
       const resultadoEl = document.getElementById('resultado');
       const sinDatosEl = document.getElementById('sin-datos');
       resultadoEl.style.display = 'none';
       sinDatosEl.style.display = 'none';
 
+      if (!estado || !ciudad) {
+        alert('Ingresa el estado y la ciudad de la propiedad.');
+        return;
+      }
+
       const btn = document.getElementById('btn-calcular');
       btn.disabled = true;
       btn.textContent = 'Calculando...';
 
-      let usoDatosReales = false;
-
       try {
-        if (estado && ciudad) {
-          const params = new URLSearchParams({ operacion: 'renta', tipo, estado, ciudad });
-          if (m2) params.set('m2', m2);
-          const res = await fetch(`/api/herramientas/avaluo?${params.toString()}`);
-          const data = await res.json();
+        const params = new URLSearchParams({ operacion: 'venta', tipo, estado, ciudad });
+        if (m2) params.set('m2', m2);
+        const res = await fetch(`/api/herramientas/avaluo?${params.toString()}`);
+        const data = await res.json();
 
-          if (data.ok && data.encontrados >= 3) {
-            mostrarResultado(data.estimado, data.rangoBajo, data.rangoAlto,
-              `Comparado con ${data.encontrados} rentas reales en tu ${data.ambito === 'ciudad' ? 'ciudad' : 'estado'}`,
-              data.confiable ? '' : 'Muestra pequeña — toma este número con cautela.');
-            usoDatosReales = true;
-          }
-        }
-      } catch (e) { /* seguimos al heurístico */ }
-
-      if (!usoDatosReales) {
-        if (!valorComercial || valorComercial <= 0) {
+        if (data.ok && data.encontrados >= 3) {
+          document.getElementById('resultado-fuente').textContent =
+            `Comparado con ${data.encontrados} propiedades reales en tu ${data.ambito === 'ciudad' ? 'ciudad' : 'estado'}`;
+          document.getElementById('valorResultado').textContent = '$' + data.estimado.toLocaleString('es-MX') + ' MXN';
+          document.getElementById('rangoResultado').textContent =
+            `$${data.rangoBajo.toLocaleString('es-MX')} - $${data.rangoAlto.toLocaleString('es-MX')} MXN`;
+          document.getElementById('resultado-meta').textContent = data.confiable ? '' : 'Muestra pequeña — toma este número con cautela.';
+          resultadoEl.style.display = 'block';
+        } else {
           sinDatosEl.style.display = 'block';
-          btn.disabled = false;
-          btn.textContent = 'Calcular renta estimada';
-          return;
         }
-        const porcentajes = { departamento: 0.006, casa: 0.0055, local: 0.007 };
-        const renta = Math.round(valorComercial * (porcentajes[tipo] || 0.006));
-        mostrarResultado(renta, Math.round(renta * 0.9), Math.round(renta * 1.15),
-          'Estimado con base en el valor comercial (aún no hay suficientes rentas similares en tu zona)', '');
+      } catch (e) {
+        sinDatosEl.style.display = 'block';
       }
 
       btn.disabled = false;
-      btn.textContent = 'Calcular renta estimada';
-    }
-
-    function mostrarResultado(estimado, bajo, alto, fuente, meta) {
-      document.getElementById('resultado-fuente').textContent = fuente;
-      document.getElementById('rentaResultado').textContent = '$' + estimado.toLocaleString('es-MX') + ' MXN/mes';
-      document.getElementById('rangoResultado').textContent = `$${bajo.toLocaleString('es-MX')} - $${alto.toLocaleString('es-MX')} MXN`;
-      document.getElementById('resultado-meta').textContent = meta;
-      document.getElementById('resultado').style.display = 'block';
+      btn.textContent = 'Calcular valor estimado';
     }
 
     function pedirAvaluoReal() {
       const tipo = document.getElementById('tipo').value;
       const ciudad = document.getElementById('ciudad').value.trim();
-      const mensaje = `Hola, quiero información sobre cuánto podría rentar mi ${tipo}${ciudad ? ' en ' + ciudad : ''}. ¿Me pueden ayudar con un avalúo real?`;
+      const mensaje = `Hola, quiero solicitar un avalúo real de mi ${tipo}${ciudad ? ' en ' + ciudad : ''}. Ya usé la calculadora del sitio y quiero información más precisa.`;
       if (window.chatbots && window.chatbots['servicios']) {
         window.chatbots['servicios'].toggle();
         setTimeout(() => {

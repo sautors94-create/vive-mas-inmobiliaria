@@ -211,61 +211,118 @@ exports.getPublicProfile = async (req, res) => {
     <!DOCTYPE html>
     <html lang="es">
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${founder.name} - Asesor Inmobiliario en ${founder.city} | SomosViveMás</title>
-        <meta name="description" content="${founder.name}, asesor inmobiliario en ${founder.city}. ${founder.propertiesCount} propiedades publicadas. Contacta directo por WhatsApp.">
-        <meta property="og:title" content="${founder.name} - Asesor Inmobiliario en ${founder.city}">
-        <meta property="og:description" content="${founder.propertiesCount} propiedades publicadas · Rango ${founder.rankTitle}${founder.ambassadorTitle ? ' · ' + founder.ambassadorTitle : ''}">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${founder.name} - Asesor Inmobiliario en ${founder.city} | SomosViveMás</title>
+      <meta name="description" content="${founder.name}, asesor inmobiliario en ${founder.city}. ${founder.propertiesCount} propiedades publicadas. Contacta directo por WhatsApp.">
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+      <link rel="stylesheet" href="/css/styles.css">
     </head>
-    <body class="bg-light">
-        <div class="container py-5">
-            <div class="row justify-content-center">
-                <div class="col-md-7">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-body text-center py-4">
-                            <div class="display-1 mb-2">🏅</div>
-                            <h2 class="mb-0">${founder.name}</h2>
-                            <p class="text-muted mb-2">📍 ${founder.city}</p>
-                            <span class="badge bg-warning text-dark me-1">${founder.rankTitle}</span>
-                            ${founder.ambassadorTitle ? `<span class="badge bg-success">${founder.ambassadorTitle}</span>` : ''}
-                            <div class="row mt-4">
-                                <div class="col-6 border-end">
-                                    <h4 class="mb-0">${founder.propertiesCount}</h4>
-                                    <small class="text-muted">Propiedades</small>
-                                </div>
-                                <div class="col-6">
-                                    <h4 class="mb-0">${founder.profileViews}</h4>
-                                    <small class="text-muted">Vistas de perfil</small>
-                                </div>
-                            </div>
-                            <a href="${whatsappLink}" class="btn btn-success w-100 mt-4 fw-bold">💬 Contactar por WhatsApp</a>
-                        </div>
-                    </div>
+    <body>
 
-                    ${fichas.length > 0 ? `
-                    <h5 class="mb-3">Propiedades recientes de ${founder.name}</h5>
-                    <div class="row g-3">
-                        ${fichas.map(f => `
-                            <div class="col-6">
-                                <div class="card h-100">
-                                    <img src="${f.imagenUrl || 'https://via.placeholder.com/300x180?text=Sin+Imagen'}" class="card-img-top" style="height:140px;object-fit:cover">
-                                    <div class="card-body p-2">
-                                        <div class="fw-bold text-success">$${Number(f.precio).toLocaleString('es-MX')}</div>
-                                        <div class="small text-muted">📍 ${f.ubicacion}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>` : ''}
-
-                    <div class="text-center mt-4">
-                        <a href="/agentes-fundadores?ref=${founder.referralCode}" class="text-decoration-none small text-muted">¿Eres asesor? Publica gratis en SomosViveMás →</a>
-                    </div>
-                </div>
-            </div>
+      <!-- NAVBAR -->
+      <nav class="navbar">
+        <div class="container nav-content">
+          <a href="/" class="logo">
+            <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+            <span class="logo-sub">Inmobiliaria</span>
+          </a>
+          <ul class="nav-links">
+            <li><a href="/">Inicio</a></li>
+            <li><a href="/pages/catalogo.html">Catálogo</a></li>
+            <li><a href="/pages/herramientas.html">Herramientas</a></li>
+            <li><a href="/pages/servicios.html">Servicios</a></li>
+            <li><a href="/pages/nosotros.html">Nosotros</a></li>
+            <li><a href="/pages/directorio.html">Directorio</a></li>
+          </ul>
+          <div class="nav-actions">
+            <a href="/pages/login.html" class="btn btn-outline" id="btn-login">Iniciar sesión</a>
+            <a href="/pages/registro.html" class="btn btn-primary">Publicar</a>
+          </div>
+          <button class="nav-toggle" id="nav-toggle">&#9776;</button>
         </div>
+      </nav>
+
+      <!-- PERFIL AGENTE -->
+      <section class="section" style="padding-top: 80px;">
+        <div class="container">
+          <div class="directorio-grid" style="grid-template-columns: 1fr; max-width: 800px; margin: 0 auto;">
+            <div class="agency-card">
+              <div class="agency-img" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); display: flex; align-items: center; justify-content: center; height: 200px;">
+                <div style="font-size: 80px; color: white; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif;">${founder.name.charAt(0).toUpperCase()}</div>
+                <span class="agency-verified" style="background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3);">🏆 Fundador</span>
+              </div>
+              <div class="agency-body" style="text-align: center;">
+                <h2 style="font-family: 'Bricolage Grotesque', sans-serif; margin-bottom: 5px;">${founder.name}</h2>
+                <div class="agency-location" style="justify-content: center; margin-bottom: 15px;">📍 ${founder.city}</div>
+                
+                <div style="margin-bottom: 20px;">
+                  <span class="badge bg-warning text-dark me-1" style="padding: 8px 15px; font-size: 14px;">${founder.rankTitle}</span>
+                  ${founder.ambassadorTitle ? `<span class="badge bg-success" style="padding: 8px 15px; font-size: 14px;">${founder.ambassadorTitle}</span>` : ''}
+                </div>
+
+                <div class="row mt-4" style="border-top: 1px solid var(--border); padding-top: 20px; max-width: 400px; margin: 0 auto;">
+                  <div class="col-6" style="border-right: 1px solid var(--border);">
+                    <h4 class="mb-0">${founder.propertiesCount}</h4>
+                    <small style="color: var(--text-light);">Propiedades</small>
+                  </div>
+                  <div class="col-6">
+                    <h4 class="mb-0">${founder.profileViews}</h4>
+                    <small style="color: var(--text-light);">Vistas de perfil</small>
+                  </div>
+                </div>
+
+                <a href="${whatsappLink}" target="_blank" class="btn btn-primary" style="width: 100%; margin-top: 25px; font-weight: bold;">💬 Contactar por WhatsApp</a>
+              </div>
+            </div>
+
+            ${fichas.length > 0 ? `
+            <h3 style="font-family: 'Bricolage Grotesque', sans-serif; margin-top: 40px; margin-bottom: 20px;">Propiedades recientes de ${founder.name}</h3>
+            <div class="directorio-grid">
+              ${fichas.map(f => `
+                <div class="agency-card">
+                  <div class="agency-img">
+                    <img src="${f.imagenUrl || 'https://via.placeholder.com/300x180?text=Sin+Imagen'}" style="width: 100%; height: 140px; object-fit: cover;">
+                  </div>
+                  <div class="agency-body">
+                    <div class="fw-bold text-success" style="font-size: 18px;">$${Number(f.precio).toLocaleString('es-MX')}</div>
+                    <div class="small text-muted">📍 ${f.ubicacion}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>` : ''}
+
+            <div class="text-center" style="margin-top: 40px; padding-bottom: 60px;">
+              <a href="/agentes-fundadores?ref=${founder.referralCode}" class="text-decoration-none small text-muted">¿Eres asesor? Publica gratis en SomosViveMás →</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FOOTER -->
+      <footer class="footer">
+        <div class="container footer-content">
+          <div class="footer-brand">
+            <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+            <p>La plataforma inmobiliaria más confiable de México.</p>
+          </div>
+          <div class="footer-links">
+            <a href="/pages/catalogo.html">Catálogo</a>
+            <a href="/pages/servicios.html">Servicios</a>
+            <a href="/pages/nosotros.html">Nosotros</a>
+            <a href="/legal/normas-generales/terminos.html">Términos y condiciones</a>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>© 2024 Vive Más Inmobiliaria. Todos los derechos reservados.</p>
+        </div>
+      </footer>
+
+      <script src="/js/api.js"></script>
+      <script src="/js/auth.js"></script>
+      <script src="/js/main.js"></script>
     </body>
     </html>`;
     res.send(html);

@@ -1,0 +1,135 @@
+/* Estilos compartidos por las herramientas públicas (calculadoras de renta
+   y avalúo, y el hub que las agrupa) — reutilizan las variables de marca
+   ya definidas en styles.css (--primary, --border, etc.) */
+
+.herr-hero {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: white;
+  padding: 56px 20px 64px;
+  text-align: center;
+}
+.herr-hero h1 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 34px;
+  margin: 14px 0 10px;
+}
+.herr-hero p {
+  max-width: 560px;
+  margin: 0 auto;
+  opacity: 0.92;
+  font-size: 15px;
+}
+.herr-tag {
+  display: inline-block;
+  background: rgba(255,255,255,0.18);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.herr-container {
+  max-width: 640px;
+  margin: -40px auto 60px;
+  padding: 0 20px;
+}
+
+.herr-card {
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.1);
+  border: 1px solid var(--border, #e5e7eb);
+}
+
+.herr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+@media (max-width: 560px) {
+  .herr-grid { grid-template-columns: 1fr; }
+}
+
+.herr-btn {
+  width: 100%;
+  padding: 15px;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.herr-resultado {
+  margin-top: 22px;
+  padding: 22px;
+  border-radius: 14px;
+  background: var(--primary-light, #e6f2ea);
+  text-align: center;
+}
+.herr-resultado-label { font-size: 12px; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.herr-resultado-precio { font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; color: var(--primary); margin: 6px 0; }
+.herr-resultado-rango { font-size: 13px; color: #4b5563; }
+.herr-resultado-meta { font-size: 12px; color: #9ca3af; margin-top: 6px; }
+
+.herr-aviso {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 13.5px;
+  text-align: center;
+}
+
+.herr-disclaimer {
+  margin-top: 18px;
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.herr-ctas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.herr-otra {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 13.5px;
+  color: #6b7280;
+}
+.herr-otra a { color: var(--primary); font-weight: 700; text-decoration: none; }
+
+/* Hub de herramientas */
+.herr-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 22px;
+  max-width: 880px;
+  margin: -40px auto 60px;
+  padding: 0 20px;
+}
+.herr-hub-card {
+  background: white;
+  border-radius: 18px;
+  padding: 28px;
+  border: 1px solid var(--border, #e5e7eb);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.06);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  display: block;
+}
+.herr-hub-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgba(0,0,0,0.1);
+}
+.herr-hub-card .herr-hub-icon { font-size: 34px; margin-bottom: 10px; }
+.herr-hub-card h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px; margin-bottom: 8px; }
+.herr-hub-card p { font-size: 13.5px; color: #6b7280; margin-bottom: 12px; }
+.herr-hub-card .herr-hub-cta { color: var(--primary); font-weight: 700; font-size: 13.5px; }

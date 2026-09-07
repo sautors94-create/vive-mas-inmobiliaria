@@ -49,8 +49,8 @@
 
       <p style="font-size:12px;color:#9ca3af;margin-bottom:0">Todo agente fundador necesita una cuenta gratuita en SomosViveMás — así protegemos tu perfil y tus propiedades.</p>
 
-      <a href="registro.html" id="inv-btn-registro" class="inv-cta">Crear mi cuenta gratis y unirme</a>
-      <a href="login.html" class="inv-cta-secundario">Ya tengo cuenta, iniciar sesión</a>
+      <a href="/pages/registro.html" id="inv-btn-registro" class="inv-cta">Crear mi cuenta gratis y unirme</a>
+      <a href="/pages/login.html" class="inv-cta-secundario">Ya tengo cuenta, iniciar sesión</a>
     </div>
   </div>
 
@@ -67,10 +67,12 @@
         // programa y se le da el crédito al agente que invitó.
         localStorage.setItem('vm_ref_fundador', ref);
 
-        document.getElementById('inv-btn-registro').href = 'registro.html?ref=' + encodeURIComponent(ref);
+        // CORREGIDO: Apuntamos a /pages/ para evitar el error 404
+        document.getElementById('inv-btn-registro').href = '/pages/registro.html?ref=' + encodeURIComponent(ref);
 
         // Mostramos quién invitó, si el código es válido (dato público, sin login)
-        fetch(`/api/fundadores/panel-data/${encodeURIComponent(ref)}`)
+        // CORREGIDO: Cambiado a /api/founders/ para que coincida con tu backend
+        fetch(`/api/founders/panel-data/${encodeURIComponent(ref)}`)
           .then(r => r.ok ? r.json() : null)
           .then(data => {
             if (data && data.isFounder !== false && data.name) {
