@@ -1,15 +1,7 @@
-// @napi-rs/canvas en vez de "canvas": trae binarios precompilados y no
-// necesita compilar nada nativo (importante en hosting compartido como
-// Hostinger, donde no hay acceso root para instalar libcairo/libpango).
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const axios = require('axios');
 const path = require('path');
 
-// Registramos Poppins (misma familia tipográfica que el logo/branding de
-// SomosViveMás) para que la ficha se vea igual en cualquier servidor. Sin
-// esto, @napi-rs/canvas usa la fuente por default del sistema operativo
-// (en Linux normalmente NO tiene "Arial" instalada, así que el texto podía
-// salir con una tipografía genérica fea o incluso no renderizar bien).
 const FONTS_DIR = path.join(__dirname, '../../../assets/fonts');
 let fontsRegistered = false;
 function ensureFonts() {
@@ -21,21 +13,13 @@ function ensureFonts() {
     GlobalFonts.registerFromPath(path.join(FONTS_DIR, 'Poppins-ExtraBold.ttf'), 'Poppins ExtraBold');
     fontsRegistered = true;
   } catch (e) {
-    console.error('No se pudieron registrar las fuentes Poppins, se usará la fuente por default:', e.message);
+    console.error('No se pudieron registrar las fuentes Poppins:', e.message);
   }
 }
 
-// Paleta de marca SomosViveMás (navy + dorado, tomada del logo real)
-const BRAND = {
-  navy: '#12202E',
-  navyLight: '#1B3145',
-  gold: '#C9982E',
-  goldLight: '#E4C15C',
-  white: '#FFFFFF',
-  greyText: '#9CA9B4',
-};
-
 function roundRect(ctx, x, y, w, h, r) {
+  if (w < 2 * r) r = w / 2;
+  if (h < 2 * r) r = h / 2;
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -45,8 +29,6 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-// Trunca con "…" si el texto no cabe en maxWidth con la fuente ya activa
-// en ctx (evita que ubicaciones largas se salgan del canvas).
 function truncateToWidth(ctx, text, maxWidth) {
   if (ctx.measureText(text).width <= maxWidth) return text;
   let low = 0, high = text.length;
@@ -59,26 +41,6 @@ function truncateToWidth(ctx, text, maxWidth) {
   return text.slice(0, low) + '…';
 }
 
-// Ícono de casa simple (mismo trazo que el logo) — dibujado a mano en vez
-// de depender de un archivo de imagen externo, para que nunca falle.
-function drawHouseIcon(ctx, cx, cy, size, color) {
-  ctx.save();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = size * 0.09;
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(cx - size * 0.55, cy - size * 0.05);
-  ctx.lineTo(cx, cy - size * 0.55);
-  ctx.lineTo(cx + size * 0.55, cy - size * 0.05);
-  ctx.stroke();
-  ctx.strokeRect(cx - size * 0.32, cy - size * 0.05, size * 0.64, size * 0.55);
-  ctx.restore();
-}
-
-// Iconos vectoriales simples (nunca dependen de que el servidor tenga
-// fuentes con emoji instaladas — en el servidor de Hostinger los emoji
-// como 🛏/🚿/📍 se veían como cuadros vacíos por esto mismo).
 function drawBedIcon(ctx, x, y, s, color) {
   ctx.save();
   ctx.strokeStyle = color;
@@ -105,14 +67,12 @@ function drawBathIcon(ctx, x, y, s, color) {
   ctx.lineWidth = s * 0.12;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
-  // Tina: arco completo (la "bañera") + base
   ctx.beginPath();
   ctx.arc(x + s * 0.75, y + s * 0.15, s * 0.7, Math.PI, Math.PI * 2);
   ctx.lineTo(x + s * 1.45, y + s * 0.55);
   ctx.lineTo(x + s * 0.05, y + s * 0.55);
   ctx.closePath();
   ctx.stroke();
-  // Chorro de agua
   ctx.beginPath();
   ctx.moveTo(x + s * 0.75, y - s * 0.65);
   ctx.lineTo(x + s * 0.75, y - s * 0.35);
@@ -120,7 +80,7 @@ function drawBathIcon(ctx, x, y, s, color) {
   ctx.restore();
 }
 
-function drawPinIcon(ctx, x, y, s, color) {
+function drawPinIcon(ctx, x, y, s, color, bgColor) {
   ctx.save();
   ctx.fillStyle = color;
   ctx.beginPath();
@@ -128,154 +88,184 @@ function drawPinIcon(ctx, x, y, s, color) {
   ctx.lineTo(x, y + s * 0.9);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = BRAND.navy;
+  // El agujero del pin usa el color de fondo dinámico
+  ctx.fillStyle = bgColor || '#0f172a';
   ctx.beginPath();
   ctx.arc(x, y, s * 0.18, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
 
-async function generatePropertyCard(propertyData, imageBufferOrNull = null) {
+async function generatePropertyCard(propertyData, imageBufferOrNull = null, theme = {}) {
   ensureFonts();
 
-  const width = 1000;
-  const height = 1250;
+  // Proporción 4:5 (1080x1350) ideal para WhatsApp/Instagram
+  const width = 1080;
+  const height = 1350;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   const F = (weight) => `Poppins ${weight}`.trim();
 
-  // Fondo general
-  ctx.fillStyle = BRAND.navy;
+  // COLORES DINÁMICOS: Usamos el tema que mandó el frontend, o los default si no hay
+  const BRAND = {
+    navy: theme.bgDark || '#0f172a',       // Fondo principal oscuro
+    navyLight: '#1e293b',                  // Detalles
+    gold: theme.accent || '#fbbf24',       // Acentos y precio
+    primary: theme.primary || '#1a472a',   // Color primario para el degradado
+    white: '#ffffff',
+    greyLight: '#94a3b8'                   // Gris claro para textos secundarios
+  };
+
+  // 1. Fondo Degradado Premium Dinámico
+  const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+  bgGrad.addColorStop(0, BRAND.navy);
+  bgGrad.addColorStop(1, BRAND.primary); 
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, width, height);
 
-  // ── Encabezado con logo ──
-  const headerH = 130;
-  ctx.fillStyle = BRAND.navy;
-  ctx.fillRect(0, 0, width, headerH);
-  drawHouseIcon(ctx, 60, headerH / 2, 46, BRAND.gold);
-
+  // 2. Header Minimalista (Logo)
   ctx.textBaseline = 'middle';
-  ctx.font = `bold 34px ${F('Bold')}`;
+  ctx.textAlign = 'left';
+  ctx.font = `bold 36px ${F('Bold')}`;
   ctx.fillStyle = BRAND.white;
-  ctx.fillText('Somos', 100, headerH / 2 - 2);
+  ctx.fillText('Somos', 50, 70);
   const wSomos = ctx.measureText('Somos').width;
   ctx.fillStyle = BRAND.gold;
-  ctx.fillText('ViveMás', 100 + wSomos + 4, headerH / 2 - 2);
-  ctx.font = `18px ${F('Regular')}`;
-  ctx.fillStyle = BRAND.greyText;
-  ctx.fillText('INMOBILIARIA', 100, headerH / 2 + 26);
+  ctx.fillText('ViveMás', 50 + wSomos + 10, 70);
 
-  // Franja dorada bajo el encabezado
-  ctx.fillStyle = BRAND.gold;
-  ctx.fillRect(0, headerH, width, 4);
+  // 3. Contenedor de la Foto (Tarjeta Flotante)
+  const photoX = 40;
+  const photoY = 120;
+  const photoW = width - 80;
+  const photoH = 700;
 
-  // ── Foto de la propiedad ──
-  const photoY = headerH + 4;
-  const photoH = 620;
+  // Sombra sutil de la tarjeta
   ctx.save();
-  roundRect(ctx, 30, photoY + 26, width - 60, photoH, 20);
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetY = 15;
+  ctx.fillStyle = BRAND.navyLight;
+  roundRect(ctx, photoX, photoY, photoW, photoH, 24);
+  ctx.fill();
+  ctx.restore();
+
+  // Recorte de foto
+  ctx.save();
+  roundRect(ctx, photoX, photoY, photoW, photoH, 24);
   ctx.clip();
   try {
     let image;
     if (imageBufferOrNull) {
-      image = await loadImage(imageBufferOrNull); // Subida desde celular/PC
+      image = await loadImage(imageBufferOrNull);
     } else if (propertyData.imageUrl) {
       const response = await axios.get(propertyData.imageUrl, { responseType: 'arraybuffer', timeout: 8000 });
       image = await loadImage(Buffer.from(response.data, 'binary'));
     } else {
       throw new Error('sin imagen');
     }
-    // "cover": recorta la imagen para llenar el rectángulo sin deformarla
-    const targetW = width - 60, targetH = photoH;
-    const scale = Math.max(targetW / image.width, targetH / image.height);
+    const scale = Math.max(photoW / image.width, photoH / image.height);
     const drawW = image.width * scale, drawH = image.height * scale;
-    const dx = 30 + (targetW - drawW) / 2, dy = (photoY + 26) + (targetH - drawH) / 2;
+    const dx = photoX + (photoW - drawW) / 2, dy = photoY + (photoH - drawH) / 2;
     ctx.drawImage(image, dx, dy, drawW, drawH);
   } catch (error) {
-    // Placeholder de marca en vez de un gris genérico
     ctx.fillStyle = BRAND.navyLight;
-    ctx.fillRect(30, photoY + 26, width - 60, photoH);
-    drawHouseIcon(ctx, width / 2, photoY + 26 + photoH / 2 - 20, 110, BRAND.gold);
-    ctx.font = `600 26px ${F('SemiBold')}`;
-    ctx.fillStyle = BRAND.greyText;
+    ctx.fillRect(photoX, photoY, photoW, photoH);
+    ctx.font = `600 24px ${F('SemiBold')}`;
+    ctx.fillStyle = BRAND.greyLight;
     ctx.textAlign = 'center';
-    ctx.fillText('Foto no disponible', width / 2, photoY + 26 + photoH / 2 + 70);
+    ctx.fillText('Foto no disponible', width / 2, photoY + photoH / 2);
     ctx.textAlign = 'left';
   }
   ctx.restore();
 
-  // Sutil degradado oscuro abajo de la foto para que el precio resalte si se sobrepone
-  const grad = ctx.createLinearGradient(0, photoY + 26 + photoH - 140, 0, photoY + 26 + photoH);
-  grad.addColorStop(0, 'rgba(18,32,46,0)');
-  grad.addColorStop(1, 'rgba(18,32,46,0.55)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(30, photoY + 26 + photoH - 140, width - 60, 140);
+  // 4. Degradado Glassmorphism inferior de la foto (oscurece para que el texto respire)
+  const fadeGrad = ctx.createLinearGradient(0, photoY + photoH - 300, 0, photoY + photoH);
+  fadeGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  fadeGrad.addColorStop(1, 'rgba(0, 0, 0, 0.8)');
+  ctx.fillStyle = fadeGrad;
+  ctx.save();
+  roundRect(ctx, photoX, photoY, photoW, photoH, 24);
+  ctx.clip();
+  ctx.fillRect(photoX, photoY + photoH - 300, photoW, 300);
+  ctx.restore();
 
-  // ── Etiqueta de operación (Renta/Venta) ──
+  // 5. Etiqueta Operación (Glass)
   const badgeText = (propertyData.type === 'venta' ? 'EN VENTA' : 'EN RENTA');
-  ctx.font = `bold 22px ${F('Bold')}`;
-  const badgeW = ctx.measureText(badgeText).width + 40;
-  ctx.fillStyle = BRAND.gold;
-  roundRect(ctx, 50, photoY + 46, badgeW, 44, 22);
+  ctx.font = `bold 18px ${F('Bold')}`;
+  const badgeW = ctx.measureText(badgeText).width + 36;
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 1;
+  roundRect(ctx, 60, photoY + 20, badgeW, 40, 20);
   ctx.fill();
-  ctx.fillStyle = BRAND.navy;
-  ctx.textAlign = 'left';
-  ctx.fillText(badgeText, 70, photoY + 46 + 22);
+  ctx.stroke();
+  ctx.fillStyle = BRAND.white;
+  ctx.fillText(badgeText, 78, photoY + 20 + 20);
 
-  // ── Bloque de datos ── (usamos un "cursor" vertical para no encimar líneas)
-  let cursorY = photoY + 26 + photoH + 75;
+  // 6. Datos Inferiores
+  let cursorY = photoY + photoH - 80;
 
-  ctx.font = `800 62px ${F('ExtraBold')}`;
+  // Precio
+  ctx.font = `800 64px ${F('ExtraBold')}`;
   ctx.fillStyle = BRAND.gold;
   const precioTexto = `$${Number(propertyData.price || 0).toLocaleString('es-MX')}`;
   ctx.fillText(precioTexto, 50, cursorY);
   const precioW = ctx.measureText(precioTexto).width;
-  ctx.font = `600 24px ${F('SemiBold')}`;
-  ctx.fillStyle = BRAND.greyText;
-  ctx.fillText(propertyData.type === 'venta' ? 'MXN' : 'MXN / mes', 50 + precioW + 14, cursorY);
+  
+  ctx.font = `600 22px ${F('SemiBold')}`;
+  ctx.fillStyle = BRAND.greyLight;
+  ctx.fillText(propertyData.type === 'venta' ? 'MXN' : 'MXN / mes', 50 + precioW + 12, cursorY);
 
-  // Recámaras / Baños (íconos vectoriales, no emoji) — se omite por
-  // completo esta línea cuando no aplica (terreno, local comercial)
+  // Detalles (Recámaras / Baños) en Tarjeta Glass
   const tieneRecamaras = propertyData.rooms !== null && propertyData.rooms !== undefined;
   if (tieneRecamaras) {
-    cursorY += 85;
-    drawBedIcon(ctx, 52, cursorY - 15, 24, BRAND.gold);
-    ctx.font = `600 30px ${F('SemiBold')}`;
-    ctx.fillStyle = BRAND.white;
-    ctx.fillText(`${propertyData.rooms || 0} Recámaras`, 105, cursorY);
+    cursorY += 70;
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    roundRect(ctx, 40, cursorY - 30, width - 80, 80, 16);
+    ctx.fill();
+    ctx.stroke();
 
-    drawBathIcon(ctx, 445, cursorY - 15, 24, BRAND.gold);
-    ctx.fillText(`${propertyData.baths || 0} Baños`, 498, cursorY);
-  } else {
-    cursorY += 30; // menos espacio, ya que no hay línea de recámaras/baños
+    drawBedIcon(ctx, 70, cursorY - 5, 26, BRAND.gold);
+    ctx.font = `600 26px ${F('SemiBold')}`;
+    ctx.fillStyle = BRAND.white;
+    ctx.fillText(`${propertyData.rooms || 0} Recámaras`, 120, cursorY);
+
+    drawBathIcon(ctx, 480, cursorY - 5, 26, BRAND.gold);
+    ctx.fillText(`${propertyData.baths || 0} Baños`, 530, cursorY);
   }
 
   // Ubicación
-  cursorY += 65;
-  drawPinIcon(ctx, 60, cursorY - 10, 20, BRAND.gold);
-  ctx.font = `500 28px ${F('Regular')}`;
-  ctx.fillStyle = BRAND.greyText;
-  const ubicacionTexto = truncateToWidth(ctx, propertyData.location || '', width - 90 - 50);
-  ctx.fillText(ubicacionTexto, 90, cursorY);
+  cursorY += 110;
+  drawPinIcon(ctx, 60, cursorY - 10, 22, BRAND.gold, BRAND.navy);
+  ctx.font = `500 26px ${F('Regular')}`;
+  ctx.fillStyle = BRAND.greyLight;
+  const ubicacionTexto = truncateToWidth(ctx, propertyData.location || '', width - 180);
+  ctx.fillText(ubicacionTexto, 95, cursorY);
 
-  // Línea separadora
-  cursorY += 55;
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(50, cursorY);
-  ctx.lineTo(width - 50, cursorY);
-  ctx.stroke();
+  // 7. Pie con Botón CTA
+  const btnW = 380;
+  const btnH = 64;
+  const btnX = width - btnW - 40;
+  const btnY = height - 90;
 
-  // ── Pie: dominio + CTA ──
-  cursorY += 55;
-  ctx.font = `bold 26px ${F('Bold')}`;
+  const btnGrad = ctx.createLinearGradient(btnX, btnY, btnX + btnW, btnY);
+  btnGrad.addColorStop(0, '#22c55e');
+  btnGrad.addColorStop(1, '#16a34a');
+  ctx.fillStyle = btnGrad;
+  roundRect(ctx, btnX, btnY, btnW, btnH, 32);
+  ctx.fill();
+
+  ctx.font = `bold 22px ${F('Bold')}`;
   ctx.fillStyle = BRAND.white;
-  ctx.fillText('somosvivemas.com', 50, cursorY);
-  cursorY += 38;
-  ctx.font = `500 20px ${F('Regular')}`;
-  ctx.fillStyle = BRAND.gold;
-  ctx.fillText('Contáctame por WhatsApp →', 50, cursorY);
+  ctx.textAlign = 'center';
+  ctx.fillText('💬 Contactar por WhatsApp', btnX + btnW / 2, btnY + btnH / 2);
+  ctx.textAlign = 'left';
+
+  // Dominio
+  ctx.font = `bold 24px ${F('Bold')}`;
+  ctx.fillStyle = BRAND.white;
+  ctx.fillText('somosvivemas.com', 40, btnY + btnH / 2);
 
   return canvas.toBuffer('image/png');
 }

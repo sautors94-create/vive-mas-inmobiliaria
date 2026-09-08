@@ -569,7 +569,14 @@ exports.generateCardMine = async (req, res) => {
       imageUrl: imageUrl || null,
     };
 
-    const imageBuffer = await generatePropertyCard(cardData, req.file ? req.file.buffer : null);
+    // RECIBIMOS LOS COLORES DEL FRONTEND
+    const theme = {
+      bgDark: req.body.themeBgDark,
+      primary: req.body.themePrimary,
+      accent: req.body.themeAccent
+    };
+
+    const imageBuffer = await generatePropertyCard(cardData, req.file ? req.file.buffer : null, theme);
 
     const ficha = new FichaRapida({
       founder: founder._id,
