@@ -98,7 +98,7 @@
 </head>
 <body>
 
-  <!-- NAVBAR (Idéntico a index.html pero con rutas ajustadas) -->
+  <!-- NAVBAR -->
   <nav class="navbar">
     <div class="container nav-content">
       <a href="../index.html" class="logo">
@@ -173,14 +173,12 @@
         </div>
       </div>
 
-      <!-- Skeletons -->
       <div id="skeletonGrid" class="dir-grid">
         <div class="skeleton-card"></div>
         <div class="skeleton-card"></div>
         <div class="skeleton-card"></div>
       </div>
 
-      <!-- Grid de Inmobiliarias -->
       <div id="cardsGrid" class="dir-grid hidden"></div>
       <div id="emptyState" class="empty-state hidden">
         <div class="icono">🔎</div>
@@ -190,9 +188,7 @@
     </div>
   </section>
 
-  <!-- ================================================= -->
-  <!-- SECCIÓN: AGENTES FUNDADORES -->
-  <!-- ================================================= -->
+  <!-- SECCIÓN AGENTES FUNDADORES -->
   <section class="section" style="padding-top: 20px; padding-bottom: 80px; border-top: 2px solid var(--border); margin-top: 40px;">
     <div class="container">
       <div style="text-align: center; margin-bottom: 40px;">
@@ -202,7 +198,6 @@
           👥 <span id="foundersCount">0</span> Agentes verificados
         </div>
       </div>
-      
       <div id="foundersGrid" class="dir-grid">
         <div class="skeleton-card"></div>
         <div class="skeleton-card"></div>
@@ -249,10 +244,8 @@
     </div>
   </div>
 
-  <!-- TOASTS -->
   <div id="toast-container"></div>
 
-  <!-- FOOTER -->
   <footer class="footer">
     <div class="container footer-content">
       <div class="footer-brand">
@@ -275,7 +268,6 @@
   <script src="../js/api.js"></script>
   <script src="../js/auth.js"></script>
   <script>
-    // Variables y Data (Se removió const API_URL para evitar duplicados, usamos window.API_URL de api.js)
     let agencies = [];
     let currentFilter = 'all';
     let searchQuery = '';
@@ -464,7 +456,6 @@
       setTimeout(() => toast.remove(), 3000);
     }
 
-    // Cargar Fundadores
     async function cargarFundadores() {
       try {
         const res = await fetch(`${API_URL}/api/fundadores/directory-list`);
@@ -508,13 +499,11 @@
       }
     }
 
-    // NAV TOGGLE (responsive)
     document.getElementById('nav-toggle')?.addEventListener('click', () => {
       document.querySelector('.nav-links')?.classList.toggle('mobile-open');
       document.querySelector('.nav-actions')?.classList.toggle('mobile-open');
     });
 
-    // INIT
     cargarDirectorio();
     cargarFundadores();
   </script>

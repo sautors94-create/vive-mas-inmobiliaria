@@ -127,41 +127,51 @@ app.use('/api/reportes', reportRoutes);
 app.use('/api', pagoRoutes);
 
 // ==========================================
-// DIRECTORIO DE INMOBILIARIAS/AGENTES VERIFICADOS
+// DIRECTORIO DE INMOBILIARIAS/AGENTES VERIFICADOS (FILTRO ESTRICTO)
 // ==========================================
 const User = require('./models/User');
 const Property = require('./models/Property');
 
 app.get('/api/directorio', async (req, res) => {
   try {
+    // FILTRO ESTRICTO: Solo usuarios activos que tengan identidadVerificada en true, o kyc/kyb aprobado
     const usuarios = await User.find({
-      identidadVerificada: true,
-      status: 'activo'
-    }).select('nombre email telefono avatar plan role kyc');
+      status: 'activo',
+      $or: [
+        { identidadVerificada: true },
+        { 'kyc.status': 'aprobado' },
+        { 'kyb.status': 'aprobado' }
+      ]
+    }).select('nombre email telefono avatar plan role kyc kyb identidadVerificada');
 
     const directorio = await Promise.all(usuarios.map(async (u) => {
       const numPropiedades = await Property.countDocuments({
         propietario: u._id,
         status: 'aprobada'
       });
+      
+      // Determinar si es empresa (KYB) o persona (KYC)
+      const esEmpresa = u.kyb && u.kyb.status === 'aprobado';
+      
       return {
         id: u._id,
         name: u.nombre,
-        type: u.role === 'basico_plus' ? 'inmobiliaria' : (u.role === 'services' ? 'agente' : 'inmobiliaria'),
-        location: u.kyc?.estado || 'México',
-        city: u.kyc?.ciudad || 'Mexico',
+        type: esEmpresa ? 'inmobiliaria' : 'agente',
+        location: esEmpresa ? (u.kyb?.estado || 'México') : (u.kyc?.estado || 'México'),
+        city: esEmpresa ? (u.kyb?.ciudad || 'Mexico') : (u.kyc?.ciudad || 'Mexico'),
         properties: numPropiedades,
-        verified: true,
+        verified: true, 
         phone: u.telefono || '',
         email: u.email,
         image: u.avatar || '',
-        description: `Inmobiliaria verificada en Vive Más Inmobiliaria. ${u.nombre} cuenta con ${numPropiedades} propiedades activas.`,
-        tags: ['Verificado', 'KYC', 'Confiado']
+        description: `${esEmpresa ? 'Inmobiliaria' : 'Asesor'} verificado en Vive Más Inmobiliaria. ${u.nombre} cuenta con ${numPropiedades} propiedades activas.`,
+        tags: ['Verificado', esEmpresa ? 'KYB' : 'KYC', 'Confiado']
       };
     }));
 
     res.json({ ok: true, directorio });
   } catch (error) {
+    console.error('Error en /api/directorio:', error);
     res.status(500).json({ error: error.message });
   }
 });
