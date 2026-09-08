@@ -36,5 +36,9 @@ router.post('/mine/register', authMiddleware, founderController.registerMine); /
 router.post('/mine/referrer', authMiddleware, founderController.setReferrer);
 router.patch('/mine/social', authMiddleware, founderController.updateSocial);
 router.post('/mine/generate-card', authMiddleware, upload.single('photo'), founderController.generateCardMine);
+// 12. Actualizar datos de contacto públicos (WhatsApp / Correo)
+router.patch('/mine/public-contact', authMiddleware, founderController.updatePublicContact);
+// 13. Subir foto de perfil del agente (con validación)
+router.post('/mine/profile-photo', authMiddleware, upload.single('photo'), founderController.uploadProfilePhoto);
 
 module.exports = router;

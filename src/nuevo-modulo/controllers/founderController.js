@@ -4,8 +4,6 @@ const Founder = require('../models/Founder');
 const FichaRapida = require('../models/FichaRapida');
 const { generatePropertyCard } = require('../services/imageGenerator');
 
-// Arma la respuesta de estadísticas que usan tanto el panel público (por
-// referralCode) como el panel del usuario logueado (por su sesión).
 function buildPanelPayload(req, founder) {
   return {
     isFounder: true,
@@ -18,6 +16,8 @@ function buildPanelPayload(req, founder) {
     ambassadorTitle: founder.ambassadorTitle,
     referredBy: founder.referredBy,
     social: founder.social,
+    socialVisible: founder.socialVisible !== false, // AGREGAR
+    profilePhoto: founder.profilePhoto || '',      // AGREGAR
     referralCode: founder.referralCode,
     referralLink: `${req.protocol}://${req.get('host')}/agente/${founder.referralCode}`,
     ambassadorLink: `${req.protocol}://${req.get('host')}/agentes-fundadores?ref=${founder.referralCode}`,
@@ -134,13 +134,9 @@ exports.trackProfileView = async (req, res) => {
 // NUEVA FUNCIÓN: Listado para el directorio público
 exports.getDirectoryList = async (req, res) => {
   try {
-    // Buscamos todos los agentes. Puedes agregar un filtro si quieres que solo salgan los activos
     const agentes = await Founder.find()
-      // Ordenamos por rango y propiedades para mostrar primero a los más activos
       .sort({ rank: -1, propertiesCount: -1 })
-      // SELECCIONAMOS SOLO CAMPOS PÚBLICOS (NUNCA el teléfono)
-      .select('name city rankTitle ambassadorTitle propertiesCount profileViews referralCode social');
-      
+      .select('name city rankTitle ambassadorTitle propertiesCount profileViews referralCode profilePhoto');
     res.json(agentes);
   } catch (error) {
     console.error('Error en getDirectoryList:', error);
@@ -205,7 +201,22 @@ exports.getPublicProfile = async (req, res) => {
     if (!founder) return res.status(404).send('Agente no encontrado');
 
     const fichas = await FichaRapida.find({ founder: founder._id }).sort({ createdAt: -1 }).limit(12).lean();
-    const whatsappLink = `https://wa.me/52${founder.phone}?text=${encodeURIComponent('Hola ' + founder.name + ', vi tu perfil en SomosViveMás')}`;
+    
+    // Generar enlaces si el agente los configuró
+    const whatsappLink = founder.publicWhatsapp ? `https://wa.me/52${founder.publicWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Hola ' + founder.name + ', vi tu perfil en SomosViveMás')}` : '';
+    const mailtoLink = founder.publicEmail ? `mailto:${founder.publicEmail}?subject=Contacto desde SomosViveMás` : '';
+
+    // Botones de contacto dinámicos
+    let contactButtons = '';
+    if (whatsappLink) {
+      contactButtons += `<a href="${whatsappLink}" target="_blank" class="cta-btn cta-wa">💬 WhatsApp</a>`;
+    }
+    if (mailtoLink) {
+      contactButtons += `<a href="${mailtoLink}" class="cta-btn cta-mail">✉️ Correo</a>`;
+    }
+    if (!whatsappLink && !mailtoLink) {
+      contactButtons = `<div style="color: #64748b; font-size: 14px; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">El agente no ha habilitado métodos de contacto directo aún.</div>`;
+    }
 
     const html = `
     <!DOCTYPE html>
@@ -215,82 +226,74 @@ exports.getPublicProfile = async (req, res) => {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${founder.name} - Asesor Inmobiliario en ${founder.city} | SomosViveMás</title>
-      <meta name="description" content="${founder.name}, asesor inmobiliario en ${founder.city}. ${founder.propertiesCount} propiedades publicadas. Contacta directo por WhatsApp.">
+      <meta name="description" content="${founder.name}, asesor inmobiliario en ${founder.city}. ${founder.propertiesCount} propiedades publicadas.">
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
-        
-        /* NAVBAR MINIMALISTA */
         .nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.8); backdrop-filter: blur(12px); box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
-        .logo { text-decoration: none; font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
-        .logo-vive { color: var(--primary, #10b981); }
+        .logo { text-decoration: none; font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 800; }
+        .logo-vive { color: var(--primary, #1a472a); }
         .logo-mas { color: #0f172a; }
-        .nav-btn { padding: 10px 20px; background: #0f172a; color: white; border-radius: 10px; text-decoration: none; font-size: 14px; font-weight: 600; transition: transform 0.2s; }
-        .nav-btn:hover { transform: translateY(-2px); }
+        .nav-btn { padding: 10px 20px; background: #0f172a; color: white; border-radius: 10px; text-decoration: none; font-size: 14px; font-weight: 600; }
         
-        /* HERO PROFILE - SaaS STYLE */
         .profile-container { max-width: 800px; margin: -30px auto 60px; padding: 0 20px; position: relative; z-index: 10; }
         .profile-card { background: white; border-radius: 24px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e2e8f0; }
-        .profile-header { background: linear-gradient(135deg, var(--bg-dark, #0f172a) 0%, var(--primary, #10b981) 100%); padding: 60px 40px 40px; text-align: center; position: relative; }
-        
-        .avatar-circle { width: 110px; height: 110px; border-radius: 50%; background: white; color: var(--primary, #10b981); display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; margin: 0 auto 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 4px solid rgba(255,255,255,0.3); }
-        .profile-name { color: white; font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
-        .profile-location { color: rgba(255,255,255,0.9); font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500; }
-        
+        .profile-header { background: linear-gradient(135deg, var(--bg-dark, #0f172a) 0%, var(--primary, #1a472a) 100%); padding: 60px 40px 40px; text-align: center; position: relative; }
+        .avatar-circle { width: 110px; height: 110px; border-radius: 50%; background: white; color: var(--primary, #1a472a); display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; margin: 0 auto 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 4px solid rgba(255,255,255,0.3); }
+        .profile-name { color: white; font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; font-weight: 700; margin-bottom: 8px; }
+        .profile-location { color: rgba(255,255,255,0.9); font-size: 15px; }
         .badges { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
-        .badge { padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; backdrop-filter: blur(10px); display: flex; align-items: center; gap: 6px; }
+        .badge { padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; backdrop-filter: blur(10px); }
         .badge-rank { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); }
         .badge-amb { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
         
         .profile-body { padding: 40px; }
-        
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-        .stat-box { background: #f8fafc; padding: 24px; border-radius: 16px; text-align: center; border: 1px solid #e2e8f0; transition: transform 0.2s; }
-        .stat-box:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        .stat-value { font-size: 32px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; color: var(--primary, #10b981); line-height: 1; }
+        .stat-box { background: #f8fafc; padding: 24px; border-radius: 16px; text-align: center; border: 1px solid #e2e8f0; }
+        .stat-value { font-size: 32px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; color: var(--primary, #1a472a); }
         .stat-label { font-size: 13px; color: #64748b; margin-top: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        .whatsapp-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 18px; background: #22c55e; color: white; text-decoration: none; border-radius: 14px; font-weight: 600; font-size: 16px; transition: all 0.3s; box-shadow: 0 10px 20px -5px rgba(34, 197, 94, 0.4); }
-        .whatsapp-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(34, 197, 94, 0.5); background: #20a54e; }
+        .contact-area { display: flex; flex-direction: column; gap: 12px; }
+        .cta-btn { padding: 16px; border-radius: 14px; text-decoration: none; font-weight: 700; font-size: 16px; text-align: center; transition: transform 0.2s; }
+        .cta-btn:hover { transform: translateY(-2px); }
+        .cta-wa { background: #22c55e; color: white; box-shadow: 0 10px 20px -5px rgba(34, 197, 94, 0.4); }
+        .cta-mail { background: #f1f5f9; color: #0f172a; border: 1px solid #e2e8f0; }
         
         .section-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 700; margin: 50px 0 20px; color: #0f172a; }
-        
         .fichas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
         .ficha-card { background: white; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; transition: all 0.3s; }
-        .ficha-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-color: var(--primary, #10b981); }
+        .ficha-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-color: var(--primary, #1a472a); }
         .ficha-img { width: 100%; height: 180px; object-fit: cover; background: #e2e8f0; }
         .ficha-body { padding: 20px; }
         .ficha-price { font-size: 20px; font-weight: 700; color: #16a34a; margin-bottom: 8px; font-family: 'Bricolage Grotesque', sans-serif; }
-        .ficha-loc { font-size: 14px; color: #64748b; display: flex; align-items: center; gap: 4px; }
+        .ficha-loc { font-size: 14px; color: #64748b; }
         
         .footer-link { text-align: center; margin-top: 60px; padding-bottom: 40px; }
-        .footer-link a { color: #64748b; text-decoration: none; font-size: 14px; font-weight: 500; padding: 12px 24px; border: 1px solid #e2e8f0; border-radius: 30px; transition: all 0.2s; }
-        .footer-link a:hover { background: #0f172a; color: white; border-color: #0f172a; }
+        .footer-link a { color: #64748b; text-decoration: none; font-size: 14px; font-weight: 500; padding: 12px 24px; border: 1px solid #e2e8f0; border-radius: 30px; }
 
-        @media (max-width: 600px) {
-          .nav { padding: 15px 20px; }
-          .profile-header { padding: 40px 20px 30px; }
-          .profile-name { font-size: 26px; }
-          .profile-body { padding: 20px; }
-          .stat-value { font-size: 26px; }
-        }
+        /* Modal Editor de Contacto */
+        .edit-fab { position: fixed; bottom: 30px; right: 30px; background: var(--primary, #1a472a); color: white; width: 60px; height: 60px; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); cursor: pointer; z-index: 999; border: none; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .modal-card { background: white; border-radius: 24px; max-width: 480px; width: 100%; padding: 40px; box-shadow: 0 25px 60px rgba(0,0,0,0.3); }
+        .modal-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+        .modal-desc { font-size: 14px; color: #64748b; margin-bottom: 24px; }
+        .modal-input { width: 100%; padding: 14px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; font-family: 'Inter', sans-serif; margin-bottom: 16px; outline: none; box-sizing: border-box; }
+        .modal-input:focus { border-color: var(--primary, #1a472a); }
+        .modal-btn { width: 100%; padding: 16px; background: var(--primary, #1a472a); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; }
       </style>
     </head>
     <body>
-      
       <nav class="nav">
-        <a href="/" class="logo">
-          <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
-        </a>
+        <a href="/" class="logo"><span class="logo-vive">Vive</span><span class="logo-mas">Más</span></a>
         <a href="/pages/registro.html" class="nav-btn">Crear cuenta</a>
       </nav>
 
       <div class="profile-container">
         <div class="profile-card">
           <div class="profile-header">
-            <div class="avatar-circle">${founder.name.charAt(0).toUpperCase()}</div>
+            <div class="avatar-circle" style="background-image: url('${founder.profilePhoto || ''}'); background-size: cover; background-position: center; ${founder.profilePhoto ? 'color: transparent;' : ''}">${founder.profilePhoto ? '' : founder.name.charAt(0).toUpperCase()}</div>
             <h1 class="profile-name">${founder.name}</h1>
             <div class="profile-location">📍 ${founder.city}</div>
             <div class="badges">
@@ -301,19 +304,13 @@ exports.getPublicProfile = async (req, res) => {
           
           <div class="profile-body">
             <div class="stats-grid">
-              <div class="stat-box">
-                <div class="stat-value">${founder.propertiesCount}</div>
-                <div class="stat-label">Propiedades</div>
-              </div>
-              <div class="stat-box">
-                <div class="stat-value">${founder.profileViews}</div>
-                <div class="stat-label">Vistas</div>
-              </div>
+              <div class="stat-box"><div class="stat-value">${founder.propertiesCount}</div><div class="stat-label">Propiedades</div></div>
+              <div class="stat-box"><div class="stat-value">${founder.profileViews}</div><div class="stat-label">Vistas</div></div>
             </div>
             
-            <a href="${whatsappLink}" target="_blank" class="whatsapp-btn">
-              💬 Contactar por WhatsApp
-            </a>
+            <div class="contact-area" id="contactArea">
+              ${contactButtons}
+            </div>
           </div>
         </div>
 
@@ -329,14 +326,64 @@ exports.getPublicProfile = async (req, res) => {
                 </div>
               </div>
             `).join('')}
-          </div>
-        ` : ''}
+          </div>` : ''}
 
         <div class="footer-link">
           <a href="/agentes-fundadores?ref=${founder.referralCode}">¿Eres asesor? Únete al programa →</a>
         </div>
       </div>
 
+      <!-- BOTÓN FLOTANTE DE EDICIÓN (SOLO PARA EL DUEÑO) -->
+      <button class="edit-fab" id="editFab" onclick="openModal()">✏️</button>
+
+      <!-- MODAL DE EDICIÓN DE CONTACTO -->
+      <div class="modal-overlay" id="editModal">
+        <div class="modal-card">
+          <h3 class="modal-title">Configurar Contacto Público</h3>
+          <p class="modal-desc">Agrega tu WhatsApp y/o Correo. Estos datos serán visibles para cualquier cliente que abra este link. Puedes dejarlos vacíos si prefieres no mostrarlos.</p>
+          <label style="font-size:13px; font-weight:600; color:#374151;">WhatsApp (10 dígitos)</label>
+          <input type="tel" id="waInput" class="modal-input" placeholder="Ej: 5512345678" value="${founder.publicWhatsapp || ''}">
+          <label style="font-size:13px; font-weight:600; color:#374151;">Correo electrónico</label>
+          <input type="email" id="emailInput" class="modal-input" placeholder="Ej: agente@correo.com" value="${founder.publicEmail || ''}">
+          <button class="modal-btn" onclick="saveContact()">Guardar cambios</button>
+        </div>
+      </div>
+
+      <script>
+        // Lógica para saber si el que visita es el dueño del perfil
+        const loggedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const ownerId = '${founder.userId ? founder.userId.toString() : ''}';
+        if (loggedUser._id && loggedUser._id === ownerId) {
+          document.getElementById('editFab').style.display = 'flex';
+        }
+
+        function openModal() {
+          document.getElementById('editModal').style.display = 'flex';
+        }
+
+        async function saveContact() {
+          const whatsapp = document.getElementById('waInput').value.trim();
+          const email = document.getElementById('emailInput').value.trim();
+          
+          try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/fundadores/mine/public-contact', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+              body: JSON.stringify({ whatsapp, email })
+            });
+            const data = await res.json();
+            if (data.ok) {
+              alert('Contacto actualizado. La página se recargará para mostrar los cambios.');
+              window.location.reload();
+            } else {
+              alert('Error: ' + (data.error || 'No se pudo guardar'));
+            }
+          } catch (e) {
+            alert('Error de conexión');
+          }
+        }
+      </script>
     </body>
     </html>`;
     res.send(html);
@@ -455,18 +502,22 @@ exports.setReferrer = async (req, res) => {
 // 10. Guardar redes sociales del agente logueado
 exports.updateSocial = async (req, res) => {
   try {
-    const { facebook, instagram, website } = req.body;
+    const { facebook, instagram, website, socialVisible } = req.body;
     const founder = await Founder.findOneAndUpdate(
       { userId: req.user.id },
-      { social: { facebook: facebook || '', instagram: instagram || '', website: website || '' } },
+      { 
+        social: { facebook: facebook || '', instagram: instagram || '', website: website || '' },
+        socialVisible: socialVisible !== undefined ? socialVisible : true
+      },
       { new: true }
     );
     if (!founder) return res.status(404).json({ error: 'Primero inscríbete al programa' });
-    res.json({ social: founder.social });
+    res.json({ ok: true, social: founder.social, socialVisible: founder.socialVisible });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // 11. Generar ficha para el agente logueado (misma lógica que generateCard,
 //     pero identificando al agente por sesión en vez de por referralCode en el body)
@@ -512,7 +563,54 @@ exports.generateCardMine = async (req, res) => {
     res.status(500).json({ error: 'Error al generar imagen' });
   }
 };
+// 13. Actualizar datos de contacto públicos (WhatsApp / Correo)
+exports.updatePublicContact = async (req, res) => {
+  try {
+    const { whatsapp, email } = req.body;
+    const founder = await Founder.findOneAndUpdate(
+      { userId: req.user.id },
+      { 
+        publicWhatsapp: whatsapp || '', 
+        publicEmail: email || '' 
+      },
+      { new: true }
+    );
+    if (!founder) return res.status(404).json({ error: 'Primero inscríbete al programa' });
+    res.json({ ok: true, publicWhatsapp: founder.publicWhatsapp, publicEmail: founder.publicEmail });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+// 14. Subir foto de perfil con moderación básica
+exports.uploadProfilePhoto = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se subió ninguna imagen' });
 
+    // AQUÍ PUEDES INTEGRAR GOOGLE VISION O SIGHTENGINE EN EL FUTURO
+    // Por ahora, una validación básica de tamaño y tipo
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({ error: 'Formato no válido. Usa JPG, PNG o WEBP.' });
+    }
+    if (req.file.size > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: 'La imagen es muy grande (Máx 5MB).' });
+    }
+
+    // Convertimos a Base64 para guardar fácilmente sin depender de almacenamiento externo
+    const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+    const founder = await Founder.findOneAndUpdate(
+      { userId: req.user.id },
+      { profilePhoto: base64Image },
+      { new: true }
+    );
+
+    if (!founder) return res.status(404).json({ error: 'Primero inscríbete al programa' });
+    res.json({ ok: true, photoUrl: base64Image });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 // 5. Listado para el admin
 exports.getAdminList = async (req, res) => {
   try {

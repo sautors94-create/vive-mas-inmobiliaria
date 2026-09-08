@@ -738,11 +738,34 @@
             <p style="font-size:11px; color:var(--text-light); margin-top:8px;"><i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>Una vez registrado, esta sección desaparecerá permanentemente.</p>
           </div>
 
+                    <!-- FOTO DE PERFIL PÚBLICA -->
+          <div class="form-card" style="margin-bottom:20px;">
+            <h4 style="font-size:16px; font-weight:700; margin-bottom:4px;"><i class="fa-solid fa-camera" style="color:var(--primary); margin-right:6px;"></i>Foto de Perfil Pública</h4>
+            <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;">Sube una foto profesional. Será revisada por nuestro sistema para asegurar que sea apta para todo público.</p>
+            <div style="display:flex; align-items:center; gap:20px;">
+              <img id="emb-profile-photo-preview" src="https://via.placeholder.com/100" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:2px solid var(--border);">
+              <div>
+                <input type="file" id="emb-file-photo" accept="image/*" style="display:none;">
+                <button class="btn btn-primary" onclick="document.getElementById('emb-file-photo').click()" style="padding:10px 20px; font-size:14px;"><i class="fa-solid fa-upload"></i> Subir Foto</button>
+                <p id="emb-photo-msg" style="font-size:12px; margin-top:8px; color:var(--text-light);"></p>
+              </div>
+            </div>
+          </div>
+
           <!-- Redes sociales -->
           <div class="form-card" style="margin-bottom:20px;">
             <h4 style="font-size:16px; font-weight:700; margin-bottom:4px;"><i class="fa-solid fa-share-nodes" style="color:var(--primary); margin-right:6px;"></i>Mis Redes Sociales</h4>
             <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;">Estas redes aparecerán en tu perfil del directorio de embajadores.</p>
+            
+            <div class="form-grupo" style="margin-bottom: 15px;">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                <input type="checkbox" id="emb-social-visible" checked style="width:18px; height:18px; accent-color:var(--primary);">
+                <span style="font-size:14px; font-weight:600;">Mostrar mis redes sociales públicamente</span>
+              </label>
+            </div>
+
             <div class="form-grid">
+
               <div class="form-grupo">
                 <label><i class="fa-brands fa-facebook-f" style="color:#1877f2; margin-right:4px;"></i>Facebook</label>
                 <input type="url" id="emb-input-fb" class="form-input" placeholder="https://facebook.com/tu-perfil">
@@ -962,6 +985,8 @@
             instagram: (data.social && data.social.instagram) || '',
             sitioWeb: (data.social && data.social.website) || ''
           },
+          socialVisible: data.socialVisible !== false,
+          profilePhoto: data.profilePhoto || '',
           perfilSlug: data.referralCode,
           vistasPerfil: data.profileViews
         };
@@ -1073,6 +1098,16 @@
       document.getElementById('emb-input-fb').value = embState.redes.facebook||'';
       document.getElementById('emb-input-ig').value = embState.redes.instagram||'';
       document.getElementById('emb-input-web').value = embState.redes.sitioWeb||'';
+      
+      if (document.getElementById('emb-social-visible')) {
+        document.getElementById('emb-social-visible').checked = embState.socialVisible !== false;
+      }
+      
+      // Foto de perfil
+      const photoPreview = document.getElementById('emb-profile-photo-preview');
+      if (photoPreview) {
+        photoPreview.src = embState.profilePhoto || 'https://via.placeholder.com/100';
+      }
 
       // Link perfil
       var pURL = window.location.origin + '/agente/' + embState.perfilSlug;
@@ -1150,22 +1185,67 @@
       }
     };
 
-    window.emb_guardarRedes = async function(){
+        window.emb_guardarRedes = async function(){
       var facebook = document.getElementById('emb-input-fb').value.trim();
       var instagram = document.getElementById('emb-input-ig').value.trim();
       var website = document.getElementById('emb-input-web').value.trim();
+      var socialVisible = document.getElementById('emb-social-visible').checked;
+      
       try {
-        var data = await api.patch('/fundadores/mine/social', { facebook: facebook, instagram: instagram, website: website });
+        var data = await api.patch('/fundadores/mine/social', { 
+          facebook: facebook, 
+          instagram: instagram, 
+          website: website,
+          socialVisible: socialVisible 
+        });
+        
         if (data && data.error) {
           embToast(data.error, 'error');
           return;
         }
+        
         embState.redes = { facebook: facebook, instagram: instagram, sitioWeb: website };
+        embState.socialVisible = socialVisible;
         embToast('Redes sociales guardadas correctamente','success');
       } catch (e) {
         embToast('No se pudieron guardar tus redes. Intenta de nuevo.','error');
       }
     };
+
+    // LÓGICA DE SUBIDA DE FOTO DE PERFIL
+    document.getElementById('emb-file-photo').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const formData = new FormData();
+        formData.append('photo', file);
+        
+        const msgEl = document.getElementById('emb-photo-msg');
+        msgEl.textContent = 'Subiendo y verificando...';
+        msgEl.style.color = 'var(--text-light)';
+        
+        try {
+            const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+            const res = await fetch('/api/fundadores/mine/profile-photo', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.ok) {
+                document.getElementById('emb-profile-photo-preview').src = data.photoUrl;
+                msgEl.textContent = '✅ Foto actualizada y verificada.';
+                msgEl.style.color = '#16a34a';
+                embState.profilePhoto = data.photoUrl;
+            } else {
+                msgEl.textContent = '❌ ' + (data.error || 'Error al subir');
+                msgEl.style.color = '#dc2626';
+            }
+        } catch (err) {
+            msgEl.textContent = '❌ Error de conexión';
+            msgEl.style.color = '#dc2626';
+        }
+    });
 
     window.emb_copiarCodigo = function(){
       embCopy(embState.codigoEmbajador);
