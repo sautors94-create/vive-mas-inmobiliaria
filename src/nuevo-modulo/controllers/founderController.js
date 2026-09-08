@@ -218,6 +218,16 @@ exports.getPublicProfile = async (req, res) => {
       contactButtons = `<div style="color: #64748b; font-size: 14px; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">El agente no ha habilitado métodos de contacto directo aún.</div>`;
     }
 
+    // Redes sociales dinámicas
+    let socialHtml = '';
+    if (founder.socialVisible) {
+      socialHtml = '<div class="social-area" style="display:flex; gap:12px; justify-content:center; margin-top:20px;">';
+      if (founder.social?.facebook) socialHtml += `<a href="${founder.social.facebook}" target="_blank" class="social-btn" style="width:40px; height:40px; border-radius:10px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:18px;">📘</a>`;
+      if (founder.social?.instagram) socialHtml += `<a href="${founder.social.instagram}" target="_blank" class="social-btn" style="width:40px; height:40px; border-radius:10px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:18px;">📸</a>`;
+      if (founder.social?.website) socialHtml += `<a href="${founder.social.website}" target="_blank" class="social-btn" style="width:40px; height:40px; border-radius:10px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:18px;">🌐</a>`;
+      socialHtml += '</div>';
+    }
+
     const html = `
     <!DOCTYPE html>
     <html lang="es">
@@ -241,7 +251,7 @@ exports.getPublicProfile = async (req, res) => {
         .profile-container { max-width: 800px; margin: -30px auto 60px; padding: 0 20px; position: relative; z-index: 10; }
         .profile-card { background: white; border-radius: 24px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e2e8f0; }
         .profile-header { background: linear-gradient(135deg, var(--bg-dark, #0f172a) 0%, var(--primary, #1a472a) 100%); padding: 60px 40px 40px; text-align: center; position: relative; }
-        .avatar-circle { width: 110px; height: 110px; border-radius: 50%; background: white; color: var(--primary, #1a472a); display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; margin: 0 auto 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 4px solid rgba(255,255,255,0.3); }
+        .avatar-circle { width: 110px; height: 110px; border-radius: 50%; background: white; color: var(--primary, #1a472a); display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; margin: 0 auto 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 4px solid rgba(255,255,255,0.3); overflow: hidden; }
         .profile-name { color: white; font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; font-weight: 700; margin-bottom: 8px; }
         .profile-location { color: rgba(255,255,255,0.9); font-size: 15px; }
         .badges { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
@@ -311,6 +321,7 @@ exports.getPublicProfile = async (req, res) => {
             <div class="contact-area" id="contactArea">
               ${contactButtons}
             </div>
+            ${socialHtml}
           </div>
         </div>
 
@@ -337,15 +348,18 @@ exports.getPublicProfile = async (req, res) => {
       <button class="edit-fab" id="editFab" onclick="openModal()">✏️</button>
 
       <!-- MODAL DE EDICIÓN DE CONTACTO -->
-      <div class="modal-overlay" id="editModal">
-        <div class="modal-card">
+      <div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeModal()">
+        <div class="modal-card" style="position:relative;">
+          <!-- BOTÓN DE CERRAR (X) -->
+          <button onclick="closeModal()" style="position:absolute; top:15px; right:15px; background:transparent; border:none; font-size:24px; color:#64748b; cursor:pointer;">✕</button>
+          
           <h3 class="modal-title">Configurar Contacto Público</h3>
           <p class="modal-desc">Agrega tu WhatsApp y/o Correo. Estos datos serán visibles para cualquier cliente que abra este link. Puedes dejarlos vacíos si prefieres no mostrarlos.</p>
           <label style="font-size:13px; font-weight:600; color:#374151;">WhatsApp (10 dígitos)</label>
           <input type="tel" id="waInput" class="modal-input" placeholder="Ej: 5512345678" value="${founder.publicWhatsapp || ''}">
-          <label style="font-size:13px; font-weight:600; color:#374151;">Correo electrónico</label>
+          <label style="font-size:13px; font-weight:600; color:#374151; margin-top:10px; display:block;">Correo electrónico</label>
           <input type="email" id="emailInput" class="modal-input" placeholder="Ej: agente@correo.com" value="${founder.publicEmail || ''}">
-          <button class="modal-btn" onclick="saveContact()">Guardar cambios</button>
+          <button class="modal-btn" onclick="saveContact()" style="margin-top:20px;">Guardar cambios</button>
         </div>
       </div>
 
@@ -360,18 +374,37 @@ exports.getPublicProfile = async (req, res) => {
         function openModal() {
           document.getElementById('editModal').style.display = 'flex';
         }
+        function closeModal() {
+          document.getElementById('editModal').style.display = 'none';
+        }
 
         async function saveContact() {
           const whatsapp = document.getElementById('waInput').value.trim();
           const email = document.getElementById('emailInput').value.trim();
           
           try {
-            const token = localStorage.getItem('token');
+            // CORRECCIÓN: Buscamos en ambos storages por si la sesión se guardó distinta
+            const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+            
+            if (!token) {
+              alert('Tu sesión ha expirado. Por favor, regresa al panel e inicia sesión de nuevo.');
+              return;
+            }
+
             const res = await fetch('/api/fundadores/mine/public-contact', {
               method: 'PATCH',
-              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+              headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': 'Bearer ' + token 
+              },
               body: JSON.stringify({ whatsapp, email })
             });
+            
+            if (res.status === 401) {
+              alert('Tu sesión ha expirado. Por favor, regresa e inicia sesión.');
+              return;
+            }
+            
             const data = await res.json();
             if (data.ok) {
               alert('Contacto actualizado. La página se recargará para mostrar los cambios.');
@@ -380,7 +413,7 @@ exports.getPublicProfile = async (req, res) => {
               alert('Error: ' + (data.error || 'No se pudo guardar'));
             }
           } catch (e) {
-            alert('Error de conexión');
+            alert('Error de conexión con el servidor.');
           }
         }
       </script>
@@ -563,6 +596,7 @@ exports.generateCardMine = async (req, res) => {
     res.status(500).json({ error: 'Error al generar imagen' });
   }
 };
+
 // 13. Actualizar datos de contacto públicos (WhatsApp / Correo)
 exports.updatePublicContact = async (req, res) => {
   try {
@@ -581,6 +615,7 @@ exports.updatePublicContact = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 // 14. Subir foto de perfil con moderación básica
 exports.uploadProfilePhoto = async (req, res) => {
   try {
@@ -611,6 +646,7 @@ exports.uploadProfilePhoto = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 // 5. Listado para el admin
 exports.getAdminList = async (req, res) => {
   try {

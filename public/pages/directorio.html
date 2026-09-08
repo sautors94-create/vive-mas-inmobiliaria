@@ -539,7 +539,7 @@
       <div style="text-align: center; margin-bottom: 40px;">
         <h2 style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 28px; color: var(--text); margin-bottom: 10px;">🚀 Agentes Fundadores SomosViveMás</h2>
         <p style="color: var(--text-light); max-width: 600px; margin: 0 auto;">Los primeros asesores independientes construyendo el nuevo ecosistema inmobiliario. ¡Contáctalos directamente!</p>
-         <!-- CONTADOR NUEVO -->
+        <!-- CONTADOR -->
         <div style="margin-top: 15px; font-size: 16px; font-weight: 700; color: var(--primary);">
           👥 <span id="foundersCount">0</span> Agentes verificados
         </div>
@@ -867,18 +867,19 @@
         });
       });
     }
-    // ==================== FUNDADORES ====================
-    // ==================== FUNDADORES ====================
+        // ==================== FUNDADORES ====================
     async function cargarFundadores() {
       try {
         const res = await fetch(`${API_URL}/api/fundadores/directory-list`);
+        if (!res.ok) throw new Error('Error en la red');
+        
         const founders = await res.json();
         const grid = document.getElementById('foundersGrid');
         const counter = document.getElementById('foundersCount');
         
-        if (counter) counter.textContent = founders.length; // ACTUALIZA EL CONTADOR
+        if (counter) counter.textContent = founders.length; // Actualiza el contador
         
-        if (founders.length === 0) {
+        if (!founders || founders.length === 0) {
           grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1"><div class="icono">🚀</div><h3>Próximamente</h3><p>Los primeros agentes fundadores se unirán muy pronto.</p></div>';
           return;
         }
@@ -886,11 +887,11 @@
         grid.innerHTML = founders.map(f => {
           const nombre = (f.name || 'Agente Fundador').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
           const fotoHtml = f.profilePhoto 
-            ? `<img src="${f.profilePhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` 
+            ? `<img src="${f.profilePhoto}" style="width:100%;height:100%;object-fit:cover;">` 
             : `<div style="font-size: 60px; color: white; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif;">${nombre.charAt(0)}</div>`;
           
           return `
-            <a href="/agente/${f.referralCode}" class="agency-card" data-id="${f._id}" style="text-decoration:none;color:inherit;">
+            <a href="/agente/${f.referralCode}" class="agency-card" style="text-decoration:none;color:inherit;cursor:pointer;">
               <div class="agency-img" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); display: flex; align-items: center; justify-content: center;">
                 <div style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center;">
                   ${fotoHtml}
@@ -911,9 +912,9 @@
         }).join('');
       } catch (e) {
         console.error('Error cargando fundadores:', e);
+        document.getElementById('foundersGrid').innerHTML = '<div class="empty-state" style="grid-column: 1/-1"><div class="icono">⚠️</div><h3>Error de conexión</h3><p>No pudimos cargar los agentes.</p></div>';
       }
     }
-
     // ==================== INIT ====================
     cargarDirectorio();
     cargarFundadores();
