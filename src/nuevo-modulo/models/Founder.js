@@ -25,6 +25,12 @@ const founderSchema = new mongoose.Schema({
     instagram: { type: String, default: '' },
     website: { type: String, default: '' },
   },
+
+  // Datos de contacto públicos (editables por el agente desde su link)
+  publicWhatsapp: { type: String, default: '' },
+  publicEmail: { type: String, default: '' },
+  profilePhoto: { type: String, default: '' }, // URL o Base64 de la foto del agente
+  socialVisible: { type: Boolean, default: true } // Si quiere mostrar sus redes sociales
 }, { timestamps: true });
 
 founderSchema.pre('save', function(next) {
@@ -66,10 +72,5 @@ founderSchema.methods.calculateRank = function() {
   if (count >= 5) return { rank: 2, rankTitle: 'Plata' };
   return { rank: 1, rankTitle: 'Bronce' };
 };
-  // Datos de contacto públicos (editables por el agente desde su link)
-  publicWhatsapp: { type: String, default: '' },
-  publicEmail: { type: String, default: '' },
-  profilePhoto: { type: String, default: '' }, // URL o Base64 de la foto del agente
-  socialVisible: { type: Boolean, default: true } // Si quiere mostrar sus redes sociales
-  
+
 module.exports = mongoose.model('Founder', founderSchema);
