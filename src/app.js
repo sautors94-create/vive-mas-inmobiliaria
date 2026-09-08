@@ -134,15 +134,14 @@ const Property = require('./models/Property');
 
 app.get('/api/directorio', async (req, res) => {
   try {
-    // FILTRO ESTRICTO: Solo usuarios activos que tengan identidadVerificada en true, o kyc/kyb aprobado
+    // FILTRO ESTRICTO: Solo usuarios activos que tengan kyc o kyb en 'aprobado'
     const usuarios = await User.find({
       status: 'activo',
       $or: [
-        { identidadVerificada: true },
         { 'kyc.status': 'aprobado' },
         { 'kyb.status': 'aprobado' }
       ]
-    }).select('nombre email telefono avatar plan role kyc kyb identidadVerificada');
+    }).select('nombre email telefono avatar plan role kyc kyb');
 
     const directorio = await Promise.all(usuarios.map(async (u) => {
       const numPropiedades = await Property.countDocuments({
