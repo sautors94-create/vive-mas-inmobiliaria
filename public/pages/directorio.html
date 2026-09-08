@@ -867,7 +867,8 @@
         });
       });
     }
-        // ==================== FUNDADORES ====================
+
+    // ==================== FUNDADORES ====================
     async function cargarFundadores() {
       try {
         const res = await fetch(`${API_URL}/api/fundadores/directory-list`);
@@ -915,6 +916,7 @@
         document.getElementById('foundersGrid').innerHTML = '<div class="empty-state" style="grid-column: 1/-1"><div class="icono">⚠️</div><h3>Error de conexión</h3><p>No pudimos cargar los agentes.</p></div>';
       }
     }
+
     // ==================== INIT ====================
     cargarDirectorio();
     cargarFundadores();
