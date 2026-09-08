@@ -630,10 +630,7 @@
     let currentFilter = 'all';
     let searchQuery = '';
     let currentAgency = null;
-
-    const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port && window.location.port !== '3000'
-      ? 'http://localhost:3000' : '';
-
+    
     const FALLBACK_IMAGES = [
       'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=200&fit=crop',
       'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=400&h=200&fit=crop',
