@@ -646,6 +646,20 @@ exports.uploadProfilePhoto = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// 15. Eliminar foto de perfil del agente
+exports.deleteProfilePhoto = async (req, res) => {
+  try {
+    const founder = await Founder.findOneAndUpdate(
+      { userId: req.user.id },
+      { $set: { profilePhoto: '' } }, // Limpiamos el campo dejándolo vacío
+      { new: true }
+    );
+    if (!founder) return res.status(404).json({ error: 'Primero inscríbete al programa' });
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 // 5. Listado para el admin
 exports.getAdminList = async (req, res) => {

@@ -40,5 +40,6 @@ router.post('/mine/generate-card', authMiddleware, upload.single('photo'), found
 router.patch('/mine/public-contact', authMiddleware, founderController.updatePublicContact);
 // 13. Subir foto de perfil del agente (con validación)
 router.post('/mine/profile-photo', authMiddleware, upload.single('photo'), founderController.uploadProfilePhoto);
-
+// 14. Eliminar foto de perfil
+router.delete('/mine/profile-photo', authMiddleware, founderController.deleteProfilePhoto);
 module.exports = router;

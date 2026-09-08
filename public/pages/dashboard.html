@@ -740,7 +740,7 @@
             <p style="font-size:11px; color:var(--text-light); margin-top:8px;"><i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>Una vez registrado, esta sección desaparecerá permanentemente.</p>
           </div>
 
-                    <!-- FOTO DE PERFIL PÚBLICA -->
+               <!-- FOTO DE PERFIL PÚBLICA -->
           <div class="form-card" style="margin-bottom:20px;">
             <h4 style="font-size:16px; font-weight:700; margin-bottom:4px;"><i class="fa-solid fa-camera" style="color:var(--primary); margin-right:6px;"></i>Foto de Perfil Pública</h4>
             <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;">Sube una foto profesional. Será revisada por nuestro sistema para asegurar que sea apta para todo público.</p>
@@ -749,6 +749,7 @@
               <div>
                 <input type="file" id="emb-file-photo" accept="image/*" style="display:none;">
                 <button class="btn btn-primary" onclick="document.getElementById('emb-file-photo').click()" style="padding:10px 20px; font-size:14px;"><i class="fa-solid fa-upload"></i> Subir Foto</button>
+                <button class="btn btn-outline" id="emb-btn-delete-photo" onclick="emb_eliminarFoto()" style="padding:10px 20px; font-size:14px; margin-top:10px; display:none; border-color:#dc2626; color:#dc2626;"><i class="fa-solid fa-trash"></i> Eliminar</button>
                 <p id="emb-photo-msg" style="font-size:12px; margin-top:8px; color:var(--text-light);"></p>
               </div>
             </div>
@@ -1105,10 +1106,15 @@
         document.getElementById('emb-social-visible').checked = embState.socialVisible !== false;
       }
       
-      // Foto de perfil
+       // Foto de perfil
       const photoPreview = document.getElementById('emb-profile-photo-preview');
+      const btnDeletePhoto = document.getElementById('emb-btn-delete-photo');
       if (photoPreview) {
-        photoPreview.src = embState.profilePhoto || 'https://via.placeholder.com/100';
+          photoPreview.src = embState.profilePhoto || 'https://via.placeholder.com/100';
+      }
+      if (btnDeletePhoto) {
+          // Mostramos el botón de eliminar solo si ya tiene una foto cargada
+          btnDeletePhoto.style.display = embState.profilePhoto ? 'inline-flex' : 'none';
       }
 
       // Link perfil
@@ -1187,7 +1193,7 @@
       }
     };
 
-        window.emb_guardarRedes = async function(){
+      window.emb_guardarRedes = async function(){
       var facebook = document.getElementById('emb-input-fb').value.trim();
       var instagram = document.getElementById('emb-input-ig').value.trim();
       var website = document.getElementById('emb-input-web').value.trim();
@@ -1212,6 +1218,31 @@
       } catch (e) {
         embToast('No se pudieron guardar tus redes. Intenta de nuevo.','error');
       }
+    };
+        // LÓGICA PARA ELIMINAR FOTO DE PERFIL
+    window.emb_eliminarFoto = async function() {
+        if (!confirm('¿Estás seguro de que deseas eliminar tu foto de perfil?')) return;
+        
+        try {
+            const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+            const res = await fetch('/api/fundadores/mine/profile-photo', {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const data = await res.json();
+            
+            if (data.ok) {
+                document.getElementById('emb-profile-photo-preview').src = 'https://via.placeholder.com/100';
+                document.getElementById('emb-btn-delete-photo').style.display = 'none';
+                document.getElementById('emb-photo-msg').textContent = '';
+                embState.profilePhoto = '';
+                embToast('Foto eliminada correctamente', 'success');
+            } else {
+                embToast(data.error || 'Error al eliminar', 'error');
+            }
+        } catch (err) {
+            embToast('Error de conexión', 'error');
+        }
     };
 
     // LÓGICA DE SUBIDA DE FOTO DE PERFIL
