@@ -1430,7 +1430,6 @@
         return;
       }
       
-      // Si lo dejan en blanco, mandamos 0
       var recamaras = document.getElementById('f-recamaras').value.trim() || 0;
       var banos = document.getElementById('f-banos').value.trim() || 0;
 
@@ -1457,11 +1456,30 @@
           formData.append('photo', fotoInput.files[0]);
         }
 
+        var token = localStorage.getItem('accessToken');
         var res = await fetch(`${API_URL}/api/fundadores/mine/generate-card`, {
           method: 'POST',
-          headers: { Authorization: 'Bearer ' + localStorage.getItem('accessToken') },
+          headers: { Authorization: 'Bearer ' + token },
           body: formData
         });
+
+        // SI EL TOKEN EXPIRÓ (401), INTENTAMOS RENOVARLO Y REINTENTAR
+        if (res.status === 401) {
+          const refreshRes = await fetch(`${API_URL}/api/auth/refresh`, { method: 'POST', credentials: 'include' });
+          const refreshData = await refreshRes.json();
+          
+          if (refreshData.ok && refreshData.accessToken) {
+            localStorage.setItem('accessToken', refreshData.accessToken);
+            // Reintentar con el nuevo token
+            res = await fetch(`${API_URL}/api/fundadores/mine/generate-card`, {
+              method: 'POST',
+              headers: { Authorization: 'Bearer ' + refreshData.accessToken },
+              body: formData
+            });
+          } else {
+            throw new Error('Tu sesión ha expirado. Recarga la página e inicia sesión de nuevo.');
+          }
+        }
 
         if (!res.ok) {
           var err = await res.json().catch(function(){ return {}; });
@@ -1481,7 +1499,7 @@
 
         document.getElementById('f-link-seo').value = fichaUrl;
         
-        // Texto viral dinámico (solo muestra recámaras/baños si el agente los puso)
+        // Texto viral dinámico
         document.getElementById('f-texto-viral').value =
           '🏠 ' + ubicacion + ' - $' + precio + '\n' + 
           (recamaras > 0 ? '🛏 ' + recamaras + ' Recámaras\n' : '') +
