@@ -275,7 +275,8 @@ exports.getPublicProfile = async (req, res) => {
         .fichas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
         .ficha-card { background: white; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; transition: all 0.3s; position: relative; }
         .ficha-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-color: var(--primary, #1a472a); }
-        .ficha-img { width: 100%; height: 180px; object-fit: cover; background: #e2e8f0; }
+        .ficha-img-container { width: 100%; height: 180px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 14px; }
+        .ficha-img { width: 100%; height: 100%; object-fit: cover; }
         .ficha-body { padding: 20px; }
         .ficha-price { font-size: 20px; font-weight: 700; color: #16a34a; margin-bottom: 8px; font-family: 'Bricolage Grotesque', sans-serif; }
         .ficha-loc { font-size: 14px; color: #64748b; }
@@ -283,7 +284,6 @@ exports.getPublicProfile = async (req, res) => {
         .footer-link { text-align: center; margin-top: 60px; padding-bottom: 40px; }
         .footer-link a { color: #64748b; text-decoration: none; font-size: 14px; font-weight: 500; padding: 12px 24px; border: 1px solid #e2e8f0; border-radius: 30px; }
 
-        /* Modal Editor de Contacto */
         .edit-fab { position: fixed; bottom: 30px; right: 30px; background: var(--primary, #1a472a); color: white; width: 60px; height: 60px; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); cursor: pointer; z-index: 999; border: none; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
         .modal-card { background: white; border-radius: 24px; max-width: 480px; width: 100%; padding: 40px; box-shadow: 0 25px 60px rgba(0,0,0,0.3); position: relative; }
@@ -331,12 +331,12 @@ exports.getPublicProfile = async (req, res) => {
             ${fichas.map(f => {
               const imgHtml = f.imagenUrl 
                 ? `<img src="${f.imagenUrl}" class="ficha-img" alt="Propiedad">` 
-                : `<div style="width:100%; height:180px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;">Sin Imagen</div>`;
+                : `<div class="ficha-img-container">Sin Imagen</div>`;
               
               return `
                 <div class="ficha-card" style="position:relative; overflow:hidden;">
                   ${imgHtml}
-                  ${f.vendida ? `<div style="position:absolute; top:20px; left:-40px; transform:rotate(-45deg); background:#dc2626; color:white; padding:5px 50px; font-weight:700; font-size:14px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">VENDIDA</div>` : ''}
+                  ${f.vendida ? `<div style="position:absolute; top:20px; left:-40px; transform:rotate(-45deg); background:#dc2626; color:white; padding:5px 50px; font-weight:700; font-size:14px; box-shadow:0 4px 6px rgba(0,0,0,0.1); z-index:5;">VENDIDA</div>` : ''}
                   
                   <div class="ficha-body">
                     <div class="ficha-price">$${Number(f.precio).toLocaleString('es-MX')}</div>

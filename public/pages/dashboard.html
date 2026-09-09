@@ -845,19 +845,21 @@
               <div class="form-grupo">
                 <label>Operación *</label>
                 <select id="f-operacion" class="form-input">
+                  <option value="">Selecciona</option>
                   <option value="renta">Renta</option>
                   <option value="venta">Venta</option>
                 </select>
               </div>
               <div class="form-grupo"><label>Precio (MXN) *</label><input type="number" id="f-precio" class="form-input" placeholder="Ej: 15000"></div>
-              <div class="form-grupo" id="f-recamaras-wrap" style="display:none;"><label>Recámaras</label><input type="number" id="f-recamaras" class="form-input" placeholder="Ej: 2"></div>
+              <div class="form-grupo"><label>Recámaras (Opcional)</label><input type="number" id="f-recamaras" class="form-input" placeholder="Ej: 2"></div>
+              <div class="form-grupo"><label>Baños (Opcional)</label><input type="number" id="f-banos" class="form-input" placeholder="Ej: 1"></div>
               <div class="form-grupo" style="grid-column:1/-1;"><label>Ubicación (Colonia, Ciudad) *</label><input type="text" id="f-ubicacion" class="form-input" placeholder="Ej: Polanco, CDMX"></div>
               <div class="form-grupo" style="grid-column:1/-1;"><label>Foto de la propiedad</label><input type="file" id="f-foto" class="form-input" accept="image/*" style="padding:10px;"></div>
               <div class="form-grupo" style="grid-column:1/-1;"><label>O pega la URL de la foto</label><input type="text" id="f-url" class="form-input" placeholder="https://scontent..."></div>
               <div style="grid-column:1/-1;"><button class="btn btn-primary" onclick="generarFichaFundador()" style="width:100%; padding:14px; font-weight:700; border-radius:10px; border:none; cursor:pointer;"><i class="fa-solid fa-bolt" style="margin-right:6px;"></i>Generar Ficha para WhatsApp</button></div>
             </div>
             
-            <!-- ÁREA DE RESULTADOS (Esto era lo que faltaba) -->
+            <!-- ÁREA DE RESULTADOS -->
             <div id="f-resultados" style="display:none; margin-top:20px; padding-top:20px; border-top:1px solid #e5e7eb;">
               <h3 style="margin-top:0; margin-bottom:16px; font-size:16px; color:#0f172a;">Tu ficha está lista</h3>
               <img id="f-imagen-preview" src="" alt="Ficha Generada" style="max-width:100%; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.1); margin-bottom:20px; display:none;">
@@ -1410,7 +1412,7 @@
       if (wrap) wrap.style.display = op === 'renta' ? 'block' : 'none';
     };
 
-    // Genera la ficha profesional real (llama al backend, con la sesión del usuario)
+        // Genera la ficha profesional real
     window.generarFichaFundador = async function(){
       var operacion = document.getElementById('f-operacion').value;
       var precio = document.getElementById('f-precio').value.trim();
@@ -1418,31 +1420,29 @@
       var fotoInput = document.getElementById('f-foto');
       var urlFoto = document.getElementById('f-url').value.trim();
 
-      // VALIDACIÓN MEJORADA: Solo exigimos recámaras si es renta
+      // Solo exigimos operación, precio y ubicación
+      if(!operacion){
+        embToast('Selecciona si es Renta o Venta','error');
+        return;
+      }
       if(!precio || !ubicacion){
         embToast('Completa precio y ubicación','error');
         return;
       }
       
-      if (operacion === 'renta') {
-        var recamarasVal = document.getElementById('f-recamaras').value.trim();
-        if(!recamarasVal) {
-          embToast('Completa las recámaras (obligatorio para renta)','error');
-          return;
-        }
-      }
+      // Si lo dejan en blanco, mandamos 0
+      var recamaras = document.getElementById('f-recamaras').value.trim() || 0;
+      var banos = document.getElementById('f-banos').value.trim() || 0;
 
       var boton = document.querySelector('button[onclick="generarFichaFundador()"]');
       var textoOriginal = boton ? boton.textContent : '';
       if (boton) { boton.disabled = true; boton.textContent = 'Generando...'; }
 
       try {
-        var recamaras = operacion === 'venta' ? 0 : (document.getElementById('f-recamaras').value.trim() || 0);
-        
         var formData = new FormData();
         formData.append('price', precio);
         formData.append('rooms', recamaras);
-        formData.append('baths', '2'); // Valor por defecto
+        formData.append('baths', banos);
         formData.append('location', ubicacion);
         formData.append('imageUrl', urlFoto);
         formData.append('type', operacion);
@@ -1480,9 +1480,12 @@
         btnDescarga.style.display = '';
 
         document.getElementById('f-link-seo').value = fichaUrl;
+        
+        // Texto viral dinámico (solo muestra recámaras/baños si el agente los puso)
         document.getElementById('f-texto-viral').value =
           '🏠 ' + ubicacion + ' - $' + precio + '\n' + 
-          (operacion === 'renta' ? '🛏 ' + recamaras + ' Recámaras\n' : '') +
+          (recamaras > 0 ? '🛏 ' + recamaras + ' Recámaras\n' : '') +
+          (banos > 0 ? '🚿 ' + banos + ' Baños\n' : '') +
           '\nVer detalles:\n' + fichaUrl +
           '\n\nPublica gratis en SomosViveMás:\n' + window.location.origin + '/agentes-fundadores?ref=' + embState.codigoEmbajador;
 
