@@ -88,7 +88,6 @@ function drawPinIcon(ctx, x, y, s, color, bgColor) {
   ctx.lineTo(x, y + s * 0.9);
   ctx.closePath();
   ctx.fill();
-  // El agujero del pin usa el color de fondo dinámico
   ctx.fillStyle = bgColor || '#0f172a';
   ctx.beginPath();
   ctx.arc(x, y, s * 0.18, 0, Math.PI * 2);
@@ -99,31 +98,30 @@ function drawPinIcon(ctx, x, y, s, color, bgColor) {
 async function generatePropertyCard(propertyData, imageBufferOrNull = null, theme = {}) {
   ensureFonts();
 
-  // Proporción 4:5 (1080x1350) ideal para WhatsApp/Instagram
   const width = 1080;
   const height = 1350;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
   const F = (weight) => `Poppins ${weight}`.trim();
 
-  // COLORES DINÁMICOS: Usamos el tema que mandó el frontend, o los default si no hay
+  // COLORES DINÁMICOS
   const BRAND = {
-    navy: theme.bgDark || '#0f172a',       // Fondo principal oscuro
-    navyLight: '#1e293b',                  // Detalles
-    gold: theme.accent || '#fbbf24',       // Acentos y precio
-    primary: theme.primary || '#1a472a',   // Color primario para el degradado
+    navy: theme.bgDark || '#0f172a',
+    navyLight: '#1e293b',
+    gold: theme.accent || '#fbbf24',
+    primary: theme.primary || '#1a472a',
     white: '#ffffff',
-    greyLight: '#94a3b8'                   // Gris claro para textos secundarios
+    greyLight: '#94a3b8'
   };
 
-  // 1. Fondo Degradado Premium Dinámico
+  // 1. Fondo Degradado
   const bgGrad = ctx.createLinearGradient(0, 0, width, height);
   bgGrad.addColorStop(0, BRAND.navy);
   bgGrad.addColorStop(1, BRAND.primary); 
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, width, height);
 
-  // 2. Header Minimalista (Logo)
+  // 2. Header
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
   ctx.font = `bold 36px ${F('Bold')}`;
@@ -133,13 +131,12 @@ async function generatePropertyCard(propertyData, imageBufferOrNull = null, them
   ctx.fillStyle = BRAND.gold;
   ctx.fillText('ViveMás', 50 + wSomos + 10, 70);
 
-  // 3. Contenedor de la Foto (Tarjeta Flotante)
+  // 3. Contenedor de la Foto
   const photoX = 40;
   const photoY = 120;
   const photoW = width - 80;
   const photoH = 700;
 
-  // Sombra sutil de la tarjeta
   ctx.save();
   ctx.shadowColor = 'rgba(0,0,0,0.5)';
   ctx.shadowBlur = 30;
@@ -149,7 +146,6 @@ async function generatePropertyCard(propertyData, imageBufferOrNull = null, them
   ctx.fill();
   ctx.restore();
 
-  // Recorte de foto
   ctx.save();
   roundRect(ctx, photoX, photoY, photoW, photoH, 24);
   ctx.clip();
@@ -178,7 +174,7 @@ async function generatePropertyCard(propertyData, imageBufferOrNull = null, them
   }
   ctx.restore();
 
-  // 4. Degradado Glassmorphism inferior de la foto (oscurece para que el texto respire)
+  // 4. Degradado inferior de la foto
   const fadeGrad = ctx.createLinearGradient(0, photoY + photoH - 300, 0, photoY + photoH);
   fadeGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
   fadeGrad.addColorStop(1, 'rgba(0, 0, 0, 0.8)');
@@ -189,7 +185,7 @@ async function generatePropertyCard(propertyData, imageBufferOrNull = null, them
   ctx.fillRect(photoX, photoY + photoH - 300, photoW, 300);
   ctx.restore();
 
-  // 5. Etiqueta Operación (Glass)
+  // 5. Etiqueta Operación
   const badgeText = (propertyData.type === 'venta' ? 'EN VENTA' : 'EN RENTA');
   ctx.font = `bold 18px ${F('Bold')}`;
   const badgeW = ctx.measureText(badgeText).width + 36;
@@ -216,7 +212,7 @@ async function generatePropertyCard(propertyData, imageBufferOrNull = null, them
   ctx.fillStyle = BRAND.greyLight;
   ctx.fillText(propertyData.type === 'venta' ? 'MXN' : 'MXN / mes', 50 + precioW + 12, cursorY);
 
-  // Detalles (Recámaras / Baños) en Tarjeta Glass
+  // Detalles (Recámaras / Baños)
   const tieneRecamaras = propertyData.rooms !== null && propertyData.rooms !== undefined;
   if (tieneRecamaras) {
     cursorY += 70;
@@ -235,10 +231,10 @@ async function generatePropertyCard(propertyData, imageBufferOrNull = null, them
     ctx.fillText(`${propertyData.baths || 0} Baños`, 530, cursorY);
   }
 
-  // Ubicación (Texto brillante para que se vea bien)
+  // Ubicación (Texto blanco brillante para que se vea claro)
   cursorY += 110;
   drawPinIcon(ctx, 60, cursorY - 10, 22, BRAND.gold, BRAND.navy);
-  ctx.font = `600 28px ${F('SemiBold')}`; // Cambié a SemiBold y blanco para que resalte
+  ctx.font = `600 28px ${F('SemiBold')}`;
   ctx.fillStyle = BRAND.white;
   const ubicacionTexto = truncateToWidth(ctx, propertyData.location || 'Ubicación no especificada', width - 180);
   ctx.fillText(ubicacionTexto, 95, cursorY);
@@ -249,14 +245,6 @@ async function generatePropertyCard(propertyData, imageBufferOrNull = null, them
   ctx.textAlign = 'center';
   ctx.fillText('somosvivemas.com', width / 2, height - 60);
   ctx.textAlign = 'left';
-
-  return canvas.toBuffer('image/png');
-}
-
-  // Dominio
-  ctx.font = `bold 24px ${F('Bold')}`;
-  ctx.fillStyle = BRAND.white;
-  ctx.fillText('somosvivemas.com', 40, btnY + btnH / 2);
 
   return canvas.toBuffer('image/png');
 }
