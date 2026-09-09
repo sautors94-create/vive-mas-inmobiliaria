@@ -856,7 +856,29 @@
               <div class="form-grupo" style="grid-column:1/-1;"><label>O pega la URL de la foto</label><input type="text" id="f-url" class="form-input" placeholder="https://scontent..."></div>
               <div style="grid-column:1/-1;"><button class="btn btn-primary" onclick="generarFichaFundador()" style="width:100%; padding:14px; font-weight:700; border-radius:10px; border:none; cursor:pointer;"><i class="fa-solid fa-bolt" style="margin-right:6px;"></i>Generar Ficha para WhatsApp</button></div>
             </div>
-            <!-- (Aquí va tu div de resultados f-resultados como lo tenías) -->
+            
+            <!-- ÁREA DE RESULTADOS (Esto era lo que faltaba) -->
+            <div id="f-resultados" style="display:none; margin-top:20px; padding-top:20px; border-top:1px solid #e5e7eb;">
+              <h3 style="margin-top:0; margin-bottom:16px; font-size:16px; color:#0f172a;">Tu ficha está lista</h3>
+              <img id="f-imagen-preview" src="" alt="Ficha Generada" style="max-width:100%; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.1); margin-bottom:20px; display:none;">
+              <div style="display:flex; gap:12px; margin-bottom:24px;">
+                <a id="f-btn-descarga" href="#" download="ficha-vivemas.png" class="btn btn-outline" style="flex:1; display:none; text-decoration:none; text-align:center; border:1px solid #e2e8f0; border-radius:10px; padding:12px; font-weight:600;">
+                  <i class="fa-solid fa-download" style="margin-right:6px;"></i>Descargar Imagen
+                </a>
+              </div>
+              <div style="text-align:left; background:#f8fafc; padding:16px; border-radius:12px; border:1px solid #e2e8f0;">
+                <label style="font-size:13px; font-weight:600; margin-bottom:6px; display:block; color:#374151;">Link de la propiedad (SEO):</label>
+                <div style="display:flex; gap:8px; margin-bottom:16px;">
+                  <input type="text" id="f-link-seo" class="form-input" readonly style="margin:0; background:white;">
+                  <button class="btn btn-outline" style="padding: 0 16px; white-space:nowrap; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; background:white;" onclick="copiarTexto('f-link-seo')">Copiar</button>
+                </div>
+                <label style="font-size:13px; font-weight:600; margin-bottom:6px; display:block; color:#374151;">Texto para Facebook / Grupos:</label>
+                <textarea id="f-texto-viral" class="form-input" rows="4" style="margin-bottom:12px; resize:none; background:white;"></textarea>
+                <button class="btn btn-outline" style="width:100%; border:1px solid #e2e8f0; border-radius:8px; padding:10px; cursor:pointer; background:white;" onclick="copiarTexto('f-texto-viral')">
+                  <i class="fa-regular fa-copy" style="margin-right:6px;"></i>Copiar Texto
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Links de Embajador (existente, mejorado) -->
