@@ -329,19 +329,14 @@ exports.getPublicProfile = async (req, res) => {
           <h3 class="section-title">Propiedades recientes</h3>
           <div class="fichas-grid">
             ${fichas.map(f => {
-              const imgHtml = f.imagenUrl 
-                ? `<div style="width:100%; height:180px; overflow:hidden; background:#e2e8f0;"><img src="${f.imagenUrl}" style="width:100%; height:100%; object-fit:cover;" alt="Propiedad"></div>` 
-                : `<div style="width:100%; height:180px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;">Sin Imagen</div>`;
+              const imgHtml = f.generatedImageUrl 
+                ? `<img src="${f.generatedImageUrl}" style="width:100%; height:auto; display:block;" alt="Ficha">` 
+                : `<div style="width:100%; height:180px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;">Ficha no disponible</div>`;
               
               return `
-                <div class="ficha-card" style="position:relative; overflow:hidden;">
+                <div class="ficha-card" style="position:relative; overflow:hidden; border-radius:16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
                   ${imgHtml}
                   ${f.vendida ? `<div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%) rotate(-45deg); background:rgba(220, 38, 38, 0.9); color:white; padding:10px 50px; font-weight:800; font-size:24px; border:2px solid white; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.2); z-index:5; pointer-events:none; width:150%; text-align:center;">VENDIDA</div>` : ''}
-                  
-                  <div class="ficha-body">
-                    <div class="ficha-price">$${Number(f.precio).toLocaleString('es-MX')}</div>
-                    <div class="ficha-loc">📍 ${f.ubicacion}</div>
-                  </div>
                   
                   <div class="ficha-admin-controls" style="display:none; position:absolute; bottom:10px; right:10px; gap:8px; z-index:10;">
                     <button onclick="toggleVendida('${f._id}', this)" style="padding:6px 10px; border-radius:6px; border:1px solid #e2e8f0; background:rgba(255,255,255,0.9); cursor:pointer; font-size:12px; font-weight:600; color:#0f172a;">
@@ -573,11 +568,11 @@ exports.generateCardMine = async (req, res) => {
 
     let finalImageUrl = imageUrl || null;
 
-    // SI SUBIÓ UNA FOTO, LA GUARDAMOS EN CLOUDINARY PARA TENER LA URL
+    // SI SUBIÓ UNA FOTO, LA GUARDAMOS EN CLOUDINARY
     if (req.file) {
       try {
-        
-        const result = await new Promise((resolve, reject) => {const cloudinary = require('../../config/cloudinary');
+        const cloudinary = require('../../config/cloudinary');
+        const result = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
             { folder: 'somosvivemas_fichas' },
             (error, result) => {
@@ -607,7 +602,29 @@ exports.generateCardMine = async (req, res) => {
       accent: themeAccent
     };
 
+    // GENERAMOS LA IMAGEN
     const imageBuffer = await generatePropertyCard(cardData, req.file ? req.file.buffer : null, theme);
+
+    // SUBIMOS LA IMAGEN GENERADA A CLOUDINARY PARA TENER LA URL
+    let generatedImageUrl = null;
+    if (imageBuffer) {
+      try {
+        const cloudinary = require('../../config/cloudinary');
+        const resultGen = await new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: 'somosvivemas_fichas_generadas' },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          uploadStream.end(imageBuffer);
+        });
+        generatedImageUrl = resultGen.secure_url;
+      } catch (uploadErr) {
+        console.error('Error al subir ficha generada a Cloudinary:', uploadErr);
+      }
+    }
 
     const ficha = new FichaRapida({
       founder: founder._id,
@@ -616,7 +633,8 @@ exports.generateCardMine = async (req, res) => {
       recamaras: Number(rooms) || 0,
       banos: Number(baths) || 0,
       ubicacion: location || founder.city,
-      imagenUrl: finalImageUrl, // GUARDAMOS LA URL REAL
+      imagenUrl: finalImageUrl,
+      generatedImageUrl: generatedImageUrl, // GUARDAMOS LA URL DE LA FICHA GENERADA
     });
     await ficha.save();
 

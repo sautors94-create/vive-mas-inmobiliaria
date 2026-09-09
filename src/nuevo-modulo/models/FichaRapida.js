@@ -5,19 +5,21 @@ const mongoose = require('mongoose');
 // Property (que sí pasa por moderación IA y el flujo de aprobación del
 // admin) — esto es una herramienta de captación de bajísima fricción,
 // no crea publicaciones reales en el marketplace.
-const fichaRapidaSchema = new mongoose.Schema({
-  founder: { type: mongoose.Schema.Types.ObjectId, ref: 'Founder', required: true },
-  slug: { type: String, unique: true, index: true },
-  tipo: { type: String, default: 'departamento' },
-  operacion: { type: String, enum: ['renta', 'venta'], default: 'renta' },
-  precio: { type: Number, required: true },
-  recamaras: { type: Number, default: 0 },
-  banos: { type: Number, default: 0 },
-  ubicacion: { type: String, required: true },
-  imagenUrl: { type: String, default: null }, // foto subida o URL pegada de Facebook
+const FichaRapidaSchema = new mongoose.Schema({
+  founder: { type: mongoose.Schema.Types.ObjectId, ref: 'Founder' },
+  operacion: String,
+  precio: Number,
+  recamaras: Number,
+  banos: Number,
+  ubicacion: String,
+  imagenUrl: String,
+  generatedImageUrl: { type: String, default: '' }, 
+  slug: { type: String, unique: true },
+  vendida: { type: Boolean, default: false }
 }, { timestamps: true });
 
-fichaRapidaSchema.pre('save', function (next) {
+// CORREGIDO: FichaRapidaSchema con F mayúscula
+FichaRapidaSchema.pre('save', function (next) {
   if (this.slug) return next();
   const base = (this.ubicacion || 'propiedad')
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -26,4 +28,5 @@ fichaRapidaSchema.pre('save', function (next) {
   next();
 });
 
-module.exports = mongoose.model('FichaRapida', fichaRapidaSchema);
+// CORREGIDO: FichaRapidaSchema con F mayúscula
+module.exports = mongoose.model('FichaRapida', FichaRapidaSchema);
