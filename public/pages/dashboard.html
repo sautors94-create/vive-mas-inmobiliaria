@@ -745,7 +745,7 @@
             <h4 style="font-size:16px; font-weight:700; margin-bottom:4px;"><i class="fa-solid fa-camera" style="color:var(--primary); margin-right:6px;"></i>Foto de Perfil Pública</h4>
             <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;">Sube una foto profesional. Será revisada por nuestro sistema para asegurar que sea apta para todo público.</p>
             <div style="display:flex; align-items:center; gap:20px;">
-              <img id="emb-profile-photo-preview" src="https://via.placeholder.com/100" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:2px solid var(--border);">
+              <img id="emb-profile-photo-preview" src="" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:2px solid var(--border);">
               <div>
                 <input type="file" id="emb-file-photo" accept="image/*" style="display:none;">
                 <button class="btn btn-primary" onclick="document.getElementById('emb-file-photo').click()" style="padding:10px 20px; font-size:14px;"><i class="fa-solid fa-upload"></i> Subir Foto</button>
@@ -801,7 +801,7 @@
             </div>
           </div>
 
-          <!-- Generador de imágenes de campaña -->
+                    <!-- Generador de imágenes de campaña -->
           <div class="form-card" style="margin-bottom:20px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
             <h4 style="font-size:16px; font-weight:700; margin-bottom:4px; color:#0f172a;">
               <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--primary); margin-right:6px;"></i>Generador de Imágenes
@@ -809,9 +809,9 @@
             <p style="font-size:13px; color:#64748b; margin-bottom:16px;">Crea imágenes de campaña para compartir en tus redes sociales. Se generan al instante en tu dispositivo.</p>
             
             <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; background:#f8fafc; padding:10px; border-radius:12px; border:1px solid #e2e8f0;">
-              <button class="emb-tpl-btn active" data-tpl="story" onclick="emb_selTpl(this,'story')" style="border:none; background:white; box-shadow:0 1px 2px rgba(0,0,0,0.05); padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600; color:#0f172a;">📱 Historia WhatsApp</button>
-              <button class="emb-tpl-btn" data-tpl="post" onclick="emb_selTpl(this,'post')" style="border:none; background:white; box-shadow:0 1px 2px rgba(0,0,0,0.05); padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600; color:#0f172a;">📸 Post Instagram / FB</button>
-              <button class="emb-tpl-btn" data-tpl="card" onclick="emb_selTpl(this,'card')" style="border:none; background:white; box-shadow:0 1px 2px rgba(0,0,0,0.05); padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600; color:#0f172a;">🔗 Tarjeta de Referido</button>
+              <button type="button" class="emb-tpl-btn active" data-tpl="story" onclick="emb_selTpl(this,'story')" style="border:none; background:white; box-shadow:0 1px 2px rgba(0,0,0,0.05); padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer;">📱 Historia WhatsApp</button>
+              <button type="button" class="emb-tpl-btn" data-tpl="post" onclick="emb_selTpl(this,'post')" style="border:none; background:white; box-shadow:0 1px 2px rgba(0,0,0,0.05); padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer;">📸 Post Instagram / FB</button>
+              <button type="button" class="emb-tpl-btn" data-tpl="card" onclick="emb_selTpl(this,'card')" style="border:none; background:white; box-shadow:0 1px 2px rgba(0,0,0,0.05); padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600; color:#0f172a; cursor:pointer;">🔗 Tarjeta de Referido</button>
             </div>
 
             <div class="emb-gen-preview" id="emb-gen-preview" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:20px; display:flex; align-items:center; justify-content:center; min-height:300px; margin-bottom:16px; overflow:hidden;">
@@ -823,13 +823,13 @@
             </div>
 
             <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
-              <button class="btn btn-primary" onclick="emb_generarImagen()" style="padding:12px 24px; font-weight:700; border-radius:10px; border:none; cursor:pointer;">
+              <button type="button" class="btn btn-primary" onclick="emb_generarImagen()" style="padding:12px 24px; font-weight:700; border-radius:10px; border:none; cursor:pointer;">
                 <i class="fa-solid fa-bolt" style="margin-right:6px;"></i>Generar Imagen
               </button>
-              <button class="btn btn-outline" id="emb-btn-download" style="display:none; padding:12px 24px; font-weight:600; border-radius:10px; border:1px solid #e2e8f0; cursor:pointer;" onclick="emb_descargarImagen()">
+              <button type="button" class="btn btn-outline" id="emb-btn-download" style="display:none; padding:12px 24px; font-weight:600; border-radius:10px; border:1px solid #e2e8f0; cursor:pointer;" onclick="emb_descargarImagen()">
                 <i class="fa-solid fa-download" style="margin-right:6px;"></i>Descargar
               </button>
-              <button class="btn btn-outline" id="emb-btn-share-img" style="display:none; padding:12px 24px; font-weight:600; border-radius:10px; border:1px solid #e2e8f0; cursor:pointer;" onclick="emb_compartirImagen()">
+              <button type="button" class="btn btn-outline" id="emb-btn-share-img" style="display:none; padding:12px 24px; font-weight:600; border-radius:10px; border:1px solid #e2e8f0; cursor:pointer;" onclick="emb_compartirImagen()">
                 <i class="fa-solid fa-share" style="margin-right:6px;"></i>Compartir
               </button>
             </div>
@@ -1259,7 +1259,7 @@
             const data = await res.json();
             
             if (data.ok) {
-                document.getElementById('emb-profile-photo-preview').src = 'https://via.placeholder.com/100';
+                document.getElementById('emb-profile-photo-preview').src = '';
                 document.getElementById('emb-btn-delete-photo').style.display = 'none';
                 document.getElementById('emb-photo-msg').textContent = '';
                 embState.profilePhoto = '';
@@ -1335,7 +1335,7 @@
       selectedTpl = tpl;
     };
 
-        window.emb_generarImagen = async function(){
+    window.emb_generarImagen = async function(){
       await document.fonts.ready;
       var canvas = document.getElementById('embCanvas');
       var ctx = canvas.getContext('2d');
