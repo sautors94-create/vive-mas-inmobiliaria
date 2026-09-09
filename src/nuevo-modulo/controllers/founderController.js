@@ -325,13 +325,15 @@ exports.getPublicProfile = async (req, res) => {
           </div>
         </div>
 
-        ${fichas.length > 0 ? `
+                ${fichas.length > 0 ? `
           <h3 class="section-title">Propiedades recientes</h3>
           <div class="fichas-grid">
             ${fichas.map(f => {
               const imgHtml = f.generatedImageUrl 
                 ? `<img src="${f.generatedImageUrl}" style="width:100%; height:auto; display:block;" alt="Ficha">` 
-                : `<div style="width:100%; height:180px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;">Ficha no disponible</div>`;
+                : f.imagenUrl 
+                  ? `<img src="${f.imagenUrl}" style="width:100%; height:auto; display:block;" alt="Propiedad">` 
+                  : `<div style="width:100%; height:180px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;">Sin Imagen</div>`;
               
               return `
                 <div class="ficha-card" style="position:relative; overflow:hidden; border-radius:16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
