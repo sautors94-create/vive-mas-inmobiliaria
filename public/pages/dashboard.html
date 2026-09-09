@@ -1137,7 +1137,7 @@
       const photoPreview = document.getElementById('emb-profile-photo-preview');
       const btnDeletePhoto = document.getElementById('emb-btn-delete-photo');
       if (photoPreview) {
-          photoPreview.src = embState.profilePhoto || 'https://via.placeholder.com/100';
+          photoPreview.src = embState.profilePhoto || '';
       }
       if (btnDeletePhoto) {
           // Mostramos el botón de eliminar solo si ya tiene una foto cargada
