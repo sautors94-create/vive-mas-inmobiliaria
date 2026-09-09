@@ -330,13 +330,13 @@ exports.getPublicProfile = async (req, res) => {
           <div class="fichas-grid">
             ${fichas.map(f => {
               const imgHtml = f.imagenUrl 
-                ? `<img src="${f.imagenUrl}" class="ficha-img" alt="Propiedad">` 
-                : `<div class="ficha-img-container">Sin Imagen</div>`;
+                ? `<div style="width:100%; height:180px; overflow:hidden; background:#e2e8f0;"><img src="${f.imagenUrl}" style="width:100%; height:100%; object-fit:cover;" alt="Propiedad"></div>` 
+                : `<div style="width:100%; height:180px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;">Sin Imagen</div>`;
               
               return `
                 <div class="ficha-card" style="position:relative; overflow:hidden;">
                   ${imgHtml}
-                  ${f.vendida ? `<div style="position:absolute; top:20px; left:-40px; transform:rotate(-45deg); background:#dc2626; color:white; padding:5px 50px; font-weight:700; font-size:14px; box-shadow:0 4px 6px rgba(0,0,0,0.1); z-index:5;">VENDIDA</div>` : ''}
+                  ${f.vendida ? `<div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%) rotate(-45deg); background:rgba(220, 38, 38, 0.9); color:white; padding:10px 50px; font-weight:800; font-size:24px; border:2px solid white; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.2); z-index:5; pointer-events:none; width:150%; text-align:center;">VENDIDA</div>` : ''}
                   
                   <div class="ficha-body">
                     <div class="ficha-price">$${Number(f.precio).toLocaleString('es-MX')}</div>
@@ -563,28 +563,48 @@ exports.updateSocial = async (req, res) => {
 };
 
 
-// 11. Generar ficha para el agente logueado (misma lógica que generateCard,
-//     pero identificando al agente por sesión en vez de por referralCode en el body)
+// 11. Generar ficha para el agente logueado
 exports.generateCardMine = async (req, res) => {
   try {
     const founder = await Founder.findOne({ userId: req.user.id });
     if (!founder) return res.status(404).json({ error: 'Primero inscríbete al programa de Embajadores' });
 
-    const { price, rooms, baths, location, imageUrl, type } = req.body;
+    const { price, rooms, baths, location, imageUrl, type, themeBgDark, themePrimary, themeAccent } = req.body;
+
+    let finalImageUrl = imageUrl || null;
+
+    // SI SUBIÓ UNA FOTO, LA GUARDAMOS EN CLOUDINARY PARA TENER LA URL
+    if (req.file) {
+      try {
+        
+        const result = await new Promise((resolve, reject) => {const cloudinary = require('../../config/cloudinary');
+          const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: 'somosvivemas_fichas' },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          uploadStream.end(req.file.buffer);
+        });
+        finalImageUrl = result.secure_url;
+      } catch (uploadErr) {
+        console.error('Error al subir a Cloudinary:', uploadErr);
+      }
+    }
 
     const cardData = {
       price: price || 0,
       rooms: rooms || 0,
       baths: baths || 0,
       location: location || founder.city,
-      imageUrl: imageUrl || null,
+      imageUrl: finalImageUrl,
     };
 
-    // RECIBIMOS LOS COLORES DEL FRONTEND
     const theme = {
-      bgDark: req.body.themeBgDark,
-      primary: req.body.themePrimary,
-      accent: req.body.themeAccent
+      bgDark: themeBgDark,
+      primary: themePrimary,
+      accent: themeAccent
     };
 
     const imageBuffer = await generatePropertyCard(cardData, req.file ? req.file.buffer : null, theme);
@@ -596,7 +616,7 @@ exports.generateCardMine = async (req, res) => {
       recamaras: Number(rooms) || 0,
       banos: Number(baths) || 0,
       ubicacion: location || founder.city,
-      imagenUrl: imageUrl || null,
+      imagenUrl: finalImageUrl, // GUARDAMOS LA URL REAL
     });
     await ficha.save();
 
@@ -689,7 +709,7 @@ exports.deleteFicha = async (req, res) => {
     
     res.json({ ok: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message }); 
   }
 };
 
