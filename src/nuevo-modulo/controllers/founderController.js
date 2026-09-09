@@ -215,7 +215,7 @@ exports.getPublicProfile = async (req, res) => {
       contactButtons += `<a href="${mailtoLink}" class="cta-btn cta-mail">✉️ Correo</a>`;
     }
     if (!whatsappLink && !mailtoLink) {
-      contactButtons = `<div style="color: #64748b; font-size: 14px; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">El agente no ha habilitado métodos de contacto directo aún.</div>`;
+      contactButtons = `<div style="color: #64748b; font-size: 14px; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; text-align:center;">El agente no ha habilitado métodos de contacto directo aún.</div>`;
     }
 
     // Redes sociales dinámicas
@@ -225,8 +225,8 @@ exports.getPublicProfile = async (req, res) => {
       if (founder.social?.facebook) socialHtml += `<a href="${founder.social.facebook}" target="_blank" class="social-btn" style="width:40px; height:40px; border-radius:10px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:18px;">📘</a>`;
       if (founder.social?.instagram) socialHtml += `<a href="${founder.social.instagram}" target="_blank" class="social-btn" style="width:40px; height:40px; border-radius:10px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:18px;">📸</a>`;
       if (founder.social?.website) socialHtml += `<a href="${founder.social.website}" target="_blank" class="social-btn" style="width:40px; height:40px; border-radius:10px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:18px;">🌐</a>`;
+      socialHtml += '</div>';
     }
-    socialHtml += '</div>';
 
     const html = `
     <!DOCTYPE html>
@@ -251,7 +251,7 @@ exports.getPublicProfile = async (req, res) => {
         .profile-container { max-width: 800px; margin: -30px auto 60px; padding: 0 20px; position: relative; z-index: 10; }
         .profile-card { background: white; border-radius: 24px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e2e8f0; }
         .profile-header { background: linear-gradient(135deg, var(--bg-dark, #0f172a) 0%, var(--primary, #1a472a) 100%); padding: 60px 40px 40px; text-align: center; position: relative; }
-        .avatar-circle { width: 110px; height: 110px; border-radius: 50%; background: white; color: var(--primary, #1a472a); display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; margin: 0 auto 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 4px solid rgba(255,255,255,0.3); overflow: hidden; }
+        .avatar-circle { width: 110px; height: 110px; border-radius: 50%; background: white; color: var(--primary, #1a472a); display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; margin: 0 auto 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 4px solid rgba(255,255,255,0.3); overflow: hidden; background-size: cover; background-position: center; }
         .profile-name { color: white; font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; font-weight: 700; margin-bottom: 8px; }
         .profile-location { color: rgba(255,255,255,0.9); font-size: 15px; }
         .badges { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
@@ -273,7 +273,7 @@ exports.getPublicProfile = async (req, res) => {
         
         .section-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 700; margin: 50px 0 20px; color: #0f172a; }
         .fichas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
-        .ficha-card { background: white; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; transition: all 0.3s; }
+        .ficha-card { background: white; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; transition: all 0.3s; position: relative; }
         .ficha-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-color: var(--primary, #1a472a); }
         .ficha-img { width: 100%; height: 180px; object-fit: cover; background: #e2e8f0; }
         .ficha-body { padding: 20px; }
@@ -286,7 +286,7 @@ exports.getPublicProfile = async (req, res) => {
         /* Modal Editor de Contacto */
         .edit-fab { position: fixed; bottom: 30px; right: 30px; background: var(--primary, #1a472a); color: white; width: 60px; height: 60px; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); cursor: pointer; z-index: 999; border: none; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-        .modal-card { background: white; border-radius: 24px; max-width: 480px; width: 100%; padding: 40px; box-shadow: 0 25px 60px rgba(0,0,0,0.3); }
+        .modal-card { background: white; border-radius: 24px; max-width: 480px; width: 100%; padding: 40px; box-shadow: 0 25px 60px rgba(0,0,0,0.3); position: relative; }
         .modal-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 8px; }
         .modal-desc { font-size: 14px; color: #64748b; margin-bottom: 24px; }
         .modal-input { width: 100%; padding: 14px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 15px; font-family: 'Inter', sans-serif; margin-bottom: 16px; outline: none; box-sizing: border-box; }
@@ -303,7 +303,7 @@ exports.getPublicProfile = async (req, res) => {
       <div class="profile-container">
         <div class="profile-card">
           <div class="profile-header">
-            <div class="avatar-circle" style="background-image: url('${founder.profilePhoto || ''}'); background-size: cover; background-position: center; ${founder.profilePhoto ? 'color: transparent;' : ''}">${founder.profilePhoto ? '' : founder.name.charAt(0).toUpperCase()}</div>
+            <div class="avatar-circle" style="background-image: url('${founder.profilePhoto || ''}'); ${founder.profilePhoto ? 'color: transparent;' : ''}">${founder.profilePhoto ? '' : founder.name.charAt(0).toUpperCase()}</div>
             <h1 class="profile-name">${founder.name}</h1>
             <div class="profile-location">📍 ${founder.city}</div>
             <div class="badges">
@@ -325,11 +325,10 @@ exports.getPublicProfile = async (req, res) => {
           </div>
         </div>
 
-                ${fichas.length > 0 ? `
+        ${fichas.length > 0 ? `
           <h3 class="section-title">Propiedades recientes</h3>
           <div class="fichas-grid">
             ${fichas.map(f => {
-              // Si no hay imagen, usamos un div gris en lugar de via.placeholder
               const imgHtml = f.imagenUrl 
                 ? `<img src="${f.imagenUrl}" class="ficha-img" alt="Propiedad">` 
                 : `<div style="width:100%; height:180px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;">Sin Imagen</div>`;
@@ -344,7 +343,6 @@ exports.getPublicProfile = async (req, res) => {
                     <div class="ficha-loc">📍 ${f.ubicacion}</div>
                   </div>
                   
-                  <!-- Controles de Administrador (Ocultos por defecto) -->
                   <div class="ficha-admin-controls" style="display:none; position:absolute; bottom:10px; right:10px; gap:8px; z-index:10;">
                     <button onclick="toggleVendida('${f._id}', this)" style="padding:6px 10px; border-radius:6px; border:1px solid #e2e8f0; background:rgba(255,255,255,0.9); cursor:pointer; font-size:12px; font-weight:600; color:#0f172a;">
                       ${f.vendida ? '↩️ Reactivar' : '✅ Marcar Vendida'}
@@ -360,13 +358,10 @@ exports.getPublicProfile = async (req, res) => {
         </div>
       </div>
 
-      <!-- BOTÓN FLOTANTE DE EDICIÓN (SOLO PARA EL DUEÑO) -->
       <button class="edit-fab" id="editFab" onclick="openModal()">✏️</button>
 
-      <!-- MODAL DE EDICIÓN DE CONTACTO -->
       <div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeModal()">
         <div class="modal-card" style="position:relative;">
-          <!-- BOTÓN DE CERRAR (X) -->
           <button onclick="closeModal()" style="position:absolute; top:15px; right:15px; background:transparent; border:none; font-size:24px; color:#64748b; cursor:pointer;">✕</button>
           
           <h3 class="modal-title">Configurar Contacto Público</h3>
@@ -380,7 +375,6 @@ exports.getPublicProfile = async (req, res) => {
       </div>
 
       <script>
-        // Lógica para saber si el que visita es el dueño del perfil
         const loggedUser = JSON.parse(localStorage.getItem('user') || '{}');
         const ownerId = '${founder.userId ? founder.userId.toString() : ''}';
         if (loggedUser._id && loggedUser._id === ownerId) {
@@ -388,50 +382,38 @@ exports.getPublicProfile = async (req, res) => {
           document.querySelectorAll('.ficha-admin-controls').forEach(el => el.style.display = 'flex');
         }
 
-        function openModal() {
-          document.getElementById('editModal').style.display = 'flex';
-        }
-        function closeModal() {
-          document.getElementById('editModal').style.display = 'none';
-        }
+        function openModal() { document.getElementById('editModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('editModal').style.display = 'none'; }
 
         async function saveContact() {
           const whatsapp = document.getElementById('waInput').value.trim();
           const email = document.getElementById('emailInput').value.trim();
-          
           try {
-            // CORRECCIÓN: Buscamos en ambos storages por si la sesión se guardó distinta
             const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-            
-            if (!token) {
-              alert('Tu sesión ha expirado. Por favor, regresa al panel e inicia sesión de nuevo.');
-              return;
-            }
-
+            if (!token) { alert('Tu sesión ha expirado. Regresa al panel e inicia sesión.'); return; }
             const res = await fetch('/api/fundadores/mine/public-contact', {
               method: 'PATCH',
-              headers: { 
-                'Content-Type': 'application/json', 
-                'Authorization': 'Bearer ' + token 
-              },
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
               body: JSON.stringify({ whatsapp, email })
             });
-            
-            if (res.status === 401) {
-              alert('Tu sesión ha expirado. Por favor, regresa e inicia sesión.');
-              return;
-            }
-            
+            if (res.status === 401) { alert('Tu sesión ha expirado.'); return; }
             const data = await res.json();
-            if (data.ok) {
-              alert('Contacto actualizado. La página se recargará para mostrar los cambios.');
-              window.location.reload();
-            } else {
-              alert('Error: ' + (data.error || 'No se pudo guardar'));
-            }
-          } catch (e) {
-            alert('Error de conexión con el servidor.');
-          }
+            if (data.ok) { alert('Contacto actualizado.'); window.location.reload(); } 
+            else { alert('Error: ' + (data.error || 'No se pudo guardar')); }
+          } catch (e) { alert('Error de conexión.'); }
+        }
+
+        async function toggleVendida(id, btn) {
+          const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+          const res = await fetch('/api/fundadores/mine/fichas/'+id+'/vendida', { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token } });
+          if(res.ok) window.location.reload();
+        }
+        
+        async function eliminarFicha(id, btn) {
+          if(!confirm('¿Eliminar esta ficha de tu perfil?')) return;
+          const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+          const res = await fetch('/api/fundadores/mine/fichas/'+id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+          if(res.ok) btn.closest('.ficha-card').remove();
         }
       </script>
     </body>

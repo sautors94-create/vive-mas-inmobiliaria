@@ -844,7 +844,7 @@
             <div class="form-grid">
               <div class="form-grupo">
                 <label>Operación *</label>
-                <select id="f-operacion" class="form-input" onchange="toggleRecamaras()">
+                <select id="f-operacion" class="form-input">
                   <option value="renta">Renta</option>
                   <option value="venta">Venta</option>
                 </select>
@@ -1784,6 +1784,16 @@
         localStorage.removeItem('vm_ref_fundador');
       }
     }
+        // Listener seguro para mostrar/ocultar recámaras
+    document.addEventListener('DOMContentLoaded', () => {
+      const opSelect = document.getElementById('f-operacion');
+      if (opSelect) {
+        opSelect.addEventListener('change', function() {
+          const wrap = document.getElementById('f-recamaras-wrap');
+          if (wrap) wrap.style.display = this.value === 'renta' ? 'block' : 'none';
+        });
+      }
+    });
   </script>
 </body>
 </html>
