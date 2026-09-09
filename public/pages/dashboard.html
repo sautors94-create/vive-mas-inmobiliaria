@@ -1381,23 +1381,33 @@
       embToast('Datos recargados','info');
     };
 
-    // Genera la ficha profesional real (llama al backend, con la sesión del usuario)
     // Mostrar/ocultar recámaras según operación
-    function toggleRecamaras() {
+    window.toggleRecamaras = function() {
       const op = document.getElementById('f-operacion').value;
-      document.getElementById('f-recamaras-wrap').style.display = op === 'renta' ? 'block' : 'none';
-    }
+      const wrap = document.getElementById('f-recamaras-wrap');
+      if (wrap) wrap.style.display = op === 'renta' ? 'block' : 'none';
+    };
+
+    // Genera la ficha profesional real (llama al backend, con la sesión del usuario)
     window.generarFichaFundador = async function(){
-      var operacion = document.getElementById('f-operacion').value; // <-- Lee el select
+      var operacion = document.getElementById('f-operacion').value;
       var precio = document.getElementById('f-precio').value.trim();
-      var recamaras = operacion === 'venta' ? 0 : (document.getElementById('f-recamaras').value.trim() || 0); // <-- 0 si es venta
       var ubicacion = document.getElementById('f-ubicacion').value.trim();
       var fotoInput = document.getElementById('f-foto');
       var urlFoto = document.getElementById('f-url').value.trim();
 
-      if(!precio || !recamaras || !ubicacion){
-        embToast('Completa precio, recámaras y ubicación','error');
+      // VALIDACIÓN MEJORADA: Solo exigimos recámaras si es renta
+      if(!precio || !ubicacion){
+        embToast('Completa precio y ubicación','error');
         return;
+      }
+      
+      if (operacion === 'renta') {
+        var recamarasVal = document.getElementById('f-recamaras').value.trim();
+        if(!recamarasVal) {
+          embToast('Completa las recámaras (obligatorio para renta)','error');
+          return;
+        }
       }
 
       var boton = document.querySelector('button[onclick="generarFichaFundador()"]');
@@ -1405,15 +1415,15 @@
       if (boton) { boton.disabled = true; boton.textContent = 'Generando...'; }
 
       try {
-        // Dentro de generarFichaFundador...
-       var formData = new FormData();
+        var recamaras = operacion === 'venta' ? 0 : (document.getElementById('f-recamaras').value.trim() || 0);
+        
+        var formData = new FormData();
         formData.append('price', precio);
         formData.append('rooms', recamaras);
-        formData.append('baths', '0'); // <-- Mandamos 0 baños si es venta (opcional, el backend lo recibe así)
+        formData.append('baths', '2'); // Valor por defecto
         formData.append('location', ubicacion);
-        formData.append('type', operacion); // <-- Enviamos la operación
         formData.append('imageUrl', urlFoto);
-        formData.append('type', 'renta');
+        formData.append('type', operacion);
         
         // ENVIAR COLORES DEL TEMA ACTUAL AL BACKEND
         var themeColors = getThemeColors();
@@ -1424,6 +1434,7 @@
         if (fotoInput.files && fotoInput.files.length > 0) {
           formData.append('photo', fotoInput.files[0]);
         }
+
         var res = await fetch(`${API_URL}/api/fundadores/mine/generate-card`, {
           method: 'POST',
           headers: { Authorization: 'Bearer ' + localStorage.getItem('accessToken') },
@@ -1448,13 +1459,15 @@
 
         document.getElementById('f-link-seo').value = fichaUrl;
         document.getElementById('f-texto-viral').value =
-          '🏠 ' + ubicacion + ' - $' + precio + '\n🛏 ' + recamaras + ' Recámaras\n\nVer detalles:\n' + fichaUrl +
+          '🏠 ' + ubicacion + ' - $' + precio + '\n' + 
+          (operacion === 'renta' ? '🛏 ' + recamaras + ' Recámaras\n' : '') +
+          '\nVer detalles:\n' + fichaUrl +
           '\n\nPublica gratis en SomosViveMás:\n' + window.location.origin + '/agentes-fundadores?ref=' + embState.codigoEmbajador;
 
         document.getElementById('f-resultados').style.display = '';
         embState.propiedades += 1;
         embRender();
-        embToast('Tu ficha está lista','success');  
+        embToast('Tu ficha está lista','success');
       } catch (e) {
         embToast(e.message || 'No se pudo generar la ficha. Intenta de nuevo.', 'error');
       } finally {
