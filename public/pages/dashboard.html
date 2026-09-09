@@ -1341,9 +1341,23 @@
       var ctx = canvas.getContext('2d');
       var c = getThemeColors(); // OBTENEMOS LOS COLORES ACTUALES
       
-      if(selectedTpl==='story'){ canvas.width=1080; canvas.height=1920; drawStory(ctx,1080,1920,c); }
-      else if(selectedTpl==='post'){ canvas.width=1080; canvas.height=1080; drawPost(ctx,1080,1080,c); }
-      else { canvas.width=1200; canvas.height=630; drawCard(ctx,1200,630,c); }
+      // INTENTAMOS CARGAR LA FOTO REAL DEL AGENTE
+      var avatarImg = null;
+      if (embState.profilePhoto) {
+        try {
+          avatarImg = await new Promise((resolve, reject) => {
+            var img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = embState.profilePhoto;
+          });
+        } catch(e) { avatarImg = null; }
+      }
+      
+      if(selectedTpl==='story'){ canvas.width=1080; canvas.height=1920; drawStory(ctx,1080,1920,c,avatarImg); }
+      else if(selectedTpl==='post'){ canvas.width=1080; canvas.height=1080; drawPost(ctx,1080,1080,c,avatarImg); }
+      else { canvas.width=1200; canvas.height=630; drawCard(ctx,1200,630,c); } // La tarjeta de referido no lleva avatar
       
       genImageURL = canvas.toDataURL('image/png');
       var img = document.getElementById('emb-gen-image');
@@ -1469,8 +1483,8 @@
       }
     };
 
-          /* ── Dibujo Canvas: Story (1080x1920) ── */
-    function drawStory(ctx, w, h, c){
+        /* ── Dibujo Canvas: Story (1080x1920) ── */
+    function drawStory(ctx, w, h, c, avatarImg){
       var ni = getNivelIdx(embState.propiedades);
       var nv = EMB_NIVELES[ni];
       var accent = c.accent || '#fbbf24', white = '#ffffff';
@@ -1487,17 +1501,26 @@
 
       ctx.textAlign = 'center';
       var badgeW = 320, badgeH = 60, badgeX = (w-badgeW)/2, badgeY = 450;
-      ctx.fillStyle = accent + '26'; // hex alpha
+      ctx.fillStyle = accent + '26'; 
       ctx.strokeStyle = accent + '66';
       ctx.lineWidth = 2;
       rRect(ctx, badgeX, badgeY, badgeW, badgeH, 30); ctx.fill(); ctx.stroke();
       ctx.fillStyle = accent; ctx.font = '700 26px "Bricolage Grotesque", sans-serif';
       ctx.fillText(nv.nombre.toUpperCase() + ' BADGE', w/2, badgeY + 38);
 
-      ctx.fillStyle = 'rgba(255,255,255,0.1)';
-      ctx.beginPath(); ctx.arc(w/2, 750, 120, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = white; ctx.font = '800 80px "Bricolage Grotesque", sans-serif';
-      ctx.fillText(embState.nombre.charAt(0).toUpperCase(), w/2, 770);
+      // CÍRCULO AVATAR (Foto o Inicial)
+      ctx.save();
+      ctx.beginPath(); ctx.arc(w/2, 750, 120, 0, Math.PI*2); ctx.closePath(); ctx.clip();
+      if (avatarImg) {
+        ctx.drawImage(avatarImg, w/2 - 120, 750 - 120, 240, 240);
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(w/2 - 120, 750 - 120, 240, 240);
+        ctx.fillStyle = white; ctx.font = '800 80px "Bricolage Grotesque", sans-serif';
+        ctx.fillText(embState.nombre.charAt(0).toUpperCase(), w/2, 770);
+      }
+      ctx.restore();
+      // Borde del círculo
+      ctx.beginPath(); ctx.arc(w/2, 750, 120, 0, Math.PI*2); ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 4; ctx.stroke();
 
       ctx.fillStyle = white; ctx.font = '300 36px "Inter", sans-serif';
       ctx.fillText(embState.nombre, w/2, 950);
@@ -1516,13 +1539,10 @@
       ctx.fillText('Únete al programa de embajadores', w/2, 1350);
       ctx.fillStyle = accent; ctx.font = '700 24px "Bricolage Grotesque", sans-serif';
       ctx.fillText(window.location.host+'/agentes-fundadores', w/2, 1390);
-
-      ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 2;
-      rRect(ctx,20,20,w-40,h-40,20); ctx.stroke();
     }
 
     /* ── Dibujo Canvas: Post (1080x1080) ── */
-    function drawPost(ctx, w, h, c){
+    function drawPost(ctx, w, h, c, avatarImg){
       var ni = getNivelIdx(embState.propiedades);
       var nv = EMB_NIVELES[ni];
       var accent = c.accent || '#fbbf24', white = '#ffffff';
@@ -1537,11 +1557,18 @@
       ctx.fillStyle = white; ctx.font = '800 56px "Bricolage Grotesque", sans-serif';
       ctx.fillText('EMBAJADORES', w/2, 270);
 
-      ctx.fillStyle = 'rgba(255,255,255,0.08)';
-      ctx.beginPath(); ctx.arc(w/2, 500, 180, 0, Math.PI*2); ctx.fill();
-      
-      ctx.fillStyle = white; ctx.font = '800 100px "Bricolage Grotesque", sans-serif';
-      ctx.fillText(embState.nombre.charAt(0).toUpperCase(), w/2, 530);
+      // CÍRCULO AVATAR (Foto o Inicial)
+      ctx.save();
+      ctx.beginPath(); ctx.arc(w/2, 500, 180, 0, Math.PI*2); ctx.closePath(); ctx.clip();
+      if (avatarImg) {
+        ctx.drawImage(avatarImg, w/2 - 180, 500 - 180, 360, 360);
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(w/2 - 180, 500 - 180, 360, 360);
+        ctx.fillStyle = white; ctx.font = '800 100px "Bricolage Grotesque", sans-serif';
+        ctx.fillText(embState.nombre.charAt(0).toUpperCase(), w/2, 530);
+      }
+      ctx.restore();
+      ctx.beginPath(); ctx.arc(w/2, 500, 180, 0, Math.PI*2); ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 4; ctx.stroke();
 
       ctx.fillStyle = accent; ctx.font = '700 24px "Bricolage Grotesque", sans-serif';
       ctx.fillText(nv.nombre.toUpperCase(), w/2, 750);

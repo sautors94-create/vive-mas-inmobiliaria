@@ -235,32 +235,23 @@ async function generatePropertyCard(propertyData, imageBufferOrNull = null, them
     ctx.fillText(`${propertyData.baths || 0} Baños`, 530, cursorY);
   }
 
-  // Ubicación
+  // Ubicación (Texto brillante para que se vea bien)
   cursorY += 110;
   drawPinIcon(ctx, 60, cursorY - 10, 22, BRAND.gold, BRAND.navy);
-  ctx.font = `500 26px ${F('Regular')}`;
-  ctx.fillStyle = BRAND.greyLight;
-  const ubicacionTexto = truncateToWidth(ctx, propertyData.location || '', width - 180);
+  ctx.font = `600 28px ${F('SemiBold')}`; // Cambié a SemiBold y blanco para que resalte
+  ctx.fillStyle = BRAND.white;
+  const ubicacionTexto = truncateToWidth(ctx, propertyData.location || 'Ubicación no especificada', width - 180);
   ctx.fillText(ubicacionTexto, 95, cursorY);
 
-  // 7. Pie con Botón CTA
-  const btnW = 380;
-  const btnH = 64;
-  const btnX = width - btnW - 40;
-  const btnY = height - 90;
-
-  const btnGrad = ctx.createLinearGradient(btnX, btnY, btnX + btnW, btnY);
-  btnGrad.addColorStop(0, '#22c55e');
-  btnGrad.addColorStop(1, '#16a34a');
-  ctx.fillStyle = btnGrad;
-  roundRect(ctx, btnX, btnY, btnW, btnH, 32);
-  ctx.fill();
-
-  ctx.font = `bold 22px ${F('Bold')}`;
-  ctx.fillStyle = BRAND.white;
+  // 7. Pie (Sin botón de WhatsApp, solo el dominio centrado)
+  ctx.font = `bold 26px ${F('Bold')}`;
+  ctx.fillStyle = BRAND.gold;
   ctx.textAlign = 'center';
-  ctx.fillText('💬 Contactar por WhatsApp', btnX + btnW / 2, btnY + btnH / 2);
+  ctx.fillText('somosvivemas.com', width / 2, height - 60);
   ctx.textAlign = 'left';
+
+  return canvas.toBuffer('image/png');
+}
 
   // Dominio
   ctx.font = `bold 24px ${F('Bold')}`;
