@@ -225,8 +225,8 @@ exports.getPublicProfile = async (req, res) => {
       if (founder.social?.facebook) socialHtml += `<a href="${founder.social.facebook}" target="_blank" class="social-btn" style="width:40px; height:40px; border-radius:10px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:18px;">📘</a>`;
       if (founder.social?.instagram) socialHtml += `<a href="${founder.social.instagram}" target="_blank" class="social-btn" style="width:40px; height:40px; border-radius:10px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:18px;">📸</a>`;
       if (founder.social?.website) socialHtml += `<a href="${founder.social.website}" target="_blank" class="social-btn" style="width:40px; height:40px; border-radius:10px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:18px;">🌐</a>`;
-      socialHtml += '</div>';
     }
+    socialHtml += '</div>';
 
     const html = `
     <!DOCTYPE html>
@@ -325,18 +325,34 @@ exports.getPublicProfile = async (req, res) => {
           </div>
         </div>
 
-        ${fichas.length > 0 ? `
+                ${fichas.length > 0 ? `
           <h3 class="section-title">Propiedades recientes</h3>
           <div class="fichas-grid">
-            ${fichas.map(f => `
-              <div class="ficha-card">
-                <img src="${f.imagenUrl || 'https://via.placeholder.com/300x180?text=Sin+Imagen'}" class="ficha-img" alt="Propiedad">
-                <div class="ficha-body">
-                  <div class="ficha-price">$${Number(f.precio).toLocaleString('es-MX')}</div>
-                  <div class="ficha-loc">📍 ${f.ubicacion}</div>
-                </div>
-              </div>
-            `).join('')}
+            ${fichas.map(f => {
+              // Si no hay imagen, usamos un div gris en lugar de via.placeholder
+              const imgHtml = f.imagenUrl 
+                ? `<img src="${f.imagenUrl}" class="ficha-img" alt="Propiedad">` 
+                : `<div style="width:100%; height:180px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;">Sin Imagen</div>`;
+              
+              return `
+                <div class="ficha-card" style="position:relative; overflow:hidden;">
+                  ${imgHtml}
+                  ${f.vendida ? `<div style="position:absolute; top:20px; left:-40px; transform:rotate(-45deg); background:#dc2626; color:white; padding:5px 50px; font-weight:700; font-size:14px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">VENDIDA</div>` : ''}
+                  
+                  <div class="ficha-body">
+                    <div class="ficha-price">$${Number(f.precio).toLocaleString('es-MX')}</div>
+                    <div class="ficha-loc">📍 ${f.ubicacion}</div>
+                  </div>
+                  
+                  <!-- Controles de Administrador (Ocultos por defecto) -->
+                  <div class="ficha-admin-controls" style="display:none; position:absolute; bottom:10px; right:10px; gap:8px; z-index:10;">
+                    <button onclick="toggleVendida('${f._id}', this)" style="padding:6px 10px; border-radius:6px; border:1px solid #e2e8f0; background:rgba(255,255,255,0.9); cursor:pointer; font-size:12px; font-weight:600; color:#0f172a;">
+                      ${f.vendida ? '↩️ Reactivar' : '✅ Marcar Vendida'}
+                    </button>
+                    <button onclick="eliminarFicha('${f._id}', this)" style="padding:6px 10px; border-radius:6px; border:1px solid #fecaca; background:rgba(255,255,255,0.9); cursor:pointer; font-size:12px; font-weight:600; color:#dc2626;">🗑️</button>
+                  </div>
+                </div>`;
+            }).join('')}
           </div>` : ''}
 
         <div class="footer-link">
@@ -369,6 +385,7 @@ exports.getPublicProfile = async (req, res) => {
         const ownerId = '${founder.userId ? founder.userId.toString() : ''}';
         if (loggedUser._id && loggedUser._id === ownerId) {
           document.getElementById('editFab').style.display = 'flex';
+          document.querySelectorAll('.ficha-admin-controls').forEach(el => el.style.display = 'flex');
         }
 
         function openModal() {
@@ -425,6 +442,18 @@ exports.getPublicProfile = async (req, res) => {
     res.status(500).send('Error del servidor');
   }
 };
+        async function toggleVendida(id, btn) {
+          const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+          const res = await fetch('/api/fundadores/mine/fichas/'+id+'/vendida', { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token } });
+          if(res.ok) window.location.reload();
+        }
+        
+        async function eliminarFicha(id, btn) {
+          if(!confirm('¿Eliminar esta ficha de tu perfil?')) return;
+          const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+          const res = await fetch('/api/fundadores/mine/fichas/'+id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+          if(res.ok) btn.closest('.ficha-card').remove();
+        }
 
 // 8. Obtener (o crear) el Founder ligado al usuario logueado — para la
 //    sección "Programa de Embajadores" dentro del dashboard real (con sesión)
@@ -667,7 +696,38 @@ exports.deleteProfilePhoto = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// Eliminar ficha
+exports.deleteFicha = async (req, res) => {
+  try {
+    const founder = await Founder.findOne({ userId: req.user.id });
+    if (!founder) return res.status(404).json({ error: 'No encontrado' });
+    
+    const ficha = await FichaRapida.findOneAndDelete({ _id: req.params.id, founder: founder._id });
+    if (!ficha) return res.status(404).json({ error: 'Ficha no encontrada' });
+    
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
+// Marcar como vendida
+exports.toggleFichaVendida = async (req, res) => {
+  try {
+    const founder = await Founder.findOne({ userId: req.user.id });
+    if (!founder) return res.status(404).json({ error: 'No encontrado' });
+    
+    const ficha = await FichaRapida.findOne({ _id: req.params.id, founder: founder._id });
+    if (!ficha) return res.status(404).json({ error: 'Ficha no encontrada' });
+    
+    ficha.vendida = !ficha.vendida; // Cambia el estado
+    await ficha.save();
+    
+    res.json({ ok: true, vendida: ficha.vendida });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 // 5. Listado para el admin
 exports.getAdminList = async (req, res) => {
   try {

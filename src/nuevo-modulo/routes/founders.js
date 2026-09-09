@@ -42,4 +42,8 @@ router.patch('/mine/public-contact', authMiddleware, founderController.updatePub
 router.post('/mine/profile-photo', authMiddleware, upload.single('photo'), founderController.uploadProfilePhoto);
 // 14. Eliminar foto de perfil
 router.delete('/mine/profile-photo', authMiddleware, founderController.deleteProfilePhoto);
+// 15. Eliminar una ficha rápida del agente
+router.delete('/mine/fichas/:id', authMiddleware, founderController.deleteFicha);
+// 16. Marcar / desmarcar ficha como vendida
+router.patch('/mine/fichas/:id/vendida', authMiddleware, founderController.toggleFichaVendida);
 module.exports = router;
