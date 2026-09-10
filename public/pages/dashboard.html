@@ -758,10 +758,6 @@
                 <span id="emb-progress-text">0 / 5 propiedades</span>
                 <span id="emb-progress-pct">0%</span>
               </div>
-              <div class="emb-lock-notice" id="emb-lock-notice">
-                <i class="fa-solid fa-lock"></i>
-                <span>Ingresa tu código de referido para activar tu progreso</span>
-              </div>
             </div>
           </div>
 
@@ -769,15 +765,15 @@
           <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-light); margin-bottom:12px; display:flex; align-items:center; gap:10px;">Rangos del Programa<span style="flex:1; height:1px; background:var(--border); display:block;"></span></div>
           <div class="emb-levels-row" id="emb-levels-row" style="margin-bottom:24px;"></div>
 
-          <!-- Código de referido (una sola vez) -->
+          <!-- Código de referido (Opcional) -->
           <div class="form-card" id="emb-referral-section" style="margin-bottom:20px;">
-            <h4 style="font-size:16px; font-weight:700; margin-bottom:4px;"><i class="fa-solid fa-link" style="color:var(--primary); margin-right:6px;"></i>Registrar mi Referido</h4>
-            <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;">Ingresa el código del embajador que te invitó. Esta acción es permanente y solo se realiza una vez.</p>
+            <h4 style="font-size:16px; font-weight:700; margin-bottom:4px;"><i class="fa-solid fa-gift" style="color:var(--primary); margin-right:6px;"></i>¿Te invitó alguien? Gana +5 puntos</h4>
+            <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;">Si un embajador te invitó, ingresa su código para sumar 5 puntos extra a tu perfil. ¡Es opcional!</p>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
               <input type="text" id="emb-input-referido" class="form-input" placeholder="Ej: EMBAJADOR-1038" autocomplete="off" spellcheck="false" style="flex:1; min-width:200px;" onkeydown="if(event.key==='Enter')emb_registrarReferido()">
-              <button class="btn btn-primary" onclick="emb_registrarReferido()">Registrar</button>
+              <button class="btn btn-primary" onclick="emb_registrarReferido()">Sumar puntos</button>
             </div>
-            <p style="font-size:11px; color:var(--text-light); margin-top:8px;"><i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>Una vez registrado, esta sección desaparecerá permanentemente.</p>
+            <p style="font-size:11px; color:var(--text-light); margin-top:8px;"><i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>Si no tienes código, no te preocupes: ya estás sumando puntos por usar la plataforma.</p>
           </div>
 
                <!-- FOTO DE PERFIL PÚBLICA -->
@@ -1132,23 +1128,15 @@
       var pWrap = document.getElementById('emb-progress-wrap');
       var pFill = document.getElementById('emb-progress-fill');
       var lock = document.getElementById('emb-lock-notice');
-      if(!embState.codigoReferidoIngresado){
-        pWrap.classList.add('emb-progress-locked');
-        pFill.style.width = '0%';
-        lock.style.display = 'flex';
-        document.getElementById('emb-progress-text').textContent = 'Progreso bloqueado';
-        document.getElementById('emb-progress-pct').textContent = '--';
-      } else {
-        pWrap.classList.remove('emb-progress-locked');
-        var enNivel = embState.score - nv.desde;
-        var reqNivel = nv.hasta - nv.desde;
-        var pct = Math.min(100, (enNivel/reqNivel)*100);
-        pFill.style.width = pct+'%';
-        pFill.style.background = nv.color;
-        lock.style.display = 'none';
-        document.getElementById('emb-progress-text').textContent = embState.score+' / '+nv.hasta+' puntos';
-        document.getElementById('emb-progress-pct').textContent = Math.round(pct)+'%';
-      }
+      pWrap.classList.remove('emb-progress-locked');
+      var enNivel = embState.score - nv.desde;
+      var reqNivel = nv.hasta - nv.desde;
+      var pct = Math.min(100, (enNivel/reqNivel)*100);
+      pFill.style.width = pct+'%';
+      pFill.style.background = nv.color;
+      lock.style.display = 'none';
+      document.getElementById('emb-progress-text').textContent = embState.score+' / '+nv.hasta+' puntos';
+      document.getElementById('emb-progress-pct').textContent = Math.round(pct)+'%';
 
       // Badge en header
       var hdrBadge = document.getElementById('fund-badge-rango');
