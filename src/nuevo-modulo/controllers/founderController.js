@@ -1,3 +1,11 @@
+// Configurar Cloudinary directamente aquí para evitar errores de importación
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
 const Property = require('../../models/Property');
 const User = require('../../models/User');
 const Founder = require('../models/Founder');
@@ -557,10 +565,9 @@ exports.generateCardMine = async (req, res) => {
 
     let finalImageUrl = imageUrl || null;
 
-    // 1. SI EL AGENTE SUBIÓ UNA FOTO, LA SUBIMOS A CLOUDINARY
+    // 1. SI SUBIÓ UNA FOTO, LA SUBIMOS A CLOUDINARY
     if (req.file) {
       try {
-        const cloudinary = require('../../config/cloudinary');
         const result = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
             { folder: 'somosvivemas_fichas' },
@@ -598,7 +605,6 @@ exports.generateCardMine = async (req, res) => {
     let generatedImageUrl = null;
     if (imageBuffer) {
       try {
-        const cloudinary = require('../../config/cloudinary');
         const resultGen = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
             { folder: 'somosvivemas_fichas_generadas' },
@@ -615,7 +621,7 @@ exports.generateCardMine = async (req, res) => {
       }
     }
 
-    // 4. GUARDAMOS LA FICHA EN LA BASE DE DATOS CON LAS URLS
+    // 4. GUARDAMOS LA FICHA EN LA BASE DE DATOS
     const ficha = new FichaRapida({
       founder: founder._id,
       operacion: type === 'venta' ? 'venta' : 'renta',
@@ -623,8 +629,8 @@ exports.generateCardMine = async (req, res) => {
       recamaras: Number(rooms) || 0,
       banos: Number(baths) || 0,
       ubicacion: location || founder.city,
-      imagenUrl: finalImageUrl,           // URL de la foto original
-      generatedImageUrl: generatedImageUrl // URL de la ficha generada
+      imagenUrl: finalImageUrl,
+      generatedImageUrl: generatedImageUrl
     });
     await ficha.save();
 
@@ -642,6 +648,7 @@ exports.generateCardMine = async (req, res) => {
     res.status(500).json({ error: 'Error al generar imagen' });
   }
 };
+
 
 // 13. Actualizar datos de contacto públicos (WhatsApp / Correo)
 exports.updatePublicContact = async (req, res) => {
