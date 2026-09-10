@@ -280,7 +280,7 @@ const login = async (req, res) => {
     // ✅ Establecer última actividad al hacer login
     user.ultimaActividad = new Date();
     await user.save();
-    await otorgarPuntosLogin(user._id);
+    otorgarPuntosLogin(user._id).catch(e => console.error('Error puntos login:', e));
 
     // ✅ 2FA: Si tiene autenticación en dos pasos activada, pedir código antes de dar acceso
     if (user.twoFactorEnabled) {
@@ -371,7 +371,7 @@ const actualizarNotificaciones = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-await otorgarPuntosLogin(user._id);
+otorgarPuntosLogin(user._id).catch(e => console.error('Error puntos login:', e));
 // ==========================================
 // ✅ 2FA: Verificar código al hacer login (NO requiere authMiddleware)
 // ==========================================
@@ -419,7 +419,7 @@ const verificar2FA = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-await otorgarPuntosLogin(user._id);
+otorgarPuntosLogin(user._id).catch(e => console.error('Error puntos login:', e));
 // ==========================================
 // ✅ 2FA: Usar código de recuperación (NO requiere authMiddleware)
 // ==========================================
