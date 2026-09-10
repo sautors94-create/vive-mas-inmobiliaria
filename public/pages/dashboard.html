@@ -1414,8 +1414,17 @@
     };
 
     window.emb_selTpl = function(btn, tpl){
-      document.querySelectorAll('.emb-tpl-btn').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
+      // Quitamos el estilo activo de todos los botones
+      document.querySelectorAll('.emb-tpl-btn').forEach(function(b){ 
+        b.style.background = 'white';
+        b.style.color = '#0f172a';
+        b.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+      });
+      // Aplicamos el estilo activo solo al botón seleccionado
+      btn.style.background = 'var(--primary)';
+      btn.style.color = 'white';
+      btn.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.2)';
+      
       selectedTpl = tpl;
     };
 
