@@ -421,7 +421,6 @@ const verificar2FA = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-otorgarPuntosLogin(user._id).catch(e => console.error('Error puntos login:', e));
 // ==========================================
 // ✅ 2FA: Usar código de recuperación (NO requiere authMiddleware)
 // ==========================================
