@@ -232,9 +232,7 @@ exports.getPublicProfile = async (req, res) => {
     <!DOCTYPE html>
     <html lang="es">
     <head>
-    <script>
-    
-    (function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+    <script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${founder.name} - Asesor Inmobiliario en ${founder.city} | SomosViveMás</title>
@@ -277,11 +275,6 @@ exports.getPublicProfile = async (req, res) => {
         .fichas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
         .ficha-card { background: white; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; transition: all 0.3s; position: relative; }
         .ficha-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-color: var(--primary, #1a472a); }
-        .ficha-img-container { width: 100%; height: 180px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 14px; }
-        .ficha-img { width: 100%; height: 100%; object-fit: cover; }
-        .ficha-body { padding: 20px; }
-        .ficha-price { font-size: 20px; font-weight: 700; color: #16a34a; margin-bottom: 8px; font-family: 'Bricolage Grotesque', sans-serif; }
-        .ficha-loc { font-size: 14px; color: #64748b; }
         
         .footer-link { text-align: center; margin-top: 60px; padding-bottom: 40px; }
         .footer-link a { color: #64748b; text-decoration: none; font-size: 14px; font-weight: 500; padding: 12px 24px; border: 1px solid #e2e8f0; border-radius: 30px; }
@@ -327,10 +320,7 @@ exports.getPublicProfile = async (req, res) => {
           </div>
         </div>
 
-                ${fichas.length > 0 ? `
-          <h3 class="section-title">Propiedades recientes</h3>
-          <div class="fichas-grid">
-                  ${fichas.length > 0 ? `
+        ${fichas.length > 0 ? `
           <h3 class="section-title">Propiedades recientes</h3>
           <div class="fichas-grid">
             ${fichas.map(f => {
@@ -354,10 +344,9 @@ exports.getPublicProfile = async (req, res) => {
             }).join('')}
           </div>
           
-          <!-- MODAL PARA VER IMAGEN COMPLETA -->
           <div id="imgModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; padding:20px;" onclick="this.style.display='none'">
             <img id="imgModalContent" src="" style="max-width:90%; max-height:90%; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.5);" alt="Imagen completa">
-          </div>` : ''}  
+          </div>` : ''}
 
         <div class="footer-link">
           <a href="/agentes-fundadores?ref=${founder.referralCode}">¿Eres asesor? Únete al programa →</a>
@@ -390,6 +379,7 @@ exports.getPublicProfile = async (req, res) => {
 
         function openModal() { document.getElementById('editModal').style.display = 'flex'; }
         function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+
         function abrirImagen(url) {
           var modal = document.getElementById('imgModal');
           var img = document.getElementById('imgModalContent');
@@ -436,18 +426,6 @@ exports.getPublicProfile = async (req, res) => {
     res.status(500).send('Error del servidor');
   }
 };
-        async function toggleVendida(id, btn) {
-          const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-          const res = await fetch('/api/fundadores/mine/fichas/'+id+'/vendida', { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token } });
-          if(res.ok) window.location.reload();
-        }
-        
-        async function eliminarFicha(id, btn) {
-          if(!confirm('¿Eliminar esta ficha de tu perfil?')) return;
-          const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-          const res = await fetch('/api/fundadores/mine/fichas/'+id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
-          if(res.ok) btn.closest('.ficha-card').remove();
-        }
 
 // 8. Obtener (o crear) el Founder ligado al usuario logueado — para la
 //    sección "Programa de Embajadores" dentro del dashboard real (con sesión)
