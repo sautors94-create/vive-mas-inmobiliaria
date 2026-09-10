@@ -668,6 +668,10 @@
 
         <!-- ===== DASHBOARD: Inscrito ===== -->
         <div id="emb-dashboard" style="display:none;">
+           <div class="stat-card">
+              <div style="font-size:24px; font-weight:700; color:var(--primary);" id="emb-stat-props">0</div>
+              <div style="font-size:12px; color:var(--text-light); text-transform:uppercase; letter-spacing:.5px;">Puntos</div> <!-- <--- CAMBIAR AQUÍ -->
+            </div>
 
           <!-- Bienvenida + Código -->
           <div class="emb-welcome">
@@ -678,6 +682,42 @@
             <div class="emb-code-badge">
               <i class="fa-solid fa-fingerprint"></i>
               <span id="emb-codigo">EMBAJADOR-0000</span>
+                        <!-- BOTÓN REGLAS Y BENEFICIOS -->
+          <div style="text-align: right; margin-bottom: 15px;">
+            <button class="btn btn-outline" onclick="document.getElementById('emb-rules-modal').style.display='flex'" style="padding: 8px 16px; font-size: 13px;">
+              <i class="fa-solid fa-book"></i> Reglas y Beneficios
+            </button>
+          </div>
+
+          <!-- MODAL REGLAS Y BENEFICIOS -->
+          <div id="emb-rules-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center; padding:20px;" onclick="if(event.target===this)this.style.display='none'">
+            <div style="background:white; border-radius:16px; padding:30px; max-width:500px; width:100%; max-height:90vh; overflow-y:auto; position:relative;">
+              <button onclick="document.getElementById('emb-rules-modal').style.display='none'" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
+              <h3 style="margin-bottom:15px; font-family:'Bricolage Grotesque', sans-serif;">Reglas y Beneficios del Programa</h3>
+              <p style="font-size:14px; color:#64748b; margin-bottom:20px;">Gana puntos realizando acciones valiosas en la plataforma. Los usuarios con plan de pago suman un 20% extra de puntos.</p>
+              
+              <h4 style="font-size:15px; margin-bottom:10px;">¿Cómo sumar puntos?</h4>
+              <ul style="list-style:none; padding:0; margin-bottom:20px; font-size:14px; line-height:1.8;">
+                <li>🎟️ <b>Ingresar código de referido:</b> +5 pts (una sola vez)</li>
+                <li>📄 <b>Publicar propiedad aprobada:</b> +10 pts</li>
+                <li>📱 <b>Generar ficha rápida:</b> +2 pts (máx 5 por semana)</li>
+                <li>🤝 <b>Referir agente nuevo:</b> +15 pts</li>
+                <li>💬 <b>Respuesta rápida en chat:</b> Hasta +5 pts por semana</li>
+                <li>✅ <b>Gestionar catálogo (Vendida/Eliminar):</b> +1 pt (máx 3 por semana)</li>
+                <li>🔑 <b>Iniciar sesión diaria:</b> +1 pt por día</li>
+                <li>💳 <b>Pagar suscripción:</b> +25 pts</li>
+              </ul>
+
+              <h4 style="font-size:15px; margin-bottom:10px;">Rangos y Beneficios</h4>
+              <div style="font-size:14px; line-height:1.8;">
+                <p>🥉 <b>Bronce (0 - 50):</b> Insignia digital y perfil en directorio.</p>
+                <p>🥈 <b>Plata (51 - 150):</b> Prioridad en listados de búsqueda.</p>
+                <p>🥇 <b>Oro (151 - 350):</b> Insignia "Verificado" y destacado en directorio.</p>
+                <p>💎 <b>Diamante (351 - 700):</b> Publicaciones ilimitadas y etiqueta dorada.</p>
+                <p>⭐ <b>Élite (700+):</b> Cuenta de por vida (manteniendo 10 pts/mes) y marketing premium.</p>
+              </div>
+            </div>
+          </div>
               <i class="fa-regular fa-copy" onclick="emb_copiarCodigo()" title="Copiar código"></i>
             </div>
           </div>
@@ -951,15 +991,15 @@
   (function(){
     'use strict';
 
-    /* ── Configuración de niveles ── */
+    /* ── Configuración de niveles (Basada en Puntos) ── */
     var EMB_NIVELES = [
-      { nombre:'Bronce',   icono:'fa-shield-halved', desde:0,  hasta:5,  color:'#CD7F32', bg:'rgba(205,127,50,0.07)' },
-      { nombre:'Plata',    icono:'fa-shield-halved', desde:5,  hasta:12, color:'#9CA3AF', bg:'rgba(156,163,175,0.07)' },
-      { nombre:'Oro',      icono:'fa-crown',         desde:12, hasta:19, color:'#EAB308', bg:'rgba(234,179,8,0.07)' },
-      { nombre:'Diamante', icono:'fa-gem',           desde:19, hasta:26, color:'#06B6D4', bg:'rgba(6,182,212,0.07)' },
-      { nombre:'Elite',    icono:'fa-star',          desde:26, hasta:36, color:'#A855F7', bg:'rgba(168,85,247,0.07)' }
+      { nombre:'Bronce',   icono:'fa-shield-halved', desde:0,  hasta:50,  color:'#CD7F32', bg:'rgba(205,127,50,0.07)' },
+      { nombre:'Plata',    icono:'fa-shield-halved', desde:50,  hasta:150, color:'#9CA3AF', bg:'rgba(156,163,175,0.07)' },
+      { nombre:'Oro',      icono:'fa-crown',         desde:150, hasta:350, color:'#EAB308', bg:'rgba(234,179,8,0.07)' },
+      { nombre:'Diamante', icono:'fa-gem',           desde:350, hasta:700, color:'#06B6D4', bg:'rgba(6,182,212,0.07)' },
+      { nombre:'Elite',    icono:'fa-star',          desde:700, hasta:9999, color:'#A855F7', bg:'rgba(168,85,247,0.07)' }
     ];
-    var PROPS_MAX = 36;
+    var PROPS_MAX = 9999;
     var DESCRIPCIONES = [
       'Tu camino como embajador comienza aqui. Publica propiedades para desbloquear el siguiente rango.',
       'Estas ganando visibilidad. Sigue publicando para acceder a beneficios de prioridad.',
@@ -1019,6 +1059,8 @@
           nombre: data.name,
           codigoEmbajador: data.referralCode,
           propiedades: data.propertiesCount,
+          score: data.score || 0,         // <--- AGREGAR
+          weekScore: data.weekScore || 0, // <--- AGREGAR
           codigoReferidoIngresado: !!data.referredBy,
           referidoPor: data.referredBy,
           redes: {
@@ -1064,12 +1106,12 @@
       document.getElementById('emb-codigo').textContent = embState.codigoEmbajador;
 
       // Stats
-      document.getElementById('emb-stat-props').textContent = embState.propiedades;
+      document.getElementById('emb-stat-props').textContent = embState.score; // Mostramos el Score
       var statNivel = document.getElementById('emb-stat-nivel');
       statNivel.textContent = nv.nombre;
       statNivel.style.color = nv.color;
       document.getElementById('emb-stat-vistas').textContent = embState.vistasPerfil;
-      var falt = ni<EMB_NIVELES.length-1 ? Math.max(0, nv.hasta-embState.propiedades) : Math.max(0, PROPS_MAX-embState.propiedades);
+      var falt = ni<EMB_NIVELES.length-1 ? Math.max(0, nv.hasta-embState.score) : Math.max(0, PROPS_MAX-embState.score);
       document.getElementById('emb-stat-faltantes').textContent = falt;
 
       // Badge grande
@@ -1098,13 +1140,13 @@
         document.getElementById('emb-progress-pct').textContent = '--';
       } else {
         pWrap.classList.remove('emb-progress-locked');
-        var enNivel = embState.propiedades - nv.desde;
+        var enNivel = embState.score - nv.desde;
         var reqNivel = nv.hasta - nv.desde;
         var pct = Math.min(100, (enNivel/reqNivel)*100);
         pFill.style.width = pct+'%';
         pFill.style.background = nv.color;
         lock.style.display = 'none';
-        document.getElementById('emb-progress-text').textContent = embState.propiedades+' / '+nv.hasta+' propiedades';
+        document.getElementById('emb-progress-text').textContent = embState.score+' / '+nv.hasta+' puntos';
         document.getElementById('emb-progress-pct').textContent = Math.round(pct)+'%';
       }
 

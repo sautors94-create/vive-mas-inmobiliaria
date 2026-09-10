@@ -13,9 +13,11 @@ const FichaRapidaSchema = new mongoose.Schema({
   banos: Number,
   ubicacion: String,
   imagenUrl: String,
-  generatedImageUrl: { type: String, default: '' }, 
+  generatedImageUrl: { type: String, default: '' },
   slug: { type: String, unique: true },
-  vendida: { type: Boolean, default: false }
+  vendida: { type: Boolean, default: false },
+  status: { type: String, enum: ['pendiente', 'aprobada', 'rechazada'], default: 'aprobada' }, // Lo dejamos en 'aprobada' por defecto para no romper las viejas
+  moderationStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'approved' } // Para el bot de IA
 }, { timestamps: true });
 
 // CORREGIDO: FichaRapidaSchema con F mayúscula

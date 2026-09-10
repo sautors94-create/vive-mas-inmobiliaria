@@ -467,8 +467,51 @@ const enviarCoincidenciaBusqueda = async (email, nombre, propiedad) => {
     html,
   });
 };
+// ==========================================
+// ✉️ CORREO SEMANAL DE PROGRESO EMBAJADOR
+// ==========================================
+const enviarResumenEmbajador = async (email, nombre, rankTitle, score, nextRank, pointsNeeded) => {
+  try {
+    const mensaje = nextRank 
+      ? `Te faltan solo <b>${pointsNeeded} puntos</b> para alcanzar el rango <b>${nextRank}</b>. ¡Sigue así!`
+      : `¡Felicidades! Has alcanzado el rango máximo de <b>${rankTitle}</b>. Sigue manteniendo tu actividad para conservar tus beneficios exclusivos.`;
+
+    const html = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head><meta charset="UTF-8"><style>body{font-family:'Inter',sans-serif;background:#f8fafc;color:#0f172a;margin:0;padding:20px}.card{max-width:500px;margin:0 auto;background:#fff;border-radius:16px;padding:30px;border:1px solid #e2e8f0}.header{text-align:center;margin-bottom:20px}.badge{display:inline-block;background:#1a472a;color:#fff;padding:8px 16px;border-radius:20px;font-weight:700;font-size:14px}.pts{font-size:32px;font-weight:800;color:#1a472a;margin:10px 0}.btn{display:block;width:100%;background:#fbbf24;color:#0f172a;text-align:center;padding:14px;border-radius:10px;text-decoration:none;font-weight:700;margin-top:20px}</style></head>
+    <body>
+      <div class="card">
+        <div class="header">
+          <h2>¡Tu progreso semanal, ${nombre}! 🚀</h2>
+          <div class="badge">Rango Actual: ${rankTitle}</div>
+          <div class="pts">${score} Puntos Totales</div>
+        </div>
+        <p style="font-size:15px;color:#64748b;text-align:center;">${mensaje}</p>
+        <p style="font-size:13px;color:#64748b;text-align:center;margin-bottom:20px;">Recuerda que publicando propiedades, respondiendo rápido tus mensajes de chat o trayendo nuevos agentes, sumarás puntos para subir de rango más rápido.</p>
+        <a href="https://somosvivemas.com/pages/login.html" class="btn">Ir a mi Panel</a>
+      </div>
+    </body>
+    </html>`;
+    
+    // Asegúrate de que tu transportador de correos se llame 'transporter'
+    // Si tiene otro nombre, cámbialo aquí abajo.
+    await transporter.sendMail({
+      from: '"SomosViveMás 🏠" <no-reply@somosvivemas.com>',
+      to: email,
+      subject: 'Tu progreso en SomosViveMás 🚀',
+      html
+    });
+  } catch (e) {
+    console.error('Error al enviar resumen embajador:', e);
+  }
+};
+
+// No olvides agregarla al module.exports al final de ese archivo:
+// module.exports = { ..., enviarResumenEmbajador };
 
 module.exports = { 
+  enviarResumenEmbajador,
   transporter,
   generarCodigo, 
   enviarCodigoVerificacion, 

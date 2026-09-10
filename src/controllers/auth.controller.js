@@ -12,6 +12,28 @@ const { generarCodigo, enviarCodigoVerificacion, enviarCodigoVerificacionCorreoC
 const { enviarOTP, verificarOTP, twilioVerifyConfigurado } = require('../utils/twilioVerify');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+// Función auxiliar para sumar puntos diarios por login
+const otorgarPuntosLogin = async (userId) => {
+  try {
+    const Founder = require('../nuevo-modulo/models/Founder');
+    const founder = await Founder.findOne({ userId: userId });
+    if (founder) {
+      const today = new Date().toDateString();
+      const lastLogin = founder.lastLoginPointDate ? new Date(founder.lastLoginPointDate).toDateString() : null;
+      if (lastLogin !== today) {
+        let pointsToAdd = 1;
+        const user = await User.findById(userId).select('plan');
+        if (user && (user.plan === 'basico' || user.plan === 'premium')) {
+          pointsToAdd = Math.round(pointsToAdd * 1.2);
+        }
+        founder.score += pointsToAdd;
+        founder.weekScore += pointsToAdd;
+        founder.lastLoginPointDate = new Date();
+        await founder.save();
+      }
+    }
+  } catch (e) { console.error('Error al sumar punto de login:', e); }
+};
 
 // Envía el código de verificación por el canal elegido por el usuario.
 // SMS usa Twilio Verify: el código lo genera y valida Twilio, no nosotros
@@ -258,6 +280,7 @@ const login = async (req, res) => {
     // ✅ Establecer última actividad al hacer login
     user.ultimaActividad = new Date();
     await user.save();
+    await otorgarPuntosLogin(user._id);
 
     // ✅ 2FA: Si tiene autenticación en dos pasos activada, pedir código antes de dar acceso
     if (user.twoFactorEnabled) {
@@ -348,7 +371,7 @@ const actualizarNotificaciones = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
+await otorgarPuntosLogin(user._id);
 // ==========================================
 // ✅ 2FA: Verificar código al hacer login (NO requiere authMiddleware)
 // ==========================================
@@ -396,7 +419,7 @@ const verificar2FA = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
+await otorgarPuntosLogin(user._id);
 // ==========================================
 // ✅ 2FA: Usar código de recuperación (NO requiere authMiddleware)
 // ==========================================

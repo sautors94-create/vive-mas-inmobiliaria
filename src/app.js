@@ -299,9 +299,75 @@ const bajarPlanesVencidos = async () => {
     console.error('❌ Error en cron de planes vencidos:', error.message);
   }
 };
+// ==========================================
+// CRON NATIVO: ENVÍO DE CORREOS SEMANALES (Lunes 9:00 AM)
+// ==========================================
+// No requiere instalar 'node-cron', usa setInterval nativo de Node.js
+const FounderModel = require('./nuevo-modulo/models/Founder');
+const UserModel = require('./models/User');
+const { enviarResumenEmbajador } = require('./utils/email'); // Ajusta la ruta si es necesario
 
-// Luego cada 6 horas
-setInterval(bajarPlanesVencidos, 6 * 60 * 60 * 1000);
+let lastEmailWeekSent = '';
+
+const getNextRank = (score) => {
+  if (score >= 700) return { next: null, needed: 0 };
+  if (score >= 350) return { next: 'Élite', needed: 700 - score };
+  if (score >= 150) return { next: 'Diamante', needed: 350 - score };
+  if (score >= 50) return { next: 'Oro', needed: 150 - score };
+  return { next: 'Plata', needed: 50 - score };
+};
+
+// Función para obtener el número de semana del año (para no enviarlo dos veces)
+const getWeekNumber = (d) => {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+    var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+    return d.getUTCFullYear() + "-" + weekNo;
+}
+
+// Revisa cada hora si es lunes a las 9 AM (o 21 hrs por si hay desfase de horario del servidor)
+setInterval(async () => {
+  const now = new Date();
+  const day = now.getDay(); // 0=Domingo, 1=Lunes
+  const hour = now.getHours();
+  const weekKey = getWeekNumber(now);
+
+  // Si es Lunes y son las 9 AM (o 9 PM) y no hemos enviado el correo esta semana
+  if ((day === 1 && hour === 9) || (day === 1 && hour === 21)) {
+    if (lastEmailWeekSent !== weekKey) {
+      lastEmailWeekSent = weekKey;
+      console.log('📧 Iniciando envío de correos semanales de embajadores...');
+      try {
+        const founders = await FounderModel.find({ userId: { $ne: null } }).populate('userId', 'nombre email notificaciones');
+        
+        let enviados = 0;
+        for (const founder of founders) {
+          if (founder.userId && founder.userId.notificaciones && founder.userId.notificaciones.novedades !== false) {
+            const rankInfo = getNextRank(founder.score || 0);
+            
+            await enviarResumenEmbajador(
+              founder.userId.email,
+              founder.userId.nombre,
+              founder.rankTitle,
+              founder.score || 0,
+              rankInfo.next,
+              rankInfo.needed
+            );
+            enviados++;
+          }
+          
+          // Aprovechamos el ciclo para reiniciar el weekScore de todos
+          founder.weekScore = 0;
+          await founder.save();
+        }
+        console.log(`✅ Correos semanales enviados: ${enviados}. Scores semanales reiniciados.`);
+      } catch (err) {
+        console.error('❌ Error en cron semanal de embajadores:', err);
+      }
+    }
+  }
+}, 60 * 60 * 1000); // Se ejecuta cada 1 hora (3600000 ms)
 
 // ==========================================
 // MANEJADOR DE ERRORES GLOBAL — debe ir al final, después de todas las rutas.

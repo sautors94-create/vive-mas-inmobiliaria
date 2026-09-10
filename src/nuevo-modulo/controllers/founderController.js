@@ -5,12 +5,13 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
-
+const axios = require('axios');
 const Property = require('../../models/Property');
 const User = require('../../models/User');
 const Founder = require('../models/Founder');
 const FichaRapida = require('../models/FichaRapida');
 const { generatePropertyCard } = require('../services/imageGenerator');
+
 
 function buildPanelPayload(req, founder) {
   return {
@@ -26,6 +27,8 @@ function buildPanelPayload(req, founder) {
     social: founder.social,
     socialVisible: founder.socialVisible !== false, // AGREGAR
     profilePhoto: founder.profilePhoto || '',      // AGREGAR
+    score: founder.score || 0,           // <--- AGREGAR
+    weekScore: founder.weekScore || 0,   // <--- AGREGAR
     referralCode: founder.referralCode,
     referralLink: `${req.protocol}://${req.get('host')}/agente/${founder.referralCode}`,
     ambassadorLink: `${req.protocol}://${req.get('host')}/agentes-fundadores?ref=${founder.referralCode}`,
@@ -524,8 +527,25 @@ exports.setReferrer = async (req, res) => {
     if (!referente) return res.status(404).json({ error: 'Ese código de embajador no existe' });
 
     founder.referredBy = referralCode;
+    
+    // MOTOR DE PUNTOS: +5 al agente nuevo por registrar su código
+    let pointsToNew = 5;
+    const user = await User.findById(req.user.id).select('plan');
+    if (user && (user.plan === 'basico' || user.plan === 'premium')) {
+      pointsToNew = Math.round(pointsToNew * 1.2);
+    }
+    founder.score += pointsToNew;
+    founder.weekScore += pointsToNew;
     await founder.save();
 
+    // MOTOR DE PUNTOS: +15 al referente por traer un agente nuevo
+    let pointsToRef = 15;
+    const refUser = await User.findById(referente.userId).select('plan');
+    if (refUser && (refUser.plan === 'basico' || refUser.plan === 'premium')) {
+      pointsToRef = Math.round(pointsToRef * 1.2);
+    }
+    referente.score += pointsToRef;
+    referente.weekScore += pointsToRef;
     referente.referralsCount = (referente.referralsCount || 0) + 1;
     await referente.save();
 
@@ -554,7 +574,6 @@ exports.updateSocial = async (req, res) => {
   }
 };
 
-
 // 11. Generar ficha para el agente logueado
 exports.generateCardMine = async (req, res) => {
   try {
@@ -568,6 +587,12 @@ exports.generateCardMine = async (req, res) => {
     // 1. SI SUBIÓ UNA FOTO, LA SUBIMOS A CLOUDINARY
     if (req.file) {
       try {
+        const cloudinary = require('cloudinary').v2;
+        cloudinary.config({
+          cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+          api_key: process.env.CLOUDINARY_API_KEY,
+          api_secret: process.env.CLOUDINARY_API_SECRET
+        });
         const result = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
             { folder: 'somosvivemas_fichas' },
@@ -581,6 +606,33 @@ exports.generateCardMine = async (req, res) => {
         finalImageUrl = result.secure_url;
       } catch (uploadErr) {
         console.error('Error al subir foto original a Cloudinary:', uploadErr);
+      }
+    }
+
+    // 2. EL BOT GUARDIÁN: Revisamos la imagen con Sightengine
+    if (finalImageUrl) {
+      try {
+        const sightRes = await axios.get('https://api.sightengine.com/1.0/check.json', {
+          params: {
+            url: finalImageUrl,
+            models: 'nudity,wad,gore',
+            api_user: process.env.SIGHTENGINE_API_USER,
+            api_secret: process.env.SIGHTENGINE_API_SECRET
+          }
+        });
+        
+        const mod = sightRes.data;
+        // Si detecta contenido explícito, gore o armas, la rechazamos
+        const isExplicit = (mod.nudity && (mod.nudity.sexual_display > 0.7 || mod.nudity.sexual_activity > 0.7));
+        const isGore = (mod.gore && mod.gore.prob > 0.7);
+        const hasWeapon = (mod.weapon && mod.weapon > 0.7);
+
+        if (isExplicit || isGore || hasWeapon) {
+          return res.status(400).json({ error: 'La imagen fue rechazada por contener contenido explícito, violento o no apto. Intenta con otra foto.' });
+        }
+      } catch (modErr) {
+        console.error('Error en moderación de Sightengine (se omite):', modErr.message);
+        // Si la API falla, permitimos la imagen para no bloquear al usuario, pero lo registramos
       }
     }
 
@@ -598,13 +650,14 @@ exports.generateCardMine = async (req, res) => {
       accent: themeAccent
     };
 
-    // 2. GENERAMOS LA IMAGEN FINAL (FICHA)
+    // 3. GENERAMOS LA IMAGEN FINAL (FICHA)
     const imageBuffer = await generatePropertyCard(cardData, req.file ? req.file.buffer : null, theme);
 
-    // 3. SUBIMOS LA FICHA GENERADA A CLOUDINARY PARA TENER LA URL
+    // 4. SUBIMOS LA FICHA GENERADA A CLOUDINARY PARA TENER LA URL
     let generatedImageUrl = null;
     if (imageBuffer) {
       try {
+        const cloudinary = require('cloudinary').v2;
         const resultGen = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
             { folder: 'somosvivemas_fichas_generadas' },
@@ -621,7 +674,7 @@ exports.generateCardMine = async (req, res) => {
       }
     }
 
-    // 4. GUARDAMOS LA FICHA EN LA BASE DE DATOS
+    // 5. GUARDAMOS LA FICHA EN LA BASE DE DATOS
     const ficha = new FichaRapida({
       founder: founder._id,
       operacion: type === 'venta' ? 'venta' : 'renta',
@@ -630,11 +683,20 @@ exports.generateCardMine = async (req, res) => {
       banos: Number(baths) || 0,
       ubicacion: location || founder.city,
       imagenUrl: finalImageUrl,
-      generatedImageUrl: generatedImageUrl
+      generatedImageUrl: generatedImageUrl,
+      moderationStatus: 'approved' // Como pasó el filtro de arriba, queda aprobada
     });
     await ficha.save();
 
-    founder.propertiesCount += 1;
+    // 6. MOTOR DE PUNTOS: Sumamos 2 puntos por generar una ficha
+    let pointsToAdd = 2;
+    // Beneficio extra: Si es usuario de pago, suma 20% extra (1.2x)
+    const user = await User.findById(req.user.id).select('plan');
+    if (user && (user.plan === 'basico' || user.plan === 'premium')) {
+      pointsToAdd = Math.round(pointsToAdd * 1.2);
+    }
+    founder.score += pointsToAdd;
+    founder.weekScore += pointsToAdd;
     await founder.save();
 
     res.set({
@@ -648,7 +710,6 @@ exports.generateCardMine = async (req, res) => {
     res.status(500).json({ error: 'Error al generar imagen' });
   }
 };
-
 
 // 13. Actualizar datos de contacto públicos (WhatsApp / Correo)
 exports.updatePublicContact = async (req, res) => {

@@ -30,6 +30,10 @@ const founderSchema = new mongoose.Schema({
   publicWhatsapp: { type: String, default: '' },
   publicEmail: { type: String, default: '' },
   profilePhoto: { type: String, default: '' }, // URL o Base64 de la foto del agente
+    // Sistema de Puntos (Gamificación)
+  score: { type: Number, default: 0 },       // Puntos totales históricos
+  weekScore: { type: Number, default: 0 },   // Puntos ganados esta semana (se reinicia en el cron job)
+  monthScore: { type: Number, default: 0 }, // Puntos ganados este mes (para mantener beneficios ÉLITE)
   socialVisible: { type: Boolean, default: true } // Si quiere mostrar sus redes sociales
 }, { timestamps: true });
 
