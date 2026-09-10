@@ -267,7 +267,6 @@ const login = async (req, res) => {
     }
     const criterio = emailLimpio ? { email: emailLimpio } : { telefono: telefonoLimpio };
     
-    // ✅ CORREGIDO: Solo se incluye +password. Los demás campos vienen por defecto.
     const user = await User.findOne(criterio).select('+password');
     
     if (!user) return res.status(401).json({ error: 'Credenciales incorrectas' });
@@ -277,12 +276,12 @@ const login = async (req, res) => {
     if (user.status === 'bloqueado') return res.status(403).json({ error: 'Cuenta bloqueado. Contacta soporte.' });
     if (!user.verificado) return res.status(403).json({ error: 'Debes verificar tu cuenta antes de continuar', requiereVerificacion: true, email });
     
-    // ✅ Establecer última actividad al hacer login
     user.ultimaActividad = new Date();
     await user.save();
+
+    // MOTOR DE PUNTOS: +1 por iniciar sesión (sin await para no bloquear el login)
     otorgarPuntosLogin(user._id).catch(e => console.error('Error puntos login:', e));
 
-    // ✅ 2FA: Si tiene autenticación en dos pasos activada, pedir código antes de dar acceso
     if (user.twoFactorEnabled) {
       const tempToken = generarTempToken(user._id);
       return res.json({
@@ -412,6 +411,9 @@ const verificar2FA = async (req, res) => {
       return res.status(400).json({ error: 'Código inválido. Asegúrate de que la app esté sincronizada.' });
     }
 
+    // MOTOR DE PUNTOS: +1 por iniciar sesión
+    otorgarPuntosLogin(user._id).catch(e => console.error('Error puntos login:', e));
+
     const { accessToken, refreshToken } = generarTokens(user);
     res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.json({ ok: true, accessToken, user });
@@ -466,8 +468,10 @@ const recuperar2FA = async (req, res) => {
     user.twoFactorRecoveryCodes = [];
     await user.save();
 
-    // ✅ Enviar alerta de seguridad por correo
     await enviarAlerta2FADesactivado(user.email, user.nombre);
+
+    // MOTOR DE PUNTOS: +1 por iniciar sesión
+    otorgarPuntosLogin(user._id).catch(e => console.error('Error puntos login:', e));
 
     const { accessToken, refreshToken } = generarTokens(user);
     res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
