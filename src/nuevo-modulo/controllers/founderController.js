@@ -557,7 +557,7 @@ exports.generateCardMine = async (req, res) => {
 
     let finalImageUrl = imageUrl || null;
 
-    // SI SUBIÓ UNA FOTO, LA GUARDAMOS EN CLOUDINARY
+    // 1. SI EL AGENTE SUBIÓ UNA FOTO, LA SUBIMOS A CLOUDINARY
     if (req.file) {
       try {
         const cloudinary = require('../../config/cloudinary');
@@ -573,7 +573,7 @@ exports.generateCardMine = async (req, res) => {
         });
         finalImageUrl = result.secure_url;
       } catch (uploadErr) {
-        console.error('Error al subir a Cloudinary:', uploadErr);
+        console.error('Error al subir foto original a Cloudinary:', uploadErr);
       }
     }
 
@@ -591,10 +591,10 @@ exports.generateCardMine = async (req, res) => {
       accent: themeAccent
     };
 
-    // GENERAMOS LA IMAGEN
+    // 2. GENERAMOS LA IMAGEN FINAL (FICHA)
     const imageBuffer = await generatePropertyCard(cardData, req.file ? req.file.buffer : null, theme);
 
-    // SUBIMOS LA IMAGEN GENERADA A CLOUDINARY PARA TENER LA URL
+    // 3. SUBIMOS LA FICHA GENERADA A CLOUDINARY PARA TENER LA URL
     let generatedImageUrl = null;
     if (imageBuffer) {
       try {
@@ -615,6 +615,7 @@ exports.generateCardMine = async (req, res) => {
       }
     }
 
+    // 4. GUARDAMOS LA FICHA EN LA BASE DE DATOS CON LAS URLS
     const ficha = new FichaRapida({
       founder: founder._id,
       operacion: type === 'venta' ? 'venta' : 'renta',
@@ -622,8 +623,8 @@ exports.generateCardMine = async (req, res) => {
       recamaras: Number(rooms) || 0,
       banos: Number(baths) || 0,
       ubicacion: location || founder.city,
-      imagenUrl: finalImageUrl,
-      generatedImageUrl: generatedImageUrl, // GUARDAMOS LA URL DE LA FICHA GENERADA
+      imagenUrl: finalImageUrl,           // URL de la foto original
+      generatedImageUrl: generatedImageUrl // URL de la ficha generada
     });
     await ficha.save();
 
@@ -714,9 +715,15 @@ exports.deleteFicha = async (req, res) => {
     const ficha = await FichaRapida.findOneAndDelete({ _id: req.params.id, founder: founder._id });
     if (!ficha) return res.status(404).json({ error: 'Ficha no encontrada' });
     
+    // RESTAMOS 1 AL CONTADOR DE PROPIEDADES (Sin bajar de 0)
+    if (founder.propertiesCount > 0) {
+      founder.propertiesCount -= 1;
+      await founder.save();
+    }
+    
     res.json({ ok: true });
   } catch (error) {
-    res.status(500).json({ error: error.message }); 
+    res.status(500).json({ error: error.message });
   }
 };
 
