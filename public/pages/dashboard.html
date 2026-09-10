@@ -1134,7 +1134,7 @@
       var pct = Math.min(100, (enNivel/reqNivel)*100);
       pFill.style.width = pct+'%';
       pFill.style.background = nv.color;
-      lock.style.display = 'none';
+      if (lock) lock.style.display = 'none';
       document.getElementById('emb-progress-text').textContent = embState.score+' / '+nv.hasta+' puntos';
       document.getElementById('emb-progress-pct').textContent = Math.round(pct)+'%';
 
