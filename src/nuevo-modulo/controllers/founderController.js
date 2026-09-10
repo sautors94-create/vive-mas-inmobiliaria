@@ -202,23 +202,15 @@ exports.getPublicProfile = async (req, res) => {
 
     const fichas = await FichaRapida.find({ founder: founder._id }).sort({ createdAt: -1 }).limit(12).lean();
     
-    // Generar enlaces si el agente los configuró
+    // Generar enlaces de contacto
     const whatsappLink = founder.publicWhatsapp ? `https://wa.me/52${founder.publicWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Hola ' + founder.name + ', vi tu perfil en SomosViveMás')}` : '';
     const mailtoLink = founder.publicEmail ? `mailto:${founder.publicEmail}?subject=Contacto desde SomosViveMás` : '';
 
-    // Botones de contacto dinámicos
     let contactButtons = '';
-    if (whatsappLink) {
-      contactButtons += `<a href="${whatsappLink}" target="_blank" class="cta-btn cta-wa">💬 WhatsApp</a>`;
-    }
-    if (mailtoLink) {
-      contactButtons += `<a href="${mailtoLink}" class="cta-btn cta-mail">✉️ Correo</a>`;
-    }
-    if (!whatsappLink && !mailtoLink) {
-      contactButtons = `<div style="color: #64748b; font-size: 14px; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; text-align:center;">El agente no ha habilitado métodos de contacto directo aún.</div>`;
-    }
+    if (whatsappLink) contactButtons += `<a href="${whatsappLink}" target="_blank" class="cta-btn cta-wa">💬 WhatsApp</a>`;
+    if (mailtoLink) contactButtons += `<a href="${mailtoLink}" class="cta-btn cta-mail">✉️ Correo</a>`;
+    if (!whatsappLink && !mailtoLink) contactButtons = `<div style="color: #64748b; font-size: 14px; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; text-align:center;">El agente no ha habilitado métodos de contacto directo.</div>`;
 
-    // Redes sociales dinámicas
     let socialHtml = '';
     if (founder.socialVisible) {
       socialHtml = '<div class="social-area" style="display:flex; gap:12px; justify-content:center; margin-top:20px;">';
@@ -226,6 +218,36 @@ exports.getPublicProfile = async (req, res) => {
       if (founder.social?.instagram) socialHtml += `<a href="${founder.social.instagram}" target="_blank" class="social-btn" style="width:40px; height:40px; border-radius:10px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:18px;">📸</a>`;
       if (founder.social?.website) socialHtml += `<a href="${founder.social.website}" target="_blank" class="social-btn" style="width:40px; height:40px; border-radius:10px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:18px;">🌐</a>`;
       socialHtml += '</div>';
+    }
+
+    // CONSTRUIR EL HTML DE LAS FICHAS POR SEPARADO PARA EVITAR ERRORES
+    let fichasHtml = '';
+    if (fichas.length > 0) {
+      fichasHtml = '<h3 class="section-title">Propiedades recientes</h3><div class="fichas-grid">';
+      
+      fichas.forEach(f => {
+        const imgUrl = f.generatedImageUrl || f.imagenUrl || '';
+        const imgHtml = imgUrl 
+          ? `<img src="${imgUrl}" style="width:100%; height:auto; display:block; cursor:pointer;" alt="Ficha" onclick="abrirImagen('${imgUrl}')">` 
+          : `<div style="width:100%; height:180px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;">Sin Imagen</div>`;
+        
+        fichasHtml += `
+          <div class="ficha-card" style="position:relative; overflow:hidden; border-radius:16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+            ${imgHtml}
+            ${f.vendida ? `<div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%) rotate(-45deg); background:rgba(220, 38, 38, 0.9); color:white; padding:10px 50px; font-weight:800; font-size:24px; border:2px solid white; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.2); z-index:5; pointer-events:none; width:150%; text-align:center;">VENDIDA</div>` : ''}
+            <div class="ficha-admin-controls" style="display:none; position:absolute; bottom:10px; right:10px; gap:8px; z-index:10;">
+              <button onclick="toggleVendida('${f._id}')" style="padding:6px 10px; border-radius:6px; border:1px solid #e2e8f0; background:rgba(255,255,255,0.9); cursor:pointer; font-size:12px; font-weight:600; color:#0f172a;">
+                ${f.vendida ? '↩️ Reactivar' : '✅ Marcar Vendida'}
+              </button>
+              <button onclick="eliminarFicha('${f._id}', this)" style="padding:6px 10px; border-radius:6px; border:1px solid #fecaca; background:rgba(255,255,255,0.9); cursor:pointer; font-size:12px; font-weight:600; color:#dc2626;">🗑️</button>
+            </div>
+          </div>`;
+      });
+      
+      fichasHtml += `</div>
+      <div id="imgModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; padding:20px;" onclick="this.style.display='none'">
+        <img id="imgModalContent" src="" style="max-width:90%; max-height:90%; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.5);" alt="Imagen completa">
+      </div>`;
     }
 
     const html = `
@@ -274,7 +296,6 @@ exports.getPublicProfile = async (req, res) => {
         .section-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 700; margin: 50px 0 20px; color: #0f172a; }
         .fichas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
         .ficha-card { background: white; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; transition: all 0.3s; position: relative; }
-        .ficha-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-color: var(--primary, #1a472a); }
         
         .footer-link { text-align: center; margin-top: 60px; padding-bottom: 40px; }
         .footer-link a { color: #64748b; text-decoration: none; font-size: 14px; font-weight: 500; padding: 12px 24px; border: 1px solid #e2e8f0; border-radius: 30px; }
@@ -320,33 +341,7 @@ exports.getPublicProfile = async (req, res) => {
           </div>
         </div>
 
-        ${fichas.length > 0 ? `
-          <h3 class="section-title">Propiedades recientes</h3>
-          <div class="fichas-grid">
-            ${fichas.map(f => {
-              const imgUrl = f.generatedImageUrl || f.imagenUrl || '';
-              const imgHtml = imgUrl 
-                ? `<img src="${imgUrl}" style="width:100%; height:auto; display:block; cursor:pointer;" alt="Ficha" onclick="abrirImagen('${imgUrl}')">` 
-                : `<div style="width:100%; height:180px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;">Sin Imagen</div>`;
-              
-              return `
-                <div class="ficha-card" style="position:relative; overflow:hidden; border-radius:16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                  ${imgHtml}
-                  ${f.vendida ? `<div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%) rotate(-45deg); background:rgba(220, 38, 38, 0.9); color:white; padding:10px 50px; font-weight:800; font-size:24px; border:2px solid white; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.2); z-index:5; pointer-events:none; width:150%; text-align:center;">VENDIDA</div>` : ''}
-                  
-                  <div class="ficha-admin-controls" style="display:none; position:absolute; bottom:10px; right:10px; gap:8px; z-index:10;">
-                    <button onclick="toggleVendida('${f._id}', this)" style="padding:6px 10px; border-radius:6px; border:1px solid #e2e8f0; background:rgba(255,255,255,0.9); cursor:pointer; font-size:12px; font-weight:600; color:#0f172a;">
-                      ${f.vendida ? '↩️ Reactivar' : '✅ Marcar Vendida'}
-                    </button>
-                    <button onclick="eliminarFicha('${f._id}', this)" style="padding:6px 10px; border-radius:6px; border:1px solid #fecaca; background:rgba(255,255,255,0.9); cursor:pointer; font-size:12px; font-weight:600; color:#dc2626;">🗑️</button>
-                  </div>
-                </div>`;
-            }).join('')}
-          </div>
-          
-          <div id="imgModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; padding:20px;" onclick="this.style.display='none'">
-            <img id="imgModalContent" src="" style="max-width:90%; max-height:90%; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.5);" alt="Imagen completa">
-          </div>` : ''}
+        ${fichasHtml}
 
         <div class="footer-link">
           <a href="/agentes-fundadores?ref=${founder.referralCode}">¿Eres asesor? Únete al programa →</a>
@@ -405,7 +400,7 @@ exports.getPublicProfile = async (req, res) => {
           } catch (e) { alert('Error de conexión.'); }
         }
 
-        async function toggleVendida(id, btn) {
+        async function toggleVendida(id) {
           const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
           const res = await fetch('/api/fundadores/mine/fichas/'+id+'/vendida', { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token } });
           if(res.ok) window.location.reload();
@@ -426,7 +421,6 @@ exports.getPublicProfile = async (req, res) => {
     res.status(500).send('Error del servidor');
   }
 };
-
 // 8. Obtener (o crear) el Founder ligado al usuario logueado — para la
 //    sección "Programa de Embajadores" dentro del dashboard real (con sesión)
 // 8a. Solo CONSULTA si el usuario logueado ya es Founder — NUNCA crea uno.
