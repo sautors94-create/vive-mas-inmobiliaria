@@ -1080,131 +1080,174 @@
     }
 
     /* ── Render principal ── */
+        /* ── Render principal ── */
     function embRender(){
       var landing = document.getElementById('emb-landing');
       var dash = document.getElementById('emb-dashboard');
 
       if (embState.needsPhone) {
-        landing.style.display='';
-        dash.style.display='none';
-        landing.innerHTML = '<div style="text-align:center; padding:40px 20px;"><h3 style="margin-bottom:10px;">Agrega tu WhatsApp para continuar</h3><p style="color:var(--text-light); max-width:420px; margin:0 auto 16px;">Necesitamos tu número de WhatsApp para generar tu enlace de contacto y tu perfil público. Agrégalo en tu perfil y vuelve a esta sección.</p><a href="perfil.html" class="btn btn-primary">Ir a mi perfil</a></div>';
+        if(landing) landing.style.display='';
+        if(dash) dash.style.display='none';
+        if(landing) landing.innerHTML = '<div style="text-align:center; padding:40px 20px;"><h3 style="margin-bottom:10px;">Agrega tu WhatsApp para continuar</h3><p style="color:var(--text-light); max-width:420px; margin:0 auto 16px;">Necesitamos tu número de WhatsApp para generar tu enlace de contacto y tu perfil público. Agrégalo en tu perfil y vuelve a esta sección.</p><a href="perfil.html" class="btn btn-primary">Ir a mi perfil</a></div>';
         return;
       }
 
-      if(!embState.inscrito){ landing.style.display=''; dash.style.display='none'; return; }
-      landing.style.display='none'; dash.style.display='';
+      if(!embState.inscrito){ 
+        if(landing) landing.style.display=''; 
+        if(dash) dash.style.display='none'; 
+        return; 
+      }
+      
+      if(landing) landing.style.display='none'; 
+      if(dash) dash.style.display='';
 
-      var ni = getNivelIdx(embState.propiedades);
-      var nv = EMB_NIVELES[ni];
+      var ni = getNivelIdx(embState.propiedades); // Usamos propiedades o score temporalmente
+      // Aseguramos usar score si está disponible, si no, propiedades
+      var scoreActual = embState.score !== undefined ? embState.score : (embState.propiedades || 0);
+      var niScore = getNivelIdx(scoreActual);
+      var nv = EMB_NIVELES[niScore];
 
       // Bienvenida
-      document.getElementById('emb-nombre').textContent = embState.nombre;
-      document.getElementById('emb-codigo').textContent = embState.codigoEmbajador;
+      var elNombre = document.getElementById('emb-nombre');
+      if(elNombre) elNombre.textContent = embState.nombre;
+      var elCodigo = document.getElementById('emb-codigo');
+      if(elCodigo) elCodigo.textContent = embState.codigoEmbajador;
 
       // Stats
-      document.getElementById('emb-stat-props').textContent = embState.score; // Mostramos el Score
+      var elProps = document.getElementById('emb-stat-props');
+      if(elProps) elProps.textContent = scoreActual;
       var statNivel = document.getElementById('emb-stat-nivel');
-      statNivel.textContent = nv.nombre;
-      statNivel.style.color = nv.color;
-      document.getElementById('emb-stat-vistas').textContent = embState.vistasPerfil;
-      var falt = ni<EMB_NIVELES.length-1 ? Math.max(0, nv.hasta-embState.score) : Math.max(0, PROPS_MAX-embState.score);
-      document.getElementById('emb-stat-faltantes').textContent = falt;
+      if(statNivel) {
+        statNivel.textContent = nv.nombre;
+        statNivel.style.color = nv.color;
+      }
+      var elVistas = document.getElementById('emb-stat-vistas');
+      if(elVistas) elVistas.textContent = embState.vistasPerfil;
+      var elFalt = document.getElementById('emb-stat-faltantes');
+      if(elFalt) {
+        var falt = niScore<EMB_NIVELES.length-1 ? Math.max(0, nv.hasta-scoreActual) : Math.max(0, PROPS_MAX-scoreActual);
+        elFalt.textContent = falt;
+      }
 
       // Badge grande
       var badge = document.getElementById('emb-badge-large');
-      badge.style.borderColor = nv.color;
-      badge.style.background = nv.bg;
-      badge.style.color = nv.color;
-      badge.innerHTML = '<span class="emb-bc-icon"><i class="fa-solid '+nv.icono+'"></i></span><span class="emb-bc-label">'+nv.nombre.toUpperCase()+'</span>';
+      if(badge) {
+        badge.style.borderColor = nv.color;
+        badge.style.background = nv.bg;
+        badge.style.color = nv.color;
+        badge.innerHTML = '<span class="emb-bc-icon"><i class="fa-solid '+nv.icono+'"></i></span><span class="emb-bc-label">'+nv.nombre.toUpperCase()+'</span>';
+      }
 
       var hero = document.getElementById('emb-level-hero');
-      hero.style.borderColor = nv.color;
-      hero.style.borderWidth = '2px';
-      document.getElementById('emb-level-title').textContent = 'Rango '+nv.nombre;
-      document.getElementById('emb-level-title').style.color = nv.color;
-      document.getElementById('emb-level-desc').textContent = DESCRIPCIONES[ni];
+      if(hero) {
+        hero.style.borderColor = nv.color;
+        hero.style.borderWidth = '2px';
+      }
+      var elTitle = document.getElementById('emb-level-title');
+      if(elTitle) {
+        elTitle.textContent = 'Rango '+nv.nombre;
+        elTitle.style.color = nv.color;
+      }
+      var elDesc = document.getElementById('emb-level-desc');
+      if(elDesc) elDesc.textContent = DESCRIPCIONES[niScore];
 
       // Progreso
       var pWrap = document.getElementById('emb-progress-wrap');
       var pFill = document.getElementById('emb-progress-fill');
       var lock = document.getElementById('emb-lock-notice');
-      pWrap.classList.remove('emb-progress-locked');
-      var enNivel = embState.score - nv.desde;
-      var reqNivel = nv.hasta - nv.desde;
-      var pct = Math.min(100, (enNivel/reqNivel)*100);
-      pFill.style.width = pct+'%';
-      pFill.style.background = nv.color;
+      var pText = document.getElementById('emb-progress-text');
+      var pPct = document.getElementById('emb-progress-pct');
+
+      if (pWrap) pWrap.classList.remove('emb-progress-locked');
+      if (pFill) pFill.style.background = nv.color;
       if (lock) lock.style.display = 'none';
-      document.getElementById('emb-progress-text').textContent = embState.score+' / '+nv.hasta+' puntos';
-      document.getElementById('emb-progress-pct').textContent = Math.round(pct)+'%';
+      
+      if (pText && pPct) {
+        var enNivel = scoreActual - nv.desde;
+        var reqNivel = nv.hasta - nv.desde;
+        var pct = Math.min(100, (enNivel/reqNivel)*100);
+        if (pFill) pFill.style.width = pct+'%';
+        pText.textContent = scoreActual+' / '+nv.hasta+' puntos';
+        pPct.textContent = Math.round(pct)+'%';
+      }
 
       // Badge en header
       var hdrBadge = document.getElementById('fund-badge-rango');
-      hdrBadge.style.display = '';
-      hdrBadge.textContent = nv.nombre;
-      hdrBadge.style.color = nv.color;
-      hdrBadge.style.borderColor = nv.color;
-      hdrBadge.style.border = '1px solid '+nv.color;
+      if(hdrBadge) {
+        hdrBadge.style.display = '';
+        hdrBadge.textContent = nv.nombre;
+        hdrBadge.style.color = nv.color;
+        hdrBadge.style.borderColor = nv.color;
+        hdrBadge.style.border = '1px solid '+nv.color;
+      }
 
       // Roadmap
       var row = document.getElementById('emb-levels-row');
-      row.innerHTML = '';
-      for(var i=0; i<EMB_NIVELES.length; i++){
-        var n = EMB_NIVELES[i];
-        var done = embState.propiedades >= n.hasta || (i===EMB_NIVELES.length-1 && embState.propiedades>=PROPS_MAX);
-        var cur = i===ni;
-        var lok = i>ni;
-        var card = document.createElement('div');
-        card.className = 'emb-level-card'+(done?' completed':'')+(cur?' current':'')+(lok?' locked':'');
-        if(cur) card.style.setProperty('--lc-color', n.color);
-        var extra = done?'<div class="emb-lc-check"><i class="fa-solid fa-check"></i></div>': lok?'<div class="emb-lc-lock"><i class="fa-solid fa-lock"></i></div>':'';
-        card.innerHTML = extra+'<div style="font-size:20px; color:'+(lok?'#9ca3af':n.color)+'; margin-bottom:6px;"><i class="fa-solid '+n.icono+'"></i></div><div style="font-size:12px; font-weight:700; color:'+(lok?'#9ca3af':n.color)+';">'+n.nombre+'</div><div style="font-size:10px; color:var(--text-light);">'+n.desde+'+ props</div>';
-        row.appendChild(card);
+      if(row) {
+        row.innerHTML = '';
+        for(var i=0; i<EMB_NIVELES.length; i++){
+          var n = EMB_NIVELES[i];
+          var done = scoreActual >= n.hasta || (i===EMB_NIVELES.length-1 && scoreActual>=PROPS_MAX);
+          var cur = i===niScore;
+          var lok = i>niScore;
+          var card = document.createElement('div');
+          card.className = 'emb-level-card'+(done?' completed':'')+(cur?' current':'')+(lok?' locked':'');
+          if(cur) card.style.setProperty('--lc-color', n.color);
+          var extra = done?'<div class="emb-lc-check"><i class="fa-solid fa-check"></i></div>': lok?'<div class="emb-lc-lock"><i class="fa-solid fa-lock"></i></div>':'';
+          card.innerHTML = extra+'<div style="font-size:20px; color:'+(lok?'#9ca3af':n.color)+'; margin-bottom:6px;"><i class="fa-solid '+n.icono+'"></i></div><div style="font-size:12px; font-weight:700; color:'+(lok?'#9ca3af':n.color)+';">'+n.nombre+'</div><div style="font-size:10px; color:var(--text-light);">'+n.desde+'+ pts</div>';
+          row.appendChild(card);
+        }
       }
 
-      // Referido (una sola vez)
-      document.getElementById('emb-referral-section').style.display = embState.codigoReferidoIngresado ? 'none' : '';
+      // Referido
+      var refSec = document.getElementById('emb-referral-section');
+      if(refSec) refSec.style.display = embState.codigoReferidoIngresado ? 'none' : '';
 
       // Redes
-      document.getElementById('emb-input-fb').value = embState.redes.facebook||'';
-      document.getElementById('emb-input-ig').value = embState.redes.instagram||'';
-      document.getElementById('emb-input-web').value = embState.redes.sitioWeb||'';
+      var inputFb = document.getElementById('emb-input-fb');
+      if(inputFb) inputFb.value = embState.redes.facebook||'';
+      var inputIg = document.getElementById('emb-input-ig');
+      if(inputIg) inputIg.value = embState.redes.instagram||'';
+      var inputWeb = document.getElementById('emb-input-web');
+      if(inputWeb) inputWeb.value = embState.redes.sitioWeb||'';
       
-      if (document.getElementById('emb-social-visible')) {
-        document.getElementById('emb-social-visible').checked = embState.socialVisible !== false;
-      }
+      var socialCheck = document.getElementById('emb-social-visible');
+      if (socialCheck) socialCheck.checked = embState.socialVisible !== false;
       
-       // Foto de perfil
-      const photoPreview = document.getElementById('emb-profile-photo-preview');
-      const btnDeletePhoto = document.getElementById('emb-btn-delete-photo');
-      if (photoPreview) {
-          photoPreview.src = embState.profilePhoto || '';
-      }
-      if (btnDeletePhoto) {
-          // Mostramos el botón de eliminar solo si ya tiene una foto cargada
-          btnDeletePhoto.style.display = embState.profilePhoto ? 'inline-flex' : 'none';
-      }
+      // Foto de perfil
+      var photoPreview = document.getElementById('emb-profile-photo-preview');
+      var btnDeletePhoto = document.getElementById('emb-btn-delete-photo');
+      if (photoPreview) photoPreview.src = embState.profilePhoto || '';
+      if (btnDeletePhoto) btnDeletePhoto.style.display = embState.profilePhoto ? 'inline-flex' : 'none';
 
       // Link perfil
       var pURL = window.location.origin + '/agente/' + embState.perfilSlug;
-      document.getElementById('emb-profile-link').value = pURL;
+      var profileLink = document.getElementById('emb-profile-link');
+      if(profileLink) profileLink.value = pURL;
       var shareText = encodeURIComponent('Conoce al Embajador '+embState.nombre+' - Codigo: '+embState.codigoEmbajador);
       var shareURL = encodeURIComponent(pURL);
-      document.getElementById('emb-share-wa').href = 'https://wa.me/?text='+shareText+'%20'+shareURL;
-      document.getElementById('emb-share-fb').href = 'https://www.facebook.com/sharer/sharer.php?u='+shareURL;
+      var shareWa = document.getElementById('emb-share-wa');
+      if(shareWa) shareWa.href = 'https://wa.me/?text='+shareText+'%20'+shareURL;
+      var shareFb = document.getElementById('emb-share-fb');
+      if(shareFb) shareFb.href = 'https://www.facebook.com/sharer/sharer.php?u='+shareURL;
 
       // Links embajador
-      document.getElementById('fund-link-perfil').value = pURL;
-      document.getElementById('fund-link-embajador').value = window.location.origin + '/agentes-fundadores?ref=' + embState.codigoEmbajador;
+      var linkPerf = document.getElementById('fund-link-perfil');
+      if(linkPerf) linkPerf.value = pURL;
+      var linkEmb = document.getElementById('fund-link-embajador');
+      if(linkEmb) linkEmb.value = window.location.origin + '/agentes-fundadores?ref=' + embState.codigoEmbajador;
 
       // Reset generador
-      document.getElementById('emb-gen-image').style.display = 'none';
-      document.getElementById('emb-gen-placeholder').style.display = '';
-      document.getElementById('emb-btn-download').style.display = 'none';
-      document.getElementById('emb-btn-share-img').style.display = 'none';
+      var genImg = document.getElementById('emb-gen-image');
+      var genPh = document.getElementById('emb-gen-placeholder');
+      var btnDl = document.getElementById('emb-btn-download');
+      var btnSh = document.getElementById('emb-btn-share-img');
+      if(genImg) genImg.style.display = 'none';
+      if(genPh) genPh.style.display = '';
+      if(btnDl) btnDl.style.display = 'none';
+      if(btnSh) btnSh.style.display = 'none';
       genImageURL = null;
     }
-
     /* ── Acciones públicas ── */
     window.emb_inscribirse = async function(){
       try {
