@@ -232,7 +232,9 @@ exports.getPublicProfile = async (req, res) => {
     <!DOCTYPE html>
     <html lang="es">
     <head>
-    <script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+    <script>
+    
+    (function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${founder.name} - Asesor Inmobiliario en ${founder.city} | SomosViveMás</title>
@@ -328,12 +330,14 @@ exports.getPublicProfile = async (req, res) => {
                 ${fichas.length > 0 ? `
           <h3 class="section-title">Propiedades recientes</h3>
           <div class="fichas-grid">
+                  ${fichas.length > 0 ? `
+          <h3 class="section-title">Propiedades recientes</h3>
+          <div class="fichas-grid">
             ${fichas.map(f => {
-              const imgHtml = f.generatedImageUrl 
-                ? `<img src="${f.generatedImageUrl}" style="width:100%; height:auto; display:block;" alt="Ficha">` 
-                : f.imagenUrl 
-                  ? `<img src="${f.imagenUrl}" style="width:100%; height:auto; display:block;" alt="Propiedad">` 
-                  : `<div style="width:100%; height:180px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;">Sin Imagen</div>`;
+              const imgUrl = f.generatedImageUrl || f.imagenUrl || '';
+              const imgHtml = imgUrl 
+                ? `<img src="${imgUrl}" style="width:100%; height:auto; display:block; cursor:pointer;" alt="Ficha" onclick="abrirImagen('${imgUrl}')">` 
+                : `<div style="width:100%; height:180px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;">Sin Imagen</div>`;
               
               return `
                 <div class="ficha-card" style="position:relative; overflow:hidden; border-radius:16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
@@ -348,7 +352,12 @@ exports.getPublicProfile = async (req, res) => {
                   </div>
                 </div>`;
             }).join('')}
-          </div>` : ''}
+          </div>
+          
+          <!-- MODAL PARA VER IMAGEN COMPLETA -->
+          <div id="imgModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; padding:20px;" onclick="this.style.display='none'">
+            <img id="imgModalContent" src="" style="max-width:90%; max-height:90%; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.5);" alt="Imagen completa">
+          </div>` : ''}  
 
         <div class="footer-link">
           <a href="/agentes-fundadores?ref=${founder.referralCode}">¿Eres asesor? Únete al programa →</a>
@@ -381,6 +390,12 @@ exports.getPublicProfile = async (req, res) => {
 
         function openModal() { document.getElementById('editModal').style.display = 'flex'; }
         function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+        function abrirImagen(url) {
+          var modal = document.getElementById('imgModal');
+          var img = document.getElementById('imgModalContent');
+          img.src = url;
+          modal.style.display = 'flex';
+        }
 
         async function saveContact() {
           const whatsapp = document.getElementById('waInput').value.trim();
