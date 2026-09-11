@@ -10,6 +10,8 @@ const propertySchema = new mongoose.Schema({
   status: { type: String, enum: ['revision', 'aprobada', 'rechazada', 'bloqueada', 'pausada'], default: 'revision' },
   motivo_rechazo: { type: String, default: null },
   permiteEdicion: { type: Boolean, default: true },
+  // ✅ NUEVO CAMPO: Para saber si el admin editó la propiedad y avisar al usuario
+  adminEdited: { type: Boolean, default: false },
   fotos: [{ type: String }],
   ubicacion: {
     estado: { type: String, required: true },

@@ -134,7 +134,12 @@ const publicarEnRedesYNotificar = async (propiedad) => {
 
     // 5. ENVIAR MENSAJE INTERNO SI AL MENOS UNA RED SE PUBLICÓ
     if (fbUrl || igUrl) {
-      const textoMsg = `🎉 ¡Tu propiedad "${propiedad.titulo}" fue aprobada y publicada!\n\nCompártela en tus redes:\n🔗 ViveMás: ${linkVivemas}\n${fbUrl ? `📘 Facebook: ${fbUrl}\n` : ''}${igUrl ? `📸 Instagram: ${igUrl}` : ''}`;
+      let textoMsg = `🎉 ¡Tu propiedad "${propiedad.titulo}" fue aprobada y publicada!\n\nCompártela en tus redes:\n🔗 ViveMás: ${linkVivemas}\n${fbUrl ? `📘 Facebook: ${fbUrl}\n` : ''}${igUrl ? `📸 Instagram: ${igUrl}` : ''}`;
+
+      // ✅ NUEVO: Si el admin la editó, avisar al usuario
+      if (propiedad.adminEdited) {
+        textoMsg = `🎉 ¡Tu propiedad "${propiedad.titulo}" fue aprobada y publicada!\n\n⚠️ *Nota importante:* Un administrador ajustó algunos detalles o eliminó algunas de tus fotos durante la revisión para cumplir con nuestras políticas de publicación.\n\nPuedes ver tu publicación y compartirla en tus redes aquí:\n🔗 ViveMás: ${linkVivemas}\n${fbUrl ? `📘 Facebook: ${fbUrl}\n` : ''}${igUrl ? `📸 Instagram: ${igUrl}` : ''}`;
+      }
 
       await Message.create({
         remitente: null, 
@@ -336,6 +341,11 @@ const editarPropiedad = async (req, res) => {
     const datosLimpios = { ...req.body };
     delete datosLimpios.socialMedia; 
     delete datosLimpios.propietario; 
+
+    // ✅ NUEVO: Marcar que el admin la editó
+    if (esAdmin) {
+      datosLimpios.adminEdited = true;
+    }
 
     const actualizada = await Property.findByIdAndUpdate(
       req.params.id,
