@@ -216,3 +216,76 @@
   #msg-chat-container{grid-template-columns:1fr!important}
   #msg-panel-lista{border-right:none!important;border-bottom:1px solid var(--border);max-height:250px}
 }
+/* ===== ESTILOS DEL STEPPER (PASOS 1 al 7) ===== */
+.ds-stepper {
+  display: flex;
+  align-items: center;
+  margin-bottom: 32px;
+  position: relative;
+  padding: 0 10px;
+}
+
+.ds-stepper-progress {
+  position: absolute;
+  top: 18px;
+  left: 25px;
+  right: 25px;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  z-index: 1;
+}
+
+.duo-stepper-progress-bar {
+  height: 100%;
+  background: var(--primary, #1a472a);
+  border-radius: 4px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.ds-stepper-steps {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+.duo-step {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  background: #fff;
+  color: #9ca3af;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.duo-step:hover:not(.active) {
+  border-color: var(--primary, #1a472a);
+  color: var(--primary, #1a472a);
+  transform: translateY(-2px);
+}
+
+.duo-step.active {
+  background: var(--primary, #1a472a);
+  border-color: var(--primary, #1a472a);
+  color: white;
+  box-shadow: 0 4px 10px rgba(26, 71, 42, 0.3);
+  transform: scale(1.1);
+}
+
+.duo-step.completed {
+  background: #d1fae5;
+  border-color: var(--primary, #1a472a);
+  color: var(--primary, #1a472a);
+}

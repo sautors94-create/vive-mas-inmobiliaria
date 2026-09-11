@@ -543,11 +543,10 @@ const iniciarMapaPublicar = () => {
   if (mapaPublicar) { mapaPublicar.invalidateSize(); return; }
   setTimeout(() => {
     const centro = [19.4326, -99.1332];
-mapaPublicar = L.map('mapa-publicar').setView(centro, 12);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 20
+    mapaPublicar = L.map('mapa-publicar').setView(centro, 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap',
+      maxZoom: 19
     }).addTo(mapaPublicar);
     mapaPublicar.on('click', (e) => {
       const { lat, lng } = e.latlng;
@@ -2321,12 +2320,17 @@ window.setPublicarStep = (n) => {
     el.style.display = step === publicarPaso ? 'block' : 'none';
   });
 
-  // progress
-  const dots = document.querySelectorAll('#publicar-steps .ds-step');
+    // progress
+  const dots = document.querySelectorAll('#publicar-steps .duo-step');
   dots.forEach(d => {
     const step = Number(d.getAttribute('data-step'));
-    d.classList.toggle('active', step === publicarPaso);
-    d.disabled = step !== publicarPaso; // evita saltos sin validar
+    d.classList.remove('active', 'completed');
+    if (step === publicarPaso) {
+      d.classList.add('active');
+    } else if (step < publicarPaso) {
+      d.classList.add('completed');
+    }
+    d.disabled = false; // Permite navegar libremente al dar clic
   });
 
   const bar = document.getElementById('publicar-progress-bar');
