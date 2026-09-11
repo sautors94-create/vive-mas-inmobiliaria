@@ -967,8 +967,10 @@ const renderUsrModTabla = () => {
       <td><span class="status-badge status-${u.status}">${u.status}</span></td>
       <td>${new Date(u.createdAt).toLocaleDateString('es-MX')}</td>
       <td onclick="event.stopPropagation()">
-        <button class="btn btn-outline admin-mini-btn" onclick="abrirDrawerUsuario('${u._id}')">Ver</button>
-      </td>
+      ${p.status === 'revision' ? `<button class="btn btn-primary admin-mini-btn" onclick="aprobarPropiedad('${p._id}')">Aprobar</button>` : ''}
+      <button class="btn btn-outline admin-mini-btn" onclick="abrirDrawerPropiedad('${p._id}')">Ver</button>
+      <button class="btn btn-outline admin-mini-btn" onclick="window.location.href='/dashboard.html?editar=${p._id}'">✏️ Editar</button>
+    </td>
     </tr>`).join('');
 };
 
