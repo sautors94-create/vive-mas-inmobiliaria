@@ -7,8 +7,9 @@ const { moderarPropiedadConIA } = require('../utils/Agentemoderacion');
 const mongoose = require('mongoose');
 
 // Importaciones para Meta Graph API
-const SocialConfig = require('../models/SocialConfig'); // Ajusta la ruta si es necesario
-const metaConfig = require('../config/meta.config');   // Ajusta la ruta si es necesario
+const SocialConfig = require('../models/SocialConfig');
+// ✅ RUTA CORREGIDA: Subimos dos niveles (../../) desde src/controllers hasta la raíz, y luego entramos a services
+const metaConfig = require('../../services/marketingAutomation/config/meta.config');
 
 // ==========================================
 // FUNCIÓN DE PRIVACIDAD (COORDENADAS PÚBLICAS)
