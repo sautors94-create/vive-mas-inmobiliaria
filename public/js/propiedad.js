@@ -354,7 +354,7 @@
         }
         try {
           const mapa = L.map('mapa').setView([latPublica, lngPublica], 15);
-          L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 20 }).addTo(mapa);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 19 }).addTo(mapa);
           L.circle([latPublica, lngPublica], { radius: 100, color: 'var(--primary, #1a472a)', weight: 2, fillColor: 'var(--primary, #1a472a)', fillOpacity: 0.12 }).addTo(mapa).bindPopup(`${escapeHTML(p.titulo || 'Propiedad')} — zona aproximada`);
           setTimeout(() => { try { mapa.setZoom(16); } catch (e) {} }, 50);
         } catch (error) {
