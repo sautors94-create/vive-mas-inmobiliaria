@@ -7,7 +7,8 @@ const Stripe = require('stripe');
 const { cloudinary } = require('../config/cloudinary');
 const { transporter, enviarCoincidenciaBusqueda, enviarNovedad } = require('../utils/email');
 const { twilioVerifyConfigurado, verificarConexion } = require('../utils/twilioVerify');
-const { ejecutarModeracionCompleta } = require('./property.controller');
+// ✅ IMPORTAMOS LA FUNCIÓN PARA PUBLICAR EN REDES SOCIALES
+const { ejecutarModeracionCompleta, publicarEnRedesYNotificar } = require('./property.controller');
 const { eventBus } = require('../../services/marketingAutomation');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
@@ -776,16 +777,24 @@ const aprobarPropiedad = async (req, res) => {
       return res.json({ ok: true, mensaje: 'Propiedad rechazada (validación de fotos)', propiedad: { ...propiedad.toObject(), status: 'rechazada' } });
     }
 
+    // ✅ PUNTO 4: Se agrega .populate() para que la función de redes sociales tenga los datos del propietario
     const updated = await Property.findByIdAndUpdate(
       req.params.id,
       { status: 'aprobada', motivo_rechazo: null },
       { new: true }
-    );
+    ).populate('propietario', 'nombre notificaciones email');
 
     const msg = buildMensajeAprobacion({ nombre: propiedad.propietario.nombre, titulo: propiedad.titulo, status: 'autorizada' });
     await enviarMensajeInternoParaPropiedad({ req, propiedadId: req.params.id, mensaje: msg });
 
     notificarCoincidenciasBusqueda({ ...updated.toObject(), propietario: propiedad.propietario }).catch(() => {});
+
+    // ✅ PUNTO 4: Disparar publicación en redes y mensaje automático con los links
+    try {
+      await publicarEnRedesYNotificar(updated);
+    } catch (e) {
+      console.error('❌ Error en publicarEnRedesYNotificar desde Admin:', e.message);
+    }
 
     // Emitir evento de "propiedad publicada" para el Marketing Automation Engine
     // (fire-and-forget: no bloquea la respuesta de aprobación)

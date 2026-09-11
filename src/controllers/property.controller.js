@@ -6,6 +6,10 @@ const { validarPropiedadBasico } = require('../utils/Agentevalidacion');
 const { moderarPropiedadConIA } = require('../utils/Agentemoderacion');
 const mongoose = require('mongoose');
 
+// Importaciones para Meta Graph API
+const SocialConfig = require('../models/SocialConfig'); // Ajusta la ruta si es necesario
+const metaConfig = require('../config/meta.config');   // Ajusta la ruta si es necesario
+
 // ==========================================
 // FUNCIÓN DE PRIVACIDAD (COORDENADAS PÚBLICAS)
 // ==========================================
@@ -18,10 +22,7 @@ function calcularCoordPublica(coordExacta, id, index = 1) {
     hash |= 0;
   }
 
-  // Normalizar a 0..199 para evitar resultados negativos del operador %
   const hashNormalizado = ((hash % 200) + 200) % 200;
-
-  // Aproximadamente ±80-90 metros
   const offset = (hashNormalizado - 100) * 0.000008;
 
   return Number(coordExacta) + offset;
@@ -30,19 +31,139 @@ function calcularCoordPublica(coordExacta, id, index = 1) {
 const LIMITE_POR_PLAN = {
   gratuito: 3,
   basico: 15,
-  basico_plus: Infinity, // Asignado por admin, sin límite de props
+  basico_plus: Infinity,
   premium: Infinity
 };
 
+// ==========================================
+// FUNCIÓN REAL PARA META GRAPH API (USANDO BD)
+// ==========================================
+const publicarEnRedesYNotificar = async (propiedad) => {
+  try {
+    // PUNTO 1: Si ya había sido publicada antes (se está editando), NO volver a publicar
+    if (propiedad.socialMedia && propiedad.socialMedia.facebook && propiedad.socialMedia.facebook.url) {
+      console.log(`Propiedad "${propiedad.titulo}" ya tenía publicaciones. Omitiendo...`);
+      return; 
+    }
+
+    // 1. OBTENER EL TOKEN DESDE LA BASE DE DATOS
+    const tenantId = propiedad.propietario._id ? propiedad.propietario._id.toString() : propiedad.propietario.toString();
+    const socialConfig = await SocialConfig.findOne({ tenantId });
+
+    if (!socialConfig || !socialConfig.isConnected || !socialConfig.facebook.pageAccessToken) {
+      console.warn('⚠️ El usuario no tiene Meta conectado. No se publicará en redes.');
+      return;
+    }
+
+    const pageAccessToken = socialConfig.facebook.pageAccessToken;
+    const pageId = socialConfig.facebook.pageId || metaConfig.facebook.pageId;
+    const igBusinessId = socialConfig.instagram.businessAccountId || metaConfig.instagram.businessAccountId;
+    const apiVersion = metaConfig.apiVersion;
+
+    const linkVivemas = `https://somosvivemas.com/pages/propiedad.html?id=${propiedad._id}`;
+    const mensaje = `🏠 ${propiedad.titulo}\n💰 $${propiedad.precio}\n📍 ${propiedad.ubicacion?.ciudad}, ${propiedad.ubicacion?.estado}\n\nVer detalles: ${linkVivemas}`;
+    
+    let fbUrl = null;
+    let igUrl = null;
+
+    // 2. PUBLICAR EN FACEBOOK
+    try {
+      const fbResponse = await fetch(`https://graph.facebook.com/${apiVersion}/${pageId}/feed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: mensaje,
+          link: linkVivemas,
+          access_token: pageAccessToken
+        })
+      });
+      const fbData = await fbResponse.json();
+      
+      if (fbData.error) throw new Error(fbData.error.message);
+      
+      fbUrl = `https://facebook.com/${pageId}/posts/${fbData.id.split('_')[1]}`;
+      console.log('✅ Publicado en Facebook');
+    } catch (fbError) {
+      console.error('❌ Error publicando en Facebook:', fbError.message);
+    }
+
+    // 3. PUBLICAR EN INSTAGRAM (Requiere una imagen)
+    try {
+      if (propiedad.fotos && propiedad.fotos.length > 0) {
+        // Paso A: Crear el contenedor de medios en IG
+        const igContainer = await fetch(`https://graph.facebook.com/${apiVersion}/${igBusinessId}/media`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image_url: propiedad.fotos[0], 
+            caption: mensaje,
+            access_token: pageAccessToken
+          })
+        });
+        const igContainerData = await igContainer.json();
+
+        if (igContainerData.error) throw new Error(igContainerData.error.message);
+
+        // Paso B: Publicar el contenedor en el feed de IG
+        const igPublish = await fetch(`https://graph.facebook.com/${apiVersion}/${igBusinessId}/media_publish`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            creation_id: igContainerData.id,
+            access_token: pageAccessToken
+          })
+        });
+        const igPublishData = await igPublish.json();
+
+        if (igPublishData.error) throw new Error(igPublishData.error.message);
+        
+        igUrl = `https://instagram.com/${metaConfig.instagram.username}`;
+        console.log('✅ Publicado en Instagram');
+      }
+    } catch (igError) {
+      console.error('❌ Error publicando en Instagram:', igError.message);
+    }
+
+    // 4. GUARDAR LINKS EN LA BASE DE DATOS
+    propiedad.socialMedia = {
+      facebook: { status: fbUrl ? 'published' : 'failed', url: fbUrl, publishedAt: new Date() },
+      instagram: { status: igUrl ? 'published' : 'failed', url: igUrl, publishedAt: new Date() }
+    };
+    await propiedad.save();
+
+    // 5. ENVIAR MENSAJE INTERNO SI AL MENOS UNA RED SE PUBLICÓ
+    if (fbUrl || igUrl) {
+      const textoMsg = `🎉 ¡Tu propiedad "${propiedad.titulo}" fue aprobada y publicada!\n\nCompártela en tus redes:\n🔗 ViveMás: ${linkVivemas}\n${fbUrl ? `📘 Facebook: ${fbUrl}\n` : ''}${igUrl ? `📸 Instagram: ${igUrl}` : ''}`;
+
+      await Message.create({
+        remitente: null, 
+        destinatario: propiedad.propietario,
+        propiedad: propiedad._id,
+        mensaje: textoMsg,
+        esSistema: true 
+      });
+      console.log(`✅ Notificación enviada al usuario para: ${propiedad.titulo}`);
+    }
+
+  } catch (error) {
+    console.error('❌ Error general en publicarEnRedesYNotificar:', error.message);
+    propiedad.socialMedia = propiedad.socialMedia || {};
+    propiedad.socialMedia.facebook = { status: 'failed', error: error.message };
+    await propiedad.save();
+  }
+};
+
+// ==========================================
+// CONTROLADORES PRINCIPALES
+// ==========================================
+
 const crearPropiedad = async (req, res) => {
-try {
+  try {
     const { titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas, creditosAceptados } = req.body;
     
-    // Permitir ilimitadas si el rol es basico_plus, sin importar el plan de pago
     const planEfectivo = req.user.role === 'basico_plus' ? 'basico_plus' : (req.user.plan || 'gratuito');
     const limite = LIMITE_POR_PLAN[planEfectivo] || 3;
     
-    // Contar propiedades activas del usuario (no rechazadas/eliminadas)
     const count = await Property.countDocuments({
       propietario: req.user.id,
       status: { $ne: 'rechazada' }
@@ -50,23 +171,20 @@ try {
     
     if (count >= limite) {
       return res.status(403).json({
-        // ✅ CORREGIDO: Cambiado ${plan} por ${planEfectivo}
         error: `Has alcanzado el límite de ${limite} propiedades para tu plan ${planEfectivo}. ¡Haz upgrade a premium para publicaciones ilimitadas!`
       });
     }
     
-    // Definir peso según el plan del usuario
     const pesoMap = { 
       gratuito: 0, 
       basico: 1, 
-      basico_plus: 3, // Plan Gratuito Ilimitado: prioridad máxima, por encima de Premium
+      basico_plus: 3, 
       premium: 2 
     };
     
-    // ✅ CORREGIDO: Cambiado 'plan' por 'planEfectivo'
     const pesoPlan = pesoMap[planEfectivo] || 0;
 
-const propiedad = await Property.create({
+    const propiedad = await Property.create({
       titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas,
       creditosAceptados: operacion === 'venta' ? (creditosAceptados || []) : [],
       propietario: req.user.id,
@@ -82,7 +200,7 @@ const propiedad = await Property.create({
 
 const listarPropiedades = async (req, res) => {
   try {
-const {
+    const {
       operacion, tipo, estado, ciudad,
       precioMin, precioMax, recamaras, banos,
       m2Min, m2Max, orden, credito,
@@ -91,7 +209,6 @@ const {
 
     const filtro = { status: 'aprobada' };
 
-    // Convierte "a,b,c" en ['a','b','c'], o un solo valor en [valor]
     const aArray = (valor) => valor.includes(',')
       ? valor.split(',').map(v => v.trim()).filter(Boolean)
       : [valor];
@@ -117,14 +234,13 @@ const {
       if (precioMin) filtro.precio.$gte = Number(precioMin);
       if (precioMax) filtro.precio.$lte = Number(precioMax);
     }
-if (recamaras) filtro['caracteristicas.recamaras'] = { $gte: Number(recamaras) };
+    if (recamaras) filtro['caracteristicas.recamaras'] = { $gte: Number(recamaras) };
     if (banos) filtro['caracteristicas.banos'] = { $gte: Number(banos) };
     if (m2Min || m2Max) {
       filtro['caracteristicas.m2'] = {};
       if (m2Min) filtro['caracteristicas.m2'].$gte = Number(m2Min);
       if (m2Max) filtro['caracteristicas.m2'].$lte = Number(m2Max);
     }
-    // Filtro por crédito aceptado (ej. 'infonavit', 'bancario', 'fovissste')
     if (credito) {
       const valores = aArray(credito);
       filtro.creditosAceptados = valores.length > 1 ? { $in: valores } : valores[0];
@@ -137,7 +253,7 @@ if (recamaras) filtro['caracteristicas.recamaras'] = { $gte: Number(recamaras) }
     const total = await Property.countDocuments(filtro);
     const propiedades = await Property.find(filtro)
       .populate('propietario', 'nombre avatar')
-      .sort({ planPeso: -1, destacada: -1, ...ordenFinal }) // -1 significa de mayor a menor (Premium primero)
+      .sort({ planPeso: -1, destacada: -1, ...ordenFinal })
       .skip(skip)
       .limit(Number(limite));
 
@@ -155,12 +271,10 @@ if (recamaras) filtro['caracteristicas.recamaras'] = { $gte: Number(recamaras) }
 
 const detallePropiedad = async (req, res) => {
   try {
-    // 1. Validar que el ID sea un ObjectId válido de MongoDB
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ ok: false, error: 'ID de propiedad inválido' });
     }
 
-    // 2. Obtener el documento y convertirlo a objeto plano JS (.lean())
     const propiedad = await Property.findById(req.params.id)
       .populate('propietario', 'nombre avatar')
       .lean();
@@ -169,25 +283,16 @@ const detallePropiedad = async (req, res) => {
       return res.status(404).json({ ok: false, error: 'Propiedad no encontrada' });
     }
 
-    // 3. AUTORIZACIÓN (Seguridad estrictamente en servidor)
     const propietarioId = propiedad.propietario?._id || propiedad.propietario;
     
-    const esPropietario = 
-      Boolean(req.user) && 
-      String(propietarioId) === String(req.user.id);
-
-    const esAdmin = 
-      Boolean(req.user) && 
-      req.user.role === 'admin';
-
+    const esPropietario = Boolean(req.user) && String(propietarioId) === String(req.user.id);
+    const esAdmin = Boolean(req.user) && req.user.role === 'admin';
     const puedeVerExactas = esPropietario || esAdmin;
 
-    // Si NO es dueño/admin y no está aprobada, bloqueamos (lógica original mejorada)
     if (!puedeVerExactas && propiedad.status !== 'aprobada') {
       return res.status(403).json({ ok: false, error: 'Propiedad no disponible' });
     }
 
-    // 4. PRIVACIDAD DE UBICACIÓN
     if (!puedeVerExactas && propiedad.ubicacion) {
       const lat = Number(propiedad.ubicacion.lat);
       const lng = Number(propiedad.ubicacion.lng);
@@ -197,16 +302,13 @@ const detallePropiedad = async (req, res) => {
         propiedad.ubicacion.lngPublica = calcularCoordPublica(lng, propiedad._id, 2);
       }
 
-      // Eliminalos ANTES de enviar al frontend
       delete propiedad.ubicacion.lat;
       delete propiedad.ubicacion.lng;
       delete propiedad.ubicacion.direccion;
     }
 
-    // Contador de vistas real (no bloqueante, no afecta el tiempo de respuesta)
     Property.updateOne({ _id: propiedad._id }, { $inc: { vistas: 1 } }).catch(() => {});
 
-    // 5. Respuesta limpia
     return res.json({ ok: true, propiedad });
 
   } catch (error) {
@@ -214,18 +316,32 @@ const detallePropiedad = async (req, res) => {
   }
 };
 
+// ==========================================
+// PUNTO 1 y 2: EDITAR PROPIEDAD (CON PERMISOS DE ADMIN)
+// ==========================================
 const editarPropiedad = async (req, res) => {
   try {
     const propiedad = await Property.findById(req.params.id);
     if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
-    if (propiedad.propietario.toString() !== req.user.id) {
+    
+    // PUNTO 2: Permitir que el admin también edite
+    const esPropietario = propiedad.propietario.toString() === req.user.id;
+    const esAdmin = req.user.role === 'admin';
+    if (!esPropietario && !esAdmin) {
       return res.status(403).json({ error: 'No tienes permiso para editar esta propiedad' });
     }
+
+    // PUNTO 1: Evitar que el frontend sobreescriba el estado de las redes sociales o el dueño
+    const datosLimpios = { ...req.body };
+    delete datosLimpios.socialMedia; 
+    delete datosLimpios.propietario; 
+
     const actualizada = await Property.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, status: 'revision', motivo_rechazo: null },
+      { ...datosLimpios, status: 'revision', motivo_rechazo: null },
       { new: true }
     );
+    
     res.json({ ok: true, mensaje: 'Propiedad actualizada y enviada a revisión', propiedad: actualizada });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -239,11 +355,6 @@ const eliminarPropiedad = async (req, res) => {
     if (propiedad.propietario.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'No tienes permiso para eliminar esta propiedad' });
     }
-    // Antes esto solo ponía status:'rechazada' — no borraba nada de verdad,
-    // así que la propiedad seguía apareciendo en "Mis propiedades" (las
-    // rechazadas se muestran ahí a propósito, para que el usuario las
-    // pueda corregir). Ahora sí se elimina permanentemente, igual que
-    // hace el admin.
     await Property.findByIdAndDelete(req.params.id);
     res.json({ ok: true, mensaje: 'Propiedad eliminada correctamente' });
   } catch (error) {
@@ -314,21 +425,17 @@ const misPropiedades = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 const MIN_FOTOS_PARA_MODERAR = 2;
 
-// Orquesta los 2 agentes (Validación + Moderación IA) y aplica la decisión final.
-// Se ejecuta en segundo plano (fire-and-forget) tras subir fotos — nunca bloquea
-// la respuesta al usuario ni tumba el flujo de subida si algo falla.
 const ejecutarModeracionCompleta = async (propiedadId) => {
   try {
     const propiedad = await Property.findById(propiedadId);
-    if (!propiedad || propiedad.status !== 'revision') return; // ya fue movida por un admin, no pisar su decisión
-    if ((propiedad.fotos || []).length < MIN_FOTOS_PARA_MODERAR) return; // faltan fotos, esperar a que suba más
+    if (!propiedad || propiedad.status !== 'revision') return;
+    if ((propiedad.fotos || []).length < MIN_FOTOS_PARA_MODERAR) return;
 
-    // Agente 1 — Validación (reglas, instantáneo)
     const { issues: issuesAgente1, bloqueaAutomatico } = validarPropiedadBasico(propiedad);
 
-    // Historial del propietario, para dar contexto al Agente 2
     const propietario = await User.findById(propiedad.propietario).select('createdAt');
     const [aprobadas, rechazadas, bloqueadas] = await Promise.all([
       Property.countDocuments({ propietario: propiedad.propietario, status: 'aprobada' }),
@@ -342,11 +449,8 @@ const ejecutarModeracionCompleta = async (propiedadId) => {
       propiedades_bloqueadas_previas: bloqueadas,
     };
 
-    // Agente 2 — Moderación IA (imágenes + decisión final)
     const resultadoIA = await moderarPropiedadConIA({ propiedad, issuesAgente1, historialUsuario });
 
-    // El Agente 1 tiene poder de veto: si detectó algo determinista y grave
-    // (teléfono/URL/email literal en el texto), no dejamos que la IA lo apruebe.
     const decisionFinal = bloqueaAutomatico ? 'BLOCKED_FOR_REVIEW' : resultadoIA.decision;
 
     const todosLosIssues = [...issuesAgente1, ...(resultadoIA.issues || [])];
@@ -364,9 +468,9 @@ const ejecutarModeracionCompleta = async (propiedadId) => {
 
     if (decisionFinal === 'APPROVED') {
       propiedad.status = 'aprobada';
+      // PUNTO 3: Disparar publicación en redes y mensaje automático
+      await publicarEnRedesYNotificar(propiedad);
     }
-    // Si es BLOCKED_FOR_REVIEW, se queda en 'revision' — el admin la ve en su cola,
-    // ahora con el análisis de la IA visible para entender por qué.
 
     await propiedad.save();
     console.log(`🤖 Moderación IA completada para "${propiedad.titulo}": ${decisionFinal}`);
@@ -375,11 +479,16 @@ const ejecutarModeracionCompleta = async (propiedadId) => {
   }
 };
 
+// ==========================================
+// PUNTO 2: SUBIR Y ELIMINAR FOTOS (CON PERMISOS DE ADMIN)
+// ==========================================
 const subirFotos = async (req, res) => {
   try {
     const propiedad = await Property.findById(req.params.id);
     if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
-    if (propiedad.propietario.toString() !== req.user.id) {
+    
+    // PUNTO 2: Agregado permiso de admin
+    if (propiedad.propietario.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'No tienes permiso' });
     }
     if (!req.files || req.files.length === 0) {
@@ -399,13 +508,17 @@ const subirFotos = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 const eliminarFoto = async (req, res) => {
   try {
     const propiedad = await Property.findById(req.params.id);
     if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
-    if (propiedad.propietario.toString() !== req.user.id) {
+    
+    // PUNTO 2: Agregado permiso de admin
+    if (propiedad.propietario.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'No tienes permiso' });
     }
+    
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: 'Falta la URL de la foto a eliminar' });
 
@@ -421,7 +534,6 @@ const eliminarFoto = async (req, res) => {
 const registrarBusqueda = async (req, res) => {
   try {
     const { estado, ciudad, operacion, tipo, precioMax } = req.body;
-    // Evitar guardar búsquedas totalmente vacías (sin ningún criterio real)
     if (!estado && !ciudad && !operacion && !tipo && !precioMax) {
       return res.json({ ok: true, ignorada: true });
     }
@@ -431,7 +543,6 @@ const registrarBusqueda = async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    // Quitar una búsqueda previa idéntica (para no duplicar) y agregar la nueva al frente
     user.busquedasRecientes = (user.busquedasRecientes || []).filter(b =>
       !(b.estado === nueva.estado && b.ciudad === nueva.ciudad && b.operacion === nueva.operacion && b.tipo === nueva.tipo && b.precioMax === nueva.precioMax)
     );
@@ -445,4 +556,18 @@ const registrarBusqueda = async (req, res) => {
   }
 };
 
-module.exports = { crearPropiedad, listarPropiedades, detallePropiedad, editarPropiedad, eliminarPropiedad, eliminarFoto, pausarPropiedad, reactivarPropiedad, misPropiedades, subirFotos, registrarBusqueda, ejecutarModeracionCompleta };
+module.exports = { 
+  crearPropiedad, 
+  listarPropiedades, 
+  detallePropiedad, 
+  editarPropiedad, 
+  eliminarPropiedad, 
+  eliminarFoto, 
+  pausarPropiedad, 
+  reactivarPropiedad, 
+  misPropiedades, 
+  subirFotos, 
+  registrarBusqueda, 
+  ejecutarModeracionCompleta,
+  publicarEnRedesYNotificar // Exportada por si la llamas desde el panel de admin
+};

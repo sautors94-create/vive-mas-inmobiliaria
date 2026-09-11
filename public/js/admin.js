@@ -810,6 +810,7 @@ const crearCardAdmin = (p) => `
       <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;border-color:${p.status === 'bloqueada' ? '#2e7d32' : '#6a1b9a'};color:${p.status === 'bloqueada' ? '#2e7d32' : '#6a1b9a'}" onclick="bloquearPropiedad('${p._id}')">
         ${p.status === 'bloqueada' ? 'Desbloquear' : 'Bloquear'}
       </button>
+      <button class="btn btn-outline" style="padding:5px 12px;font-size:12px" onclick="window.location.href='/dashboard.html?editar=${p._id}'">✏️ Editar</button>
       <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;border-color:#c62828;color:#c62828" onclick="eliminarPropAdmin('${p._id}', '${p.titulo.replace(/'/g, "\\'")}')">Eliminar</button>
     </div>
   </div>`;

@@ -3,9 +3,16 @@ const mongoose = require('mongoose');
 const messageSchema = new mongoose.Schema({
   propiedad: { type: mongoose.Schema.Types.ObjectId, ref: 'Property', default: null },
   conversacionId: { type: String, required: true, index: true },
-  remitente: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  
+  // ✅ CAMBIO 1: Se quitó "required: true" y se agregó "default: null"
+  remitente: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, 
+  
   destinatario: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   mensaje: { type: String, required: true, trim: true },
+  
+  // ✅ CAMBIO 2: Se agregó este nuevo campo
+  esSistema: { type: Boolean, default: false },
+  
   leido: { type: Boolean, default: false },
   // Detección de riesgo
   riesgo: { type: String, enum: ['bajo', 'medio', 'alto', 'critico'], default: 'bajo' },

@@ -1041,7 +1041,7 @@ const renderizarMisProps = () => {
 };
 
 const accionesMisProps = (p) => `
-  ${p.status !== 'aprobada' && (p.status !== 'rechazada' || p.permiteEdicion !== false) ? `<button class="btn btn-outline" onclick="editarPropiedad('${p._id}')">Editar</button>` : ''}
+  ${(p.status === 'aprobada' || p.status === 'revision' || p.status === 'rechazada') && p.permiteEdicion !== false ? `<button class="btn btn-outline" onclick="editarPropiedad('${p._id}')">✏️ Editar</button>` : ''}
   ${p.status === 'aprobada' ? `<button class="btn btn-outline" onclick="pausarMiPropiedad('${p._id}')">⏸️ Pausar</button>` : ''}
   ${p.status === 'pausada' ? `<button class="btn btn-primary" onclick="reactivarMiPropiedad('${p._id}')">▶️ Reactivar</button>` : ''}
   <button class="btn btn-outline btn-del-prop" onclick="eliminarMiPropiedad('${p._id}','${(p.titulo || '').replace(/'/g, "\\'")}')">🗑️</button>`;
@@ -2679,12 +2679,30 @@ caracteristicas: {
   }
 };
 
-// Forzar carga del resumen al entrar al dashboard
+// Forzar carga del resumen al entrar al dashboard y detectar modo edición
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     cargarResumenUsuario();
   }, 300);
+
+  // ✅ DETECTAR SI EL ADMIN ENTRÓ EN MODO EDICIÓN
+  const params = new URLSearchParams(window.location.search);
+  const editarId = params.get('editar');
+  if (editarId && /^[a-fA-F0-9]{24}$/.test(editarId)) {
+    // Limpiamos la URL para que no se quede trabado en modo edición si recarga
+    window.history.replaceState({}, document.title, window.location.pathname);
+    // Abrimos la sección de nueva propiedad y cargamos los datos
+    if (typeof mostrarSeccion === 'function') {
+      mostrarSeccion('nueva-propiedad');
+      setTimeout(() => {
+        if (typeof editarPropiedad === 'function') {
+          editarPropiedad(editarId);
+        }
+      }, 500);
+    }
+  }
 });
+
 window._2faDesactivar = () => {
   if (document.getElementById('confirm-2fa-off')) return;
   const accion = document.getElementById('accion-2fa');
