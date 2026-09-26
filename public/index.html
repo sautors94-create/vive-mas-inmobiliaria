@@ -261,18 +261,39 @@
   <script src="js/chatbot.js"></script>
   <script src="js/social-widget.js"></script>
   
-  <!-- Funciones locales de la home (declaradas solo UNA VEZ) -->
+  <!-- SCRIPT LOCAL DE LA PÁGINA PRINCIPAL -->
   <script>
     // 1. Renta y venta
-    const irARentaVenta = () => {
+    function irARentaVenta() {
       window.location.href = 'pages/nosotros.html#scroll-a-cta';
-    };
+    }
 
     // 2. Pago, Admin y Mantenimiento
-    const abrirMaxConMensaje = (texto) => {
+    function abrirMaxConMensaje(texto) {
       localStorage.setItem('msg_max_automatico', texto);
       window.location.href = 'pages/servicios.html';
-    };
+    }
+
+    // 3. Función para Remates y Roomies
+    function toggleBooleanHome(type) {
+      if (!filtrosActivos) return;
+      
+      filtrosActivos[type] = !filtrosActivos[type];
+      
+      const labelEl = document.getElementById(`label-${type}`);
+      if (labelEl) {
+        labelEl.textContent = filtrosActivos[type] ? 'Sí' : 'No';
+        labelEl.style.fontWeight = filtrosActivos[type] ? '700' : '400';
+        labelEl.style.color = filtrosActivos[type] ? 'var(--primary)' : 'var(--text-light)';
+        
+        const fieldEl = labelEl.closest('.search-bar-field');
+        if (fieldEl) fieldEl.classList.toggle('active', filtrosActivos[type]);
+      }
+      
+      if (typeof renderChips === 'function') {
+        renderChips();
+      }
+    }
   </script>
 </body>
 </html>
