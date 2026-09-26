@@ -13,7 +13,7 @@ const filtrosActivos = {
 };
 
 // ==================== POPOVER SYSTEM ====================
-const openPopover = (popoverId, triggerElement) => {
+function openPopover(popoverId, triggerElement) {
   closeAllPopovers();
   const popover = document.getElementById(popoverId);
   const overlay = document.getElementById('popover-overlay');
@@ -29,9 +29,9 @@ const openPopover = (popoverId, triggerElement) => {
   overlay.classList.add('active');
   popover.classList.add('active');
   triggerElement.classList.add('active');
-};
+}
 
-const closeAllPopovers = () => {
+function closeAllPopovers() {
   const overlay = document.getElementById('popover-overlay');
   const popovers = document.querySelectorAll('.popover');
   const fields = document.querySelectorAll('.search-bar-field');
@@ -39,11 +39,11 @@ const closeAllPopovers = () => {
   overlay?.classList.remove('active');
   popovers.forEach(p => p.classList.remove('active'));
   fields.forEach(f => f.classList.remove('active'));
-};
+}
 
 // ==================== FILTER FUNCTIONS ====================
 
-const toggleOption = (element, filterType) => {
+function toggleOption(element, filterType) {
   const value = element.getAttribute('data-value');
   element.classList.toggle('selected');
 
@@ -57,9 +57,9 @@ const toggleOption = (element, filterType) => {
 
   updateLabels();
   renderChips();
-};
+}
 
-const selectRadio = (element, filterType) => {
+function selectRadio(element, filterType) {
   const parent = element.parentElement;
   parent.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
   element.classList.add('selected');
@@ -68,9 +68,9 @@ const selectRadio = (element, filterType) => {
   updateLabels();
   renderChips();
   closeAllPopovers();
-};
+}
 
-const toggleCheckbox = (element, filterType) => {
+function toggleCheckbox(element, filterType) {
   const value = element.getAttribute('data-value');
   element.classList.toggle('selected');
 
@@ -84,10 +84,10 @@ const toggleCheckbox = (element, filterType) => {
 
   updateLabels();
   renderChips();
-};
+}
 
 // NUEVO: Toggle para Remates y Roomies (campos booleanos directos)
-const toggleBooleanHome = (type) => {
+function toggleBooleanHome(type) {
   filtrosActivos[type] = !filtrosActivos[type];
   
   const labelEl = document.getElementById(`label-${type}`);
@@ -101,18 +101,18 @@ const toggleBooleanHome = (type) => {
   }
   
   renderChips();
-};
+}
 
-const filterEstados = (query) => {
+function filterEstados(query) {
   const options = document.querySelectorAll('#opciones-estado .popover-option');
   const lowerQuery = query.toLowerCase();
   options.forEach(opt => {
     opt.style.display = opt.textContent.toLowerCase().includes(lowerQuery) ? '' : 'none';
   });
-};
+}
 
 // ==================== DUAL RANGE SLIDER ====================
-const updateDualRange = (type) => {
+function updateDualRange(type) {
   const minInput = document.getElementById(`${type}-min`);
   const maxInput = document.getElementById(`${type}-max`);
   const minLabel = document.getElementById(`${type}-min-label`);
@@ -141,9 +141,9 @@ const updateDualRange = (type) => {
   filtrosActivos[`${type}Max`] = max;
 
   renderChips();
-};
+}
 
-const syncDualRange = (position, type) => {
+function syncDualRange(position, type) {
   const input = document.getElementById(`${type}-${position}-input`);
   const slider = document.getElementById(`${type}-${position}`);
   const label = document.getElementById(`${type}-${position}-label`);
@@ -157,16 +157,16 @@ const syncDualRange = (position, type) => {
   if (label) label.textContent = formatPrecioCortoCorto(value);
 
   updateDualRange(type);
-};
+}
 
-const formatPrecioCortoCorto = (valor) => {
+function formatPrecioCortoCorto(valor) {
   if (valor >= 1000000) return `$${(valor / 1000000).toFixed(1)}M`;
   if (valor >= 1000) return `$${(valor / 1000).toFixed(0)}K`;
   return `$${valor}`;
-};
+}
 
 // ==================== LABELS & CHIPS ====================
-const updateLabels = () => {
+function updateLabels() {
   const labelUbicacion = document.getElementById('label-ubicacion');
   if (labelUbicacion) {
     labelUbicacion.textContent = filtrosActivos.estado.length > 0
@@ -211,9 +211,9 @@ const updateLabels = () => {
       ? filtrosActivos.credito.map(c => creditoLabels[c] || c).join(', ')
       : 'Cualquier crédito';
   }
-};
+}
 
-const renderChips = () => {
+function renderChips() {
   const container = document.getElementById('active-chips');
   if (!container) return;
 
@@ -261,9 +261,9 @@ const renderChips = () => {
   }
 
   container.innerHTML = chips.join('');
-};
+}
 
-const removeChip = (filterType, value) => {
+function removeChip(filterType, value) {
   if (filterType === 'estado') {
     filtrosActivos.estado = filtrosActivos.estado.filter(v => v !== value);
     document.querySelector(`#opciones-estado .popover-option[data-value="${value}"]`)?.classList.remove('selected');
@@ -300,9 +300,9 @@ const removeChip = (filterType, value) => {
 
   updateLabels();
   renderChips();
-};
+}
 
-const clearAllChips = () => {
+function clearAllChips() {
   filtrosActivos.estado = [];
   filtrosActivos.operacion = [];
   filtrosActivos.tipo = [];
@@ -335,10 +335,10 @@ const clearAllChips = () => {
   updateLabels();
   renderChips();
   updateDualRange('precio');
-};
+}
 
 // ==================== SEARCH FUNCTION ====================
-const buscar = () => {
+function buscar() {
   closeAllPopovers();
 
   const params = new URLSearchParams();
@@ -355,10 +355,10 @@ const buscar = () => {
   if (filtrosActivos.roomie) params.append('roomie', 'true');
 
   window.location.href = `pages/catalogo.html?${params.toString()}`;
-};
+}
 
 // ==================== ESTADOS DINÁMICOS ====================
-const cargarEstadosDisponiblesInicio = async () => {
+async function cargarEstadosDisponiblesInicio() {
   try {
     const data = await api.get('/propiedades/estados/disponibles');
     if (!data.ok || !data.estados?.length) return;
@@ -369,10 +369,10 @@ const cargarEstadosDisponiblesInicio = async () => {
         ${e._id} <span style="font-size:11px;color:var(--text-light);margin-left:4px">(${e.total})</span>
       </div>`).join('');
   } catch (e) {}
-};
+}
 
 // ==================== PROPIEDADES DESTACADAS ====================
-const cargarPropiedadesDestacadas = async () => {
+async function cargarPropiedadesDestacadas() {
   const grid = document.getElementById('propiedades-grid');
   if (!grid) return;
   try {
@@ -385,7 +385,7 @@ const cargarPropiedadesDestacadas = async () => {
   } catch (error) {
     grid.innerHTML = '<div class="loading">Error cargando propiedades.</div>';
   }
-};
+}
 
 // ==================== DOM READY ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -425,3 +425,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// ==================== FUNCIONES DE NAVBAR Y SERVICIOS ====================
+function irARentaVenta() {
+  window.location.href = 'pages/nosotros.html#scroll-a-cta';
+}
+
+function abrirMaxConMensaje(texto) {
+  localStorage.setItem('msg_max_automatico', texto);
+  window.location.href = 'pages/servicios.html';
+}
