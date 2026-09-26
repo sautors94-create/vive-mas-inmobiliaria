@@ -373,7 +373,19 @@
                     <option value="local">Local comercial</option>
                   </select>
                 </div>
-                <div class="form-grupo" style="grid-column:1/-1;display:none">
+                <div class="form-grupo" id="grupo-remate" style="grid-column:1/-1;display:none">
+                  <label class="credito-option" style="display:inline-flex">
+                    <input type="checkbox" id="p-es-remate"> Es un remate bancario
+                  </label>
+                  <div style="font-size:12px;color:var(--text-light);margin-top:4px">Márcalo si esta propiedad es un remate/adjudicación bancaria puesta en venta a precio especial.</div>
+                </div>
+                <div class="form-grupo" id="grupo-roomie" style="grid-column:1/-1;display:none">
+                  <label class="credito-option" style="display:inline-flex">
+                    <input type="checkbox" id="p-es-roomie"> Es una propiedad tipo roomie (se renta por habitación)
+                  </label>
+                  <div style="font-size:12px;color:var(--text-light);margin-top:4px">Al marcarlo, la propiedad se mostrará como depto roomie o casa roomie según el tipo seleccionado.</div>
+                </div>
+                <div class="form-grupo" id="grupo-creditos" style="grid-column:1/-1;display:none">
                   <label>¿Aceptas créditos o financiamiento? <span style="font-size:11px;color:var(--text-light)">(solo venta)</span></label>
                   <div style="font-size:13px;font-weight:700;margin:14px 0 6px;color:var(--text);text-transform:uppercase;letter-spacing:0.03em">Instituciones de vivienda</div>
                   <div style="display:flex;flex-wrap:wrap;gap:10px">

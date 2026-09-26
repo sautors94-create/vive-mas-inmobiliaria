@@ -12,6 +12,8 @@ const filtrosActuales = {
 recamaras: '',
   banos: '',
   credito: '',
+  remate: false,
+  roomie: false,
   m2Min: 0,
   m2Max: 1000,
   orden: '-createdAt'
@@ -38,6 +40,8 @@ const obtenerFiltros = () => {
 recamaras: f.recamaras || '',
     banos: f.banos || '',
     credito: f.credito || '',
+    remate: f.remate ? 'true' : '',
+    roomie: f.roomie ? 'true' : '',
     m2Min: f.m2Min > 0 ? f.m2Min : '',
     m2Max: f.m2Max < 1000 ? f.m2Max : '',
     orden: f.orden || '-createdAt',
@@ -265,6 +269,14 @@ const toggleQuickCheckbox = (element, type) => {
   aplicarFiltros();
 };
 
+// Toggle de un filtro booleano simple (chip que se activa/desactiva directo, sin popover)
+const toggleBooleanFiltro = (type) => {
+  filtrosActuales[type] = !filtrosActuales[type];
+  const chip = document.querySelector(`.sticky-chip[data-filter="${type}"]`);
+  if (chip) chip.classList.toggle('active', !!filtrosActuales[type]);
+  aplicarFiltros();
+};
+
 // Update quick dual range slider
 const updateQuickDualRange = (type) => {
   const minInput = document.getElementById(`f-${type}-min`);
@@ -392,11 +404,23 @@ if (filtrosActuales.ciudad) {
     chips.push(`<div class="chip">💳 ${creditoLabels[c] || c} <button class="chip-remove" onclick="quitarValorFiltro('credito','${c}')">×</button></div>`);
   });
 
+  if (filtrosActuales.remate) {
+    chips.push(`<div class="chip">🏦 Remates <button class="chip-remove" onclick="quitarValorFiltro('remate')">×</button></div>`);
+  }
+
+  if (filtrosActuales.roomie) {
+    chips.push(`<div class="chip">🛏 Roomies <button class="chip-remove" onclick="quitarValorFiltro('roomie')">×</button></div>`);
+  }
+
   if (chips.length > 0) {
     chips.push(`<span class="chip-clear" onclick="limpiarFiltros()">Limpiar todo</span>`);
   }
 
   container.innerHTML = chips.join('');
+
+  // Mantiene resaltado el chip de Remates/Roomies aunque se hayan abierto otros popovers mientras tanto
+  document.querySelector('.sticky-chip[data-filter="remate"]')?.classList.toggle('active', !!filtrosActuales.remate);
+  document.querySelector('.sticky-chip[data-filter="roomie"]')?.classList.toggle('active', !!filtrosActuales.roomie);
 };
 
 // Quita un valor específico de un filtro (multi-select) o el filtro completo (single)
@@ -443,6 +467,9 @@ const quitarValorFiltro = (tipo, valor) => {
       const onclickAttr = el.getAttribute('onclick') || '';
       if (onclickAttr.includes("'credito'")) el.classList.remove('selected');
     });
+  } else if (tipo === 'remate' || tipo === 'roomie') {
+    filtrosActuales[tipo] = false;
+    document.querySelector(`.sticky-chip[data-filter="${tipo}"]`)?.classList.remove('active');
   }
 
   ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras', 'credito'].forEach(actualizarChipLabel);
@@ -540,6 +567,8 @@ const limpiarFiltros = () => {
 
   document.querySelectorAll('.checkbox-option.selected, .radio-option.selected').forEach(el => el.classList.remove('selected'));
   document.querySelectorAll('#opciones-estado-catalogo .popover-option.selected').forEach(el => el.classList.remove('selected'));
+  document.querySelector('.sticky-chip[data-filter="remate"]')?.classList.remove('active');
+  document.querySelector('.sticky-chip[data-filter="roomie"]')?.classList.remove('active');
   const advEstado = document.getElementById('adv-estado');
   const advCiudad = document.getElementById('adv-ciudad');
   const advColonia = document.getElementById('adv-colonia');

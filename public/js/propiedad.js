@@ -244,6 +244,8 @@
             <div style="display:flex;gap:8px;margin-bottom:16px">
               <span class="tag tag-${escapeHTML(p.operacion)}">${escapeHTML(p.operacion)}</span>
               <span class="tag tag-${escapeHTML(p.tipo)}">${escapeHTML(p.tipo)}</span>
+              ${p.esRemate ? `<span class="tag" style="background:#fef2f2;color:#991b1b">🏦 Remate bancario</span>` : ''}
+              ${p.esRoomie ? `<span class="tag" style="background:#eff6ff;color:#1e40af">🛏 ${p.tipo === 'casa' ? 'Casa' : 'Depto'} roomie</span>` : ''}
             </div>
             <h1 class="propiedad-info">${escapeHTML(p.titulo)}</h1>
             <div class="propiedad-ubicacion">📍 ${ubicacion.colonia ? escapeHTML(ubicacion.colonia) + ', ' : ''}${escapeHTML(ubicacion.ciudad)}, ${escapeHTML(ubicacion.estado)}</div>

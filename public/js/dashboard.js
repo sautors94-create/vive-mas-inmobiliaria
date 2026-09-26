@@ -15,10 +15,43 @@ const toggleCreditos = () => {
     document.querySelectorAll('.credito-checkbox:checked').forEach(el => el.checked = false);
   }
 };
+
+// ==================== REMATES BANCARIOS ====================
+// Muestra la opción de "remate bancario" solo cuando la operación es venta
+const toggleRemate = () => {
+  const operacion = document.getElementById('p-operacion')?.value || '';
+  const grupo = document.getElementById('grupo-remate');
+  if (!grupo) return;
+  grupo.style.display = operacion === 'venta' ? 'block' : 'none';
+  if (operacion !== 'venta') {
+    const chk = document.getElementById('p-es-remate');
+    if (chk) chk.checked = false;
+  }
+};
+
+// ==================== ROOMIES ====================
+// Muestra la opción de "roomie" solo cuando la operación es renta y el tipo es casa o departamento
+const toggleRoomie = () => {
+  const operacion = document.getElementById('p-operacion')?.value || '';
+  const tipo = document.getElementById('p-tipo')?.value || '';
+  const grupo = document.getElementById('grupo-roomie');
+  if (!grupo) return;
+  const aplica = operacion === 'renta' && (tipo === 'casa' || tipo === 'departamento');
+  grupo.style.display = aplica ? 'block' : 'none';
+  if (!aplica) {
+    const chk = document.getElementById('p-es-roomie');
+    if (chk) chk.checked = false;
+  }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   const opSel = document.getElementById('p-operacion');
-  if (opSel) opSel.addEventListener('change', toggleCreditos);
+  const tipoSel = document.getElementById('p-tipo');
+  if (opSel) opSel.addEventListener('change', () => { toggleCreditos(); toggleRemate(); toggleRoomie(); });
+  if (tipoSel) tipoSel.addEventListener('change', toggleRoomie);
   toggleCreditos();
+  toggleRemate();
+  toggleRoomie();
 });
 // ==================== SINCRONIZACIÓN SLIDERS ====================
 const syncPrecio = (origen) => {
@@ -1304,6 +1337,13 @@ const resetFormularioPropiedad = () => {
     if (el) el.value = '';
   });
   document.querySelectorAll('.credito-checkbox').forEach(c => c.checked = false);
+  const chkRemate = document.getElementById('p-es-remate');
+  if (chkRemate) chkRemate.checked = false;
+  const chkRoomie = document.getElementById('p-es-roomie');
+  if (chkRoomie) chkRoomie.checked = false;
+  if (typeof toggleCreditos === 'function') toggleCreditos();
+  if (typeof toggleRemate === 'function') toggleRemate();
+  if (typeof toggleRoomie === 'function') toggleRoomie();
 };
 
 const cargarPropiedadParaEditar = async (id) => {
@@ -1340,6 +1380,13 @@ const cargarPropiedadParaEditar = async (id) => {
     const check = document.querySelector(`.credito-checkbox[value="${CSS.escape(c)}"]`);
     if (check) check.checked = true;
   });
+  const chkRemate = document.getElementById('p-es-remate');
+  if (chkRemate) chkRemate.checked = !!p.esRemate;
+  const chkRoomie = document.getElementById('p-es-roomie');
+  if (chkRoomie) chkRoomie.checked = !!p.esRoomie;
+  if (typeof toggleCreditos === 'function') toggleCreditos();
+  if (typeof toggleRemate === 'function') toggleRemate();
+  if (typeof toggleRoomie === 'function') toggleRoomie();
 
   renderFotosExistentes(p.fotos || [], id);
 
@@ -2619,6 +2666,10 @@ const recamaras = document.getElementById('p-recamaras').value;
     if (otroCredito) creditosAceptados.push(`Otro: ${otroCredito}`);
   }
 
+  // Remate bancario (solo venta) y Roomie (solo renta + casa/departamento)
+  const esRemate = operacion === 'venta' && !!document.getElementById('p-es-remate')?.checked;
+  const esRoomie = operacion === 'renta' && (tipo === 'casa' || tipo === 'departamento') && !!document.getElementById('p-es-roomie')?.checked;
+
   const body = {
     titulo, precio: Number(precio), operacion, tipo, descripcion,
     ubicacion: { estado, ciudad, colonia, direccion, lat: lat ? parseFloat(lat) : null, lng: lng ? parseFloat(lng) : null },
@@ -2629,7 +2680,9 @@ caracteristicas: {
     estacionamientos: Number(estacionamientos) || 0,
     m2: Number(m2) || 0
   },
-  creditosAceptados
+  creditosAceptados,
+  esRemate,
+  esRoomie
   };
 
 

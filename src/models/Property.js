@@ -30,6 +30,10 @@ const propertySchema = new mongoose.Schema({
   },
   // Créditos/financiamiento que acepta la propiedad (INFONAVIT, FOVISSSTE, bancarios, etc.)
   creditosAceptados: [{ type: String, trim: true }],
+  // Remate bancario: propiedad puesta en venta por un banco a precio de remate
+  esRemate: { type: Boolean, default: false },
+  // Roomie: propiedad en renta que se ofrece por habitación (depto roomie / casa roomie)
+  esRoomie: { type: Boolean, default: false },
   propietario: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   destacada: { type: Boolean, default: false },
   planPeso: { type: Number, default: 0 }, // 0=Gratuito, 1=Básico, 2=Premium

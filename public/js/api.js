@@ -227,6 +227,8 @@ const crearCardPropiedad = (p) => {
         <div class="property-tags">
           <span class="tag tag-${p.operacion}">${p.operacion}</span>
           <span class="tag tag-${p.tipo}">${p.tipo}</span>
+          ${p.esRemate ? `<span class="tag" style="background:#fef2f2;color:#991b1b">🏦 Remate</span>` : ''}
+          ${p.esRoomie ? `<span class="tag" style="background:#eff6ff;color:#1e40af">🛏 ${p.tipo === 'casa' ? 'Casa' : 'Depto'} roomie</span>` : ''}
         </div>
 <div class="property-title">${p.titulo}</div>
         <div class="property-location">📍 ${p.ubicacion.colonia ? p.ubicacion.colonia + ', ' : ''}${p.ubicacion.ciudad}, ${p.ubicacion.estado}</div>

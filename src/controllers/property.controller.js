@@ -165,7 +165,7 @@ const publicarEnRedesYNotificar = async (propiedad) => {
 
 const crearPropiedad = async (req, res) => {
   try {
-    const { titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas, creditosAceptados } = req.body;
+    const { titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas, creditosAceptados, esRemate, esRoomie } = req.body;
     
     const planEfectivo = req.user.role === 'basico_plus' ? 'basico_plus' : (req.user.plan || 'gratuito');
     const limite = LIMITE_POR_PLAN[planEfectivo] || 3;
@@ -193,6 +193,8 @@ const crearPropiedad = async (req, res) => {
     const propiedad = await Property.create({
       titulo, descripcion, precio, operacion, tipo, ubicacion, caracteristicas,
       creditosAceptados: operacion === 'venta' ? (creditosAceptados || []) : [],
+      esRemate: operacion === 'venta' ? !!esRemate : false,
+      esRoomie: (operacion === 'renta' && (tipo === 'casa' || tipo === 'departamento')) ? !!esRoomie : false,
       propietario: req.user.id,
       status: 'revision',
       planPeso: pesoPlan
@@ -209,7 +211,7 @@ const listarPropiedades = async (req, res) => {
     const {
       operacion, tipo, estado, ciudad,
       precioMin, precioMax, recamaras, banos,
-      m2Min, m2Max, orden, credito,
+      m2Min, m2Max, orden, credito, remate, roomie,
       pagina = 1, limite = 15
     } = req.query;
 
@@ -251,6 +253,8 @@ const listarPropiedades = async (req, res) => {
       const valores = aArray(credito);
       filtro.creditosAceptados = valores.length > 1 ? { $in: valores } : valores[0];
     }
+    if (remate === 'true' || remate === '1') filtro.esRemate = true;
+    if (roomie === 'true' || roomie === '1') filtro.esRoomie = true;
 
     const ordenesPermitidos = { precio: { precio: 1 }, '-precio': { precio: -1 }, '-createdAt': { createdAt: -1 } };
     const ordenFinal = ordenesPermitidos[orden] || { createdAt: -1 };
