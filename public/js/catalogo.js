@@ -610,8 +610,14 @@ const cargarFiltrosDesdeURL = () => {
   filtrosActuales.roomie = params.get('roomie') === 'true';
 
   // ✅ NUEVO: Activar visualmente los chips en la barra si vienen en la URL
-  if (filtrosActuales.remate) document.querySelector('.sticky-chip[data-filter="remate"]')?.classList.add('active');
-  if (filtrosActuales.roomie) document.querySelector('.sticky-chip[data-filter="roomie"]')?.classList.add('active');
+  if (filtrosActuales.remate) {
+    const chipRemate = document.querySelector('.sticky-chip[data-filter="remate"]');
+    if (chipRemate) chipRemate.classList.add('active');
+  }
+  if (filtrosActuales.roomie) {
+    const chipRoomie = document.querySelector('.sticky-chip[data-filter="roomie"]');
+    if (chipRoomie) chipRoomie.classList.add('active');
+  }
 
   ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras', 'credito'].forEach(actualizarChipLabel);
 };
