@@ -605,6 +605,14 @@ const cargarFiltrosDesdeURL = () => {
   filtrosActuales.banos = params.get('banos') || '';
   filtrosActuales.credito = params.get('credito') || '';
 
+  // ✅ NUEVO: Leer Remates y Roomies de la URL
+  filtrosActuales.remate = params.get('remate') === 'true';
+  filtrosActuales.roomie = params.get('roomie') === 'true';
+
+  // Activar visualmente los chips si vienen en la URL
+  if (filtrosActuales.remate) document.querySelector('.sticky-chip[data-filter="remate"]')?.classList.add('active');
+  if (filtrosActuales.roomie) document.querySelector('.sticky-chip[data-filter="roomie"]')?.classList.add('active');
+
   ['ubicacion', 'operacion', 'tipo', 'precio', 'recamaras', 'credito'].forEach(actualizarChipLabel);
 };
 

@@ -59,6 +59,11 @@
               <label>🏡 Tipo</label>
               <span id="label-tipo">Tipo de propiedad</span>
             </div>
+            <!-- Campo Roomies -->
+            <div class="search-bar-field" style="cursor:pointer;" onclick="toggleHomeBoolean('roomie')">
+             <label>🛏 Roomies</label>
+            <span id="label-roomie" style="color: var(--text-light);">No</span>
+            </div>
             <!-- Campo Precio -->
             <div class="search-bar-field" data-popover="popover-precio">
               <label>💰 Precio</label>
@@ -68,6 +73,11 @@
             <div class="search-bar-field" data-popover="popover-credito">
               <label>💳 Créditos</label>
               <span id="label-credito">Cualquier crédito</span>
+            </div>
+            <!-- Campo Remates -->
+            <div class="search-bar-field" style="cursor:pointer;" onclick="toggleHomeBoolean('remate')">
+            <label>🏦 Remates</label>
+            <span id="label-remate" style="color: var(--text-light);">No</span>
             </div>
             <!-- Botón Buscar -->
             <button class="search-bar-btn" onclick="buscar()">Buscar</button>
@@ -260,5 +270,30 @@
   </script>
   <script src="js/chatbot.js"></script>
     <script src="js/social-widget.js"></script>
+    <script>
+    // 1. Renta y venta
+    const irARentaVenta = () => {
+      window.location.href = 'pages/nosotros.html#scroll-a-cta';
+    };
+
+    // 2. Pago, Admin y Mantenimiento
+    const abrirMaxConMensaje = (texto) => {
+      localStorage.setItem('msg_max_automatico', texto);
+      window.location.href = 'pages/servicios.html';
+    };
+
+    // NUEVO: Estado y función para Remates y Roomies
+    const homeFiltrosEspeciales = { remate: false, roomie: false };
+
+    const toggleHomeBoolean = (type) => {
+      homeFiltrosEspeciales[type] = !homeFiltrosEspeciales[type];
+      const labelEl = document.getElementById(`label-${type}`);
+      if (labelEl) {
+        labelEl.textContent = homeFiltrosEspeciales[type] ? 'Sí' : 'No';
+        labelEl.style.fontWeight = homeFiltrosEspeciales[type] ? '700' : '400';
+        labelEl.style.color = homeFiltrosEspeciales[type] ? 'var(--primary)' : 'var(--text-light)';
+      }
+    };
+</script>
 </body>
   </html>

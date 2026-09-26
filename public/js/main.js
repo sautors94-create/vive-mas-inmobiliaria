@@ -7,7 +7,9 @@ const filtrosActivos = {
   tipo: [],
   precioMin: 0,
   precioMax: 100000000,
-  credito: []
+  credito: [],
+  remate: false, // NUEVO
+  roomie: false   // NUEVO
 };
 
 // ==================== POPOVER SYSTEM ====================
@@ -81,6 +83,23 @@ const toggleCheckbox = (element, filterType) => {
   }
 
   updateLabels();
+  renderChips();
+};
+
+// NUEVO: Toggle para Remates y Roomies (campos booleanos directos)
+const toggleBooleanHome = (type) => {
+  filtrosActivos[type] = !filtrosActivos[type];
+  
+  const labelEl = document.getElementById(`label-${type}`);
+  if (labelEl) {
+    labelEl.textContent = filtrosActivos[type] ? 'Sí' : 'No';
+    labelEl.style.fontWeight = filtrosActivos[type] ? '700' : '400';
+    labelEl.style.color = filtrosActivos[type] ? 'var(--primary)' : 'var(--text-light)';
+    
+    const fieldEl = labelEl.closest('.search-bar-field');
+    if (fieldEl) fieldEl.classList.toggle('active', filtrosActivos[type]);
+  }
+  
   renderChips();
 };
 
@@ -229,6 +248,14 @@ const renderChips = () => {
     chips.push(`<div class="chip">💳 ${creditoLabels[c] || c} <button class="chip-remove" onclick="removeChip('credito', '${c}')">×</button></div>`);
   });
 
+  // NUEVO: Chips para Remates y Roomies
+  if (filtrosActivos.remate) {
+    chips.push(`<div class="chip">🏦 Remates <button class="chip-remove" onclick="removeChip('remate')">×</button></div>`);
+  }
+  if (filtrosActivos.roomie) {
+    chips.push(`<div class="chip">🛏 Roomies <button class="chip-remove" onclick="removeChip('roomie')">×</button></div>`);
+  }
+
   if (chips.length > 0) {
     chips.push(`<span class="chip-clear" onclick="clearAllChips()">Limpiar todo</span>`);
   }
@@ -257,6 +284,18 @@ const removeChip = (filterType, value) => {
   } else if (filterType === 'credito') {
     filtrosActivos.credito = filtrosActivos.credito.filter(v => v !== value);
     document.querySelector(`#popover-credito .checkbox-option[data-value="${value}"]`)?.classList.remove('selected');
+  } 
+  // NUEVO: Remover Remates o Roomies
+  else if (filterType === 'remate' || filterType === 'roomie') {
+    filtrosActivos[filterType] = false;
+    const labelEl = document.getElementById(`label-${filterType}`);
+    if (labelEl) {
+      labelEl.textContent = 'No';
+      labelEl.style.fontWeight = '400';
+      labelEl.style.color = 'var(--text-light)';
+      const fieldEl = labelEl.closest('.search-bar-field');
+      if (fieldEl) fieldEl.classList.remove('active');
+    }
   }
 
   updateLabels();
@@ -270,6 +309,8 @@ const clearAllChips = () => {
   filtrosActivos.precioMin = 0;
   filtrosActivos.precioMax = 100000000;
   filtrosActivos.credito = [];
+  filtrosActivos.remate = false; // NUEVO
+  filtrosActivos.roomie = false; // NUEVO
 
   document.querySelectorAll('.popover-option.selected').forEach(opt => opt.classList.remove('selected'));
   document.querySelectorAll('.radio-option.selected').forEach(opt => opt.classList.remove('selected'));
@@ -279,6 +320,17 @@ const clearAllChips = () => {
   const pMax = document.getElementById('precio-max');
   if (pMin) pMin.value = 0;
   if (pMax) pMax.value = 100000000;
+
+  // NUEVO: Resetear labels de remate y roomie
+  ['remate', 'roomie'].forEach(type => {
+    const labelEl = document.getElementById(`label-${type}`);
+    if (labelEl) {
+      labelEl.textContent = 'No';
+      labelEl.style.fontWeight = '400';
+      labelEl.style.color = 'var(--text-light)';
+      labelEl.closest('.search-bar-field')?.classList.remove('active');
+    }
+  });
 
   updateLabels();
   renderChips();
@@ -297,6 +349,10 @@ const buscar = () => {
   if (filtrosActivos.precioMin > 0) params.append('precioMin', filtrosActivos.precioMin);
   if (filtrosActivos.precioMax < 100000000) params.append('precioMax', filtrosActivos.precioMax);
   if (filtrosActivos.credito.length > 0) params.append('credito', filtrosActivos.credito.join(','));
+  
+  // NUEVO: Enviar Remates y Roomies por URL
+  if (filtrosActivos.remate) params.append('remate', 'true');
+  if (filtrosActivos.roomie) params.append('roomie', 'true');
 
   window.location.href = `pages/catalogo.html?${params.toString()}`;
 };
@@ -337,7 +393,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.search-bar-field').forEach(field => {
     field.addEventListener('click', function () {
       const popoverId = this.getAttribute('data-popover');
-      openPopover(popoverId, this);
+      if (popoverId) {
+        openPopover(popoverId, this);
+      }
     });
   });
 
