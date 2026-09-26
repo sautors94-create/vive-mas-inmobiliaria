@@ -42,46 +42,47 @@
           <h1>Encuentra tu hogar <span class="highlight">ideal</span></h1>
           <p>Renta, compra o administra propiedades en todo México con la plataforma más confiable del mercado.</p>
 
-  <!-- PREMIUM SEARCH BAR - AIRBNB STYLE -->
-          <div class="search-bar" id="search-bar">
-            <!-- Campo Ubicación -->
-            <div class="search-bar-field" data-popover="popover-ubicacion">
-              <label>📍 Ubicación</label>
-              <span id="label-ubicacion">¿Dónde buscas?</span>
-            </div>
-            <!-- Campo Operación -->
-            <div class="search-bar-field" data-popover="popover-operacion">
-              <label>🏠 Operación</label>
-              <span id="label-operacion">Renta o Venta</span>
-            </div>
-            <!-- Campo Tipo -->
-            <div class="search-bar-field" data-popover="popover-tipo">
-              <label>🏡 Tipo</label>
-              <span id="label-tipo">Tipo de propiedad</span>
-            </div>
-            <!-- Campo Roomies -->
-            <div class="search-bar-field" style="cursor:pointer;" onclick="toggleHomeBoolean('roomie')">
-             <label>🛏 Roomies</label>
-            <span id="label-roomie" style="color: var(--text-light);">No</span>
-            </div>
-            <!-- Campo Precio -->
-            <div class="search-bar-field" data-popover="popover-precio">
-              <label>💰 Precio</label>
-              <span id="label-precio">Cualquier precio</span>
-            </div>
-            <!-- Campo Créditos -->
-            <div class="search-bar-field" data-popover="popover-credito">
-              <label>💳 Créditos</label>
-              <span id="label-credito">Cualquier crédito</span>
-            </div>
-            <!-- Campo Remates -->
-            <div class="search-bar-field" style="cursor:pointer;" onclick="toggleHomeBoolean('remate')">
-            <label>🏦 Remates</label>
-            <span id="label-remate" style="color: var(--text-light);">No</span>
-            </div>
-            <!-- Botón Buscar -->
-            <button class="search-bar-btn" onclick="buscar()">Buscar</button>
-          </div>
+          <!-- PREMIUM SEARCH BAR - AIRBNB STYLE -->
+<div class="search-bar" id="search-bar">
+  <!-- Campo Ubicación -->
+  <div class="search-bar-field" data-popover="popover-ubicacion">
+    <label>📍 Ubicación</label>
+    <span id="label-ubicacion">¿Dónde buscas?</span>
+  </div>
+  <!-- Campo Operación -->
+  <div class="search-bar-field" data-popover="popover-operacion">
+    <label>🏠 Operación</label>
+    <span id="label-operacion">Renta o Venta</span>
+  </div>
+  <!-- Campo Tipo -->
+  <div class="search-bar-field" data-popover="popover-tipo">
+    <label>🏡 Tipo</label>
+    <span id="label-tipo">Tipo de propiedad</span>
+  </div>
+  <!-- Campo Precio -->
+  <div class="search-bar-field" data-popover="popover-precio">
+    <label>💰 Precio</label>
+    <span id="label-precio">Cualquier precio</span>
+  </div>
+  <!-- Campo Créditos -->
+  <div class="search-bar-field" data-popover="popover-credito">
+    <label>💳 Créditos</label>
+    <span id="label-credito">Cualquier crédito</span>
+  </div>
+
+  <!-- NUEVOS CAMPOS REMATES Y ROOMIES -->
+  <div class="search-bar-field" style="cursor:pointer;" onclick="toggleBooleanHome('remate')">
+    <label>🏦 Remates</label>
+    <span id="label-remate" style="color: var(--text-light);">No</span>
+  </div>
+  <div class="search-bar-field" style="cursor:pointer;" onclick="toggleBooleanHome('roomie')">
+    <label>🛏 Roomies</label>
+    <span id="label-roomie" style="color: var(--text-light);">No</span>
+  </div>
+
+  <!-- Botón Buscar -->
+  <button class="search-bar-btn" onclick="buscar()">Buscar</button>
+</div>
 
           <!-- Chips activos -->
           <div class="active-chips" id="active-chips"></div>
@@ -280,19 +281,6 @@
     const abrirMaxConMensaje = (texto) => {
       localStorage.setItem('msg_max_automatico', texto);
       window.location.href = 'pages/servicios.html';
-    };
-
-    // NUEVO: Estado y función para Remates y Roomies
-    const homeFiltrosEspeciales = { remate: false, roomie: false };
-
-    const toggleHomeBoolean = (type) => {
-      homeFiltrosEspeciales[type] = !homeFiltrosEspeciales[type];
-      const labelEl = document.getElementById(`label-${type}`);
-      if (labelEl) {
-        labelEl.textContent = homeFiltrosEspeciales[type] ? 'Sí' : 'No';
-        labelEl.style.fontWeight = homeFiltrosEspeciales[type] ? '700' : '400';
-        labelEl.style.color = homeFiltrosEspeciales[type] ? 'var(--primary)' : 'var(--text-light)';
-      }
     };
 </script>
 </body>
