@@ -156,6 +156,7 @@
   right: 0;
   top: calc(100% + 10px);
   width: 340px;
+  max-width: calc(100vw - 24px);
   border-radius: 18px;
   background: rgba(255,255,255,0.95);
   border: 1px solid rgba(229,231,235,0.95);
@@ -215,3 +216,37 @@
   width: 20px; height: 20px;
 }
 
+/* ==========================================
+   RESPONSIVE — celular y tablet
+   Antes .ds-topbar-left y .ds-topbar-right tenían min-width fijo
+   (220px + 240px = 460px mínimo) sin ningún @media que lo redujera,
+   así que en pantallas angostas la fila se desbordaba y el dropdown
+   del avatar (con position:absolute) quedaba renderizado fuera del
+   espacio visible, partiendo el texto letra por letra.
+   ========================================== */
+@media (max-width: 820px) {
+  .ds-topbar-left {
+    min-width: 0;
+    gap: 8px;
+  }
+  .ds-topbar-title {
+    display: none; /* "Panel de administración / Control total del sitio" no cabe en móvil/tablet */
+  }
+  .ds-topbar-search {
+    display: none; /* la búsqueda global se prioriza al espacio del logo/menú/avatar */
+  }
+  .ds-topbar-right {
+    min-width: 0;
+    gap: 6px;
+  }
+  .ds-topbar-inner {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ds-dropdown {
+    right: -8px;
+    width: calc(100vw - 24px);
+  }
+}

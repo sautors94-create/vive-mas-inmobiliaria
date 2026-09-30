@@ -1,252 +1,97 @@
-/* Premium Topbar for dashboard/admin */
+// Premium Topbar interactions: avatar dropdown, notifications dropdown, and search.
+// Assumes dsLucide is loaded (optional) and that auth.getUser() is available.
 
-.ds-topbar {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 1000;
-  height: 70px;
-  background: rgba(255,255,255,0.75);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(229,231,235,0.9);
-}
+(() => {
+  function $(sel) { return document.querySelector(sel); }
 
-.ds-topbar-inner {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.ds-topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 220px;
-}
-
-.ds-topbar-title {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-}
-
-.ds-topbar-title .kicker {
-  font-size: 11px;
-  color: var(--text-light);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.ds-topbar-title .main {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--text);
-}
-
-.ds-topbar-search {
-  flex: 1;
-  max-width: 520px;
-  position: relative;
-}
-
-.ds-topbar-search input {
-  width: 100%;
-  padding: 12px 14px 12px 44px;
-  border-radius: 14px;
-  border: 1px solid rgba(229,231,235,0.95);
-  background: rgba(255,255,255,0.85);
-  outline: none;
-  font-size: 13px;
-  color: var(--text);
-  transition: border-color 200ms, box-shadow 200ms;
-}
-
-.ds-topbar-search input:focus {
-  border-color: rgba(26,71,42,0.35);
-  box-shadow: 0 0 0 4px rgba(26,71,42,0.10);
-}
-
-.ds-topbar-search .icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px; height: 20px;
-  color: var(--text-light);
-}
-
-.ds-topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 240px;
-  justify-content: flex-end;
-}
-
-.ds-icon-btn {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-  border: 1px solid rgba(229,231,235,0.95);
-  background: rgba(255,255,255,0.85);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform 200ms, box-shadow 200ms, border-color 200ms;
-}
-.ds-icon-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow);
-  border-color: rgba(26,71,42,0.25);
-}
-
-.ds-notif-dot {
-  position: absolute;
-  top: 10px; right: 10px;
-  width: 10px; height: 10px;
-  border-radius: 999px;
-  background: var(--accent-dark);
-  border: 2px solid white;
-  display: inline-block;
-}
-
-.ds-avatar {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  user-select: none;
-}
-
-.ds-avatar .badge {
-  width: 40px; height: 40px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  color: white;
-  background: linear-gradient(135deg,var(--primary),#123b20);
-}
-
-.ds-avatar .meta {
-  display: none;
-}
-
-@media (min-width: 980px) {
-  .ds-avatar .meta { display: flex; flex-direction: column; line-height: 1.1; }
-}
-
-.ds-avatar .meta .name {
-  font-size: 13px;
-  font-weight: 800;
-}
-.ds-avatar .meta .plan {
-  font-size: 11px;
-  color: var(--text-light);
-  font-weight: 700;
-}
-
-.ds-dropdown {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 10px);
-  width: 340px;
-  max-width: calc(100vw - 24px);
-  border-radius: 18px;
-  background: rgba(255,255,255,0.95);
-  border: 1px solid rgba(229,231,235,0.95);
-  box-shadow: 0 22px 80px rgba(0,0,0,0.18);
-  backdrop-filter: blur(10px);
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
-  transition: opacity 160ms ease, transform 160ms ease;
-}
-
-.ds-dropdown.open {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.ds-dropdown-header {
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(229,231,235,0.9);
-}
-.ds-dropdown-header .title { font-weight: 900; font-size: 13px; }
-.ds-dropdown-header .subtitle { font-size: 12px; color: var(--text-light); margin-top: 2px; }
-
-.ds-dropdown-body {
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.ds-dropdown-item {
-  padding: 12px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(229,231,235,0.0);
-  background: rgba(248,249,250,0.7);
-  cursor: pointer;
-  transition: transform 200ms, border-color 200ms, background 200ms;
-}
-.ds-dropdown-item:hover {
-  transform: translateY(-1px);
-  border-color: rgba(26,71,42,0.18);
-  background: rgba(26,71,42,0.05);
-}
-.ds-dropdown-item .t { font-weight: 900; font-size: 13px; }
-.ds-dropdown-item .d { font-size: 12px; color: var(--text-light); margin-top: 2px; }
-
-.ds-dropdown-actions {
-  display: flex;
-  gap: 8px;
-  padding: 10px;
-  border-top: 1px solid rgba(229,231,235,0.9);
-}
-
-/* Small inline lucide alignment */
-.ds-topbar .ds-lucide {
-  width: 20px; height: 20px;
-}
-
-/* ==========================================
-   RESPONSIVE — celular y tablet
-   Antes .ds-topbar-left y .ds-topbar-right tenían min-width fijo
-   (220px + 240px = 460px mínimo) sin ningún @media que lo redujera,
-   así que en pantallas angostas la fila se desbordaba y el dropdown
-   del avatar (con position:absolute) quedaba renderizado fuera del
-   espacio visible, partiendo el texto letra por letra.
-   ========================================== */
-@media (max-width: 820px) {
-  .ds-topbar-left {
-    min-width: 0;
-    gap: 8px;
+  function getUserInitials(nombre = '') {
+    const parts = (nombre || '').trim().split(/\s+/).filter(Boolean);
+    const a = parts[0]?.[0] || 'U';
+    const b = parts.length > 1 ? parts[1][0] : '';
+    return (a + b).toUpperCase();
   }
-  .ds-topbar-title {
-    display: none; /* "Panel de administración / Control total del sitio" no cabe en móvil/tablet */
-  }
-  .ds-topbar-search {
-    display: none; /* la búsqueda global se prioriza al espacio del logo/menú/avatar */
-  }
-  .ds-topbar-right {
-    min-width: 0;
-    gap: 6px;
-  }
-  .ds-topbar-inner {
-    gap: 8px;
-  }
-}
 
-@media (max-width: 480px) {
-  .ds-dropdown {
-    right: -8px;
-    width: calc(100vw - 24px);
+  function initTopbar() {
+    const avatar = $('.ds-avatar');
+    if (!avatar) return; // not present on page
+
+    const userSpan = $('#ds-user-name');
+    const initialsSpan = $('#ds-user-initials');
+
+    try {
+      if (window.auth && auth.getUser) {
+        const u = auth.getUser();
+        if (u?.nombre) {
+          if (userSpan) userSpan.textContent = u.nombre;
+          if (initialsSpan) initialsSpan.textContent = getUserInitials(u.nombre);
+          const plan = $('#ds-user-plan');
+          if (plan) plan.textContent = `Plan ${u.plan || ''}`.trim();
+          const av = $('#ds-avatar-bg');
+          if (av) av.style.background = 'linear-gradient(135deg,var(--accent-dark),#123b20)';
+        }
+      }
+    } catch (_) {}
+
+    // Dropdown toggles
+    const avatarBtn = $('#ds-avatar-btn');
+    const notifBtn = $('#ds-notif-btn');
+
+    const avatarMenu = $('#ds-avatar-menu');
+    const notifMenu = $('#ds-notif-menu');
+
+    function closeMenus() {
+      if (avatarMenu) avatarMenu.classList.remove('open');
+      if (notifMenu) notifMenu.classList.remove('open');
+    }
+
+    avatarBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!avatarMenu) return;
+      notifMenu?.classList.remove('open');
+      avatarMenu.classList.toggle('open');
+    });
+
+    notifBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeMenus();
+      if (typeof window.mostrarSeccion === 'function') {
+        window.mostrarSeccion('inicio');
+      } else {
+        const inPages = window.location.pathname.includes('/pages/');
+        window.location.href = inPages ? 'dashboard.html' : 'pages/dashboard.html';
+      }
+    });
+
+    document.addEventListener('click', () => closeMenus());
+
+    // Mark all as read (demo/placeholder; uses existing endpoints if present)
+    $('#ds-notif-mark-all')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const dot = $('#ds-notif-dot');
+      if (dot) dot.style.display = 'none';
+      try {
+        if (window.api && api.patch) {
+          await api.patch('/auth/notificaciones/marcar-leidas', {});
+        }
+      } catch (_) {}
+      closeMenus();
+    });
+
+    // Search box (global filter placeholder)
+    const searchInput = $('#ds-global-search');
+    searchInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const q = (searchInput.value || '').trim();
+        if (!q) return;
+        // fallback: just show toast if available
+        if (window.dsToast) dsToast({ title: 'Búsqueda', message: `Filtrando por: ${q}`, type: 'info' });
+      }
+    });
+
+    // Initial close
+    closeMenus();
   }
-}
+
+  document.addEventListener('DOMContentLoaded', initTopbar);
+})();
+
