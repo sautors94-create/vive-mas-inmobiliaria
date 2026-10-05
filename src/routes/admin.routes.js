@@ -30,6 +30,7 @@ const {
   exportarLeadsExcel,
   dashboard,
   crearUsuariosMasivo,
+  crearUsuarioManual,
   descargarPlantillaUsuarios,
   verPropiedadAdmin,
   getUsuariosVetados,
@@ -85,6 +86,7 @@ router.get('/salud', getSalud);
 router.patch('/usuarios/:id/kyc', revisarKyc);
 router.patch('/usuarios/:id/kyb', revisarKyb);
 router.post('/usuarios/masivo', upload.single('archivo'), crearUsuariosMasivo);
+router.post('/usuarios/manual', crearUsuarioManual);
 router.get('/usuarios/plantilla', descargarPlantillaUsuarios);
 router.patch('/usuarios/:id/plan', cambiarPlan);
 router.patch('/usuarios/:id/suspender', suspenderUsuario);
