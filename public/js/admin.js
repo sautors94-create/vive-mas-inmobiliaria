@@ -967,9 +967,9 @@ const renderUsrModTabla = () => {
       <td><span class="status-badge status-${u.status}">${u.status}</span></td>
       <td>${new Date(u.createdAt).toLocaleDateString('es-MX')}</td>
       <td onclick="event.stopPropagation()">
-      ${p.status === 'revision' ? `<button class="btn btn-primary admin-mini-btn" onclick="aprobarPropiedad('${p._id}')">Aprobar</button>` : ''}
-      <button class="btn btn-outline admin-mini-btn" onclick="abrirDrawerPropiedad('${p._id}')">Ver</button>
-      <button class="btn btn-outline admin-mini-btn" onclick="window.location.href='/dashboard.html?editar=${p._id}'">✏️ Editar</button>
+      <button class="btn btn-outline admin-mini-btn" onclick="abrirDrawerUsuario('${u._id}')">Ver</button>
+      <button class="btn btn-outline admin-mini-btn" onclick="suspenderUsuario('${u._id}')">${u.status === 'activo' ? 'Suspender' : 'Activar'}</button>
+      <button class="btn btn-outline admin-mini-btn" style="border-color:#c62828;color:#c62828" onclick="eliminarUsuario('${u._id}', '${(u.nombre || '').replace(/'/g, "\\'")}')">Eliminar</button>
     </td>
     </tr>`).join('');
 };
