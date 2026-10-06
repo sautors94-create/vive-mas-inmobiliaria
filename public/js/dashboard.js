@@ -2403,7 +2403,7 @@ window.setPublicarStep = (n) => {
 
   const bar = document.getElementById('publicar-progress-bar');
   if (bar) {
-    const pct = ((publicarPaso - 1) / (max - 1) * 100;
+    const pct = ((publicarPaso - 1) / (max - 1)) * 100; // <--- Aquí estaba el paréntesis faltante
     bar.style.width = pct + '%';
   }
 
