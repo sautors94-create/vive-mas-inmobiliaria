@@ -4,8 +4,9 @@ const Lead = require('../models/Lead');
 const Novedad = require('../models/Novedad');
 const mongoose = require('mongoose');
 const Stripe = require('stripe');
+const jwt = require('jsonwebtoken'); // ✅ AGREGADO PARA GENERAR TOKEN
 const { cloudinary } = require('../config/cloudinary');
-const { transporter, enviarCoincidenciaBusqueda, enviarNovedad, enviarPasswordTemporal } = require('../utils/email');
+const { transporter, enviarCoincidenciaBusqueda, enviarNovedad, enviarPasswordTemporal, enviarEnlaceRecuperacion } = require('../utils/email'); // ✅ AGREGADO enviarEnlaceRecuperacion
 const { twilioVerifyConfigurado, verificarConexion } = require('../utils/twilioVerify');
 // ✅ IMPORTAMOS LA FUNCIÓN PARA PUBLICAR EN REDES SOCIALES
 const { ejecutarModeracionCompleta, publicarEnRedesYNotificar } = require('./property.controller');
@@ -33,8 +34,6 @@ const reanalizarPropiedadIA = async (req, res) => {
 
 // Revisa las búsquedas recientes de todos los usuarios (con novedades activadas)
 // y les avisa por correo si la propiedad recién aprobada coincide con alguna.
-// Se ejecuta en segundo plano (no bloquea la respuesta de aprobación) y nunca
-// tumba el flujo de aprobación si algo falla.
 const notificarCoincidenciasBusqueda = async (propiedad) => {
   try {
     const candidatos = await User.find({
@@ -49,7 +48,6 @@ const notificarCoincidenciasBusqueda = async (propiedad) => {
         if (b.operacion && b.operacion !== propiedad.operacion) return false;
         if (b.tipo && b.tipo !== propiedad.tipo) return false;
         if (b.precioMax && propiedad.precio > b.precioMax) return false;
-        // Al menos un criterio real debe estar presente para evitar falsos positivos
         return !!(b.ciudad || b.operacion || b.tipo || b.precioMax);
       });
       if (hayCoincidencia) {
@@ -61,7 +59,6 @@ const notificarCoincidenciasBusqueda = async (propiedad) => {
   }
 };
 
-// Aprobar o rechazar la verificación KYC de un usuario
 const revisarKyc = async (req, res) => {
   try {
     const { aprobado, motivo } = req.body;
@@ -90,7 +87,6 @@ const revisarKyc = async (req, res) => {
   }
 };
 
-// Aprobar o rechazar la verificación KYB (empresas) de un usuario
 const revisarKyb = async (req, res) => {
   try {
     const { aprobado, motivo } = req.body;
@@ -117,9 +113,6 @@ const revisarKyb = async (req, res) => {
   }
 };
 
-// Obtener KYC y KYB pendientes de revisión — un registro por cada verificación
-// pendiente (un mismo usuario puede aparecer hasta 2 veces: una vez por su KYC
-// y otra por su KYB, si tiene ambos en revisión al mismo tiempo).
 const getVerificaciones = async (req, res) => {
   try {
     const usuarios = await User.find({
@@ -165,14 +158,8 @@ const getVerificaciones = async (req, res) => {
   }
 };
 
-// Estado de salud de los servicios externos de los que depende la plataforma.
-// Se ejecuta bajo demanda (botón "Verificar ahora" en el panel admin), no en
-// cada carga de página — por eso hace pings reales en vez de solo revisar
-// que existan las variables de entorno.
 const getSalud = async (req, res) => {
   const servicios = [];
-
-  // MongoDB — usa la conexión ya abierta, mide el ping real
   const inicioMongo = Date.now();
   try {
     if (mongoose.connection.readyState === 1) {
@@ -185,7 +172,6 @@ const getSalud = async (req, res) => {
     servicios.push({ nombre: 'MongoDB', icono: '🗄️', ok: false, detalle: error.message });
   }
 
-  // Cloudinary — valida credenciales con una llamada ligera a su API
   const inicioCloudinary = Date.now();
   try {
     if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
@@ -198,7 +184,6 @@ const getSalud = async (req, res) => {
     servicios.push({ nombre: 'Cloudinary', icono: '🖼️', ok: false, detalle: error.message });
   }
 
-  // Stripe — confirma que la llave secreta es válida
   const inicioStripe = Date.now();
   try {
     if (!process.env.STRIPE_SECRET_KEY) {
@@ -211,8 +196,6 @@ const getSalud = async (req, res) => {
     servicios.push({ nombre: 'Stripe', icono: '💳', ok: false, detalle: error.message });
   }
 
-  // Twilio Verify — prueba real contra la API (fetch del servicio, sin costo
-  // ni SMS enviado) para diagnosticar la causa exacta si algo falla
   const inicioTwilio = Date.now();
   const resultadoTwilio = await verificarConexion();
   servicios.push({
@@ -223,7 +206,6 @@ const getSalud = async (req, res) => {
     latencia: resultadoTwilio.ok ? Date.now() - inicioTwilio : undefined
   });
 
-  // Email (SMTP) — verifica la conexión real con el servidor de correo
   const inicioEmail = Date.now();
   try {
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
@@ -236,7 +218,6 @@ const getSalud = async (req, res) => {
     servicios.push({ nombre: 'Correo (SMTP)', icono: '✉️', ok: false, detalle: error.message });
   }
 
-  // Meta (Facebook/Instagram) — revisa si hay una página conectada y si el token sigue vigente
   try {
     const SocialConfig = require('../models/SocialConfig');
     const config = await SocialConfig.findOne({ isConnected: true }).sort({ connectedAt: -1 });
@@ -293,7 +274,6 @@ const getUsuarios = async (req, res) => {
   }
 };
 
-// KPIs para el módulo "Usuarios" del panel admin
 const getUsuariosStats = async (req, res) => {
   try {
     const ahora = new Date();
@@ -371,9 +351,6 @@ const cambiarPlan = async (req, res) => {
     const usuarioActual = await User.findById(req.params.id);
     if (!usuarioActual) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    // "ilimitado" (Plan Gratuito Ilimitado) es un plan especial que solo un admin puede
-    // asignar: internamente es plan=gratuito + role=basico_plus, lo que le da propiedades
-    // ilimitadas, mensajes ilimitados y prioridad máxima en destacadas/catálogo — sin costo.
     let update;
     if (plan === 'ilimitado') {
       update = { plan: 'gratuito', role: 'basico_plus' };
@@ -419,12 +396,12 @@ const eliminarUsuario = async (req, res) => {
   }
 };
 
-// ✅ Cambiar contraseña de un usuario desde el panel admin (genera una temporal y la envía por correo)
-// Las cuentas con role 'admin' solo las puede tocar admin@somosvivemas.com
 const ADMIN_PRINCIPAL_EMAIL = 'admin@somosvivemas.com';
 
+// ✅ FUNCIÓN MODIFICADA: ACEPTA MÉTODO 'email' O 'temporal'
 const cambiarPasswordUsuario = async (req, res) => {
   try {
+    const { metodo } = req.body; // 'email' o 'temporal'
     const usuario = await User.findById(req.params.id);
     if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
 
@@ -435,23 +412,33 @@ const cambiarPasswordUsuario = async (req, res) => {
       }
     }
 
-    const passwordTemporal = Math.random().toString(36).slice(-8);
-    usuario.password = passwordTemporal;
-    await usuario.save();
+    if (metodo === 'email') {
+      // Generar token temporal de 30 minutos
+      const resetToken = jwt.sign(
+        { id: usuario._id, type: 'password_reset' },
+        process.env.JWT_SECRET,
+        { expiresIn: '30m' }
+      );
+      // Enviar correo real
+      await enviarEnlaceRecuperacion(usuario.email, usuario.nombre, resetToken);
+      
+      return res.json({ ok: true, mensaje: `Se envió el enlace de recuperación al correo: ${usuario.email}` });
+      
+    } else {
+      // Generar contraseña temporal aleatoria
+      const passwordTemporal = Math.random().toString(36).slice(-8) + 'A1!'; // 8 caracteres + seguridad
+      
+      usuario.password = passwordTemporal;
+      await usuario.save();
 
-    try {
-      await enviarPasswordTemporal(usuario.email, usuario.nombre, passwordTemporal);
-    } catch (errCorreo) {
-      return res.json({
-        ok: true,
-        mensaje: 'Contraseña actualizada, pero no se pudo enviar el correo. Compártela manualmente.',
-        correoEnviado: false,
-        passwordTemporal,
+      return res.json({ 
+        ok: true, 
+        mensaje: 'Contraseña temporal generada correctamente.',
+        passwordTemporal 
       });
     }
-
-    res.json({ ok: true, mensaje: 'Contraseña actualizada y enviada por correo', correoEnviado: true, passwordTemporal });
   } catch (error) {
+    console.error('❌ Error en cambiarPasswordUsuario:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -476,7 +463,6 @@ const getPropiedadesRevision = async (req, res) => {
       if (fechaHasta) filtro.createdAt.$lte = new Date(fechaHasta);
     }
 
-    // El filtro por plan vive en el propietario (User), no en la propiedad
     if (plan) {
       const User = require('../models/User');
       const usuariosConPlan = await User.find({ plan }).select('_id');
@@ -492,7 +478,6 @@ const getPropiedadesRevision = async (req, res) => {
   }
 };
 
-// KPIs para el módulo "Todas las propiedades" del panel admin
 const getPropiedadesStats = async (req, res) => {
   try {
     const ahora = new Date();
@@ -509,7 +494,6 @@ const getPropiedadesStats = async (req, res) => {
       Property.countDocuments({ createdAt: { $gte: inicioSemana } })
     ]);
 
-    // Serie de los últimos 7 días para la mini gráfica de tendencia
     const tendencia = [];
     for (let i = 6; i >= 0; i--) {
       const inicio = new Date(inicioHoy); inicio.setDate(inicio.getDate() - i);
@@ -524,7 +508,6 @@ const getPropiedadesStats = async (req, res) => {
   }
 };
 
-// Exportar el listado filtrado a Excel, respetando los mismos filtros de la tabla
 const exportarPropiedadesExcel = async (req, res) => {
   try {
     const { status, search, ciudad, plan, fechaDesde, fechaHasta } = req.query;
@@ -614,7 +597,6 @@ const getLeads = async (req, res) => {
   }
 };
 
-// KPIs para el módulo "Leads" del panel admin
 const getLeadsStats = async (req, res) => {
   try {
     const ahora = new Date();
@@ -643,7 +625,6 @@ const getLeadsStats = async (req, res) => {
   }
 };
 
-// Actualizar status/notas de un lead (atención al cliente)
 const actualizarLead = async (req, res) => {
   try {
     const { status, notas } = req.body;
@@ -731,7 +712,6 @@ const exportarLeadsExcel = async (req, res) => {
 const { buildMensajeAprobacion, buildMensajeRechazoFotos, validarFotosParaAprobacion } = require('../utils/adminMessages');
 const { enviarNotificacionMensaje } = require('../utils/email');
 
-// Genera el identificador de conversación de forma consistente con message.controller.js
 const generarConversacionId = (id1, id2, propiedadId) => {
   const ordered = [id1, id2].sort();
   const base = `${ordered[0]}_${ordered[1]}`;
@@ -742,7 +722,7 @@ const enviarMensajeInternoParaPropiedad = async ({ req, propiedadId, mensaje }) 
   const Message = require('../models/Message');
   const propiedad = await Property.findById(propiedadId).populate('propietario', 'nombre notificaciones email');
   if (!propiedad) throw new Error('Propiedad no encontrada');
-  if (!propiedad.propietario) return; // cuenta del propietario ya no existe, nada que notificar
+  if (!propiedad.propietario) return; 
 
   const remitenteId = req.user.id;
   const destinatarioId = propiedad.propietario._id;
@@ -814,7 +794,6 @@ const aprobarPropiedad = async (req, res) => {
       return res.json({ ok: true, mensaje: 'Propiedad rechazada (validación de fotos)', propiedad: { ...propiedad.toObject(), status: 'rechazada' } });
     }
 
-    // ✅ PUNTO 4: Se agrega .populate() para que la función de redes sociales tenga los datos del propietario
     const updated = await Property.findByIdAndUpdate(
       req.params.id,
       { status: 'aprobada', motivo_rechazo: null },
@@ -826,15 +805,12 @@ const aprobarPropiedad = async (req, res) => {
 
     notificarCoincidenciasBusqueda({ ...updated.toObject(), propietario: propiedad.propietario }).catch(() => {});
 
-    // ✅ PUNTO 4: Disparar publicación en redes y mensaje automático con los links
     try {
       await publicarEnRedesYNotificar(updated);
     } catch (e) {
       console.error('❌ Error en publicarEnRedesYNotificar desde Admin:', e.message);
     }
 
-    // Emitir evento de "propiedad publicada" para el Marketing Automation Engine
-    // (fire-and-forget: no bloquea la respuesta de aprobación)
     try {
       eventBus.emit('property:published', updated._id);
       console.log(`Evento property:published emitido para "${updated.titulo}" (${updated._id})`);
@@ -880,7 +856,6 @@ const rechazarPropiedad = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 const eliminarPropiedad = async (req, res) => {
   try {
@@ -990,9 +965,6 @@ const dashboard = async (req, res) => {
   }
 };
 
-// =============================================
-// CREACIÓN MASIVA DE USUARIOS (CORREGIDA)
-// =============================================
 const crearUsuariosMasivo = async (req, res) => {
   try {
     const archivo = req.file;
@@ -1000,7 +972,6 @@ const crearUsuariosMasivo = async (req, res) => {
       return res.status(400).json({ error: 'Debes subir un archivo Excel (.xlsx) o CSV' });
     }
 
-    // Opciones del frontend
     const planForzar = req.body.planForzar || '';
     const forzarDuplicados = req.body.forzarDuplicados === 'true';
     const planesValidos = ['gratuito', 'basico', 'premium', 'ilimitado'];
@@ -1015,7 +986,6 @@ const crearUsuariosMasivo = async (req, res) => {
 
     let filas = [];
 
-    // Procesar según tipo de archivo
     if (archivo.originalname.endsWith('.csv')) {
       const contenido = archivo.buffer.toString('utf-8');
       const lineas = contenido.split('\n').map(l => l.trim()).filter(l => l);
@@ -1039,7 +1009,6 @@ const crearUsuariosMasivo = async (req, res) => {
 
     resultado.totalProcesados = filas.length;
 
-    // Nombres usados EN ESTA importación para evitar duplicados internos
     const nombresUsadosEnImportacion = new Set();
 
     for (let i = 0; i < filas.length; i++) {
@@ -1051,7 +1020,6 @@ const crearUsuariosMasivo = async (req, res) => {
       const tipoCuentaFila = (fila.tipoCuenta || fila.TipoCuenta || '').toString().trim().toLowerCase();
       const tipoCuenta = tipoCuentaFila === 'empresa' ? 'empresa' : 'persona';
       
-      // Plan: usar el forzado si viene, si no el del archivo, si no gratuito
       let plan = planForzar && planesValidos.includes(planForzar)
         ? planForzar
         : (fila.plan || fila.Plan || 'gratuito').toString().toLowerCase().trim();
@@ -1059,7 +1027,6 @@ const crearUsuariosMasivo = async (req, res) => {
 
       const numeroFila = i + 2;
 
-      // Validar email (esto SÍ es obligatorio)
       if (!email || !email.includes('@')) {
         resultado.errores.push({
           fila: numeroFila,
@@ -1070,14 +1037,12 @@ const crearUsuariosMasivo = async (req, res) => {
         continue;
       }
 
-      // Si no hay nombre, generarlo del email
       if (!nombre) {
         const parte = email.split('@')[0];
         nombre = parte.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ]/g, ' ') || 'usuario';
         nombre = nombre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       }
 
-      // Verificar si el email ya existe en la BD
       const existeEmail = await User.findOne({ email });
       if (existeEmail && !forzarDuplicados) {
         resultado.errores.push({
@@ -1089,8 +1054,6 @@ const crearUsuariosMasivo = async (req, res) => {
         continue;
       }
 
-      // Si el email existe Y se permite duplicado, o si el nombre ya existe,
-      // generar un nombre único
       const nombreYaExiste = await User.findOne({ nombre }) || nombresUsadosEnImportacion.has(nombre);
       if (nombreYaExiste || existeEmail) {
         let baseNombre = nombre;
@@ -1109,7 +1072,6 @@ const crearUsuariosMasivo = async (req, res) => {
 
       nombresUsadosEnImportacion.add(nombre);
 
-      // Generar contraseña temporal
       const passwordTemporal = Math.random().toString(36).slice(-8);
 
       try {
@@ -1156,7 +1118,6 @@ const crearUsuariosMasivo = async (req, res) => {
   }
 };
 
-// Descargar plantilla de usuarios
 const descargarPlantillaUsuarios = async (req, res) => {
   try {
     const XLSX = require('xlsx');
@@ -1169,8 +1130,6 @@ const descargarPlantillaUsuarios = async (req, res) => {
     const hoja = XLSX.utils.json_to_sheet(datos);
     hoja['!cols'] = [{ wch: 26 }, { wch: 26 }, { wch: 14 }, { wch: 12 }, { wch: 16 }, { wch: 12 }];
 
-    // Segunda hoja con la guía de valores válidos, para que no se tenga
-    // que adivinar qué escribir en "plan" o "tipoCuenta".
     const guia = XLSX.utils.aoa_to_sheet([
       ['Columna', 'Obligatoria', 'Valores permitidos / notas'],
       ['nombre', 'No', 'Si se omite, se genera del email'],
@@ -1194,10 +1153,6 @@ const descargarPlantillaUsuarios = async (req, res) => {
   }
 };
 
-// Crea UN solo usuario manualmente desde el panel (sin necesidad de subir
-// un Excel para 1 o 2 personas). Reutiliza las mismas reglas que la
-// importación masiva: contraseña temporal generada, plan "ilimitado" se
-// traduce a plan=gratuito + role=basico_plus.
 const crearUsuarioManual = async (req, res) => {
   try {
     const planesValidos = ['gratuito', 'basico', 'premium', 'ilimitado'];
@@ -1250,9 +1205,6 @@ const crearUsuarioManual = async (req, res) => {
   }
 };
 
-// ==========================================
-// VISTA PREVIA DE PROPIEDAD (modal catálogo)
-// ==========================================
 const verPropiedadAdmin = async (req, res) => {
   try {
     const propiedad = await Property.findById(req.params.id)
@@ -1281,9 +1233,6 @@ const verPropiedadAdmin = async (req, res) => {
   }
 };
 
-// ==========================================
-// USUARIOS VETADOS
-// ==========================================
 const BannedUser = require('../models/BannedUser');
 
 const getUsuariosVetados = async (req, res) => {
@@ -1440,7 +1389,6 @@ const desvincularAlias = async (req, res) => {
   }
 };
 
-// KPIs para el módulo "Usuarios vetados" del panel admin
 const getVetadosStats = async (req, res) => {
   try {
     const ahora = new Date();
@@ -1576,9 +1524,6 @@ const buscarAliases = async (req, res) => {
   }
 };
 
-// ==========================================
-// NOVEDADES / NOTICIAS GENERALES
-// ==========================================
 const getNovedades = async (req, res) => {
   try {
     const novedades = await Novedad.find().sort({ createdAt: -1 }).populate('creadoPor', 'nombre');

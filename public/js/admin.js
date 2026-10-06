@@ -739,7 +739,7 @@ window.abrirDrawerLead = (id) => {
         </select>
       </div>
       <div class="form-grupo" style="margin-bottom:16px">
-        <label>Notas internas</label>
+        <label>Notas internales</label>
         <textarea id="drawer-lead-notas" class="form-input" rows="3" placeholder="Notas de seguimiento...">${escapeHtml(l.notas || '')}</textarea>
       </div>
 
@@ -1175,7 +1175,10 @@ window.abrirDrawerUsuario = (id) => {
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="cerrarDrawerUsuario()">Cerrar</button>
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="seleccionarPlan('${u._id}', '${u.role === 'basico_plus' ? 'ilimitado' : u.plan}')">Cambiar plan</button>
-        ${(u.role !== 'admin' || (auth.getUser()?.email || '').toLowerCase() === ADMIN_PRINCIPAL_EMAIL) ? `<button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="cambiarPasswordUsuarioAdmin('${u._id}', '${(u.nombre || '').replace(/'/g, "\\'")}')">🔑 Cambiar contraseña</button>` : ''}
+        
+        <!-- ✅ BOTÓN MODIFICADO PARA ABRIR EL MODAL DE CONTRASEÑA -->
+        <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:#f59e0b;color:#f59e0b" onclick="abrirModalPasswordAdmin('${u._id}', '${escapeHtml(u.email)}')">🔑 Contraseña</button>
+        
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:${u.status === 'activo' ? '#e65100' : '#2e7d32'};color:${u.status === 'activo' ? '#e65100' : '#2e7d32'}" onclick="cerrarDrawerUsuario();suspenderUsuario('${u._id}')">${u.status === 'activo' ? 'Suspender' : 'Activar'}</button>
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:#dc2626;color:#dc2626" onclick="cerrarDrawerUsuario();abrirModalVetar('${u._id}')">🛡️ Vetar</button>
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:#c62828;color:#c62828" onclick="cerrarDrawerUsuario();eliminarUsuario('${u._id}', '${(u.nombre || '').replace(/'/g, "\\'")}')">Eliminar</button>
@@ -1275,28 +1278,83 @@ const suspenderUsuario = async (id) => {
 
 const ADMIN_PRINCIPAL_EMAIL = 'admin@somosvivemas.com';
 
-const cambiarPasswordUsuarioAdmin = async (id, nombre) => {
-  const ok = await dsConfirm({
-    title: '¿Cambiar contraseña?',
-    message: `Se generará una contraseña temporal nueva para "${nombre}" y se le enviará por correo.`,
-    confirmText: 'Cambiar contraseña',
-    danger: false
-  });
-  if (!ok) return;
-  try {
-    const data = await api.post(`/admin/usuarios/${id}/cambiar-password`, {});
-    if (data.ok) {
-      if (data.correoEnviado) {
-        dsToast({ title: 'Contraseña actualizada', message: `Se envió la nueva contraseña temporal a ${nombre} por correo.`, type: 'success' });
+// ✅ FUNCIÓN PARA ABRIR EL MODAL DE CONTRASEÑA (REEMPLAZA cambiarPasswordUsuarioAdmin)
+window.abrirModalPasswordAdmin = (userId, userEmail) => {
+  document.getElementById('modal-pass-admin')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'modal-pass-admin';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:10500;font-family:"Inter","Segoe UI",sans-serif';
+
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:20px;padding:32px;max-width:480px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,0.28)">
+      <h3 style="font-size:20px;font-weight:800;color:#0f172a;margin-bottom:4px">🔑 Restablecer Contraseña</h3>
+      <p style="font-size:13px;color:#64748b;margin-bottom:24px">Usuario: <b>${escapeHtml(userEmail)}</b></p>
+      
+      <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
+        <label style="display:flex; align-items:center; gap:10px; padding:14px; border:2px solid #e5e7eb; border-radius:12px; cursor:pointer;">
+          <input type="radio" name="reset-method" value="email" checked style="width:18px; height:18px; accent-color:#1a472a;">
+          <div>
+            <div style="font-size:14px; font-weight:600;">📧 Enviar enlace por correo</div>
+            <div style="font-size:12px; color:#64748b;">El usuario recibirá un email para crear su nueva contraseña.</div>
+          </div>
+        </label>
+        
+        <label style="display:flex; align-items:center; gap:10px; padding:14px; border:2px solid #e5e7eb; border-radius:12px; cursor:pointer;">
+          <input type="radio" name="reset-method" value="temporal" style="width:18px; height:18px; accent-color:#1a472a;">
+          <div>
+            <div style="font-size:14px; font-weight:600;">⚡ Generar contraseña temporal</div>
+            <div style="font-size:12px; color:#64748b;">Genera una contraseña aleatoria para que tú se la comuniques directamente.</div>
+          </div>
+        </label>
+      </div>
+
+      <div id="reset-result" style="display:none; margin-bottom:16px; background:#f0fdf4; padding:16px; border-radius:10px; border:1px solid #bbf7d0;"></div>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button onclick="document.getElementById('modal-pass-admin').remove()" style="padding:12px 20px; background:#f1f5f9; color:#475569; border:none; border-radius:10px; font-weight:600; cursor:pointer;">Cerrar</button>
+        <button id="btn-confirm-reset-pass" style="padding:12px 24px; background:#1a472a; color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer;">Confirmar</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#btn-confirm-reset-pass').addEventListener('click', async () => {
+    const metodo = overlay.querySelector('input[name="reset-method"]:checked').value;
+    const btn = overlay.querySelector('#btn-confirm-reset-pass');
+    const resultDiv = overlay.querySelector('#reset-result');
+    
+    btn.textContent = 'Procesando...';
+    btn.disabled = true;
+
+    try {
+      const data = await api.post(`/admin/usuarios/${userId}/cambiar-password`, { metodo });
+      
+      if (data.ok) {
+        if (metodo === 'email') {
+          dsToast({ title: 'Correo Enviado', message: data.mensaje, type: 'success' });
+          setTimeout(() => overlay.remove(), 1500);
+        } else {
+          btn.style.display = 'none';
+          resultDiv.style.display = 'block';
+          resultDiv.innerHTML = `
+            <div style="font-weight:700; color:#166534; margin-bottom:8px; font-size:14px;">✅ Contraseña temporal generada:</div>
+            <div style="font-family:monospace; font-size:20px; font-weight:800; text-align:center; background:white; padding:12px; border-radius:6px; border:2px dashed #166534; margin-bottom:12px; letter-spacing:1px;">${data.passwordTemporal}</div>
+            <button onclick="navigator.clipboard.writeText('${data.passwordTemporal}'); dsToast({title:'Copiado', type:'success'})" style="width:100%; padding:10px; background:#166534; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;">📋 Copiar Contraseña</button>
+          `;
+        }
       } else {
-        dsToast({ title: 'Contraseña actualizada', message: `No se pudo enviar el correo. Temporal: ${data.passwordTemporal}`, type: 'info' });
+        dsToast({ title: 'Error', message: data.error || 'No se pudo procesar', type: 'error' });
+        btn.textContent = 'Confirmar';
+        btn.disabled = false;
       }
-    } else {
-      dsToast({ title: 'No se pudo cambiar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    } catch (e) {
+      dsToast({ title: 'Error de conexión', message: 'Intenta de nuevo', type: 'error' });
+      btn.textContent = 'Confirmar';
+      btn.disabled = false;
     }
-  } catch (error) {
-    dsToast({ title: 'No se pudo cambiar', message: error.message || 'Error de conexión', type: 'error' });
-  }
+  });
 };
 
 const eliminarUsuario = async (id, nombre) => {
@@ -1531,7 +1589,7 @@ const aplicarTemaPersonalizado = async (id, tema) => {
 const cargarEnPaleta = async (id) => {
   const data = await api.get('/site/config');
   if (!data.ok) return;
-  const tema = data.config.temasPersonalizados.find(t => t._id === id);
+  const tema = data.config.temasPersonalalizados.find(t => t._id === id);
   if (!tema) return;
   document.getElementById('cp-nombre').value = tema.nombre;
   document.getElementById('cp-primary').value = tema.primary;
