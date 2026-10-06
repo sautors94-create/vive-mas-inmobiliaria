@@ -5,7 +5,7 @@ const Novedad = require('../models/Novedad');
 const mongoose = require('mongoose');
 const Stripe = require('stripe');
 const { cloudinary } = require('../config/cloudinary');
-const { transporter, enviarCoincidenciaBusqueda, enviarNovedad } = require('../utils/email');
+const { transporter, enviarCoincidenciaBusqueda, enviarNovedad, enviarPasswordTemporal } = require('../utils/email');
 const { twilioVerifyConfigurado, verificarConexion } = require('../utils/twilioVerify');
 // ✅ IMPORTAMOS LA FUNCIÓN PARA PUBLICAR EN REDES SOCIALES
 const { ejecutarModeracionCompleta, publicarEnRedesYNotificar } = require('./property.controller');
@@ -414,6 +414,43 @@ const eliminarUsuario = async (req, res) => {
     await Property.updateMany({ propietario: req.params.id }, { status: 'rechazada' });
     await User.findByIdAndDelete(req.params.id);
     res.json({ ok: true, mensaje: 'Usuario eliminado correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ✅ Cambiar contraseña de un usuario desde el panel admin (genera una temporal y la envía por correo)
+// Las cuentas con role 'admin' solo las puede tocar admin@somosvivemas.com
+const ADMIN_PRINCIPAL_EMAIL = 'admin@somosvivemas.com';
+
+const cambiarPasswordUsuario = async (req, res) => {
+  try {
+    const usuario = await User.findById(req.params.id);
+    if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    if (usuario.role === 'admin') {
+      const adminActual = await User.findById(req.user.id).select('email');
+      if (!adminActual || (adminActual.email || '').toLowerCase() !== ADMIN_PRINCIPAL_EMAIL) {
+        return res.status(403).json({ error: `Solo ${ADMIN_PRINCIPAL_EMAIL} puede cambiar la contraseña de otras cuentas admin.` });
+      }
+    }
+
+    const passwordTemporal = Math.random().toString(36).slice(-8);
+    usuario.password = passwordTemporal;
+    await usuario.save();
+
+    try {
+      await enviarPasswordTemporal(usuario.email, usuario.nombre, passwordTemporal);
+    } catch (errCorreo) {
+      return res.json({
+        ok: true,
+        mensaje: 'Contraseña actualizada, pero no se pudo enviar el correo. Compártela manualmente.',
+        correoEnviado: false,
+        passwordTemporal,
+      });
+    }
+
+    res.json({ ok: true, mensaje: 'Contraseña actualizada y enviada por correo', correoEnviado: true, passwordTemporal });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1645,6 +1682,7 @@ module.exports = {
   dashboard, 
   crearUsuariosMasivo, 
   crearUsuarioManual,
+  cambiarPasswordUsuario,
   descargarPlantillaUsuarios,
   verPropiedadAdmin,
   getUsuariosVetados,

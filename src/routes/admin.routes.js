@@ -31,6 +31,7 @@ const {
   dashboard,
   crearUsuariosMasivo,
   crearUsuarioManual,
+  cambiarPasswordUsuario,
   descargarPlantillaUsuarios,
   verPropiedadAdmin,
   getUsuariosVetados,
@@ -90,6 +91,7 @@ router.post('/usuarios/manual', crearUsuarioManual);
 router.get('/usuarios/plantilla', descargarPlantillaUsuarios);
 router.patch('/usuarios/:id/plan', cambiarPlan);
 router.patch('/usuarios/:id/suspender', suspenderUsuario);
+router.post('/usuarios/:id/cambiar-password', cambiarPasswordUsuario);
 router.delete('/usuarios/:id', eliminarUsuario);
 
 // Propiedades

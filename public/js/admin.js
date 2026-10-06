@@ -1175,6 +1175,7 @@ window.abrirDrawerUsuario = (id) => {
       <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="cerrarDrawerUsuario()">Cerrar</button>
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="seleccionarPlan('${u._id}', '${u.role === 'basico_plus' ? 'ilimitado' : u.plan}')">Cambiar plan</button>
+        ${(u.role !== 'admin' || (auth.getUser()?.email || '').toLowerCase() === ADMIN_PRINCIPAL_EMAIL) ? `<button class="btn btn-outline" style="padding:9px 18px;font-size:13px" onclick="cambiarPasswordUsuarioAdmin('${u._id}', '${(u.nombre || '').replace(/'/g, "\\'")}')">🔑 Cambiar contraseña</button>` : ''}
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:${u.status === 'activo' ? '#e65100' : '#2e7d32'};color:${u.status === 'activo' ? '#e65100' : '#2e7d32'}" onclick="cerrarDrawerUsuario();suspenderUsuario('${u._id}')">${u.status === 'activo' ? 'Suspender' : 'Activar'}</button>
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:#dc2626;color:#dc2626" onclick="cerrarDrawerUsuario();abrirModalVetar('${u._id}')">🛡️ Vetar</button>
         <button class="btn btn-outline" style="padding:9px 18px;font-size:13px;border-color:#c62828;color:#c62828" onclick="cerrarDrawerUsuario();eliminarUsuario('${u._id}', '${(u.nombre || '').replace(/'/g, "\\'")}')">Eliminar</button>
@@ -1269,6 +1270,32 @@ const suspenderUsuario = async (id) => {
     cargarUsuarios();
   } else {
     dsToast({ title: 'No se pudo actualizar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+  }
+};
+
+const ADMIN_PRINCIPAL_EMAIL = 'admin@somosvivemas.com';
+
+const cambiarPasswordUsuarioAdmin = async (id, nombre) => {
+  const ok = await dsConfirm({
+    title: '¿Cambiar contraseña?',
+    message: `Se generará una contraseña temporal nueva para "${nombre}" y se le enviará por correo.`,
+    confirmText: 'Cambiar contraseña',
+    danger: false
+  });
+  if (!ok) return;
+  try {
+    const data = await api.post(`/admin/usuarios/${id}/cambiar-password`, {});
+    if (data.ok) {
+      if (data.correoEnviado) {
+        dsToast({ title: 'Contraseña actualizada', message: `Se envió la nueva contraseña temporal a ${nombre} por correo.`, type: 'success' });
+      } else {
+        dsToast({ title: 'Contraseña actualizada', message: `No se pudo enviar el correo. Temporal: ${data.passwordTemporal}`, type: 'info' });
+      }
+    } else {
+      dsToast({ title: 'No se pudo cambiar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    }
+  } catch (error) {
+    dsToast({ title: 'No se pudo cambiar', message: error.message || 'Error de conexión', type: 'error' });
   }
 };
 

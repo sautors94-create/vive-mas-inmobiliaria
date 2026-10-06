@@ -1040,6 +1040,42 @@ const eliminarMiCuenta = async (req, res) => {
   }
 };
 
+// ==========================================
+// ✅ NUEVA FUNCIÓN: CAMBIO DE CONTRASEÑA EN DASHBOARD
+// ==========================================
+const cambiarPassword = async (req, res) => {
+  try {
+    const { passwordActual, nuevaPassword } = req.body;
+
+    if (!passwordActual || !nuevaPassword) {
+      return res.status(400).json({ error: 'Debes ingresar tu contraseña actual y la nueva' });
+    }
+
+    const user = await User.findById(req.user.id).select('+password');
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    // Verificar que la contraseña actual sea correcta
+    const esCorrecta = await user.compararPassword(passwordActual);
+    if (!esCorrecta) {
+      return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+    }
+
+    // Validar que la nueva no sea igual a la actual
+    const esIgual = await user.compararPassword(nuevaPassword);
+    if (esIgual) {
+      return res.status(400).json({ error: 'La nueva contraseña no puede ser igual a la actual' });
+    }
+
+    // Guardar la nueva (el modelo de Mongoose se encargará de encriptarla en el pre('save'))
+    user.password = nuevaPassword;
+    await user.save();
+
+    res.json({ ok: true, mensaje: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = { 
   registro, 
   login, 
@@ -1068,5 +1104,6 @@ module.exports = {
   revocarCargoRecurrente,
   verificar2FA,
   recuperar2FA,
-  eliminarMiCuenta
+  eliminarMiCuenta,
+  cambiarPassword // <--- ✅ AGREGADO AQUÍ
 };

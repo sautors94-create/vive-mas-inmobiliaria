@@ -12,7 +12,7 @@ const {
   verificarCodigo, 
   reenviarCodigo, 
   solicitarRecuperacion, 
-  restablecerPassword, // <--- Aquí está la función
+  restablecerPassword, 
   actualizarNotificaciones, 
   actualizarPerfil, 
   solicitarCambioCelular,
@@ -30,7 +30,8 @@ const {
   revocarCargoRecurrente,
   verificar2FA,
   recuperar2FA,
-  eliminarMiCuenta
+  eliminarMiCuenta,
+  cambiarPassword // <--- ✅ AGREGADO AQUÍ
 } = require('../controllers/auth.controller');
 
 const authMiddleware = require('../middleware/auth.middleware');
@@ -59,6 +60,9 @@ router.get('/perfil', authMiddleware, perfil);
 router.get('/leads', authMiddleware, misLeads);
 router.patch('/notificaciones', authMiddleware, actualizarNotificaciones);
 router.patch('/perfil', authMiddleware, actualizarPerfil);
+
+// ✅ NUEVA RUTA PARA CAMBIO DE CONTRASEÑA DENTRO DEL DASHBOARD
+router.post('/cambiar-password', authMiddleware, cambiarPassword);
 
 // Cambio de celular con verificación OTP por SMS (Twilio Verify)
 router.post('/celular/solicitar-cambio', authMiddleware, solicitarCambioCelular);

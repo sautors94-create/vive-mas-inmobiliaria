@@ -959,7 +959,7 @@ const renderMisPropsWorkspace = () => {
       const top = activasConVistas.reduce((a, b) => (b.vistas > a.vistas ? b : a));
       if (top.vistas > promedioVistas * 1.3) {
         const pct = Math.round((top.vistas / promedioVistas - 1) * 100);
-        insights.push({ icon: '👁️', text: `"${escapeHtmlLocal(top.titulo)}" recibió ${top.vistas} vistas, ${pct}% más que el promedio de tus otras publicaciones activas.` });
+        insights.push({ icon: '👁️', text: `"${escapeHtmlLocal(top.titulo)}" recibó ${top.vistas} vistas, ${pct}% más que el promedio de tus otras publicaciones activas.` });
       }
     }
     const activasSinVistas = misPropsData.filter(p => p.status === 'aprobada' && !p.vistas && p.createdAt && (Date.now() - new Date(p.createdAt).getTime()) > 7 * 86400000);
@@ -2077,6 +2077,27 @@ const cargarCuenta = () => {
       <div style="padding:14px 16px;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;font-size:13px;color:var(--text-light);line-height:1.6">${!!user.twoFactorEnabled ? 'Tu cuenta tiene autenticación en dos pasos activada. Cada vez que inicies sesión se te pedirá un código de Google Authenticator.' : 'Activa la autenticación en dos pasos para añadir una capa extra de seguridad a tu cuenta. Es completamente opcional y puedes desactivarla cuando quieras.'}</div>
       <div id="accion-2fa">${!!user.twoFactorEnabled ? '<button class="btn btn-outline" style="width:100%;padding:12px;font-size:14px" onclick="window._2faDesactivar()">Desactivar autenticación en dos pasos</button>' : '<a href="configurar-2fa.html" class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;text-align:center;display:block;text-decoration:none">Activar autenticación en dos pasos</a>'}</div>
     </div>
+
+    <!-- ✅ CAJA DE CAMBIO DE CONTRASEÑA -->
+    <div style="background:var(--bg-secondary);border-radius:16px;padding:24px;border:1px solid var(--border);margin-bottom:24px;margin-top:28px">
+      <h3 style="font-size:16px;margin-bottom:6px;font-family:'Bricolage Grotesque',sans-serif">🔒 Cambiar contraseña</h3>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Para cambiar tu contraseña, primero ingresa tu contraseña actual.</p>
+      
+      <div class="form-grid">
+        <div class="form-grupo">
+          <label>Contraseña actual</label>
+          <input type="password" id="cuenta-pass-actual" class="form-input" placeholder="Tu contraseña actual">
+        </div>
+        <div class="form-grupo">
+          <label>Nueva contraseña</label>
+          <input type="password" id="cuenta-pass-nueva" class="form-input" placeholder="Mínimo 6 caracteres">
+        </div>
+      </div>
+      
+      <button class="btn btn-primary" style="margin-top:16px;padding:10px 24px;font-size:14px" onclick="guardarNuevaPassword()">Actualizar contraseña</button>
+      <div id="pass-msg" style="display:none;margin-top:12px"></div>
+    </div>
+
     <button class="btn btn-outline" onclick="auth.logout()">Cerrar sesión</button>
   `;
 };
@@ -2382,7 +2403,7 @@ window.setPublicarStep = (n) => {
 
   const bar = document.getElementById('publicar-progress-bar');
   if (bar) {
-    const pct = ((publicarPaso - 1) / (max - 1)) * 100;
+    const pct = ((publicarPaso - 1) / (max - 1) * 100;
     bar.style.width = pct + '%';
   }
 
@@ -2812,3 +2833,38 @@ window._2faConfirmarDesactivar = async () => {
 };
 
 window._2faRender = () => { cargarCuenta(); };
+
+// ✅ FUNCIÓN PARA GUARDAR LA NUEVA CONTRASEÑA
+window.guardarNuevaPassword = async () => {
+  const passwordActual = document.getElementById('cuenta-pass-actual')?.value;
+  const nuevaPassword = document.getElementById('cuenta-pass-nueva')?.value;
+  const msgEl = document.getElementById('pass-msg');
+
+  if (!passwordActual || !nuevaPassword) {
+    dsToast({ title: 'Faltan datos', message: 'Ingresa tu contraseña actual y la nueva.', type: 'error' });
+    return;
+  }
+
+  if (nuevaPassword.length < 6) {
+    dsToast({ title: 'Contraseña muy corta', message: 'La nueva contraseña debe tener al menos 6 caracteres.', type: 'error' });
+    return;
+  }
+
+  try {
+    const data = await api.post('/auth/cambiar-password', { passwordActual, nuevaPassword });
+    if (data.ok) {
+      msgEl.innerHTML = '<div class="alert alert-success">✓ Contraseña actualizada correctamente.</div>';
+      msgEl.style.display = 'block';
+      document.getElementById('cuenta-pass-actual').value = '';
+      document.getElementById('cuenta-pass-nueva').value = '';
+      dsToast({ title: 'Contraseña actualizada', message: 'Tu nueva contraseña ha sido guardada.', type: 'success' });
+      setTimeout(() => { if(msgEl) msgEl.style.display = 'none'; }, 4000);
+    } else {
+      msgEl.innerHTML = `<div class="alert alert-error">${data.error || 'No se pudo actualizar'}</div>`;
+      msgEl.style.display = 'block';
+      dsToast({ title: 'Error', message: data.error || 'No se pudo actualizar', type: 'error' });
+    }
+  } catch (error) {
+    dsToast({ title: 'Error de conexión', message: 'No se pudo conectar con el servidor.', type: 'error' });
+  }
+};
