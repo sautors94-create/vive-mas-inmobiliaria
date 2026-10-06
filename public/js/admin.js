@@ -781,7 +781,7 @@ window.eliminarLeadAdmin = async (id) => {
     cerrarDrawerLead();
     cargarLeads();
   } else {
-    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -823,7 +823,7 @@ const aprobarPropiedad = async (id) => {
   } else if (data.esPropiaPropiedad) {
     dsToast({ title: 'No permitido', message: 'No puedes aprobar tus propias propiedades. Otro administrador debe revisarla.', type: 'error' });
   } else {
-    dsToast({ title: 'No se pudo aprobar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo aprobar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -848,7 +848,7 @@ const confirmarRechazo = async () => {
     dsToast({ title: 'Propiedad rechazada', message: 'Se notificó el motivo al propietario.', type: 'info' });
     cerrarModal(); cargarRevision(); cargarDashboard();
   } else {
-    dsToast({ title: 'No se pudo rechazar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo rechazar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -858,7 +858,7 @@ const bloquearPropiedad = async (id) => {
     dsToast({ title: 'Estado actualizado', message: 'El bloqueo de la propiedad se actualizó.', type: 'success' });
     cargarTodasPropiedades(); cargarDashboard();
   } else {
-    dsToast({ title: 'No se pudo actualizar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo actualizar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -875,7 +875,7 @@ const eliminarPropAdmin = async (id, titulo) => {
     dsToast({ title: 'Propiedad eliminada', message: `"${titulo}" fue eliminada.`, type: 'success' });
     cargarTodasPropiedades(); cargarDashboard();
   } else {
-    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -1257,7 +1257,7 @@ const seleccionarPlan = (id, planActual) => {
         dsToast({ title: 'Plan actualizado', message: `El usuario ahora tiene el plan ${nuevoPlan}.`, type: 'success' });
         cargarUsuarios();
       } else {
-        dsToast({ title: 'No se pudo cambiar el plan', message: data.error || 'Intenta de nuevo.', type: 'error' });
+        dsToast({ title: 'No se pudo cambiar el plan', message: data.error || 'Intenta de nouveau.', type: 'error' });
       }
     });
   });
@@ -1272,7 +1272,7 @@ const suspenderUsuario = async (id) => {
     dsToast({ title: 'Estado actualizado', message: 'El estado del usuario se actualizó.', type: 'success' });
     cargarUsuarios();
   } else {
-    dsToast({ title: 'No se pudo actualizar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo actualizar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -1350,7 +1350,7 @@ window.abrirModalPasswordAdmin = (userId, userEmail) => {
         btn.disabled = false;
       }
     } catch (e) {
-      dsToast({ title: 'Error de conexión', message: 'Intenta de nuevo', type: 'error' });
+      dsToast({ title: 'Error de conexión', message: 'Intenta de nouveau', type: 'error' });
       btn.textContent = 'Confirmar';
       btn.disabled = false;
     }
@@ -1370,7 +1370,7 @@ const eliminarUsuario = async (id, nombre) => {
     dsToast({ title: 'Usuario eliminado', message: `"${nombre}" fue eliminado.`, type: 'success' });
     cargarUsuarios(); cargarDashboard();
   } else {
-    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -1589,7 +1589,7 @@ const aplicarTemaPersonalizado = async (id, tema) => {
 const cargarEnPaleta = async (id) => {
   const data = await api.get('/site/config');
   if (!data.ok) return;
-  const tema = data.config.temasPersonalalizados.find(t => t._id === id);
+  const tema = data.config.temasPersonalizados.find(t => t._id === id);
   if (!tema) return;
   document.getElementById('cp-nombre').value = tema.nombre;
   document.getElementById('cp-primary').value = tema.primary;
@@ -1615,7 +1615,7 @@ const eliminarTemaPersonalizado = async (id, nombre) => {
     dsToast({ title: 'Tema eliminado', message: `"${nombre}" fue eliminado.`, type: 'success' });
     cargarTemasPersonalizados();
   } else {
-    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -2546,7 +2546,7 @@ window.confirmarVetar = async () => {
     document.getElementById('modal-vetar').style.display = 'none';
     cargarUsuarios();
   } else {
-    dsToast({ title: 'No se pudo vetar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo vetar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -2632,7 +2632,7 @@ window.vincularAliasDrawer = async (vetadoId, usuarioId, aliasId) => {
     const actualizado = vetMod.data.find(x => x._id === vetadoId);
     if (actualizado) renderDrawerVetado(actualizado);
   } else {
-    dsToast({ title: 'No se pudo vincular', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo vincular', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -2642,7 +2642,7 @@ window.desvincularAliasDrawer = async (vetadoUsuarioId, aliasId) => {
     dsToast({ title: 'Alias desvinculado', message: '', type: 'success' });
     await cargarVetados();
   } else {
-    dsToast({ title: 'No se pudo desvincular', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo desvincular', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -3074,4 +3074,104 @@ window.marcarRevisadoDrawer = async (id) => {
   } else {
     dsToast({ title: 'Error', message: data.error || 'No se pudo marcar', type: 'error' });
   }
+};
+
+// ==========================================
+// CAMBIAR MI PROPIA CONTRASEÑA (ADMIN)
+// ==========================================
+window.abrirModalCambiarMiPasswordAdmin = () => {
+  // Si ya existe un modal abierto, lo cerramos primero
+  document.getElementById('modal-mi-pass-admin')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'modal-mi-pass-admin';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:10500;font-family:"Inter","Segoe UI",sans-serif';
+
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:20px;padding:32px;max-width:440px;width:90%;box-shadow:0 24px 60px rgba(0,0,0,0.28)">
+      <h3 style="font-size:20px;font-weight:800;color:#0f172a;margin-bottom:4px">🔒 Cambiar mi contraseña</h3>
+      <p style="font-size:13px;color:#64748b;margin-bottom:24px">Por seguridad, ingresa tu contraseña actual.</p>
+      
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Contraseña actual</label>
+        <input type="password" id="mi-pass-actual-admin" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" placeholder="Tu contraseña actual">
+      </div>
+      
+      <div style="margin-bottom:24px;">
+        <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Nueva contraseña</label>
+        <input type="password" id="mi-pass-nueva-admin" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;" placeholder="Mínimo 6 caracteres">
+      </div>
+
+      <div id="mi-pass-msg-admin" style="display:none;margin-bottom:16px;font-size:13px;padding:10px;border-radius:8px;"></div>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button onclick="document.getElementById('modal-mi-pass-admin').remove()" style="padding:12px 20px; background:#f1f5f9; color:#475569; border:none; border-radius:10px; font-weight:600; cursor:pointer;">Cancelar</button>
+        <button id="btn-guardar-mi-pass-admin" style="padding:12px 24px; background:#1a472a; color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer;">Actualizar contraseña</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // Lógica del botón guardar
+  overlay.querySelector('#btn-guardar-mi-pass-admin').addEventListener('click', async () => {
+    const passwordActual = document.getElementById('mi-pass-actual-admin').value;
+    const nuevaPassword = document.getElementById('mi-pass-nueva-admin').value;
+    const msgEl = document.getElementById('mi-pass-msg-admin');
+    const btn = document.getElementById('btn-guardar-mi-pass-admin');
+
+    if (!passwordActual || !nuevaPassword) {
+      msgEl.style.display = 'block';
+      msgEl.style.background = '#fef2f2';
+      msgEl.style.color = '#991b1b';
+      msgEl.textContent = '⚠️ Por favor ingresa ambas contraseñas.';
+      return;
+    }
+
+    if (nuevaPassword.length < 6) {
+      msgEl.style.display = 'block';
+      msgEl.style.background = '#fef2f2';
+      msgEl.style.color = '#991b1b';
+      msgEl.textContent = '⚠️ La nueva contraseña debe tener al menos 6 caracteres.';
+      return;
+    }
+
+    btn.textContent = 'Guardando...';
+    btn.disabled = true;
+
+    try {
+      // Usamos la ruta de auth general que funciona para cualquier usuario logueado
+      const data = await api.post('/auth/cambiar-password', { passwordActual, nuevaPassword });
+      
+      if (data.ok) {
+        msgEl.style.display = 'block';
+        msgEl.style.background = '#f0fdf4';
+        msgEl.style.color = '#166534';
+        msgEl.textContent = '✓ Contraseña actualizada correctamente.';
+        
+        // Limpiar campos
+        document.getElementById('mi-pass-actual-admin').value = '';
+        document.getElementById('mi-pass-nueva-admin').value = '';
+        
+        // Cerrar modal después de 2 segundos
+        setTimeout(() => {
+          overlay.remove();
+        }, 2000);
+      } else {
+        msgEl.style.display = 'block';
+        msgEl.style.background = '#fef2f2';
+        msgEl.style.color = '#991b1b';
+        msgEl.textContent = data.error || 'No se pudo actualizar la contraseña.';
+        btn.textContent = 'Actualizar contraseña';
+        btn.disabled = false;
+      }
+    } catch (e) {
+      msgEl.style.display = 'block';
+      msgEl.style.background = '#fef2f2';
+      msgEl.style.color = '#991b1b';
+      msgEl.textContent = '❌ Error de conexión.';
+      btn.textContent = 'Actualizar contraseña';
+      btn.disabled = false;
+    }
+  });
 };
