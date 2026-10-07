@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="../css/dashboard.css">
   <link rel="stylesheet" href="../css/admin.css">
   <link rel="stylesheet" href="../css/topbar-premium.css">
+  <link rel="stylesheet" href="../css/mobile-rescue.css">
   <style>
     /* CSS PARA COMPRIMIR EL SIDEBAR */
     .sidebar-collapsed .dashboard-sidebar { width: 70px !important; overflow: hidden; }
@@ -83,11 +84,6 @@
               <div class="ds-dropdown-item" onclick="window.location.href='/'">
                 <div class="t">🌐 Ver sitio público</div>
                 <div class="d">Ir al inicio del sitio</div>
-              </div>
-              <!-- ✅ NUEVA OPCIÓN: CAMBIAR CONTRASEÑA -->
-              <div class="ds-dropdown-item" onclick="abrirModalCambiarMiPasswordAdmin()">
-                <div class="t">🔒 Cambiar mi contraseña</div>
-                <div class="d">Actualiza tu clave de acceso</div>
               </div>
             </div>
             <div class="ds-dropdown-actions">
@@ -1524,5 +1520,6 @@
       }
     });
   </script>
+  <script src="../js/mobile-rescue.js"></script>
 </body>
 </html>

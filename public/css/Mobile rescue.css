@@ -1,0 +1,81 @@
+/* ==========================================
+   VISTA MÓVIL SIMPLIFICADA — dashboard.html / admin.html
+   Objetivo: una sola columna, sin cortes, sin CSS pesado.
+   Convive con topbar-premium.css (que ya oculta buscador/título
+   del topbar en ≤820px) — aquí solo se simplifica el contenido.
+   ========================================== */
+@media (max-width: 900px) {
+  .dashboard-layout { grid-template-columns: 1fr !important; height: auto !important; }
+  .dashboard-sidebar { display: none !important; }
+  .dashboard-main { width: 100% !important; padding: 16px !important; }
+  .ds-topbar-inner { flex-wrap: wrap !important; gap: 10px !important; }
+  .ds-topbar-search { display: none !important; }
+  .ds-topbar-right { width: 100% !important; justify-content: center !important; }
+
+  /* Simplificar grids y tablas */
+  .mod-header { flex-direction: column !important; align-items: flex-start !important; }
+  .mod-header-actions { margin-top: 10px; flex-wrap: wrap; }
+  .mod-kpis { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  .mod-filters { flex-direction: column !important; }
+  .mod-filters > * { width: 100% !important; margin-bottom: 10px !important; }
+  .stats-grid { grid-template-columns: 1fr !important; }
+  .form-grid { grid-template-columns: 1fr !important; }
+  .ds-stepper-steps { display: none !important; }
+  .publicar-step-actions { flex-direction: column-reverse !important; }
+  .publicar-step-actions button { width: 100% !important; margin-top: 10px !important; }
+  .propiedad-layout { grid-template-columns: 1fr !important; }
+  .mpw-body { grid-template-columns: 1fr !important; }
+  table { font-size: 12px; }
+
+  /* Menú de navegación por dropdown (reemplaza el sidebar oculto) */
+  .vm-mobile-nav {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border, #e5e7eb);
+    margin-bottom: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    background: white url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>") no-repeat right 14px center;
+    background-size: 14px;
+    color: var(--text, #1a1a2e);
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+}
+
+/* Botones flotantes: esquina inferior izquierda para no chocar con el
+   widget de chat (chatbot.js vive en la esquina inferior derecha). */
+@media (max-width: 900px) {
+  .vm-floating-btns {
+    position: fixed;
+    bottom: 20px;
+    left: 16px;
+    z-index: 500; /* por debajo de modales (10000) y del chat (9998+) */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .vm-floating-btns a,
+  .vm-floating-btns button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--primary, #1a472a);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 21px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    transition: transform 0.15s ease;
+  }
+  .vm-floating-btns a:active,
+  .vm-floating-btns button:active { transform: scale(0.9); }
+  .vm-floating-btns .vm-logout-btn { background: #dc2626; }
+}
