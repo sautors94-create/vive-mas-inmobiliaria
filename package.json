@@ -31,7 +31,7 @@
     "mongoose": "^8.0.0",
     "morgan": "^1.10.0",
     "multer": "^2.2.0",
-    "nodemailer": "^9.0.5",
+    "nodemailer": "^10.0.9",
     "openai": "^4.68.0",
     "otpauth": "^9.3.4",
     "qrcode": "^1.5.4",
