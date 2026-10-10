@@ -664,28 +664,68 @@
     </div>
 </section>
 
-      <!-- CRM EMBUDO DE VENTAS -->
+            <!-- CRM EMBUDO DE VENTAS -->
       <section id="sec-crm" class="dash-section" style="display:none">
         <div class="dash-section-header">
           <h2>CRM Embudo de Ventas</h2>
-          <button class="btn btn-outline" onclick="cargarCRMLeads()">↻ Actualizar</button>
+          <button class="btn btn-primary" onclick="abrirModalNuevoLead()">+ Agregar Lead</button>
         </div>
-        <p style="font-size:13px; color:var(--text-light); margin-bottom:20px;">
-          Arrastra las tarjetas para cambiar el estado de tus leads. Haz clic en una tarjeta para ver detalles y agregar notas.
-        </p>
+        
+        <!-- BARRA DE FILTROS -->
+        <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;">
+          <input type="text" id="crm-filtro-buscar" class="form-input" placeholder="🔍 Buscar por nombre..." style="flex:1;min-width:150px;padding:8px 12px;font-size:13px;" oninput="cargarCRMLeads()">
+          <select id="crm-filtro-propiedad" class="form-input" style="width:auto;padding:8px 12px;font-size:13px;" onchange="cargarCRMLeads()">
+            <option value="">Todas las propiedades</option>
+          </select>
+          <select id="crm-filtro-tipo" class="form-input" style="width:auto;padding:8px 12px;font-size:13px;" onchange="cargarCRMLeads()">
+            <option value="">Todos los tipos</option>
+            <option value="casa">Casa</option>
+            <option value="departamento">Departamento</option>
+            <option value="terreno">Terreno</option>
+            <option value="local">Local</option>
+          </select>
+          <select id="crm-filtro-estado" class="form-input" style="width:auto;padding:8px 12px;font-size:13px;" onchange="cargarCRMLeads()">
+            <option value="">Todos los estados</option>
+            <option value="Aguascalientes">Aguascalientes</option>
+            <option value="Baja California">Baja California</option>
+            <option value="Ciudad de Mexico">Ciudad de México</option>
+            <option value="Jalisco">Jalisco</option>
+            <option value="Nuevo Leon">Nuevo León</option>
+            <option value="Yucatan">Yucatán</option>
+            <!-- Agrega aquí más estados si lo necesitas -->
+          </select>
+        </div>
+
         <div id="kanban-board" class="kanban-board">
           <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-light)">Cargando embudo...</div>
         </div>
       </section>
 
-      <!-- MODAL DETALLE LEAD CRM -->
-      <div id="crm-lead-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center;">
-        <div style="background:white;border-radius:16px;padding:24px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;position:relative;">
-          <button onclick="document.getElementById('crm-lead-modal').style.display='none'" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:20px;cursor:pointer;">✕</button>
-          <div id="crm-lead-modal-content"></div>
+      <!-- MODAL NUEVO LEAD -->
+      <div id="crm-nuevo-lead-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center;">
+        <div style="background:white;border-radius:16px;padding:24px;max-width:450px;width:90%;">
+          <h3 style="margin-bottom:16px;">Agregar Nuevo Lead</h3>
+          <div class="form-grupo" style="margin-bottom:12px;">
+            <label>Nombre del cliente *</label>
+            <input type="text" id="nuevo-lead-nombre" class="form-input" placeholder="Ej: Juan Pérez">
+          </div>
+          <div class="form-grupo" style="margin-bottom:12px;">
+            <label>Teléfono *</label>
+            <input type="text" id="nuevo-lead-telefono" class="form-input" placeholder="Ej: 5512345678">
+          </div>
+          <div class="form-grupo" style="margin-bottom:16px;">
+            <label>Propiedad de interés</label>
+            <select id="nuevo-lead-propiedad" class="form-input">
+              <option value="">Sin propiedad específica</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn btn-outline" onclick="cerrarModalNuevoLead()">Cancelar</button>
+            <button class="btn btn-primary" onclick="guardarNuevoLead()">Guardar Lead</button>
+          </div>
         </div>
       </div>
-
+      
       <!-- MI CUENTA -->
       <section id="sec-mi-cuenta" class="dash-section" style="display:none">
         <div class="dash-section-header"><h2>Mi cuenta</h2></div>

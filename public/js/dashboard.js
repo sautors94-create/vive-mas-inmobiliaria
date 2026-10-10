@@ -2849,12 +2849,59 @@ window.guardarNuevaPassword = async () => {
 // ==========================================
 let crmLeadsData = [];
 
+// Cargar las propiedades del usuario en los dropdowns de filtro y nuevo lead
+const poblarFiltrosYSelectsCRM = async () => {
+  try {
+    const data = await api.get('/propiedades/mis-propiedades');
+    const props = data.propiedades || [];
+    
+    // Poblar Filtro de Propiedad
+    const filtroProp = document.getElementById('crm-filtro-propiedad');
+    if (filtroProp) {
+      const actual = filtroProp.value;
+      filtroProp.innerHTML = '<option value="">Todas las propiedades</option>';
+      props.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p._id;
+        opt.textContent = p.titulo;
+        filtroProp.appendChild(opt);
+      });
+      if (actual) filtroProp.value = actual;
+    }
+    
+    // Poblar Select de Nuevo Lead
+    const nuevoLeadProp = document.getElementById('nuevo-lead-propiedad');
+    if (nuevoLeadProp) {
+      nuevoLeadProp.innerHTML = '<option value="">Sin propiedad específica</option>';
+      props.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p._id;
+        opt.textContent = p.titulo;
+        nuevoLeadProp.appendChild(opt);
+      });
+    }
+  } catch (e) { console.error('Error cargando props para CRM', e); }
+};
+
 const cargarCRMLeads = async () => {
   const board = document.getElementById('kanban-board');
   if (!board) return;
   board.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-light)">Cargando embudo...</div>';
+  
   try {
-    const data = await api.get('/leads/crm');
+    // Leer filtros
+    const search = document.getElementById('crm-filtro-buscar')?.value || '';
+    const tipo = document.getElementById('crm-filtro-tipo')?.value || '';
+    const estado = document.getElementById('crm-filtro-estado')?.value || '';
+    const propiedadId = document.getElementById('crm-filtro-propiedad')?.value || '';
+    
+    const queryParams = new URLSearchParams();
+    if (search) queryParams.append('search', search);
+    if (tipo) queryParams.append('tipo', tipo);
+    if (estado) queryParams.append('estado', estado);
+    if (propiedadId) queryParams.append('propiedadId', propiedadId);
+    
+    const data = await api.get(`/leads/crm?${queryParams.toString()}`);
     if (!data.ok) throw new Error('Error al cargar leads');
     
     crmLeadsData = Object.values(data.embudo).flat();
@@ -2885,12 +2932,11 @@ const cargarCRMLeads = async () => {
                   <div class="lead-card-avatar">${(lead.nombre || '?').charAt(0).toUpperCase()}</div>
                   <div class="lead-card-info">
                     <div class="lead-card-name">${escapeHtmlLocal(lead.nombre)}</div>
-                    <div class="lead-card-prop">${escapeHtmlLocal(lead.propiedadInteres?.titulo || 'Directo')}</div>
+                    <div class="lead-card-prop">${escapeHtmlLocal(lead.propiedadInteres?.titulo || 'Sin propiedad')}</div>
                   </div>
                 </div>
                 <div style="font-size:12px;color:var(--text-light);display:flex;gap:10px;">
-                  <span>📅 ${new Date(lead.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}</span>
-                  ${lead.presupuesto ? `<span>💰 $${Number(lead.presupuesto).toLocaleString('es-MX')}</span>` : ''}
+                  <span>📞 ${escapeHtmlLocal(lead.telefono || 'Sin teléfono')}</span>
                 </div>
               </div>
             `).join('')}
@@ -2902,6 +2948,95 @@ const cargarCRMLeads = async () => {
     initDragAndDropCRM();
   } catch (error) {
     board.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:red">Error: ${error.message}</div>`;
+  }
+};
+
+const initDragAndDropCRM = () => {
+  let draggedCard = null;
+  let draggedLeadId = null;
+
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    card.addEventListener('dragstart', (e) => {
+      draggedCard = e.target;
+      draggedLeadId = e.target.dataset.leadId;
+      setTimeout(() => e.target.classList.add('dragging'), 0);
+    });
+    card.addEventListener('dragend', (e) => {
+      e.target.classList.remove('dragging');
+      draggedCard = null;
+      draggedLeadId = null;
+    });
+  });
+
+  document.querySelectorAll('.kanban-column').forEach(col => {
+    col.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      col.classList.add('drop-active');
+    });
+    col.addEventListener('dragleave', (e) => {
+      col.classList.remove('drop-active');
+    });
+    col.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      col.classList.remove('drop-active');
+      if (!draggedLeadId) return;
+
+      const nuevaEtapa = col.dataset.etapa;
+      const dropContainer = col.querySelector('.kanban-cards-container');
+      if (draggedCard && dropContainer) {
+        dropContainer.appendChild(draggedCard);
+      }
+
+      try {
+        const res = await api.put(`/leads/${draggedLeadId}/mover`, { nuevaEtapa });
+        if (!res.ok) throw new Error('No se pudo mover');
+        
+        document.querySelectorAll('.kanban-column').forEach(c => {
+          const count = c.querySelectorAll('.kanban-card').length;
+          c.querySelector('.kanban-column-count').textContent = count;
+        });
+        dsToast({ title: 'Lead movido', message: `Ahora en: ${nuevaEtapa}`, type: 'success', duration: 2000 });
+      } catch (err) {
+        dsToast({ title: 'Error', message: 'No se pudo guardar el cambio.', type: 'error' });
+        cargarCRMLeads(); 
+      }
+    });
+  });
+};
+
+// Lógica del Modal Nuevo Lead
+window.abrirModalNuevoLead = () => {
+  document.getElementById('nuevo-lead-nombre').value = '';
+  document.getElementById('nuevo-lead-telefono').value = '';
+  document.getElementById('nuevo-lead-propiedad').value = '';
+  document.getElementById('crm-nuevo-lead-modal').style.display = 'flex';
+};
+
+window.cerrarModalNuevoLead = () => {
+  document.getElementById('crm-nuevo-lead-modal').style.display = 'none';
+};
+
+window.guardarNuevoLead = async () => {
+  const nombre = document.getElementById('nuevo-lead-nombre').value.trim();
+  const telefono = document.getElementById('nuevo-lead-telefono').value.trim();
+  const propiedadInteres = document.getElementById('nuevo-lead-propiedad').value;
+  
+  if (!nombre || !telefono) {
+    dsToast({ title: 'Faltan datos', message: 'Nombre y teléfono son obligatorios.', type: 'error' });
+    return;
+  }
+  
+  try {
+    const res = await api.post('/leads', { nombre, telefono, propiedadInteres });
+    if (res.ok) {
+      dsToast({ title: 'Lead agregado', message: 'El cliente se agregó a tu embudo.', type: 'success' });
+      cerrarModalNuevoLead();
+      cargarCRMLeads();
+    } else {
+      dsToast({ title: 'Error', message: res.error || 'No se pudo guardar.', type: 'error' });
+    }
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo conectar.', type: 'error' });
   }
 };
 

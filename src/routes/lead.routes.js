@@ -7,6 +7,7 @@ router.use(authMiddleware);
 
 // Rutas del CRM
 router.get('/crm', leadController.getMisLeadsCRM);
+router.post('/', leadController.crearLeadManual); // <--- AGREGAR ESTA LÍNEA
 router.put('/:id/mover', leadController.moverLeadEtapa);
 router.post('/:id/notas', leadController.agregarNotaLead);
 router.post('/:id/tareas', leadController.agregarTareaLead);
