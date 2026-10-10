@@ -161,7 +161,7 @@ window.mostrarModalPlanes = () => {
         <div style="border:2px solid ${planActual === 'basico' ? 'var(--primary)' : '#0369a1'};border-radius:14px;padding:18px;background:${planActual === 'basico' ? '#f0fdf4' : '#f0f9ff'};position:relative">
           <div style="position:absolute;top:-10px;right:16px;background:#0369a1;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px">DISPONIBLE</div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div><div style="font-size:15px;font-weight:700;color:#0f172a">Básico</div><div style="font-size:12px;color:#64748b">Para agentes activos</div></div><div style="font-size:20px;font-weight:800;color:#0369a1">$99<span style="font-size:12px;font-weight:400;color:#64748b">/mes</span></div></div>
-          <ul style="font-size:12px;color:#475569;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px"><li>✓ Hasta 15 propiedades publicadas</li><li>✓ 10 fotos por propiedad</li><li>✓ Estadísticas de tu panel</li><li>✓ Mayor visibilidad en el catálogo</li><li>✓ Soporte prioritario</li></ul>
+          <ul style="font-size:12px;color:#475569;list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:4px"><li>✓ Hasta 15 propiedades publicadas</li><li>✓ 10 fotos por propiedad</li><li>✓ Estadísticas de tu panel</li><li>✓ Greater visibility en el catálogo</li><li>✓ Soporte prioritario</li></ul>
           ${planActual === 'basico' ? '<div style="margin-top:12px;font-size:12px;font-weight:600;color:var(--primary)">✓ Plan actual</div>' : `
           <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
             <button onclick="contratarPlan('basico', 'mensual')" style="width:100%;padding:10px;background:#0369a1;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Contratar Mensual →</button>
@@ -418,6 +418,7 @@ const mostrarSeccion = window.mostrarSeccion = (seccion) => {
   if (seccion === 'mis-propiedades') cargarMisPropiedades();
   if (seccion === 'favoritos') cargarFavoritos();
   if (seccion === 'leads') cargarLeadsUsuario();
+  if (seccion === 'crm') cargarCRMLeads(); // ✅ NUEVO: Cargar CRM
   if (seccion === 'mensajes') cargarMensajes();
   if (seccion === 'nueva-propiedad') { resetFormularioPropiedad(); iniciarMapaPublicar(); }
   if (seccion === 'mi-cuenta') cargarCuenta();
@@ -796,7 +797,7 @@ const eliminarFotoPreview = (idx) => {
   const input = document.getElementById('p-fotos');
   if (input) {
     const dt = new DataTransfer();
-    fotosOrden.forEach(x => dt.items.add(x.file));
+    fotosOrden.forEach(x => dt.items.add(x.file);
     input.files = dt.files;
   }
   renderFotosPreview();
@@ -1294,7 +1295,7 @@ const pausarMiPropiedad = async (id) => {
     dsToast({ title: 'Propiedad pausada', message: data.mensaje, type: 'success' });
     cargarMisPropiedades();
   } else {
-    dsToast({ title: 'No se pudo pausar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo pausar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -1310,7 +1311,7 @@ const reactivarMiPropiedad = async (id) => {
     dsToast({ title: 'Enviada a revisión', message: data.mensaje, type: 'success' });
     cargarMisPropiedades();
   } else {
-    dsToast({ title: 'No se pudo reactivar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo reactivar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -1422,7 +1423,7 @@ const quitarFotoExistente = async (propiedadId, btnEl) => {
     contenedor.remove();
     dsToast({ title: 'Foto eliminada', message: 'Ya puedes subir una nueva para reemplazarla.', type: 'success' });
   } else {
-    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -1440,7 +1441,7 @@ const eliminarMiPropiedad = async (id, titulo) => {
     cargarMisPropiedades();
     cargarResumenUsuario();
   } else {
-    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo eliminar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -1735,7 +1736,7 @@ const enviarKyc = async () => {
     if (box) box.innerHTML = renderKycCuenta(user);
   } else {
     if (msgEl) { msgEl.style.display = 'block'; msgEl.style.color = '#c62828'; msgEl.textContent = data.error || 'No se pudo enviar la verificación.'; }
-    dsToast({ title: 'No se pudo enviar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo enviar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -1833,7 +1834,9 @@ window.actualizarCampoKybReverso = () => {
 window.solicitarCodigoCorreoCorporativo = async () => {
   const correo = document.getElementById('kyb-correo-corporativo')?.value.trim();
   const razonSocial = document.getElementById('kyb-razon-social')?.value.trim();
-  if (!correo) { dsToast({ title: 'Falta el correo', message: 'Escribe el correo corporativo.', type: 'error' }); return; }
+  if (!correo) { dsToast    { title: 'Falta el correo', message: 'Escribe el correo corporativo.', type: 'error' });
+    return;
+  }
   const data = await api.post('/auth/kyb/correo/solicitar', { correoCorporativo: correo, razonSocial });
   if (data.ok) {
     dsToast({ title: 'Código enviado', message: 'Revisa la bandeja de ese correo.', type: 'success' });
@@ -1897,7 +1900,7 @@ window.enviarKyb = async () => {
     if (box) box.innerHTML = renderKybCuenta(user);
   } else {
     if (msgEl) { msgEl.style.display = 'block'; msgEl.style.color = '#c62828'; msgEl.textContent = data.error || 'No se pudo enviar la verificación.'; }
-    dsToast({ title: 'No se pudo enviar', message: data.error || 'Intenta de nuevo.', type: 'error' });
+    dsToast({ title: 'No se pudo enviar', message: data.error || 'Intenta de nouveau.', type: 'error' });
   }
 };
 
@@ -1914,7 +1917,6 @@ const cargarCuenta = () => {
   const planFechaInicio = user.planFechaInicio ? new Date(user.planFechaInicio) : null;
   const cargoRecurrenteAutorizado = user.cargoRecurrenteAutorizado === true;
 
-  // Calcular días restantes
   let diasRestantes = null;
   let fechaFinTexto = 'No disponible';
   if (planFechaFin && planFechaFin > new Date()) {
@@ -1922,11 +1924,9 @@ const cargarCuenta = () => {
     fechaFinTexto = planFechaFin.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
-  // Etiqueta de periodo
   const periodoLabel = planPeriodo === 'anual' ? 'Anual' : 'Mensual';
   const periodoIcon = planPeriodo === 'anual' ? '📅' : '🗓️';
 
-  // Sección de gestión de plan (solo si tiene plan de pago)
   let planManagementHTML = '';
   if (tienePlanPago) {
     const estadoPlanColor = planCancelado ? '#dc2626' : '#16a34a';
@@ -2339,9 +2339,6 @@ window.contratarPlan = (plan, periodo = 'mensual') => {
     return dsToast({ title: 'Ya tienes este plan', message: 'Actualmente cuentas con el Plan Básico.', type: 'info' });
   }
 
-  // Si es mensual, mostrar aviso de que el cargo recurrente se autoriza DESPUÉS
-  // (conforme a la ley: la autorización debe ser un acto separado y explícito,
-  //  no un checkbox oculto en la compra)
   if (plan === 'basico' && periodo === 'mensual') {
     const overlay = document.createElement('div');
     overlay.id = 'modal-previo-mensual';
@@ -2365,7 +2362,6 @@ window.contratarPlan = (plan, periodo = 'mensual') => {
     return;
   }
 
-  // Plan anual: va directo a Stripe (pago único, no es recurrente)
   const linkStripe = STRIPE_LINKS[`${plan}_${periodo}`];
   if (linkStripe) {
     window.location.href = `${linkStripe}?client_reference_id=${user._id || user.id}`;
@@ -2376,7 +2372,6 @@ window.contratarPlan = (plan, periodo = 'mensual') => {
 
 let publicarPaso = 1;
 
-// expose helpers to global scope (HTML onclick)
 window.setPublicarStep = (n) => {
   publicarPaso = Number(n) || 1;
   const max = 7;
@@ -2388,7 +2383,6 @@ window.setPublicarStep = (n) => {
     el.style.display = step === publicarPaso ? 'block' : 'none';
   });
 
-    // progress
   const dots = document.querySelectorAll('#publicar-steps .duo-step');
   dots.forEach(d => {
     const step = Number(d.getAttribute('data-step'));
@@ -2398,16 +2392,15 @@ window.setPublicarStep = (n) => {
     } else if (step < publicarPaso) {
       d.classList.add('completed');
     }
-    d.disabled = false; // Permite navegar libremente al dar clic
+    d.disabled = false;
   });
 
   const bar = document.getElementById('publicar-progress-bar');
   if (bar) {
-    const pct = ((publicarPaso - 1) / (max - 1)) * 100; // <--- Aquí estaba el paréntesis faltante
+    const pct = ((publicarPaso - 1) / (max - 1)) * 100;
     bar.style.width = pct + '%';
   }
 
-  // back/next/submit
   const backBtn = document.getElementById('publicar-back-btn');
   const nextBtn = document.getElementById('publicar-next-btn');
   const submitWrap = document.getElementById('publicar-submit-wrap');
@@ -2421,7 +2414,6 @@ window.setPublicarStep = (n) => {
 
   if (submitWrap) submitWrap.style.display = publicarPaso === 7 ? 'block' : 'none';
 
-  // Mapa: si llegamos al step 4, forzar redimensionado
   if (publicarPaso === 4) {
     if (mapaPublicar) {
       setTimeout(() => mapaPublicar.invalidateSize(), 100);
@@ -2429,7 +2421,6 @@ window.setPublicarStep = (n) => {
       iniciarMapaPublicar();
     }
   }
-  // resumen final en step 7
   if (publicarPaso === 7) {
     cargarResumenFinal();
   }
@@ -2440,7 +2431,6 @@ const marcarError = (id, mensaje) => {
   if (!el) return;
   el.style.borderColor = '#dc2626';
   el.style.boxShadow = '0 0 0 3px rgba(220,38,38,0.12)';
-  // Buscar o crear el mensaje de error debajo del campo
   const parent = el.closest('.form-grupo') || el.parentElement;
   let errMsg = parent.querySelector('.field-error-msg');
   if (!errMsg) {
@@ -2450,9 +2440,7 @@ const marcarError = (id, mensaje) => {
     parent.appendChild(errMsg);
   }
   errMsg.innerHTML = `⚠️ ${mensaje}`;
-  // Scroll al campo
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  // Link directo: focus en el campo
   setTimeout(() => el.focus(), 300);
 };
 
@@ -2468,10 +2456,7 @@ const limpiarErrores = () => {
 
 const validarPaso = (paso) => {
   limpiarErrores();
-
   const v = (id) => document.getElementById(id)?.value?.trim() || '';
-  const n = (id) => Number(document.getElementById(id)?.value || 0);
-
   switch (paso) {
     case 1: {
       let ok = true;
@@ -2561,8 +2546,6 @@ window.publicarNextStep = () => {
   const ok = validarPaso(publicarPaso);
   if (!ok) return;
   if (publicarPaso >= 7) return;
-
-  // loading state simple en el botón para pasos de envío
   const backBtn = document.getElementById('publicar-back-btn');
   const nextBtn = document.getElementById('publicar-next-btn');
   if (publicarPaso === 6 && nextBtn) {
@@ -2576,10 +2559,8 @@ window.publicarNextStep = () => {
     }, 350);
     return;
   }
-
   setPublicarStep(publicarPaso + 1);
 };
-
 
 const publicarPrevStep = () => {
   if (publicarPaso <= 1) return;
@@ -2589,7 +2570,6 @@ const publicarPrevStep = () => {
 const cargarResumenFinal = () => {
   const el = document.getElementById('publicar-final-summary');
   if (!el) return;
-
   const titulo = document.getElementById('p-titulo')?.value?.trim() || '—';
   const precio = document.getElementById('p-precio')?.value || '—';
   const operacion = document.getElementById('p-operacion')?.value || '—';
@@ -2617,7 +2597,6 @@ const cargarResumenFinal = () => {
   if (badgeEnvioUbic) badgeEnvioUbic.textContent = `Ubicación: ${ubicOk ? 'OK' : 'Pendiente'}`;
   if (badgeEnvioFotos) badgeEnvioFotos.textContent = `Fotos: ${fotosCount} (${fotosOk ? 'OK' : 'mín. 2'})`;
 
-
   el.innerHTML = `
     <div style="font-weight:800;margin-bottom:10px">Resumen final</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
@@ -2635,7 +2614,6 @@ const cargarResumenFinal = () => {
   `;
 };
 
-
 const publicarPropiedad = async () => {
   const errorEl = document.getElementById('form-error');
   const successEl = document.getElementById('form-success');
@@ -2646,7 +2624,6 @@ const publicarPropiedad = async () => {
     if (typeof window.dsToast === 'function') window.dsToast(payload);
   };
 
-
   const titulo = document.getElementById('p-titulo').value.trim();
   const precio = document.getElementById('p-precio').value;
   const operacion = document.getElementById('p-operacion').value;
@@ -2656,7 +2633,7 @@ const publicarPropiedad = async () => {
   const ciudad = document.getElementById('p-ciudad').value.trim();
   const colonia = document.getElementById('p-colonia').value.trim();
   const direccion = document.getElementById('p-direccion').value.trim();
-const recamaras = document.getElementById('p-recamaras').value;
+  const recamaras = document.getElementById('p-recamaras').value;
   const banos = document.getElementById('p-banos').value;
   const mediosBanos = document.getElementById('p-medios-banos').value;
   const estacionamientos = document.getElementById('p-estacionamientos').value;
@@ -2667,7 +2644,6 @@ const recamaras = document.getElementById('p-recamaras').value;
   if (!titulo || !precio || !operacion || !tipo || !descripcion || !estado || !ciudad) {
     const msg = 'Por favor llena todos los campos obligatorios (*)';
     errorEl.textContent = msg;
-
     errorEl.style.display = 'block';
     if (typeof window.dsToast === 'function') {
       window.dsToast({ title: 'Faltan datos', message: msg, type: 'error' });
@@ -2675,37 +2651,32 @@ const recamaras = document.getElementById('p-recamaras').value;
     return;
   }
 
-
-// Créditos aceptados (solo para venta) — se leen de los checkboxes
   let creditosAceptados = [];
   if (operacion === 'venta') {
     creditosAceptados = Array.from(document.querySelectorAll('.credito-checkbox:checked'))
       .map(el => el.value)
       .filter(Boolean);
-    // Campo "Otro crédito (especifica)"
     const otroCredito = (document.getElementById('p-credito-otro')?.value || '').trim();
     if (otroCredito) creditosAceptados.push(`Otro: ${otroCredito}`);
   }
 
-  // Remate bancario (solo venta) y Roomie (solo renta + casa/departamento)
   const esRemate = operacion === 'venta' && !!document.getElementById('p-es-remate')?.checked;
   const esRoomie = operacion === 'renta' && (tipo === 'casa' || tipo === 'departamento') && !!document.getElementById('p-es-roomie')?.checked;
 
   const body = {
     titulo, precio: Number(precio), operacion, tipo, descripcion,
     ubicacion: { estado, ciudad, colonia, direccion, lat: lat ? parseFloat(lat) : null, lng: lng ? parseFloat(lng) : null },
-caracteristicas: {
-    recamaras: Number(recamaras) || 0,
-    banos: Number(banos) || 0,
-    mediosBanos: Number(mediosBanos) || 0,
-    estacionamientos: Number(estacionamientos) || 0,
-    m2: Number(m2) || 0
-  },
-  creditosAceptados,
-  esRemate,
-  esRoomie
+    caracteristicas: {
+      recamaras: Number(recamaras) || 0,
+      banos: Number(banos) || 0,
+      mediosBanos: Number(mediosBanos) || 0,
+      estacionamientos: Number(estacionamientos) || 0,
+      m2: Number(m2) || 0
+    },
+    creditosAceptados,
+    esRemate,
+    esRoomie
   };
-
 
   const btn = document.querySelector('#sec-nueva-propiedad .btn-primary');
   if (btn) {
@@ -2715,15 +2686,12 @@ caracteristicas: {
 
   showToast({ title: 'Enviando', message: 'Tu publicación se está enviando a revisión.', type: 'info', duration: 2200 });
 
-
-
   const data = await api.post('/propiedades', body);
 
   if (data.ok) {
     const fotosInput = document.getElementById('p-fotos');
     if (fotosInput.files.length > 0) {
       const formData = new FormData();
-      // enviar en el orden seleccionado; foto portada al inicio
       const ordered = fotosOrden && fotosOrden.length ? fotosOrden.slice() : Array.from(fotosInput.files).map(file => ({ file }));
       if (ordered.length > 0 && fotoPortadaIdx >= 0 && fotoPortadaIdx < ordered.length) {
         const portada = ordered.splice(fotoPortadaIdx, 1)[0];
@@ -2753,19 +2721,15 @@ caracteristicas: {
   }
 };
 
-// Forzar carga del resumen al entrar al dashboard y detectar modo edición
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     cargarResumenUsuario();
   }, 300);
 
-  // ✅ DETECTAR SI EL ADMIN ENTRÓ EN MODO EDICIÓN
   const params = new URLSearchParams(window.location.search);
   const editarId = params.get('editar');
   if (editarId && /^[a-fA-F0-9]{24}$/.test(editarId)) {
-    // Limpiamos la URL para que no se quede trabado en modo edición si recarga
     window.history.replaceState({}, document.title, window.location.pathname);
-    // Abrimos la sección de nueva propiedad y cargamos los datos
     if (typeof mostrarSeccion === 'function') {
       mostrarSeccion('nueva-propiedad');
       setTimeout(() => {
@@ -2800,11 +2764,9 @@ window._2faConfirmarDesactivar = async () => {
   const btn = document.getElementById('btn-2fa-confirm-off');
   if (!btn) return;
   
-  // Obtener la contraseña que el usuario escribió
   const passwordInput = document.getElementById('ds-2fa-password-input');
   const password = passwordInput ? passwordInput.value.trim() : '';
 
-  // Validar que no esté vacía
   if (!password) {
     btn.textContent = 'Sí, desactivar';
     btn.disabled = false;
@@ -2815,7 +2777,6 @@ window._2faConfirmarDesactivar = async () => {
   btn.textContent = 'Desactivando...';
   btn.disabled = true;
   try {
-    // Enviar la contraseña al backend
     const data = await api.post('/auth/2fa/desactivar', { password: password });
     if (data.ok) {
       const user = auth.getUser();
@@ -2866,5 +2827,177 @@ window.guardarNuevaPassword = async () => {
     }
   } catch (error) {
     dsToast({ title: 'Error de conexión', message: 'No se pudo conectar con el servidor.', type: 'error' });
+  }
+};
+
+// ==========================================
+// ✅ CRM EMBUDO DE VENTAS (KANBAN)
+// ==========================================
+let crmLeadsData = [];
+
+const cargarCRMLeads = async () => {
+  const board = document.getElementById('kanban-board');
+  if (!board) return;
+  board.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-light)">Cargando embudo...</div>';
+  try {
+    const data = await api.get('/leads/crm');
+    if (!data.ok) throw new Error('Error al cargar leads');
+    
+    crmLeadsData = Object.values(data.embudo).flat();
+
+    const etapas = ['nuevo', 'contactado', 'visita_agendada', 'en_negociacion', 'ganado', 'perdido'];
+    const labels = {
+      nuevo: '🆕 Nuevo', 
+      contactado: '📞 Contactado', 
+      visita_agendada: '📅 Visita Agendada', 
+      en_negociacion: '🤝 En Negociación', 
+      ganado: '🎉 Ganado', 
+      perdido: '❌ Perdido'
+    };
+
+    let html = '';
+    etapas.forEach(etapa => {
+      const leadsEnEtapa = data.embudo[etapa] || [];
+      html += `
+        <div class="kanban-column" data-etapa="${etapa}">
+          <div class="kanban-column-header">
+            <span>${labels[etapa]}</span>
+            <span class="kanban-column-count">${leadsEnEtapa.length}</span>
+          </div>
+          <div class="kanban-cards-container" data-etapa="${etapa}">
+            ${leadsEnEtapa.map(lead => `
+              <div class="kanban-card" draggable="true" data-lead-id="${lead._id}" onclick="abrirModalLead('${lead._id}')">
+                <div style="display:flex;align-items:center;margin-bottom:8px;">
+                  <div class="lead-card-avatar">${(lead.nombre || '?').charAt(0).toUpperCase()}</div>
+                  <div class="lead-card-info">
+                    <div class="lead-card-name">${escapeHtmlLocal(lead.nombre)}</div>
+                    <div class="lead-card-prop">${escapeHtmlLocal(lead.propiedadInteres?.titulo || 'Directo')}</div>
+                  </div>
+                </div>
+                <div style="font-size:12px;color:var(--text-light);display:flex;gap:10px;">
+                  <span>📅 ${new Date(lead.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}</span>
+                  ${lead.presupuesto ? `<span>💰 $${Number(lead.presupuesto).toLocaleString('es-MX')}</span>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    });
+    board.innerHTML = html;
+    initDragAndDropCRM();
+  } catch (error) {
+    board.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:red">Error: ${error.message}</div>`;
+  }
+};
+
+const initDragAndDropCRM = () => {
+  let draggedCard = null;
+  let draggedLeadId = null;
+
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    card.addEventListener('dragstart', (e) => {
+      draggedCard = e.target;
+      draggedLeadId = e.target.dataset.leadId;
+      setTimeout(() => e.target.classList.add('dragging'), 0);
+    });
+    card.addEventListener('dragend', (e) => {
+      e.target.classList.remove('dragging');
+      draggedCard = null;
+      draggedLeadId = null;
+    });
+  });
+
+  document.querySelectorAll('.kanban-column').forEach(col => {
+    col.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      col.classList.add('drop-active');
+    });
+    col.addEventListener('dragleave', (e) => {
+      col.classList.remove('drop-active');
+    });
+    col.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      col.classList.remove('drop-active');
+      if (!draggedLeadId) return;
+
+      const nuevaEtapa = col.dataset.etapa;
+      const dropContainer = col.querySelector('.kanban-cards-container');
+      if (draggedCard && dropContainer) {
+        dropContainer.appendChild(draggedCard);
+      }
+
+      try {
+        const res = await api.put(`/leads/${draggedLeadId}/mover`, { nuevaEtapa });
+        if (!res.ok) throw new Error('No se pudo mover');
+        
+        document.querySelectorAll('.kanban-column').forEach(c => {
+          const count = c.querySelectorAll('.kanban-card').length;
+          c.querySelector('.kanban-column-count').textContent = count;
+        });
+
+        dsToast({ title: 'Lead movido', message: `Ahora en: ${nuevaEtapa}`, type: 'success', duration: 2000 });
+      } catch (err) {
+        dsToast({ title: 'Error', message: 'No se pudo guardar el cambio.', type: 'error' });
+        cargarCRMLeads(); 
+      }
+    });
+  });
+};
+
+window.abrirModalLead = (leadId) => {
+  const modal = document.getElementById('crm-lead-modal');
+  const content = document.getElementById('crm-lead-modal-content');
+  if (!modal || !content) return;
+
+  const lead = crmLeadsData.find(l => l._id === leadId);
+  if (!lead) return;
+
+  content.innerHTML = `
+    <h3 style="margin-bottom:12px">${escapeHtmlLocal(lead.nombre)}</h3>
+    <p style="font-size:14px;color:var(--text-light);margin-bottom:16px;">
+      ${lead.email ? `✉️ ${escapeHtmlLocal(lead.email)}<br>` : ''}
+      ${lead.telefono ? `📞 ${escapeHtmlLocal(lead.telefono)}<br>` : ''}
+      ${lead.propiedadInteres ? `🏠 ${escapeHtmlLocal(lead.propiedadInteres.titulo)}<br>` : ''}
+      ${lead.presupuesto ? `💰 Presupuesto: $${Number(lead.presupuesto).toLocaleString('es-MX')}` : ''}
+    </p>
+    
+    <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px;">
+      <h4 style="font-size:14px;margin-bottom:8px;">Notas internas</h4>
+      <div id="lead-notas-list" style="max-height:150px;overflow-y:auto;margin-bottom:12px;">
+        ${lead.notasInternas && lead.notasInternas.length > 0 ? lead.notasInternas.map(n => `
+          <div style="background:var(--bg-secondary);padding:8px 12px;border-radius:8px;margin-bottom:6px;font-size:13px;">
+            <div>${escapeHtmlLocal(n.texto)}</div>
+            <div style="font-size:11px;color:var(--text-light);margin-top:4px;">${new Date(n.createdAt).toLocaleString('es-MX')}</div>
+          </div>
+        `).join('') : '<div style="font-size:12px;color:var(--text-light)">Sin notas aún.</div>'}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="lead-nota-input" class="form-input" placeholder="Escribe una nota..." style="flex:1;padding:8px 12px;font-size:14px;">
+        <button class="btn btn-primary" onclick="guardarNotaLead('${lead._id}')">Guardar</button>
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+};
+
+window.guardarNotaLead = async (leadId) => {
+  const input = document.getElementById('lead-nota-input');
+  const texto = input.value.trim();
+  if (!texto) return;
+
+  try {
+    const res = await api.post(`/leads/${leadId}/notas`, { texto });
+    if (res.ok) {
+      const lead = crmLeadsData.find(l => l._id === leadId);
+      if (lead) {
+        lead.notasInternas = lead.notasInternas || [];
+        lead.notasInternas.push(res.nota);
+      }
+      abrirModalLead(leadId);
+      dsToast({ title: 'Nota guardada', type: 'success', duration: 2000 });
+    }
+  } catch (e) {
+    dsToast({ title: 'Error', message: 'No se pudo guardar la nota', type: 'error' });
   }
 };

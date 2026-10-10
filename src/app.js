@@ -25,6 +25,9 @@ const { webhookStripe } = require('./routes/pagos');
 const { iniciarMarketingAutomation } = require('../services/marketingAutomation');
 const metaOAuthRoutes = require('../services/marketingAutomation/auth/metaOAuth.routes');
 
+// ✅ NUEVO: CRM DE LEADS
+const leadRoutes = require('./routes/lead.routes'); 
+
 // ==========================================
 // MÓDULOS NUEVOS: AGENTES FUNDADORES & SEO
 // ==========================================
@@ -83,7 +86,6 @@ app.use(helmet({
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "fonts.gstatic.com", "unpkg.com"],
       fontSrc: ["'self'", "fonts.googleapis.com", "fonts.gstatic.com"],
-      // ✅ SOLUCIÓN: Se agregó "images.unsplash.com" al final de imgSrc
       imgSrc: ["'self'", "data:", "blob:", "res.cloudinary.com", "*.cloudinary.com", "*.tile.openstreetmap.org", "*.basemaps.cartocdn.com", "nominatim.openstreetmap.org", "unpkg.com", "api.qrserver.com", "images.unsplash.com"],
       connectSrc: ["'self'", "nominatim.openstreetmap.org", "ip-api.com", "*.openstreetmap.org", "unpkg.com", "api.zippopotam.us", "api.groq.com", "generativelanguage.googleapis.com"],
       workerSrc: ["'self'", "blob:"],
@@ -125,6 +127,9 @@ app.use('/api/chat', chatbotRoutes);
 app.use('/api/services', servicesRoutes);
 app.use('/api/reportes', reportRoutes);
 app.use('/api', pagoRoutes);
+
+// ✅ NUEVO: RUTAS DEL CRM DE LEADS
+app.use('/api/leads', leadRoutes);
 
 // ==========================================
 // DIRECTORIO DE INMOBILIARIAS/AGENTES VERIFICADOS (FILTRO ESTRICTO)
@@ -208,11 +213,6 @@ app.use('/api/fundadores', foundersRoutes);
 app.use(propertiesRoutes); // Maneja /p/:slug (página pública compartible)
 
 // Páginas del landing de Agentes Fundadores (registro público, sin login)
-// Antes esto mandaba al formulario público sin cuenta (founders.html). Ya
-// no: todo registro al programa de Agentes Fundadores debe pasar por una
-// cuenta gratuita real de la plataforma — esta página explica el programa
-// y manda a crear cuenta (o iniciar sesión), guardando el código de quien
-// invitó para dar el crédito automáticamente tras el registro.
 app.get('/agentes-fundadores', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/pages/embajador-invitacion.html'));
 });
@@ -302,7 +302,6 @@ const bajarPlanesVencidos = async () => {
 // ==========================================
 // CRON NATIVO: ENVÍO DE CORREOS SEMANALES (Lunes 9:00 AM)
 // ==========================================
-// No requiere instalar 'node-cron', usa setInterval nativo de Node.js
 const FounderModel = require('./nuevo-modulo/models/Founder');
 const UserModel = require('./models/User');
 const { enviarResumenEmbajador } = require('./utils/email'); // Ajusta la ruta si es necesario

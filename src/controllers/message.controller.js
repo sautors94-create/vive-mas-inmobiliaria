@@ -1,6 +1,7 @@
 const Message = require('../models/Message');
 const Property = require('../models/Property');
 const User = require('../models/User');
+const Lead = require('../models/Lead'); // ✅ Importamos el modelo de Lead
 const BannedUser = require('../models/BannedUser');
 const { enviarNotificacionMensaje } = require('../utils/email');
 
@@ -49,6 +50,38 @@ const analizarRiesgo = (texto) => {
 };
 
 // ==========================================
+// HELPER: CREAR O ACTUALIZAR LEAD (CRM)
+// ==========================================
+const crearOActualizarLeadCRM = async (remitenteId, propietarioId, propiedadId) => {
+  try {
+    // Verificamos si ya existe un lead para este usuario y propiedad
+    let lead = await Lead.findOne({ 
+      usuarioRegistrado: remitenteId, 
+      propiedadInteres: propiedadId 
+    });
+
+    if (!lead) {
+      const usuario = await User.findById(remitenteId).select('nombre email telefono');
+      if (usuario) {
+        lead = await Lead.create({
+          nombre: usuario.nombre,
+          telefono: usuario.telefono || 'Sin teléfono',
+          email: usuario.email,
+          tipo: 'servicio',
+          status: 'nuevo', // Entra al embudo como "Nuevo"
+          usuarioRegistrado: remitenteId,
+          atendidoPor: propietarioId,
+          propiedadInteres: propiedadId
+        });
+      }
+    }
+    return lead;
+  } catch (error) {
+    console.error('Error en CRM Lead:', error.message);
+  }
+};
+
+// ==========================================
 // ENVIAR MENSAJE (P2P con restricción de plan)
 // ==========================================
 const enviarMensaje = async (req, res) => {
@@ -57,30 +90,22 @@ const enviarMensaje = async (req, res) => {
     if (!mensaje || !mensaje.trim()) return res.status(400).json({ error: 'El mensaje es requerido' });
     if (!destinatarioId) return res.status(400).json({ error: 'Destinatario requerido' });
 
-    // No enviarse a sí mismo
     if (destinatarioId === req.user.id) {
       return res.status(400).json({ error: 'No puedes enviarte mensajes a ti mismo' });
     }
 
-    // Verificar que destinatario existe
     const destinoUser = await User.findById(destinatarioId);
     if (!destinoUser) return res.status(404).json({ error: 'Destinatario no encontrado' });
 
-    // Verificar si está vetado (remitente O destinatario)
     const vetadoRemitente = await BannedUser.findOne({ usuario: req.user.id, activo: true });
     if (vetadoRemitente) return res.status(403).json({ error: 'Tu cuenta tiene restricciones de mensajería. Contacta soporte.' });
 
     const vetadoDestino = await BannedUser.findOne({ usuario: destinatarioId, activo: true });
     if (vetadoDestino) return res.status(403).json({ error: 'No puedes enviar mensajes a este usuario.' });
 
-    // Determinar conversacionId
     const propId = propiedadId || null;
     const conversacionId = generarConversacionId(req.user.id, destinatarioId, propId);
 
-    // ==========================================
-    // RESTRICCIÓN: Usuario gratuito respondiendo como vendedor
-    // Un vendedor es quien es propietario de la propiedad en la conversación
-    // ==========================================
     if (propId) {
       const propiedad = await Property.findById(propId);
       if (propiedad && propiedad.propietario.toString() === req.user.id) {
@@ -88,7 +113,6 @@ const enviarMensaje = async (req, res) => {
         const esGratuito = (user.plan || 'gratuito').toLowerCase() === 'gratuito' && user.role !== 'basico_plus';
 
         if (esGratuito) {
-          // Contar respuestas previas del vendedor en esta conversación
           const respuestasVendedor = await Message.countDocuments({
             conversacionId,
             remitente: req.user.id
@@ -103,12 +127,15 @@ const enviarMensaje = async (req, res) => {
           }
         }
       }
+      
+      // ✅ Crear Lead en el CRM si es un cliente contactando al propietario
+      if (propiedad && propiedad.propietario.toString() !== req.user.id) {
+        await crearOActualizarLeadCRM(req.user.id, propiedad.propietario, propId);
+      }
     }
 
-    // Analizar riesgo
     const analisis = analizarRiesgo(mensaje);
 
-    // Crear mensaje
     const nuevoMensaje = await Message.create({
       propiedad: propId,
       conversacionId,
@@ -123,7 +150,6 @@ const enviarMensaje = async (req, res) => {
     await nuevoMensaje.populate('remitente', 'nombre email avatar');
     await nuevoMensaje.populate('destinatario', 'nombre email avatar');
 
-    // Notificación por email (solo si hay propiedad)
     if (propId) {
       const propiedad = await Property.findById(propId).populate('propietario', 'nombre email notificaciones');
       if (propiedad && propiedad.propietario) {
@@ -152,23 +178,25 @@ const enviarMensaje = async (req, res) => {
 };
 
 // ==========================================
-// LISTA DE CONVERSACIONES (inbox)
+// LISTA DE CONVERSACIONES (INBOX - SOLO CLIENTES)
 // ==========================================
 const misConversaciones = async (req, res) => {
   try {
-    // Obtener todos los conversationId donde participa el usuario
+    // ✅ FILTRAMOS: Ignoramos mensajes del sistema para no ensuciar el inbox de leads
     const mensajes = await Message.find({
-      $or: [{ remitente: req.user.id }, { destinatario: req.user.id }]
+      $and: [
+        { $or: [{ remitente: req.user.id }, { destinatario: req.user.id }] },
+        { esSistema: { $ne: true } } 
+      ]
     }).select('conversacionId').distinct('conversacionId');
 
     if (mensajes.length === 0) {
       return res.json({ ok: true, conversaciones: [] });
     }
 
-    // Para cada conversación, obtener el último mensaje y datos del otro usuario
     const conversaciones = [];
     for (const convId of mensajes) {
-      const ultimo = await Message.findOne({ conversacionId: convId })
+      const ultimo = await Message.findOne({ conversacionId: convId, esSistema: { $ne: true } })
         .sort({ createdAt: -1 })
         .populate('remitente', 'nombre email avatar')
         .populate('destinatario', 'nombre email avatar')
@@ -176,20 +204,18 @@ const misConversaciones = async (req, res) => {
 
       if (!ultimo) continue;
 
-      // Determinar el "otro" usuario
       const otroUsuario = ultimo.remitente._id.toString() === req.user.id
         ? ultimo.destinatario
         : ultimo.remitente;
 
-      // Contar no leídos
       const noLeidos = await Message.countDocuments({
         conversacionId: convId,
         destinatario: req.user.id,
-        leido: false
+        leido: false,
+        esSistema: { $ne: true }
       });
 
-      // Total mensajes
-      const total = await Message.countDocuments({ conversacionId: convId });
+      const total = await Message.countDocuments({ conversacionId: convId, esSistema: { $ne: true } });
 
       conversaciones.push({
         conversacionId: convId,
@@ -202,7 +228,6 @@ const misConversaciones = async (req, res) => {
       });
     }
 
-    // Ordenar por último mensaje
     conversaciones.sort((a, b) => new Date(b.ultimoMensajeFecha) - new Date(a.ultimoMensajeFecha));
 
     res.json({ ok: true, conversaciones });
@@ -223,7 +248,6 @@ const conversacionPorId = async (req, res) => {
       .populate('propiedad', 'titulo fotos precio ubicacion')
       .sort({ createdAt: 1 });
 
-    // Marcar como leídos los que son para mí
     await Message.updateMany(
       { conversacionId, destinatario: req.user.id, leido: false },
       { leido: true }
@@ -236,7 +260,7 @@ const conversacionPorId = async (req, res) => {
 };
 
 // ==========================================
-// CONVERSACIÓN POR PROIEDAD (compatibilidad con vista anterior)
+// CONVERSACIÓN POR PROPIEDAD (compatibilidad)
 // ==========================================
 const conversacionPropiedad = async (req, res) => {
   try {
@@ -255,7 +279,80 @@ const conversacionPropiedad = async (req, res) => {
   }
 };
 
+// ==========================================
+// COMPATIBILIDAD: propiedad.html envía POST /mensajes/:id
+// ==========================================
+const enviarMensajePropiedad = async (req, res) => {
+  try {
+    const { mensaje } = req.body;
+    if (!mensaje) return res.status(400).json({ error: 'El mensaje es requerido' });
 
+    const propiedad = await Property.findById(req.params.id)
+      .populate('propietario', 'nombre email notificaciones');
+      
+    if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
+    if (propiedad.propietario._id.toString() === req.user.id) {
+      return res.status(400).json({ error: 'No puedes enviarte mensajes a ti mismo' });
+    }
+
+    const remitente = await User.findById(req.user.id).select('nombre');
+    const propId = req.params.id;
+    const conversacionId = generarConversacionId(req.user.id, propiedad.propietario._id.toString(), propId);
+
+    const vetadoR = await BannedUser.findOne({ usuario: req.user.id, activo: true });
+    if (vetadoR) return res.status(403).json({ error: 'Tu cuenta tiene restricciones de mensajería.' });
+    const vetadoD = await BannedUser.findOne({ usuario: propiedad.propietario._id, activo: true });
+    if (vetadoD) return res.status(403).json({ error: 'No puedes enviar mensajes a este usuario.' });
+
+    const user = await User.findById(req.user.id);
+    if ((user.plan || 'gratuito').toLowerCase() === 'gratuito' && user.role !== 'basico_plus') {
+      const respuestas = await Message.countDocuments({ conversacionId, remitente: req.user.id });
+      if (respuestas >= 1) {
+        return res.status(403).json({
+          error: 'Límite de respuestas alcanzado',
+          detalle: 'Los usuarios del plan Gratuito solo pueden responder 1 vez como vendedores.',
+          limiteAlcanzado: true
+        });
+      }
+    }
+
+    const analisis = analizarRiesgo(mensaje);
+
+    const nuevoMensaje = await Message.create({
+      propiedad: propId,
+      conversacionId,
+      remitente: req.user.id,
+      destinatario: propiedad.propietario._id,
+      mensaje: mensaje.trim(),
+      riesgo: analisis.riesgo,
+      riesgoFlags: analisis.riesgoFlags,
+      riesgoRevision: analisis.riesgoRevision
+    });
+
+    await nuevoMensaje.populate('remitente', 'nombre email avatar');
+    await nuevoMensaje.populate('destinatario', 'nombre email avatar');
+
+    // ✅ Crear Lead en el CRM
+    await crearOActualizarLeadCRM(req.user.id, propiedad.propietario._id, propId);
+
+    const notifs = propiedad.propietario.notificaciones;
+    if (!notifs || notifs.mensajes !== false) {
+      try {
+        await enviarNotificacionMensaje(
+          propiedad.propietario.email,
+          propiedad.propietario.nombre,
+          remitente.nombre,
+          propiedad.titulo,
+          mensaje
+        );
+      } catch (e) { console.log('Error email:', e.message); }
+    }
+
+    res.status(201).json({ ok: true, mensaje: 'Mensaje enviado', data: nuevoMensaje });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 // ==========================================
 // ADMIN: Monitoreo de mensajes con riesgo
@@ -269,7 +366,6 @@ const mensajesConRiesgo = async (req, res) => {
     if (revision === 'true') filtro.riesgoRevision = true;
     if (revision === 'false') filtro.riesgoRevision = false;
 
-    // Excluir bajo riesgo por defecto
     if (!nivel) filtro.riesgo = { $ne: 'bajo' };
 
     const total = await Message.countDocuments(filtro);
@@ -281,7 +377,6 @@ const mensajesConRiesgo = async (req, res) => {
       .skip((page - 1) * limit)
       .limit(Number(limit));
 
-    // Resumen de riesgo
     const resumen = await Message.aggregate([
       { $group: { _id: '$riesgo', total: { $sum: 1 } } }
     ]);
@@ -301,7 +396,6 @@ const mensajesConRiesgo = async (req, res) => {
   }
 };
 
-// ADMIN: Marcar mensaje como revisado
 const marcarMensajeRevisado = async (req, res) => {
   try {
     await Message.findByIdAndUpdate(req.params.id, { riesgoRevision: false });
@@ -311,7 +405,6 @@ const marcarMensajeRevisado = async (req, res) => {
   }
 };
 
-// ADMIN: KPIs para el módulo de Monitoreo
 const getRiesgoStats = async (req, res) => {
   try {
     const ahora = new Date();
@@ -346,7 +439,6 @@ const getRiesgoStats = async (req, res) => {
   }
 };
 
-// ADMIN: Exportar mensajes de riesgo a Excel
 const exportarMensajesRiesgoExcel = async (req, res) => {
   try {
     const { nivel, revision } = req.query;
@@ -392,87 +484,10 @@ const exportarMensajesRiesgoExcel = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 // ==========================================
-// COMPATIBILIDAD: propiedad.html envía POST /mensajes/:id
-// con solo { mensaje } — formato viejo
+// PURGAR MENSAJES ANTIGUOS
 // ==========================================
-const enviarMensajePropiedad = async (req, res) => {
-  try {
-    const { mensaje } = req.body;
-    if (!mensaje) return res.status(400).json({ error: 'El mensaje es requerido' });
-
-    const propiedad = await Property.findById(req.params.id)
-      .populate('propietario', 'nombre email notificaciones');
-    if (!propiedad) return res.status(404).json({ error: 'Propiedad no encontrada' });
-    if (propiedad.propietario._id.toString() === req.user.id) {
-      return res.status(400).json({ error: 'No puedes enviarte mensajes a ti mismo' });
-    }
-
-    const remitente = await User.findById(req.user.id).select('nombre');
-    const propId = req.params.id;
-    const conversacionId = generarConversacionId(req.user.id, propiedad.propietario._id.toString(), propId);
-
-    // Verificar vetado
-    const BannedUser = require('../models/BannedUser');
-    const vetadoR = await BannedUser.findOne({ usuario: req.user.id, activo: true });
-    if (vetadoR) return res.status(403).json({ error: 'Tu cuenta tiene restricciones de mensajería.' });
-    const vetadoD = await BannedUser.findOne({ usuario: propiedad.propietario._id, activo: true });
-    if (vetadoD) return res.status(403).json({ error: 'No puedes enviar mensajes a este usuario.' });
-
-    // Restricción gratuito respondiendo como vendedor
-    const user = await User.findById(req.user.id);
-    if ((user.plan || 'gratuito').toLowerCase() === 'gratuito' && user.role !== 'basico_plus') {
-      const respuestas = await Message.countDocuments({ conversacionId, remitente: req.user.id });
-      if (respuestas >= 1) {
-        return res.status(403).json({
-          error: 'Límite de respuestas alcanzado',
-          detalle: 'Los usuarios del plan Gratuito solo pueden responder 1 vez como vendedores.',
-          limiteAlcanzado: true
-        });
-      }
-    }
-
-    // Analizar riesgo
-    const analisis = analizarRiesgo(mensaje);
-
-    const nuevoMensaje = await Message.create({
-      propiedad: propId,
-      conversacionId,
-      remitente: req.user.id,
-      destinatario: propiedad.propietario._id,
-      mensaje: mensaje.trim(),
-      riesgo: analisis.riesgo,
-      riesgoFlags: analisis.riesgoFlags,
-      riesgoRevision: analisis.riesgoRevision
-    });
-
-    await nuevoMensaje.populate('remitente', 'nombre email avatar');
-    await nuevoMensaje.populate('destinatario', 'nombre email avatar');
-
-    // Notificación email
-    const notifs = propiedad.propietario.notificaciones;
-    if (!notifs || notifs.mensajes !== false) {
-      try {
-        await enviarNotificacionMensaje(
-          propiedad.propietario.email,
-          propiedad.propietario.nombre,
-          remitente.nombre,
-          propiedad.titulo,
-          mensaje
-        );
-      } catch (e) { console.log('Error email:', e.message); }
-    }
-
-    res.status(201).json({ ok: true, mensaje: 'Mensaje enviado', data: nuevoMensaje });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// Purga mensajes con más de 6 meses de antigüedad. No toca los marcados para
-// revisión de riesgo ni los de riesgo medio/alto/crítico, para no perder
-// evidencia de moderación. Usada por el cron automático en app.js y por el
-// endpoint manual de admin.
 const purgarMensajesAntiguos = async () => {
   const limite = new Date();
   limite.setMonth(limite.getMonth() - 6);
