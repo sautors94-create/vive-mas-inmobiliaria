@@ -186,7 +186,7 @@
     }
   };
 
-  // ==========================================
+   // ==========================================
   // CARGAR PROPIEDAD
   // ==========================================
   const cargarPropiedad = async () => {
@@ -348,6 +348,13 @@
       actualizarBotonFavorito();
     }
 
+    // ✅ ACTIVAR CARRUSEL DE IMÁGENES
+    const galleryImages = document.querySelectorAll('.propiedad-galeria img');
+    galleryImages.forEach((img, index) => {
+      img.style.cursor = 'pointer';
+      img.addEventListener('click', () => abrirCarrusel(fotosValidas, index));
+    });
+
     // LINKS DE MAPAS
     if (tieneCoordsPublicas) {
       const coordenadas = `${latPublica},${lngPublica}`;
@@ -378,6 +385,7 @@
       }, 100);
     }
   };
+  
   // ==========================================
   // ENVIAR MENSAJE
   // ==========================================

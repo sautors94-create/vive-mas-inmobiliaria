@@ -87,46 +87,47 @@
   <script src="../js/propiedad.js"></script>
   <script src="../js/chatbot.js"></script>
   <script src="../js/social-widget.js"></script>
-  <!-- LIGHTBOX PARA VER IMÁGENES GRANDES -->
-<style>
-  .vm-lightbox {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.9);
-    z-index: 10000;
-    justify-content: center;
-    align-items: center;
-    cursor: zoom-out;
-  }
-  .vm-lightbox img {
-    max-width: 90%;
-    max-height: 90%;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  }
-</style>
 
-<div id="vm-lightbox" class="vm-lightbox" onclick="this.style.display='none'">
-  <img src="" id="vm-lightbox-img" alt="Imagen ampliada">
-</div>
+  <!-- CARRUSEL / LIGHTBOX DE IMÁGENES -->
+  <div id="vm-lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:10000;justify-content:center;align-items:center;flex-direction:column;">
+    <button id="vm-lb-close" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.2);color:white;border:none;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;z-index:2;">✕</button>
+    <div style="position:relative;width:100%;height:100%;display:flex;justify-content:center;align-items:center;">
+      <button id="vm-lb-prev" style="position:absolute;left:20px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.2);color:white;border:none;width:50px;height:50px;border-radius:50%;font-size:24px;cursor:pointer;z-index:2;">←</button>
+      <img id="vm-lb-img" src="" alt="Imagen ampliada" style="max-width:90%;max-height:85%;object-fit:contain;border-radius:8px;pointer-events:none;">
+      <button id="vm-lb-next" style="position:absolute;right:20px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.2);color:white;border:none;width:50px;height:50px;border-radius:50%;font-size:24px;cursor:pointer;z-index:2;">→</button>
+    </div>
+    <div id="vm-lb-counter" style="position:absolute;bottom:20px;color:white;font-size:14px;background:rgba(0,0,0,0.5);padding:5px 12px;border-radius:20px;"></div>
+  </div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // Selecciona las imágenes principales de la galería de la propiedad
-    const mainImages = document.querySelectorAll('.propiedad-galeria img, .galeria-main img');
-    const lightbox = document.getElementById('vm-lightbox');
-    const lightboxImg = document.getElementById('vm-lightbox-img');
-    
-    mainImages.forEach(img => {
-      img.style.cursor = 'zoom-in';
-      img.addEventListener('click', (e) => {
-        e.stopPropagation(); // Evita que abra el drawer si está dentro de una tarjeta
-        lightboxImg.src = img.src;
-        lightbox.style.display = 'flex';
-      });
-    });
-  });
-</script>
+  <script>
+    let vmLbImagenes = [];
+    let vmLbIndice = 0;
+    const vmLbOverlay = document.getElementById('vm-lightbox');
+    const vmLbImg = document.getElementById('vm-lb-img');
+    const vmLbCounter = document.getElementById('vm-lb-counter');
+
+    function abrirCarrusel(imagenes, inicio) {
+      vmLbImagenes = imagenes;
+      vmLbIndice = inicio;
+      vmLbOverlay.style.display = 'flex';
+      actualizarCarrusel();
+    }
+    function actualizarCarrusel() {
+      vmLbImg.src = vmLbImagenes[vmLbIndice];
+      vmLbCounter.textContent = `${vmLbIndice + 1} / ${vmLbImagenes.length}`;
+    }
+    document.getElementById('vm-lb-close').onclick = () => vmLbOverlay.style.display = 'none';
+    vmLbOverlay.onclick = (e) => { if (e.target === vmLbOverlay) vmLbOverlay.style.display = 'none'; };
+    document.getElementById('vm-lb-prev').onclick = (e) => {
+      e.stopPropagation();
+      vmLbIndice = (vmLbIndice - 1 + vmLbImagenes.length) % vmLbImagenes.length;
+      actualizarCarrusel();
+    };
+    document.getElementById('vm-lb-next').onclick = (e) => {
+      e.stopPropagation();
+      vmLbIndice = (vmLbIndice + 1) % vmLbImagenes.length;
+      actualizarCarrusel();
+    };
+  </script>
 </body>
 </html>
