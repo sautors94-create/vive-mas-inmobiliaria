@@ -797,7 +797,7 @@ const eliminarFotoPreview = (idx) => {
   const input = document.getElementById('p-fotos');
   if (input) {
     const dt = new DataTransfer();
-    fotosOrden.forEach(x => dt.items.add(x.file);
+    fotosOrden.forEach(x => dt.items.add(x.file));
     input.files = dt.files;
   }
   renderFotosPreview();

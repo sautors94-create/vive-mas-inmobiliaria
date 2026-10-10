@@ -14,7 +14,6 @@
   <link rel="stylesheet" href="../css/dashboard.css">
   <link rel="stylesheet" href="../css/mis-propiedades-workspace.css">
   <link rel="stylesheet" href="../css/topbar-premium.css">
-  <link rel="stylesheet" href="../css/mobile-rescue.css">
 
   <!-- ===== ESTILOS DEL PROGRAMA DE EMBAJADORES ===== -->
   <style>
@@ -1952,6 +1951,56 @@
       }
     });
   </script>
-  <script src="../js/mobile-rescue.js"></script>
+ <!-- SCRIPT DE RESCATE MÓVIL Y BOTONES FLOTANTES -->
+<style>
+  @media (max-width: 900px) {
+    .dashboard-layout { grid-template-columns: 1fr !important; height: auto !important; padding-top: 120px !important; }
+    .dashboard-sidebar { display: none !important; }
+    .dashboard-main { width: 100% !important; padding: 15px !important; }
+    .ds-topbar-inner { flex-wrap: wrap !important; gap: 10px !important; }
+    .ds-topbar-search { display: none !important; }
+    .ds-topbar-right { width: 100% !important; justify-content: center !important; }
+    .mod-header { flex-direction: column !important; align-items: flex-start !important; }
+    .mod-header-actions { margin-top: 10px; flex-wrap: wrap; }
+    .mod-kpis { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+    .mod-filters { flex-direction: column !important; }
+    .mod-filters > * { width: 100% !important; margin-bottom: 10px !important; }
+    .stats-grid { grid-template-columns: 1fr !important; }
+    .form-grid { grid-template-columns: 1fr !important; }
+    .ds-stepper-steps { display: none !important; }
+    .publicar-step-actions { flex-direction: column-reverse !important; }
+    .publicar-step-actions button { width: 100% !important; margin-top: 10px !important; }
+    .propiedad-layout { grid-template-columns: 1fr !important; }
+    .mpw-body { grid-template-columns: 1fr !important; }
+    table { font-size: 12px; }
+    .vm-floating-btns { position: fixed; bottom: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 12px; }
+    .vm-floating-btns a, .vm-floating-btns button { 
+      width: 55px; height: 55px; border-radius: 50%; 
+      background: var(--primary, #1a472a); color: white; 
+      display: flex; align-items: center; justify-content: center; 
+      font-size: 24px; text-decoration: none; border: none; cursor: pointer; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: transform 0.2s;
+    }
+    .vm-floating-btns a:active, .vm-floating-btns button:active { transform: scale(0.9); }
+    .vm-floating-btns .vm-logout-btn { background: #dc2626; }
+    .kanban-board { flex-direction: column; }
+    .kanban-column { min-width: 100%; }
+  }
+</style>
+<script>
+  (function() {
+    if (window.innerWidth <= 900) {
+      document.addEventListener('DOMContentLoaded', function() {
+        var floatDiv = document.createElement('div');
+        floatDiv.className = 'vm-floating-btns';
+        floatDiv.innerHTML = `
+          <a href="/" title="Ir al Inicio">🏠</a>
+          <button class="vm-logout-btn" title="Cerrar Sesión" onclick="if(window.auth && auth.logout){auth.logout()} else {window.location.href='login.html'}">⏻</button>
+        `;
+        document.body.appendChild(floatDiv);
+      });
+    }
+  })();
+</script>
 </body>
 </html>
