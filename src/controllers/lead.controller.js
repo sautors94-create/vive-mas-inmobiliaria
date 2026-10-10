@@ -14,7 +14,6 @@ const getMisLeadsCRM = async (req, res) => {
       match.propiedadInteres = mongoose.Types.ObjectId(propiedadId);
     }
     
-    // Usamos aggregate para poder hacer lookup de la propiedad y filtrar por sus datos
     let pipeline = [
       { $match: match },
       {
@@ -28,15 +27,12 @@ const getMisLeadsCRM = async (req, res) => {
       { $unwind: { path: '$propiedadInteres', preserveNullAndEmptyArrays: true } }
     ];
     
-    // Filtro por texto (nombre del lead)
     if (search) {
       pipeline.push({ $match: { 'nombre': { $regex: search, $options: 'i' } } });
     }
-    // Filtro por estado de la propiedad
     if (estado) {
       pipeline.push({ $match: { 'propiedadInteres.ubicacion.estado': { $regex: estado, $options: 'i' } } });
     }
-    // Filtro por tipo de propiedad
     if (tipo) {
       pipeline.push({ $match: { 'propiedadInteres.tipo': tipo } });
     }
@@ -77,7 +73,6 @@ const crearLeadManual = async (req, res) => {
       return res.status(400).json({ error: 'El nombre y el teléfono son obligatorios' });
     }
     
-    // Verificar que la propiedad pertenezca al usuario si se proporcionó
     let propiedadValida = null;
     if (propiedadInteres) {
       const prop = await Property.findOne({ _id: propiedadInteres, propietario: req.user.id });
@@ -88,7 +83,7 @@ const crearLeadManual = async (req, res) => {
       nombre,
       telefono,
       email: email || null,
-      tipo: 'servicio', // Asumimos que es un cliente potencial
+      tipo: 'servicio',
       status: 'nuevo',
       atendidoPor: req.user.id,
       propiedadInteres: propiedadValida
@@ -100,10 +95,108 @@ const crearLeadManual = async (req, res) => {
   }
 };
 
-// No olvides agregar crearLeadManual al module.exports al final del archivo:
+// ==========================================
+// MOVER LEAD DE ETAPA (KANBAN)
+// ==========================================
+const moverLeadEtapa = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nuevaEtapa } = req.body;
+
+    const leadActualizado = await Lead.findByIdAndUpdate(
+      id,
+      { status: nuevaEtapa },
+      { new: true }
+    );
+
+    if (!leadActualizado) {
+      return res.status(404).json({ ok: false, error: 'Lead no encontrado' });
+    }
+
+    res.json({ ok: true, lead: leadActualizado });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+};
+
+// ==========================================
+// AGREGAR NOTA A UN LEAD (Ajustado a tu Schema)
+// ==========================================
+const agregarNotaLead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { texto } = req.body;
+
+    if (!texto) return res.status(400).json({ ok: false, error: 'El texto de la nota es obligatorio' });
+
+    // Hacemos push usando la estructura exacta de tu Schema
+    const leadActualizado = await Lead.findByIdAndUpdate(
+      id,
+      { $push: { notasInternas: { texto: texto, autor: req.user.id } } },
+      { new: true }
+    );
+
+    if (!leadActualizado) return res.status(404).json({ ok: false, error: 'Lead no encontrado' });
+
+    const notaAgregada = leadActualizado.notasInternas[leadActualizado.notasInternas.length - 1];
+    res.status(201).json({ ok: true, nota: notaAgregada });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+};
+
+// ==========================================
+// AGREGAR TAREA A UN LEAD (Ajustado a tu Schema)
+// ==========================================
+const agregarTareaLead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { descripcion, fechaLimite } = req.body;
+
+    // Validamos porque en tu Schema ambos campos son requeridos
+    if (!descripcion || !fechaLimite) {
+      return res.status(400).json({ ok: false, error: 'La descripción y la fecha límite son obligatorias' });
+    }
+
+    const leadActualizado = await Lead.findByIdAndUpdate(
+      id,
+      { $push: { tareas: { descripcion: descripcion, fechaLimite: fechaLimite } } },
+      { new: true }
+    );
+
+    if (!leadActualizado) return res.status(404).json({ ok: false, error: 'Lead no encontrado' });
+
+    const tareaAgregada = leadActualizado.tareas[leadActualizado.tareas.length - 1];
+    res.status(201).json({ ok: true, tarea: tareaAgregada });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+};
+
+// ==========================================
+// COMPLETAR TAREA DE UN LEAD
+// ==========================================
+const completarTareaLead = async (req, res) => {
+  try {
+    const { id, tareaId } = req.params;
+
+    const leadActualizado = await Lead.findOneAndUpdate(
+      { _id: id, "tareas._id": tareaId },
+      { $set: { "tareas.$.completada": true } },
+      { new: true }
+    );
+
+    if (!leadActualizado) return res.status(404).json({ ok: false, error: 'Lead o tarea no encontrada' });
+
+    res.json({ ok: true, lead: leadActualizado });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+};
+
 module.exports = {
   getMisLeadsCRM,
-  crearLeadManual, // <--- AGREGAR ESTO
+  crearLeadManual,
   moverLeadEtapa,
   agregarNotaLead,
   agregarTareaLead,
