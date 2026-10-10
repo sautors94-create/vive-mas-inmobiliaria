@@ -1834,9 +1834,9 @@ window.actualizarCampoKybReverso = () => {
 window.solicitarCodigoCorreoCorporativo = async () => {
   const correo = document.getElementById('kyb-correo-corporativo')?.value.trim();
   const razonSocial = document.getElementById('kyb-razon-social')?.value.trim();
-  if (!correo) { dsToast    { title: 'Falta el correo', message: 'Escribe el correo corporativo.', type: 'error' });
-    return;
-  }
+   if (!correo) { dsToast({ title: 'Falta el correo', message: 'Escribe el correo corporativo.', type: 'error' });
+  return; }
+
   const data = await api.post('/auth/kyb/correo/solicitar', { correoCorporativo: correo, razonSocial });
   if (data.ok) {
     dsToast({ title: 'Código enviado', message: 'Revisa la bandeja de ese correo.', type: 'success' });
