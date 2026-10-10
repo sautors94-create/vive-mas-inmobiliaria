@@ -217,7 +217,8 @@ const enviarNotificacionMensaje = async (emailPropietario, nombrePropietario, no
           </div>
 
           <div style="text-align:center">
-          <a href="${process.env.APP_URL || 'http://localhost:3000'}/pages/dashboard.html" class="btn">Ver mensaje completo</a>
+          <!-- ✅ AQUÍ ESTÁ EL CAMBIO: Se le agregó ?seccion=mensajes -->
+          <a href="${process.env.APP_URL || 'http://localhost:3000'}/pages/dashboard.html?seccion=mensajes" class="btn">Ver mensaje completo</a>
           </div>
 
           <div class="aviso">
@@ -551,8 +552,6 @@ const enviarResumenEmbajador = async (email, nombre, rankTitle, score, nextRank,
     </body>
     </html>`;
     
-    // Asegúrate de que tu transportador de correos se llame 'transporter'
-    // Si tiene otro nombre, cámbialo aquí abajo.
     await transporter.sendMail({
       from: '"SomosViveMás 🏠" <no-reply@somosvivemas.com>',
       to: email,
@@ -563,9 +562,6 @@ const enviarResumenEmbajador = async (email, nombre, rankTitle, score, nextRank,
     console.error('Error al enviar resumen embajador:', e);
   }
 };
-
-// No olvides agregarla al module.exports al final de ese archivo:
-// module.exports = { ..., enviarResumenEmbajador };
 
 module.exports = { 
   enviarResumenEmbajador,
