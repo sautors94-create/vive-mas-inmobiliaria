@@ -276,6 +276,17 @@
             <div class="descripcion-titulo">Descripción</div>
             <div class="descripcion-texto">${escapeHTML(p.descripcion)}</div>
 
+            <!-- ✅ LINKS DE REDES SOCIALES AUTOMÁTICOS -->
+            ${(p.socialMedia?.facebook?.url || p.socialMedia?.instagram?.url) ? `
+            <div style="background:var(--bg-secondary);padding:16px;border-radius:12px;margin-top:20px;border:1px solid var(--border);">
+              <h4 style="margin:0 0 12px;font-size:15px;font-family:'Bricolage Grotesque',sans-serif">🔗 Publicado en redes</h4>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                ${p.socialMedia?.facebook?.url ? `<a href="${p.socialMedia.facebook.url}" target="_blank" rel="noopener noreferrer" style="background:#1877f2;color:white;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:8px;">📘 Ver en Facebook</a>` : ''}
+                ${p.socialMedia?.instagram?.url ? `<a href="${p.socialMedia.instagram.url}" target="_blank" rel="noopener noreferrer" style="background:#e4405f;color:white;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:8px;">📸 Ver en Instagram</a>` : ''}
+              </div>
+            </div>
+            ` : ''}
+
             ${tieneCoordsPublicas ? `
             <div class="mapa-titulo">Ubicación</div>
             <div id="mapa"></div>
@@ -367,12 +378,23 @@
       }, 100);
     }
   };
-
   // ==========================================
   // ENVIAR MENSAJE
   // ==========================================
   const enviarMensaje = async (propiedadId) => {
-    if (!usuarioEstaAutenticado()) { mostrarMsg('Necesitas iniciar sesión para enviar mensajes.'); return; }
+    // ✅ Si no está logueado, mostramos un banner grande arriba
+    if (!usuarioEstaAutenticado()) {
+      const aviso = document.createElement('div');
+      aviso.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#dc2626;color:white;padding:16px 24px;border-radius:8px;z-index:10000;box-shadow:0 4px 12px rgba(0,0,0,0.3);display:flex;align-items:center;gap:16px;font-size:14px;font-family:"Inter",sans-serif;';
+      aviso.innerHTML = `
+        <span>🔒 Necesitas una cuenta para enviar mensajes.</span>
+        <a href="login.html" style="background:white;color:#dc2626;padding:6px 12px;border-radius:4px;text-decoration:none;font-weight:700;">Iniciar sesión</a>
+        <button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:white;cursor:pointer;font-size:18px;line-height:1;">✕</button>
+      `;
+      document.body.appendChild(aviso);
+      return;
+    }
+
     const textarea = document.getElementById('mensaje-texto');
     const texto = textarea?.value?.trim() || '';
     if (!texto) { mostrarMsg('Escribe un mensaje.'); return; }
@@ -380,9 +402,16 @@
 
     try {
       const data = await api.post(`/mensajes/${encodeURIComponent(propiedadId)}`, { mensaje: texto });
-      if (data?.ok) { mostrarMsg('¡Mensaje enviado! El propietario te contactará pronto.', 'success'); if (textarea) textarea.value = ''; }
-      else mostrarMsg(data?.error || 'Error al enviar el mensaje.');
-    } catch (error) { console.error('Error enviando mensaje:', error); mostrarMsg('No se pudo enviar el mensaje. Comprueba tu conexión e inténtalo nuevamente.'); }
+      if (data?.ok) { 
+        mostrarMsg('¡Mensaje enviado! El propietario te contactará pronto.', 'success'); 
+        if (textarea) textarea.value = ''; 
+      } else {
+        mostrarMsg(data?.error || 'Error al enviar el mensaje.');
+      }
+    } catch (error) { 
+      console.error('Error enviando mensaje:', error); 
+      mostrarMsg('No se pudo enviar el mensaje. Comprueba tu conexión e inténtalo nuevamente.'); 
+    }
   };
 
   // ==========================================

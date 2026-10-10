@@ -1080,7 +1080,11 @@ const accionesMisProps = (p) => `
   ${p.status === 'pausada' ? `<button class="btn btn-primary" onclick="reactivarMiPropiedad('${p._id}')">▶️ Reactivar</button>` : ''}
   <button class="btn btn-outline btn-del-prop" onclick="eliminarMiPropiedad('${p._id}','${(p.titulo || '').replace(/'/g, "\\'")}')">🗑️</button>`;
 
-const cardMisProps = (p) => `
+const cardMisProps = (p) => {
+  const fbUrl = p.socialMedia?.facebook?.url;
+  const igUrl = p.socialMedia?.instagram?.url;
+  
+  return `
     <div class="prop-admin-card">
       <div class="prop-admin-img" onclick="abrirDrawerMiPropiedad('${p._id}')" style="cursor:pointer">
         ${p.fotos && p.fotos.length > 0
@@ -1091,6 +1095,15 @@ const cardMisProps = (p) => `
         <div class="prop-admin-titulo" title="${p.titulo}" onclick="abrirDrawerMiPropiedad('${p._id}')" style="cursor:pointer">${p.titulo}</div>
         <div class="prop-admin-meta">${p.ubicacion?.ciudad || ''}, ${p.ubicacion?.estado || ''} · ${formatPrecio(p.precio)}</div>
         ${(p.vistas || p.leadsCount) ? `<div class="prop-admin-meta" style="margin-top:4px">👁️ ${p.vistas || 0} vistas · 💬 ${p.leadsCount || 0} leads</div>` : ''}
+        
+        <!-- ✅ ICONOS DE REDES SOCIALES AQUÍ -->
+        ${(fbUrl || igUrl) ? `
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            ${fbUrl ? `<a href="${fbUrl}" target="_blank" rel="noopener noreferrer" title="Ver en Facebook" style="font-size:18px;text-decoration:none;">📘</a>` : ''}
+            ${igUrl ? `<a href="${igUrl}" target="_blank" rel="noopener noreferrer" title="Ver en Instagram" style="font-size:18px;text-decoration:none;">📸</a>` : ''}
+          </div>
+        ` : ''}
+        
         ${p.status === 'rechazada' ? `
           <div style="margin-top:8px;padding:10px 12px;background:#fdecea;border:1px solid #f5c2c0;border-radius:10px;font-size:12px;color:#7a2a27">
             <b>Motivo de rechazo:</b> ${p.motivo_rechazo ? escapeHtmlLocal(p.motivo_rechazo) : 'No especificado.'}
@@ -1107,6 +1120,7 @@ const cardMisProps = (p) => `
         ${accionesMisProps(p)}
       </div>
     </div>`;
+};
 
 const renderTablaMisProps = (lista) => `
   <table class="mpw-table">

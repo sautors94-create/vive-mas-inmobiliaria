@@ -87,5 +87,46 @@
   <script src="../js/propiedad.js"></script>
   <script src="../js/chatbot.js"></script>
   <script src="../js/social-widget.js"></script>
+  <!-- LIGHTBOX PARA VER IMÁGENES GRANDES -->
+<style>
+  .vm-lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    cursor: zoom-out;
+  }
+  .vm-lightbox img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+</style>
+
+<div id="vm-lightbox" class="vm-lightbox" onclick="this.style.display='none'">
+  <img src="" id="vm-lightbox-img" alt="Imagen ampliada">
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Selecciona las imágenes principales de la galería de la propiedad
+    const mainImages = document.querySelectorAll('.propiedad-galeria img, .galeria-main img');
+    const lightbox = document.getElementById('vm-lightbox');
+    const lightboxImg = document.getElementById('vm-lightbox-img');
+    
+    mainImages.forEach(img => {
+      img.style.cursor = 'zoom-in';
+      img.addEventListener('click', (e) => {
+        e.stopPropagation(); // Evita que abra el drawer si está dentro de una tarjeta
+        lightboxImg.src = img.src;
+        lightbox.style.display = 'flex';
+      });
+    });
+  });
+</script>
 </body>
 </html>
