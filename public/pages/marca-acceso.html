@@ -166,7 +166,11 @@
       try {
         const res = await fetch(`${API_URL}/api/marcas/auth/canales`);
         const d = await res.json();
-        if (!d.sms) { $('tab-sms').disabled = true; $('tab-sms').title = 'La verificación por SMS no está disponible por ahora'; $('tab-sms').textContent = '📱 Teléfono (próximamente)'; }
+        if (d.sms === false) { 
+          $('tab-sms').disabled = true; 
+          $('tab-sms').title = 'La verificación por SMS no está disponible por ahora'; 
+          $('tab-sms').textContent = '📱 Teléfono (próximamente)'; 
+        }
       } catch (e) { /* se deja habilitado; el servidor responde con un mensaje claro */ }
       // ¿Ya tiene sesión? Directo al panel.
       if (await MarcasAPI.restaurarSesion()) location.replace('marca-panel.html');

@@ -1,6 +1,5 @@
 const { Brand, BrandAccount, BrandOTP } = require('./models');
 const { BrandCategory, BrandCity } = require('./models');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
@@ -9,19 +8,17 @@ const BRAND_JWT_SECRET = process.env.JWT_BRAND_SECRET || process.env.JWT_SECRET 
 // Función para saber qué métodos de registro están activos
 exports.obtenerCanales = async (req, res) => {
   try {
-    // Revisamos si Twilio está configurado en tus variables de entorno
     const twilioConfigurado = !!(process.env.SID_TWILIO && process.env.TOKEN_TWILIO && process.env.SID_SERVICIO_TWILIO);
-    
     res.json({ 
       ok: true, 
-      email: true, // El correo siempre está activo
-      phone: twilioConfigurado // El teléfono solo si Twilio está configurado
+      email: true, 
+      sms: twilioConfigurado 
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-// Función auxiliar para generar slug
+
 const slugify = (text) => text.toString().toLowerCase().trim()
   .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
@@ -31,38 +28,65 @@ const slugify = (text) => text.toString().toLowerCase().trim()
 // ==========================================
 exports.registrarMarca = async (req, res) => {
   try {
-    const { email, phone, password } = req.body;
-    if (!password) return res.status(400).json({ error: 'La contraseña es obligatoria' });
-    if (!email && !phone) return res.status(400).json({ error: 'Email o teléfono son obligatorios' });
+    const { canal, email, telefono } = req.body;
+    if (!canal) return res.status(400).json({ error: 'Debes elegir un canal (email o sms).' });
+    if (canal === 'email' && !email) return res.status(400).json({ error: 'El correo es obligatorio.' });
+    if (canal === 'sms' && !telefono) return res.status(400).json({ error: 'El teléfono es obligatorio.' });
 
-    const existe = await BrandAccount.findOne({ $or: [{ email }, { phone }] });
-    if (existe) return res.status(400).json({ error: 'Ya existe una cuenta con este correo o teléfono' });
+    let cuenta = await BrandAccount.findOne({ $or: [{ email: email }, { phone: telefono }] });
+    let esNueva = false;
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    if (!cuenta) {
+      cuenta = await BrandAccount.create({
+        email: email || null,
+        phone: telefono || null
+      });
+      esNueva = true;
+    }
 
-    const nuevaCuenta = await BrandAccount.create({
-      email: email || null,
-      phone: phone || null,
-      password: hashedPassword
-    });
+    // Si eligió teléfono y Twilio está configurado, enviamos el SMS real
+    if (canal === 'sms') {
+      const twilioConfigurado = !!(process.env.SID_TWILIO && process.env.TOKEN_TWILIO && process.env.SID_SERVICIO_TWILIO);
+      if (twilioConfigurado) {
+        try {
+          const twilio = require('twilio')(process.env.SID_TWILIO, process.env.TOKEN_TWILIO);
+          await twilio.verify.v2(process.env.SID_SERVICIO_TWILIO)
+            .verifications
+            .create({ to: telefono, channel: 'sms' });
+            
+          return res.status(200).json({ 
+            ok: true, 
+            mensaje: 'Te enviamos un código por SMS.',
+            accountId: cuenta._id,
+            espera: 60
+          });
+        } catch (twilioError) {
+          console.error('Error de Twilio:', twilioError.message);
+          return res.status(400).json({ error: 'No se pudo enviar el SMS. Verifica que el número incluya código de país.' });
+        }
+      } else {
+        return res.status(400).json({ error: 'La verificación por SMS no está configurada en el servidor.' });
+      }
+    }
 
-    // Generar OTP (Simulado por aquí, en producción se envía por correo/SMS real)
+    // Si eligió correo, generamos un código local (Aquí deberías conectar tu utils/email.js)
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    await BrandOTP.deleteMany({ accountId: cuenta._id }); // Borramos códigos viejos
     await BrandOTP.create({
-      accountId: nuevaCuenta._id,
+      accountId: cuenta._id,
       codigo,
-      tipo: email ? 'email' : 'phone',
+      tipo: 'email',
       expira: new Date(Date.now() + 10 * 60 * 1000)
     });
 
-    // TODO: Aquí llamarías a tu servicio de correo (utils/email.js) o Twilio para enviar el código.
-    console.log(`[DEV] Código de verificación para Marca: ${codigo}`);
+    // TODO: Llamar a tu servicio de correo (utils/email.js) para enviar el "codigo"
+    console.log(`[DEV] Código de verificación para Marca ${email}: ${codigo}`);
 
-    res.status(201).json({ 
+    res.status(200).json({ 
       ok: true, 
-      mensaje: 'Cuenta creada. Revisa tu correo/teléfono para el código de verificación.',
-      accountId: nuevaCuenta._id 
+      mensaje: 'Cuenta creada. Revisa tu correo para el código de verificación.',
+      accountId: cuenta._id,
+      espera: 60
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -71,53 +95,73 @@ exports.registrarMarca = async (req, res) => {
 
 exports.verificarMarca = async (req, res) => {
   try {
-    const { accountId, codigo } = req.body;
-    const otp = await BrandOTP.findOne({ accountId, codigo });
+    const { accountId, codigo, canal, email, telefono } = req.body;
+    let cuenta = await BrandAccount.findById(accountId);
 
-    if (!otp) return res.status(400).json({ error: 'Código incorrecto' });
-    if (otp.expira < new Date()) return res.status(400).json({ error: 'El código ha expirado' });
+    if (!cuenta && email) cuenta = await BrandAccount.findOne({ email });
+    if (!cuenta && telefono) cuenta = await BrandAccount.findOne({ phone: telefono });
 
-    const cuenta = await BrandAccount.findById(accountId);
     if (!cuenta) return res.status(404).json({ error: 'Cuenta no encontrada' });
 
-    if (otp.tipo === 'email') cuenta.emailVerified = true;
-    if (otp.tipo === 'phone') cuenta.phoneVerified = true;
+    // Si eligió teléfono y Twilio está configurado, verificamos con Twilio
+    if (canal === 'sms') {
+      const twilioConfigurado = !!(process.env.SID_TWILIO && process.env.TOKEN_TWILIO && process.env.SID_SERVICIO_TWILIO);
+      if (twilioConfigurado) {
+        try {
+          const twilio = require('twilio')(process.env.SID_TWILIO, process.env.TOKEN_TWILIO);
+          const verification = await twilio.verify.v2(process.env.SID_SERVICIO_TWILIO)
+            .verificationChecks
+            .create({ to: telefono, code: codigo });
+
+          if (verification.status !== 'approved') {
+            return res.status(400).json({ error: 'El código de SMS es incorrecto' });
+          }
+          cuenta.phoneVerified = true;
+        } catch (twilioError) {
+          return res.status(400).json({ error: 'Error al verificar el SMS.' });
+        }
+      } else {
+        return res.status(400).json({ error: 'SMS no configurado en servidor.' });
+      }
+    } else {
+      // Verificamos con nuestro OTP local (para correo)
+      const otp = await BrandOTP.findOne({ accountId: cuenta._id, codigo });
+      if (!otp) return res.status(400).json({ error: 'Código incorrecto' });
+      if (otp.expira < new Date()) return res.status(400).json({ error: 'El código ha expirado' });
+
+      if (otp.tipo === 'email') cuenta.emailVerified = true;
+      await BrandOTP.deleteOne({ _id: otp._id });
+    }
+
     await cuenta.save();
 
-    // Crear perfil de marca vacío
-    const slug = `marca-${cuenta._id.toString().slice(-6)}`;
-    const nuevaMarca = await Brand.create({
-      accountId: cuenta._id,
-      nombreComercial: 'Mi Nueva Marca',
-      slug: slug
-    });
-    cuenta.brandId = nuevaMarca._id;
-    await cuenta.save();
+    // Crear perfil de marca vacío si no existe
+    let marca = await Brand.findOne({ accountId: cuenta._id });
+    let esNueva = false;
+    if (!marca) {
+      const slug = `marca-${cuenta._id.toString().slice(-6)}`;
+      marca = await Brand.create({
+        accountId: cuenta._id,
+        nombreComercial: 'Mi Nueva Marca',
+        slug: slug
+      });
+      cuenta.brandId = marca._id;
+      await cuenta.save();
+      esNueva = true;
+    }
 
-    await BrandOTP.deleteOne({ _id: otp._id });
+    const token = jwt.sign({ id: cuenta._id, brandId: marca._id }, BRAND_JWT_SECRET, { expiresIn: '7d' });
 
-    const token = jwt.sign({ id: cuenta._id, brandId: nuevaMarca._id }, BRAND_JWT_SECRET, { expiresIn: '7d' });
-
-    res.json({ ok: true, token, marca: nuevaMarca });
+    res.json({ ok: true, accessToken: token, marca, esNueva });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
 exports.loginMarca = async (req, res) => {
-  try {
-    const { email, phone, password } = req.body;
-    const cuenta = await BrandAccount.findOne({ $or: [{ email }, { phone }] });
-    if (!cuenta) return res.status(404).json({ error: 'Cuenta no encontrada' });
-
-    const valid = await bcrypt.compare(password, cuenta.password);
-    if (!valid) return res.status(400).json({ error: 'Contraseña incorrecta' });
-
-    const token = jwt.sign({ id: cuenta._id, brandId: cuenta.brandId }, BRAND_JWT_SECRET, { expiresIn: '7d' });
-    res.json({ ok: true, token });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  // En este flujo sin contraseñas, el login se hace pidiendo un código de nuevo.
+  // Esta ruta puede usarse para otros propósitos en el futuro.
+  res.status(501).json({ error: 'El login se hace a través del flujo de código de verificación.' });
 };
 
 // ==========================================
@@ -191,8 +235,7 @@ exports.obtenerMarcasPublico = async (req, res) => {
     if (categoria) query.categorias = mongoose.Types.ObjectId(categoria);
     if (ciudad) query.ciudadesCobertura = mongoose.Types.ObjectId(ciudad);
 
-    // Configurar ordenamiento
-    let sortOptions = { createdAt: -1 }; // Por defecto: más recientes
+    let sortOptions = { createdAt: -1 }; 
     if (orden === 'alfabetico') sortOptions = { nombreComercial: 1 };
 
     const skip = (Number(pagina) - 1) * Number(limite);
@@ -269,11 +312,9 @@ exports.adminCambiarStatus = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-// Función para refrescar el token (requerida por el frontend)
+
 exports.refreshToken = async (req, res) => {
   try {
-    // En una implementación completa, aquí validarías un refresh token de la BD.
-    // Para que no dé error y se mantenga logueado, si tiene un token viejo válido, le damos uno nuevo.
     const oldToken = req.header('Authorization')?.replace('Bearer ', '');
     if (!oldToken) return res.status(401).json({ error: 'No hay token' });
 
