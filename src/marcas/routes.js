@@ -33,21 +33,21 @@ const authAdmin = (req, res, next) => {
 };
 
 // ==========================================
-// RUTAS PÚBLICAS
+// RUTAS PÚBLICAS (Ajustadas a tu frontend)
 // ==========================================
-router.get('/', ctrl.obtenerMarcasPublico);
-router.get('/catalogos', ctrl.obtenerCatalogos);
-router.get('/:slug', ctrl.obtenerMarcaPublico);
+router.get('/publico', ctrl.obtenerMarcasPublico);
+router.get('/publico/filtros', ctrl.obtenerCatalogos);
+router.get('/publico/:slug', ctrl.obtenerMarcaPublico);
 
 // ==========================================
-// RUTAS DE AUTENTICACIÓN DE MARCAS (Ajustadas al frontend)
+// RUTAS DE AUTENTICACIÓN DE MARCAS
 // ==========================================
-router.post('/auth/solicitar', ctrl.registrarMarca); // El frontend llama a "solicitar"
-router.post('/auth/register', ctrl.registrarMarca); // Por si acaso
+router.post('/auth/solicitar', ctrl.registrarMarca);
+router.post('/auth/register', ctrl.registrarMarca);
 router.post('/auth/verificar', ctrl.verificarMarca);
 router.post('/auth/verify', ctrl.verificarMarca);
 router.post('/auth/login', ctrl.loginMarca);
-router.post('/auth/refresh', ctrl.refreshToken); // El frontend llama a "refresh"
+router.post('/auth/refresh', ctrl.refreshToken);
 
 // ==========================================
 // RUTAS DEL PANEL DE LA MARCA (PROTEGIDAS)

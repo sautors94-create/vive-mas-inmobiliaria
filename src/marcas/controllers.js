@@ -164,7 +164,7 @@ exports.publicarMarca = async (req, res) => {
 // ==========================================
 exports.obtenerMarcasPublico = async (req, res) => {
   try {
-    const { search, categoria, ciudad } = req.query;
+    const { search, categoria, ciudad, orden, pagina = 1, limite = 12 } = req.query;
     let query = { status: 'publicado' };
 
     if (search) {
@@ -176,12 +176,30 @@ exports.obtenerMarcasPublico = async (req, res) => {
     if (categoria) query.categorias = mongoose.Types.ObjectId(categoria);
     if (ciudad) query.ciudadesCobertura = mongoose.Types.ObjectId(ciudad);
 
-    const marcas = await Brand.find(query)
-      .populate('categorias', 'nombre')
-      .populate('ciudadPrincipal', 'nombre')
-      .select('nombreComercial slug descripcion logo portada telefono whatsapp promociones categorias ciudadPrincipal');
+    // Configurar ordenamiento
+    let sortOptions = { createdAt: -1 }; // Por defecto: más recientes
+    if (orden === 'alfabetico') sortOptions = { nombreComercial: 1 };
 
-    res.json({ ok: true, total: marcas.length, marcas });
+    const skip = (Number(pagina) - 1) * Number(limite);
+
+    const [marcas, total] = await Promise.all([
+      Brand.find(query)
+        .populate('categorias', 'nombre')
+        .populate('ciudadPrincipal', 'nombre')
+        .select('nombreComercial slug descripcion logo portada telefono whatsapp promociones categorias ciudadPrincipal')
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(Number(limite)),
+      Brand.countDocuments(query)
+    ]);
+
+    res.json({ 
+      ok: true, 
+      total, 
+      marcas,
+      pagina: Number(pagina),
+      totalPaginas: Math.ceil(total / Number(limite))
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
