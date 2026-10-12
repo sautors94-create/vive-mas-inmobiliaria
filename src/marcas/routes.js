@@ -48,6 +48,7 @@ router.post('/auth/verificar', ctrl.verificarMarca);
 router.post('/auth/verify', ctrl.verificarMarca);
 router.post('/auth/login', ctrl.loginMarca);
 router.post('/auth/refresh', ctrl.refreshToken);
+router.get('/auth/canales', ctrl.obtenerCanales);
 
 // ==========================================
 // RUTAS DEL PANEL DE LA MARCA (PROTEGIDAS)

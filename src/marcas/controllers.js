@@ -6,6 +6,21 @@ const mongoose = require('mongoose');
 
 const BRAND_JWT_SECRET = process.env.JWT_BRAND_SECRET || process.env.JWT_SECRET + '_brand';
 
+// Función para saber qué métodos de registro están activos
+exports.obtenerCanales = async (req, res) => {
+  try {
+    // Revisamos si Twilio está configurado en tus variables de entorno
+    const twilioConfigurado = !!(process.env.SID_TWILIO && process.env.TOKEN_TWILIO && process.env.SID_SERVICIO_TWILIO);
+    
+    res.json({ 
+      ok: true, 
+      email: true, // El correo siempre está activo
+      phone: twilioConfigurado // El teléfono solo si Twilio está configurado
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 // Función auxiliar para generar slug
 const slugify = (text) => text.toString().toLowerCase().trim()
   .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
