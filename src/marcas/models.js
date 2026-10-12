@@ -13,7 +13,7 @@ const BrandCitySchema = new mongoose.Schema({
 const BrandAccountSchema = new mongoose.Schema({
   email: { type: String, unique: true, sparse: true },
   phone: { type: String, unique: true, sparse: true },
-  password: { type: String, required: true },
+  password: { type: String, required: false },
   emailVerified: { type: Boolean, default: false },
   phoneVerified: { type: Boolean, default: false },
   brandId: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand' }
