@@ -37,6 +37,14 @@ const founderController = require('./nuevo-modulo/controllers/founderController'
 const foundersRoutes = require('./nuevo-modulo/routes/founders');
 const propertiesRoutes = require('./nuevo-modulo/routes/properties');
 
+// ==========================================
+// MÓDULO: MARCAS Y PROFESIONALES ALIADOS (Directorio)
+// ==========================================
+const authMiddleware = require('./middleware/auth.middleware');
+const requireRole = require('./middleware/role.middleware');
+const { marcasRouter, adminMarcasRouter } = require('./marcas/routes');
+const { sembrarCatalogos } = require('./marcas/utils/seed');
+
 const app = express();
 
 // Hostinger sirve la app detrás de un proxy (LiteSpeed). Sin esto, Express
@@ -118,6 +126,8 @@ app.get('/health', (req, res) => {
 // Rutas principales
 app.use('/api/auth/meta', metaOAuthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/marcas', marcasRouter);
+app.use('/api/admin/marcas', authMiddleware, requireRole('admin'), adminMarcasRouter);
 app.use('/api/admin', adminRoutes);
 app.use('/api/propiedades', propertyRoutes);
 app.use('/api/favoritos', favoriteRoutes);
@@ -202,6 +212,9 @@ app.post('/api/waitlist/premium', async (req, res) => {
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
+
+// Categorías y ciudades iniciales del directorio de marcas (solo inserta lo que falta)
+require('mongoose').connection.once('open', sembrarCatalogos);
 
 // Inicializar módulo de Marketing Automation
 iniciarMarketingAutomation();

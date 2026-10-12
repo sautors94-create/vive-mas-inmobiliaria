@@ -206,7 +206,7 @@
     if (!r.ok) return aviso('No se pudo completar', r.error || '', 'error');
     aviso('Listo', r.mensaje);
     if (accion === 'purgar') { document.getElementById('am-detalle')?.classList.remove('on'); return cargarMarcasAdmin(); }
-    refrescar();
+    await refrescar();
   };
 
   window.enviarSolicitudMarca = async () => {
@@ -215,14 +215,14 @@
     const r = await api.post(`/admin/marcas/${abierta}/solicitudes`, cuerpo);
     if (!r.ok) return aviso('No se pudo enviar', r.error || '', 'error');
     aviso('Solicitud enviada', r.mensaje);
-    refrescar();
+    await refrescar();
   };
 
   window.gestionarSolicitudMarca = async (sid, accion) => {
     const r = await api.patch(`/admin/marcas/${abierta}/solicitudes/${sid}`, { accion });
     if (!r.ok) return aviso('No se pudo actualizar', r.error || '', 'error');
     aviso('Listo', r.mensaje);
-    refrescar();
+    await refrescar();
   };
 
   // ---------------------------------------------------------- catálogos (categorías y ciudades)

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marca aliada — Vive Más Inmobiliaria</title>
+  <meta name="description" content="Perfil de marca o profesional aliado de SomosViveMás.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/marcas.css">
+  <style>
+    .lb { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 30000; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .lb.on { display: flex; }
+    .lb img { max-width: 100%; max-height: 90vh; border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container nav-content">
+      <a href="../index.html" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <span class="logo-sub">Inmobiliaria</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Inicio</a></li>
+        <li><a href="catalogo.html">Catálogo</a></li>
+        <li><a href="herramientas.html">Herramientas</a></li>
+        <li><a href="servicios.html">Servicios</a></li>
+        <li><a href="nosotros.html">Nosotros</a></li>
+        <li><a href="directorio.html" class="active">Directorio</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="directorio.html#marcas-aliadas" class="btn btn-outline">← Volver al directorio</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="mp-wrap" id="contenido">
+    <div class="mp-estado"><p>Cargando perfil…</p></div>
+  </main>
+
+  <div class="lb" id="lb" onclick="this.classList.remove('on')"><img id="lb-img" alt="Fotografía ampliada"></div>
+
+  <footer class="footer">
+    <div class="container footer-content">
+      <div class="footer-brand">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <p>La plataforma inmobiliaria más confiable de México.</p>
+      </div>
+      <div class="footer-links">
+        <a href="catalogo.html">Catálogo</a>
+        <a href="directorio.html">Directorio</a>
+        <a href="servicios.html">Servicios</a>
+        <a href="nosotros.html">Nosotros</a>
+        <a href="../legal/normas-generales/terminos.html">Términos y condiciones</a>
+      </div>
+    </div>
+    <div class="footer-bottom"><p>© 2024 Vive Más Inmobiliaria. Todos los derechos reservados.</p></div>
+  </footer>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/marcas-api.js"></script>
+  <script>
+  (() => {
+    const cont = document.getElementById('contenido');
+    const params = new URLSearchParams(location.search);
+    const slug = params.get('s') || '';
+    const esPrevia = params.get('vista') === 'previa';
+
+    const estadoVacio = (titulo, texto) => {
+      cont.innerHTML = `<div class="mp-estado"><h2>${mbEsc(titulo)}</h2><p>${mbEsc(texto)}</p><p style="margin-top:18px"><a class="btn btn-primary" href="directorio.html#marcas-aliadas">Ver el directorio</a></p></div>`;
+    };
+
+    const soloDigitos = (t) => String(t || '').replace(/\D/g, '');
+    const numeroWhatsApp = (t) => {
+      const d = soloDigitos(t);
+      if (d.length === 10) return '52' + d;           // lada + número en México
+      if (d.length === 13 && d.startsWith('521')) return '52' + d.slice(3);
+      return d;
+    };
+    const fecha = (iso) => iso ? new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
+    const vigencia = (p) => {
+      if (p.vigenciaInicio && p.vigenciaFin) return `Vigencia: del ${fecha(p.vigenciaInicio)} al ${fecha(p.vigenciaFin)}`;
+      if (p.vigenciaFin) return `Vigente hasta el ${fecha(p.vigenciaFin)}`;
+      if (p.vigenciaInicio) return `Vigente desde el ${fecha(p.vigenciaInicio)}`;
+      return 'Sin fecha de vencimiento';
+    };
+
+    const pintar = (m, previa, visible) => {
+      document.title = `${m.nombre} — Marcas aliadas SomosViveMás`;
+      const meta = document.querySelector('meta[name="description"]');
+      if (meta) meta.content = (m.descripcionCorta || '').slice(0, 160);
+
+      const logo = mbImg(m.logo || m.fotoPerfil);
+      const portada = mbImg(m.portada);
+      const c = m.contacto || {};
+      const promoRef = (m.promociones || [])[0];
+      const mensaje = `Hola, encontré tu marca en SomosViveMás y quisiera información${promoRef ? ' sobre tu promoción: ' + promoRef.etiqueta : ''}.`;
+
+      const botones = [];
+      if (c.whatsapp) botones.push(`<a class="mp-btn wa" target="_blank" rel="noopener nofollow" href="https://wa.me/${numeroWhatsApp(c.whatsapp)}?text=${encodeURIComponent(mensaje)}">💬 Escribir por WhatsApp</a>`);
+      if (c.telefono) botones.push(`<a class="mp-btn" href="tel:${soloDigitos(c.telefono) ? '+' + (soloDigitos(c.telefono).length === 10 ? '52' : '') + soloDigitos(c.telefono) : ''}">📞 ${mbEsc(c.telefono)}</a>`);
+      if (c.email) botones.push(`<a class="mp-btn" href="mailto:${encodeURIComponent(c.email).replace('%40', '@')}?subject=${encodeURIComponent('Los encontré en SomosViveMás')}&body=${encodeURIComponent(mensaje)}">✉️ ${mbEsc(c.email)}</a>`);
+      if (mbUrl(c.sitioWeb)) botones.push(`<a class="mp-btn prim" target="_blank" rel="noopener nofollow" href="${mbUrl(c.sitioWeb)}">🌐 Visitar sitio web</a>`);
+
+      const redes = [['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['linkedin', 'LinkedIn'], ['youtube', 'YouTube']]
+        .filter(([k]) => mbUrl((c.redes || {})[k]))
+        .map(([k, n]) => `<a class="mp-red" target="_blank" rel="noopener nofollow" href="${mbUrl(c.redes[k])}">${n}</a>`).join('');
+
+      const ciudades = (m.ciudades || []).map((x) => `<span class="mp-tag">📍 ${mbEsc(x.nombre)}${x.estado && x.estado !== x.nombre ? ', ' + mbEsc(x.estado) : ''}</span>`).join('');
+      const zonas = (m.zonasAdicionales || []).map((z) => `<span class="mp-tag">${mbEsc(z)}</span>`).join('');
+      const promos = (m.promociones || []).map((p) => `
+        <div class="mp-promo">
+          <span class="mp-promo-etiqueta">🏷️ ${mbEsc(p.etiqueta)}</span>
+          <p>${mbEsc(p.descripcion)}</p>
+          ${p.condiciones ? `<small><strong>Condiciones:</strong> ${mbEsc(p.condiciones)}</small>` : ''}
+          ${p.instrucciones ? `<small><strong>Cómo solicitarlo:</strong> ${mbEsc(p.instrucciones)}</small>` : ''}
+          <small>${mbEsc(vigencia(p))}</small>
+        </div>`).join('');
+
+      const ubicacion = m.ciudadPrincipal ? `${mbEsc(m.ciudadPrincipal.nombre)}${m.ciudadPrincipal.estado ? ', ' + mbEsc(m.ciudadPrincipal.estado) : ''}` : '';
+
+      cont.innerHTML = `
+        ${previa ? `<div class="mp-aviso">👁️ <strong>Vista previa privada.</strong> ${visible ? 'Tu marca ya está publicada y así la ve la comunidad.' : 'Tu marca todavía NO es visible en el directorio. Publícala desde tu panel cuando esté lista.'}</div>` : ''}
+        <div class="mp-portada">${portada ? `<img src="${portada}" alt="Portada de ${mbEsc(m.nombre)}">` : ''}</div>
+        <div class="mp-cabecera">
+          ${logo ? `<img class="mp-logo" src="${logo}" alt="Logotipo de ${mbEsc(m.nombre)}">` : `<div class="mp-logo">${mbEsc((m.nombre || '?')[0].toUpperCase())}</div>`}
+          <div class="mp-titulo">
+            <h1>${mbEsc(m.nombre)}</h1>
+            <div class="mp-sub">${m.categoriaPrincipal ? mbEsc(m.categoriaPrincipal.nombre) : (m.categorias[0] ? mbEsc(m.categorias[0].nombre) : '')}${ubicacion ? ' · 📍 ' + ubicacion : ''}${m.responsable ? ' · ' + mbEsc(m.responsable) : ''}</div>
+          </div>
+        </div>
+
+        <div class="mp-layout">
+          <div>
+            <div class="mp-card">
+              <h2>Acerca de ${mbEsc(m.nombre)}</h2>
+              <div class="mp-texto">${mbEsc(m.descripcion || m.descripcionCorta)}</div>
+            </div>
+            ${m.serviciosDetalle || (m.servicios || []).length || (m.categorias || []).length ? `
+            <div class="mp-card">
+              <h2>Servicios y categorías</h2>
+              <div class="mp-tags" style="margin-bottom:${m.serviciosDetalle ? 14 : 0}px">
+                ${(m.categorias || []).map((x) => `<span class="mp-tag cat">${mbEsc(x.icono || '')} ${mbEsc(x.nombre)}</span>`).join('')}
+                ${(m.servicios || []).map((s) => `<span class="mp-tag">${mbEsc(s)}</span>`).join('')}
+              </div>
+              ${m.serviciosDetalle ? `<div class="mp-texto">${mbEsc(m.serviciosDetalle)}</div>` : ''}
+            </div>` : ''}
+            ${ciudades || zonas ? `
+            <div class="mp-card">
+              <h2>Dónde presta sus servicios</h2>
+              <div class="mp-tags">${ciudades}${zonas}</div>
+            </div>` : ''}
+            ${(m.galeria || []).filter(mbImg).length ? `
+            <div class="mp-card">
+              <h2>Galería</h2>
+              <div class="mp-galeria">${m.galeria.filter(mbImg).map((u) => `<img src="${mbImg(u)}" alt="Fotografía de ${mbEsc(m.nombre)}" loading="lazy" data-zoom="${mbImg(u)}">`).join('')}</div>
+            </div>` : ''}
+          </div>
+
+          <aside>
+            ${promos ? `<div class="mp-card"><h2>Descuentos y promociones</h2>${promos}
+              <p class="mp-nota">El beneficio lo otorga directamente la marca. SomosViveMás no valida ni canjea promociones: confirma las condiciones con el proveedor y menciona que llegaste por SomosViveMás.</p></div>` : ''}
+            <div class="mp-card">
+              <h2>Contacto</h2>
+              ${botones.length ? `<div class="mp-contacto">${botones.join('')}</div>` : '<p class="mp-nota">Esta marca no publicó datos de contacto.</p>'}
+              ${redes ? `<div class="mp-redes" style="margin-top:14px">${redes}</div>` : ''}
+            </div>
+          </aside>
+        </div>`;
+
+      cont.querySelectorAll('[data-zoom]').forEach((img) => img.addEventListener('click', () => {
+        document.getElementById('lb-img').src = img.dataset.zoom;
+        document.getElementById('lb').classList.add('on');
+      }));
+    };
+
+    (async () => {
+      if (esPrevia) {
+        if (!(await MarcasAPI.restaurarSesion())) { location.href = 'marca-acceso.html'; return; }
+        const r = await MarcasAPI.get('/panel/mi-marca/vista-previa');
+        if (!r.ok) { estadoVacio('No se pudo cargar la vista previa', r.error || ''); return; }
+        pintar(r.marca, true, r.visiblePublicamente);
+        return;
+      }
+      if (!/^[a-z0-9-]{1,80}$/.test(slug)) { estadoVacio('Marca no encontrada', 'El enlace no es válido.'); return; }
+      try {
+        const res = await fetch(`${API_URL}/api/marcas/publico/${encodeURIComponent(slug)}`);
+        const d = await res.json();
+        if (res.status === 404) { estadoVacio('Esta marca no está disponible', 'Puede que haya dejado de publicarse.'); return; }
+        if (!res.ok) throw new Error(d.error || 'Error');
+        pintar(d.marca, false, true);
+      } catch (e) {
+        estadoVacio('No pudimos cargar el perfil', 'Revisa tu conexión e intenta de nuevo.');
+      }
+    })();
+  })();
+  </script>
+</body>
+</html>

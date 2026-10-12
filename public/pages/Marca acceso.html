@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Agregar mi marca — Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/marcas.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container nav-content">
+      <a href="../index.html" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <span class="logo-sub">Inmobiliaria</span>
+      </a>
+      <div class="nav-actions">
+        <a href="directorio.html#marcas-aliadas" class="btn btn-outline">← Volver al directorio</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="ma-wrap">
+    <div class="ma-card">
+      <!-- Paso 1: identificación -->
+      <section id="paso-1">
+        <h1>Agrega tu marca</h1>
+        <p class="ma-sub">Publica tu perfil en el Directorio y ofrece descuentos a la comunidad de SomosViveMás. Solo necesitas tu correo o tu teléfono: <strong>sin contraseñas ni formularios largos</strong>.</p>
+
+        <div class="ma-tabs" role="tablist">
+          <button type="button" class="ma-tab activo" id="tab-email" role="tab">✉️ Correo</button>
+          <button type="button" class="ma-tab" id="tab-sms" role="tab">📱 Teléfono</button>
+        </div>
+
+        <div id="msg-1" class="ma-msg" role="alert"></div>
+
+        <div id="campo-email">
+          <label class="ma-label" for="in-email">Correo electrónico</label>
+          <input class="ma-input" type="email" id="in-email" placeholder="tucorreo@ejemplo.com" autocomplete="email" inputmode="email">
+        </div>
+        <div id="campo-sms" style="display:none">
+          <label class="ma-label" for="in-tel">Teléfono con código de país</label>
+          <input class="ma-input" type="tel" id="in-tel" placeholder="+52 55 1234 5678" autocomplete="tel" inputmode="tel">
+        </div>
+
+        <button type="button" class="ma-btn" id="btn-enviar">Enviar código de verificación</button>
+        <p class="ma-nota">Te enviaremos un código para confirmar que el correo o teléfono es tuyo. Si ya tienes una marca, este mismo paso te lleva a tu panel.</p>
+      </section>
+
+      <!-- Paso 2: código -->
+      <section id="paso-2" style="display:none">
+        <h1>Escribe tu código</h1>
+        <p class="ma-sub" id="sub-2"></p>
+        <div id="msg-2" class="ma-msg" role="alert"></div>
+        <label class="ma-label" for="in-codigo">Código de verificación</label>
+        <input class="ma-input ma-codigo" type="text" id="in-codigo" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••">
+        <button type="button" class="ma-btn" id="btn-verificar">Verificar y continuar</button>
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:10px">
+          <button type="button" class="ma-link" id="btn-reenviar" disabled>Reenviar código</button>
+          <button type="button" class="ma-link" id="btn-cambiar">Usar otro dato</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/marcas-api.js"></script>
+  <script>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    let canal = 'email';
+    let reenvioTimer = null;
+    let enviando = false;
+
+    const msg = (id, texto, tipo) => {
+      const el = $(id);
+      el.className = 'ma-msg' + (texto ? ' ' + tipo : '');
+      el.textContent = texto || '';
+    };
+    const valor = () => (canal === 'sms' ? $('in-tel').value.trim() : $('in-email').value.trim());
+    const cuerpo = () => (canal === 'sms' ? { canal, telefono: valor() } : { canal, email: valor() });
+
+    const elegirCanal = (c) => {
+      canal = c;
+      $('tab-email').classList.toggle('activo', c === 'email');
+      $('tab-sms').classList.toggle('activo', c === 'sms');
+      $('campo-email').style.display = c === 'email' ? '' : 'none';
+      $('campo-sms').style.display = c === 'sms' ? '' : 'none';
+      msg('msg-1', '');
+    };
+    $('tab-email').addEventListener('click', () => elegirCanal('email'));
+    $('tab-sms').addEventListener('click', () => { if (!$('tab-sms').disabled) elegirCanal('sms'); });
+
+    const cuentaRegresiva = (seg) => {
+      clearInterval(reenvioTimer);
+      const b = $('btn-reenviar');
+      let resto = seg;
+      const pintar = () => {
+        if (resto > 0) { b.disabled = true; b.textContent = `Reenviar código en ${resto}s`; }
+        else { b.disabled = false; b.textContent = 'Reenviar código'; clearInterval(reenvioTimer); }
+      };
+      pintar();
+      reenvioTimer = setInterval(() => { resto--; pintar(); }, 1000);
+    };
+
+    const pedirCodigo = async (esReenvio) => {
+      if (enviando) return;
+      if (!valor()) { msg(esReenvio ? 'msg-2' : 'msg-1', canal === 'sms' ? 'Escribe tu teléfono.' : 'Escribe tu correo electrónico.', 'error'); return; }
+      enviando = true;
+      const btn = esReenvio ? $('btn-reenviar') : $('btn-enviar');
+      btn.disabled = true;
+      const r = await MarcasAPI.post('/auth/solicitar', cuerpo(), { sesion: false });
+      enviando = false;
+      if (!r.ok) {
+        msg(esReenvio ? 'msg-2' : 'msg-1', r.error, 'error');
+        if (esReenvio) cuentaRegresiva(r.espera || 0); else btn.disabled = false;
+        return;
+      }
+      $('paso-1').style.display = 'none';
+      $('paso-2').style.display = '';
+      $('sub-2').textContent = canal === 'sms'
+        ? `Enviamos un SMS al ${valor()}. Escribe el código de 6 dígitos.`
+        : `Enviamos un código a ${valor()}. Revisa tu bandeja de entrada (y la carpeta de spam).`;
+      msg('msg-2', esReenvio ? 'Te enviamos un código nuevo.' : '', 'ok');
+      $('in-codigo').value = '';
+      $('in-codigo').focus();
+      cuentaRegresiva(r.espera || 60);
+      $('btn-enviar').disabled = false;
+    };
+
+    const verificar = async () => {
+      const codigo = $('in-codigo').value.replace(/\D/g, '');
+      if (codigo.length < 6) { msg('msg-2', 'Escribe los 6 dígitos del código.', 'error'); return; }
+      const btn = $('btn-verificar');
+      btn.disabled = true; btn.textContent = 'Verificando…';
+      const r = await MarcasAPI.post('/auth/verificar', { ...cuerpo(), codigo }, { sesion: false });
+      if (!r.ok) {
+        btn.disabled = false; btn.textContent = 'Verificar y continuar';
+        msg('msg-2', r.error, 'error');
+        return;
+      }
+      MarcasAPI.guardar(r.accessToken);
+      msg('msg-2', r.esNueva ? '¡Listo! Creamos tu cuenta. Entrando a tu panel…' : 'Verificado. Entrando a tu panel…', 'ok');
+      setTimeout(() => { location.href = 'marca-panel.html' + (r.esNueva ? '?nueva=1' : ''); }, 600);
+    };
+
+    $('btn-enviar').addEventListener('click', () => pedirCodigo(false));
+    $('btn-reenviar').addEventListener('click', () => pedirCodigo(true));
+    $('btn-verificar').addEventListener('click', verificar);
+    $('in-codigo').addEventListener('keydown', (e) => { if (e.key === 'Enter') verificar(); });
+    $('in-email').addEventListener('keydown', (e) => { if (e.key === 'Enter') pedirCodigo(false); });
+    $('in-tel').addEventListener('keydown', (e) => { if (e.key === 'Enter') pedirCodigo(false); });
+    $('btn-cambiar').addEventListener('click', () => {
+      clearInterval(reenvioTimer);
+      $('paso-2').style.display = 'none';
+      $('paso-1').style.display = '';
+      msg('msg-1', '');
+    });
+
+    (async () => {
+      // ¿SMS disponible? (depende de que Twilio Verify esté configurado en el servidor)
+      try {
+        const res = await fetch(`${API_URL}/api/marcas/auth/canales`);
+        const d = await res.json();
+        if (!d.sms) { $('tab-sms').disabled = true; $('tab-sms').title = 'La verificación por SMS no está disponible por ahora'; $('tab-sms').textContent = '📱 Teléfono (próximamente)'; }
+      } catch (e) { /* se deja habilitado; el servidor responde con un mensaje claro */ }
+      // ¿Ya tiene sesión? Directo al panel.
+      if (await MarcasAPI.restaurarSesion()) location.replace('marca-panel.html');
+    })();
+  })();
+  </script>
+</body>
+</html>

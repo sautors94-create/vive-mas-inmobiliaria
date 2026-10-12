@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>(function(){try{var t=JSON.parse(localStorage.getItem('vm_tema')||'{}');if(t&&t.primary){var e=document.createElement('style');e.textContent=':root{--primary:'+t.primary+' !important;--primary-light:'+t.primaryLight+' !important;--accent:'+t.accent+' !important;--accent-dark:'+t.accentDark+' !important;--bg-dark:'+t.bgDark+' !important}';document.head.appendChild(e);}}catch(e){}})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Panel de mi marca — Vive Más Inmobiliaria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/marcas.css">
+  <style>
+    #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 20000; display: flex; flex-direction: column; gap: 10px; max-width: calc(100vw - 32px); }
+    .toast { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-radius: 12px; box-shadow: var(--shadow-hover); max-width: 360px; font-size: 13px; animation: tIn .25s ease-out; }
+    .toast.success { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+    .toast.error { background: #fbe9e7; color: #bf360c; border: 1px solid #ffab91; }
+    @keyframes tIn { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container nav-content">
+      <a href="../index.html" class="logo">
+        <span class="logo-vive">Vive</span><span class="logo-mas">Más</span>
+        <span class="logo-sub">Marcas aliadas</span>
+      </a>
+      <div class="nav-actions">
+        <a href="directorio.html#marcas-aliadas" class="btn btn-outline">Ver directorio</a>
+        <button type="button" class="btn btn-outline" id="btn-salir">Cerrar sesión</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="mx-wrap" id="app"><div class="mp-estado"><p>Cargando tu panel…</p></div></main>
+  <div id="toast-container"></div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/marcas-api.js"></script>
+  <script>
+  (() => {
+    const app = document.getElementById('app');
+    let M = null;               // marca (panel)
+    let CUENTA = null;          // cuenta de acceso
+    let SMS = false;            // ¿Twilio Verify disponible?
+    let CAT = { categorias: [], ciudades: [] };
+    let SOL = [];               // solicitudes de moderación
+    let tab = 'resumen';
+    let sucio = false;          // cambios sin guardar en la pestaña actual
+    let borrador = {};          // estado temporal de la pestaña (listas, ciudades nuevas…)
+    let promoEditando = null;
+
+    const $ = (s, r = document) => r.querySelector(s);
+    const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+    const toast = (texto, tipo = 'success') => {
+      const t = document.createElement('div');
+      t.className = `toast ${tipo}`;
+      t.textContent = texto;
+      $('#toast-container').appendChild(t);
+      setTimeout(() => t.remove(), tipo === 'error' ? 6000 : 3500);
+    };
+
+    const ESTADOS = { borrador: 'Borrador', publicado: 'Publicado', despublicado: 'Despublicado', bloqueado: 'Bloqueado', desactivado: 'Desactivado' };
+    const CAMPOS = { portada: 'Imagen de portada', logo: 'Logotipo', fotoPerfil: 'Fotografía de perfil', galeria: 'Galería', nombre: 'Nombre', descripcion: 'Descripción', servicios: 'Servicios', categorias: 'Categorías', ciudades: 'Ciudades', contacto: 'Contacto', promociones: 'Promociones', otro: 'Otro' };
+    const fechaCorta = (iso) => iso ? new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '';
+    const fechaHora = (iso) => iso ? new Date(iso).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+    const fechaInput = (iso) => iso ? new Date(iso).toISOString().slice(0, 10) : '';
+
+    // ---------- carga ----------
+    const sesionPerdida = () => { MarcasAPI.guardar(''); location.replace('marca-acceso.html'); };
+
+    const cargarTodo = async () => {
+      const [r, c, s] = await Promise.all([
+        MarcasAPI.get('/panel/mi-marca'),
+        MarcasAPI.get('/publico/catalogos'),
+        MarcasAPI.get('/panel/mi-marca/solicitudes'),
+      ]);
+      if (r.status === 401 || r.status === 403) return sesionPerdida();
+      if (r.status === 410) { app.innerHTML = `<div class="mp-estado"><h2>Esta marca fue eliminada</h2><p>${mbEsc(r.error)}</p></div>`; return; }
+      if (!r.ok) { app.innerHTML = `<div class="mp-estado"><h2>No pudimos cargar tu panel</h2><p>${mbEsc(r.error || '')}</p><p style="margin-top:14px"><button class="mx-btn prim" onclick="location.reload()">Reintentar</button></p></div>`; return; }
+      M = r.marca; CUENTA = r.cuenta; SMS = !!r.smsDisponible;
+      if (c.ok) CAT = { categorias: c.categorias, ciudades: c.ciudades };
+      SOL = s.ok ? s.solicitudes : [];
+      render();
+    };
+
+    const aplicarRespuesta = (r) => { if (r.marca) M = r.marca; if (r.cuenta) CUENTA = r.cuenta; };
+
+    // ---------- piezas ----------
+    const cabecera = () => `
+      <div class="mx-top">
+        <div>
+          <h1>${mbEsc(M.nombreComercial || 'Mi marca')}</h1>
+          <span class="mx-estado ${mbEsc(M.estado)}">${M.visiblePublicamente ? '● Publicado' : '● ' + mbEsc(ESTADOS[M.estado] || M.estado)}</span>
+          ${M.ocultoPorModeracion ? '<span class="mx-estado despublicado" style="margin-left:6px">Oculta temporalmente</span>' : ''}
+        </div>
+        <div class="mx-acciones" style="margin:0">
+          <a class="mx-btn" target="_blank" rel="noopener" href="marca.html?vista=previa">👁️ Vista previa</a>
+          ${M.estado === 'publicado'
+            ? '<button class="mx-btn" id="btn-despublicar">Despublicar</button>'
+            : `<button class="mx-btn prim" id="btn-publicar" ${M.puedePublicar ? '' : 'disabled'} title="${M.puedePublicar ? '' : 'Completa los requisitos para publicar'}">🚀 Publicar</button>`}
+        </div>
+      </div>`;
+
+    const avisos = () => {
+      let h = '';
+      if (M.estado === 'bloqueado') h += `<div class="mx-banner error"><strong>Tu marca está bloqueada.</strong> No aparece en el directorio y no puede publicarse.${M.motivoBloqueo ? `<br>Motivo: ${mbEsc(M.motivoBloqueo)}` : ''}<br>Si crees que es un error, contáctanos.</div>`;
+      if (M.estado === 'desactivado') h += `<div class="mx-banner error"><strong>Tu marca fue retirada del directorio</strong> por el equipo de SomosViveMás y no puede publicarse por ahora. Tus datos se conservan.</div>`;
+      if (M.solicitudesAbiertas > 0) h += `<div class="mx-banner aviso"><strong>Tienes ${M.solicitudesAbiertas} solicitud(es) de cambios del equipo de SomosViveMás.</strong>${M.ocultoPorModeracion ? ' Tu marca está oculta mientras las atiendes.' : ''} <a href="#" data-ir="avisos" style="font-weight:600;text-decoration:underline">Verlas</a></div>`;
+      return h;
+    };
+
+    const tabs = () => {
+      const lista = [['resumen', 'Resumen'], ['info', 'Información'], ['ubicacion', 'Ubicación y cobertura'], ['imagenes', 'Imágenes'], ['contacto', 'Contacto'], ['promos', 'Promociones'], ['avisos', 'Avisos'], ['cuenta', 'Mi acceso']];
+      return `<div class="mx-tabs">${lista.map(([k, n]) => `<button class="mx-tab ${tab === k ? 'activo' : ''}" data-tab="${k}">${n}${k === 'avisos' && M.solicitudesAbiertas ? `<span class="mx-punto">${M.solicitudesAbiertas}</span>` : ''}</button>`).join('')}</div>`;
+    };
+
+    // ---------- pestañas ----------
+    const tResumen = () => {
+      const faltantes = M.faltantes || [];
+      return `
+        <div class="mx-card">
+          <h2>Estado de tu perfil</h2>
+          <p class="mx-ayuda">Tu marca se publica en cuanto cumples los requisitos mínimos: <strong>no necesita aprobación previa</strong>. El equipo de SomosViveMás puede revisar los perfiles después de publicados.</p>
+          ${M.estado === 'publicado' ? `<div class="mx-banner ok">✅ Tu marca está publicada en el Directorio. <a target="_blank" rel="noopener" href="marca.html?s=${encodeURIComponent(M.slug)}" style="font-weight:600;text-decoration:underline">Ver perfil público</a></div>` : ''}
+          ${faltantes.length ? `<div class="mx-banner aviso"><strong>Para publicar te falta:</strong><ul class="mx-faltantes">${faltantes.map((f) => `<li>${mbEsc(f)}</li>`).join('')}</ul></div>` : (M.estado !== 'publicado' && M.puedePublicar ? '<div class="mx-banner info">🎉 Tu perfil cumple los requisitos. Ya puedes publicarlo con el botón <strong>Publicar</strong>.</div>' : '')}
+          <p class="mx-ayuda" style="margin:0">Recorre las pestañas para completar tu información, ubicación, imágenes, contacto y promociones.</p>
+        </div>`;
+    };
+
+    const chipsTexto = (clave, items) => `<div class="mx-tagbox" data-lista="${clave}">${items.map((t, i) => `<span>${mbEsc(t)}<button type="button" data-quitar="${clave}" data-i="${i}" aria-label="Quitar">×</button></span>`).join('')}</div>`;
+
+    const tInfo = () => {
+      borrador.servicios = borrador.servicios || [...M.servicios];
+      const sel = new Set(M.categorias.map((c) => c.id));
+      return `
+        <div class="mx-card">
+          <h2>Información general</h2>
+          <p class="mx-ayuda">Esto es lo que verá la comunidad en tu tarjeta y en tu perfil.</p>
+          <div class="mx-grid2">
+            <div class="mx-campo"><label for="f-nombre">Nombre comercial o marca personal *</label><input class="mx-in" id="f-nombre" maxlength="100" value="${mbEsc(M.nombreComercial)}"></div>
+            <div class="mx-campo"><label for="f-resp">Nombre del profesional o responsable</label><input class="mx-in" id="f-resp" maxlength="100" value="${mbEsc(M.responsable)}"></div>
+          </div>
+          <div class="mx-campo"><label for="f-corta">Descripción breve * <small style="display:inline">(mín. 30, máx. 200 caracteres)</small></label><textarea class="mx-ta" id="f-corta" maxlength="200" style="min-height:70px">${mbEsc(M.descripcionCorta)}</textarea><small id="cnt-corta"></small></div>
+          <div class="mx-campo"><label for="f-desc">Descripción de la marca</label><textarea class="mx-ta" id="f-desc" maxlength="3000" style="min-height:130px">${mbEsc(M.descripcion)}</textarea></div>
+          <div class="mx-campo"><label for="f-det">Descripción detallada de tus servicios</label><textarea class="mx-ta" id="f-det" maxlength="3000" style="min-height:130px">${mbEsc(M.serviciosDetalle)}</textarea></div>
+        </div>
+        <div class="mx-card">
+          <h2>Categorías de servicio *</h2>
+          <p class="mx-ayuda">Elige todas las que apliquen (máximo 8). Aparecerás en la búsqueda de cada una.</p>
+          <div class="mx-chips" id="f-cats">${CAT.categorias.map((c) => `<label class="mx-check ${sel.has(c._id) ? 'on' : ''}"><input type="checkbox" value="${mbEsc(c._id)}" ${sel.has(c._id) ? 'checked' : ''}> ${mbEsc(c.icono || '')} ${mbEsc(c.nombre)}</label>`).join('')}</div>
+          <div class="mx-campo" style="margin-top:16px"><label for="f-catprin">Categoría principal (opcional)</label><select class="mx-sel" id="f-catprin"></select></div>
+        </div>
+        <div class="mx-card">
+          <h2>Servicios o especialidades</h2>
+          <p class="mx-ayuda">Palabras que la gente podría buscar (ej. "persianas enrollables", "avalúos"). Máximo 20.</p>
+          <div style="display:flex;gap:8px"><input class="mx-in" id="f-serv-nuevo" maxlength="60" placeholder="Escribe un servicio y presiona Enter"><button type="button" class="mx-btn" id="btn-serv-add">Agregar</button></div>
+          ${chipsTexto('servicios', borrador.servicios)}
+        </div>
+        <div class="mx-barra-fija"><button class="mx-btn prim" id="btn-guardar-info">Guardar cambios</button></div>`;
+    };
+
+    const tUbicacion = () => {
+      borrador.ciudadesSel = borrador.ciudadesSel || M.ciudades.map((c) => c.id);
+      borrador.nuevas = borrador.nuevas || [];
+      borrador.zonas = borrador.zonas || [...M.zonasAdicionales];
+      return `
+        <div class="mx-card">
+          <h2>Ciudades de cobertura *</h2>
+          <p class="mx-ayuda">Agrega todas las ciudades donde prestas servicio (máximo 20). Aparecerás cuando alguien filtre por cualquiera de ellas.</p>
+          <div class="mx-campo"><label for="f-ciudad-add">Agregar ciudad</label><select class="mx-sel" id="f-ciudad-add"></select></div>
+          <div class="mx-tagbox" id="ciudades-sel"></div>
+          <div class="mx-campo" style="margin-top:16px"><label for="f-ciudad-prin">Ciudad principal (opcional)</label><select class="mx-sel" id="f-ciudad-prin"></select></div>
+          <details style="margin-top:12px"><summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--primary)">¿No encuentras tu ciudad? Agrégala</summary>
+            <div class="mx-grid2" style="margin-top:10px">
+              <div class="mx-campo"><label for="f-nc-nombre">Ciudad</label><input class="mx-in" id="f-nc-nombre" maxlength="80"></div>
+              <div class="mx-campo"><label for="f-nc-estado">Estado</label><input class="mx-in" id="f-nc-estado" maxlength="80"></div>
+            </div>
+            <button type="button" class="mx-btn" id="btn-nc-add">Agregar ciudad nueva</button>
+          </details>
+        </div>
+        <div class="mx-card">
+          <h2>Zonas adicionales de servicio</h2>
+          <p class="mx-ayuda">Colonias, municipios o regiones (ej. "Toluca y alrededores"). Máximo 15.</p>
+          <div style="display:flex;gap:8px"><input class="mx-in" id="f-zona-nueva" maxlength="80" placeholder="Escribe una zona y presiona Enter"><button type="button" class="mx-btn" id="btn-zona-add">Agregar</button></div>
+          ${chipsTexto('zonas', borrador.zonas)}
+        </div>
+        <div class="mx-barra-fija"><button class="mx-btn prim" id="btn-guardar-ubic">Guardar cambios</button></div>`;
+    };
+
+    const tImagenes = () => {
+      const bloque = (tipo, titulo, ayuda) => {
+        const url = mbImg(M[tipo]);
+        return `<div class="mx-img-bloque" data-tipo="${tipo}">
+          <div class="mx-img-prev">${url ? `<img src="${url}" alt="${titulo}">` : 'Sin imagen'}</div>
+          <div>
+            <h3>${titulo}</h3><p>${ayuda}</p>
+            <input type="file" accept="image/jpeg,image/png,image/webp" data-file="${tipo}" style="font-size:13px;margin-bottom:8px;max-width:100%">
+            <div class="mx-acciones" style="margin-top:4px">
+              <button class="mx-btn prim" data-subir="${tipo}" disabled>Guardar imagen</button>
+              ${url ? `<button class="mx-btn peligro" data-borrar="${tipo}">Eliminar</button>` : ''}
+            </div>
+          </div></div>`;
+      };
+      const gal = (M.galeria || []).filter(mbImg);
+      return `
+        <div class="mx-card">
+          <h2>Imágenes de tu marca</h2>
+          <p class="mx-ayuda">JPG, PNG o WebP de hasta 5 MB. Verás una vista previa antes de guardar. Necesitas al menos un logotipo o una fotografía de perfil para publicar.</p>
+          ${bloque('logo', 'Logotipo', 'Se muestra en tu tarjeta y perfil. Recomendado: cuadrado.')}
+          ${bloque('fotoPerfil', 'Fotografía de perfil', 'Ideal para profesionales independientes o marcas personales.')}
+          ${bloque('portada', 'Imagen de portada', 'Banner horizontal. Recomendado: 1600×600 px.')}
+        </div>
+        <div class="mx-card">
+          <h2>Fotografías adicionales (${gal.length}/8)</h2>
+          <p class="mx-ayuda">Muestra tu trabajo: proyectos terminados, instalaciones, equipo.</p>
+          ${gal.length ? `<div class="mx-galeria">${gal.map((u, i) => `<div><img src="${u}" alt="Foto ${i + 1}" loading="lazy"><button type="button" data-borrar-gal="${i}" aria-label="Eliminar foto" title="Eliminar">✕</button></div>`).join('')}</div>` : ''}
+          ${gal.length < 8 ? `<div class="mx-img-bloque" data-tipo="galeria" style="border-top:none;padding-top:0">
+            <div class="mx-img-prev">Nueva foto</div>
+            <div><input type="file" accept="image/jpeg,image/png,image/webp" data-file="galeria" style="font-size:13px;margin-bottom:8px;max-width:100%">
+            <div class="mx-acciones" style="margin-top:4px"><button class="mx-btn prim" data-subir="galeria" disabled>Agregar a la galería</button></div></div></div>` : '<p class="mx-ayuda">Llegaste al máximo de fotografías.</p>'}
+        </div>`;
+    };
+
+    const tContacto = () => {
+      const c = M.contacto || {}; const r = c.redes || {};
+      return `
+        <div class="mx-card">
+          <h2>Datos de contacto públicos</h2>
+          <p class="mx-ayuda">Esto <strong>sí se muestra</strong> en tu perfil público. Es independiente de los datos con los que entras a tu cuenta (pestaña “Mi acceso”). Deja vacío lo que no quieras publicar.</p>
+          <div class="mx-grid2">
+            <div class="mx-campo"><label for="c-tel">Teléfono</label><input class="mx-in" id="c-tel" type="tel" maxlength="30" value="${mbEsc(c.telefono)}" placeholder="55 1234 5678"></div>
+            <div class="mx-campo"><label for="c-wa">WhatsApp</label><input class="mx-in" id="c-wa" type="tel" maxlength="30" value="${mbEsc(c.whatsapp)}" placeholder="55 1234 5678"></div>
+            <div class="mx-campo"><label for="c-mail">Correo de contacto</label><input class="mx-in" id="c-mail" type="email" maxlength="254" value="${mbEsc(c.email)}"></div>
+            <div class="mx-campo"><label for="c-web">Sitio web</label><input class="mx-in" id="c-web" maxlength="300" value="${mbEsc(c.sitioWeb)}" placeholder="https://"></div>
+          </div>
+          <h2 style="margin-top:8px;font-size:15px">Redes sociales</h2>
+          <div class="mx-grid2" style="margin-top:10px">
+            ${[['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['linkedin', 'LinkedIn'], ['youtube', 'YouTube']].map(([k, n]) => `<div class="mx-campo"><label for="r-${k}">${n}</label><input class="mx-in" id="r-${k}" maxlength="300" value="${mbEsc(r[k])}" placeholder="https://"></div>`).join('')}
+          </div>
+        </div>
+        <div class="mx-barra-fija"><button class="mx-btn prim" id="btn-guardar-contacto">Guardar cambios</button></div>`;
+    };
+
+    const estadoPromo = (p) => !p.activa ? '<span class="mx-pill off">Inactiva</span>' : (p.vigente ? '<span class="mx-pill on">Vigente</span>' : '<span class="mx-pill venc">Fuera de vigencia</span>');
+    const etiquetaP = (p) => p.titulo || (p.tipo === 'porcentaje' ? `${p.porcentaje}% de descuento` : ({ monto: 'Descuento en monto', dos_por_uno: '2x1', cortesia: 'Cortesía', otro: 'Promoción' }[p.tipo]));
+
+    const formPromo = (p) => {
+      p = p || { tipo: 'porcentaje', activa: true };
+      return `
+        <div class="mx-card" id="form-promo">
+          <h2>${p.id ? 'Editar promoción' : 'Nueva promoción'}</h2>
+          <p class="mx-ayuda">Los beneficios los otorgas tú directamente. SomosViveMás no valida ni canjea descuentos: indica con claridad cómo solicitarlos.</p>
+          <div class="mx-grid2">
+            <div class="mx-campo"><label for="p-tipo">Tipo de beneficio *</label><select class="mx-sel" id="p-tipo">
+              ${[['porcentaje', 'Porcentaje de descuento'], ['monto', 'Descuento en monto'], ['dos_por_uno', '2x1'], ['cortesia', 'Cortesía / servicio gratis'], ['otro', 'Otro']].map(([v, n]) => `<option value="${v}" ${p.tipo === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+            <div class="mx-campo" id="p-porc-wrap"><label for="p-porc">Porcentaje (1-100) *</label><input class="mx-in" id="p-porc" type="number" min="1" max="100" value="${p.porcentaje || ''}"></div>
+          </div>
+          <div class="mx-campo"><label for="p-titulo">Etiqueta visual (opcional)</label><input class="mx-in" id="p-titulo" maxlength="80" value="${mbEsc(p.titulo)}" placeholder="Ej. 20% OFF · Cotización gratis"><small>Es el texto destacado en tu tarjeta. Si lo dejas vacío usamos el tipo de beneficio.</small></div>
+          <div class="mx-campo"><label for="p-desc">Descripción del beneficio *</label><textarea class="mx-ta" id="p-desc" maxlength="600" style="min-height:80px">${mbEsc(p.descripcion)}</textarea></div>
+          <div class="mx-campo"><label for="p-cond">Condiciones de aplicación</label><textarea class="mx-ta" id="p-cond" maxlength="800" style="min-height:70px">${mbEsc(p.condiciones)}</textarea></div>
+          <div class="mx-campo"><label for="p-inst">Instrucciones para solicitarlo</label><textarea class="mx-ta" id="p-inst" maxlength="600" style="min-height:70px" placeholder="Ej. Menciona que vienes de SomosViveMás al contactarnos por WhatsApp.">${mbEsc(p.instrucciones)}</textarea></div>
+          <div class="mx-grid2">
+            <div class="mx-campo"><label for="p-ini">Vigente desde</label><input class="mx-in" id="p-ini" type="date" value="${fechaInput(p.vigenciaInicio)}"></div>
+            <div class="mx-campo"><label for="p-fin">Vigente hasta</label><input class="mx-in" id="p-fin" type="date" value="${fechaInput(p.vigenciaFin)}"><small>Déjalo vacío si no vence.</small></div>
+          </div>
+          <label class="mx-check ${p.activa !== false ? 'on' : ''}" style="margin-bottom:14px"><input type="checkbox" id="p-activa" ${p.activa !== false ? 'checked' : ''}> Promoción activa</label>
+          <div class="mx-acciones"><button class="mx-btn prim" id="btn-guardar-promo" data-id="${p.id || ''}">${p.id ? 'Guardar cambios' : 'Crear promoción'}</button>${p.id ? '<button class="mx-btn" id="btn-cancelar-promo">Cancelar</button>' : ''}</div>
+        </div>`;
+    };
+
+    const tPromos = () => `
+      <div class="mx-card">
+        <h2>Tus promociones (${M.promociones.length}/10)</h2>
+        <p class="mx-ayuda">Solo las promociones activas y vigentes se muestran públicamente.</p>
+        ${M.promociones.length ? M.promociones.map((p) => `
+          <div class="mx-promo ${p.activa ? '' : 'inactiva'}">
+            <div class="mx-promo-cab"><strong>🏷️ ${mbEsc(etiquetaP(p))}</strong>${estadoPromo(p)}</div>
+            <p style="font-size:13px;color:var(--text-light);margin-bottom:6px;white-space:pre-line">${mbEsc(p.descripcion)}</p>
+            <p style="font-size:12px;color:var(--text-light)">${p.vigenciaFin ? 'Hasta ' + fechaCorta(p.vigenciaFin) : 'Sin fecha de vencimiento'}</p>
+            <div class="mx-acciones" style="margin-top:10px">
+              <button class="mx-btn" data-promo-editar="${p.id}">Editar</button>
+              <button class="mx-btn" data-promo-toggle="${p.id}" data-activa="${p.activa ? 1 : 0}">${p.activa ? 'Desactivar' : 'Activar'}</button>
+              <button class="mx-btn peligro" data-promo-borrar="${p.id}">Eliminar</button>
+            </div>
+          </div>`).join('') : '<p class="mx-ayuda" style="margin:0">Aún no tienes promociones. Crea la primera abajo.</p>'}
+      </div>
+      ${M.promociones.length < 10 || promoEditando ? formPromo(promoEditando ? M.promociones.find((x) => x.id === promoEditando) : null) : ''}`;
+
+    const tAvisos = () => `
+      <div class="mx-card">
+        <h2>Avisos del equipo de SomosViveMás</h2>
+        <p class="mx-ayuda">Si detectamos algo que mejorar en tu perfil (fotografías, descripción, datos), te lo indicamos aquí. Corrige lo solicitado en las pestañas correspondientes y marca el aviso como atendido.</p>
+        ${SOL.length ? SOL.map((s) => `
+          <div class="mx-aviso ${s.estado === 'abierta' ? 'abierta' : ''}">
+            <h3>${mbEsc(s.motivo)}</h3>
+            <div class="mx-meta">${mbEsc(s.de)} · ${fechaHora(s.creadaEn)} · Qué corregir: <strong>${mbEsc(CAMPOS[s.campo] || 'Otro')}</strong> · <strong>${{ abierta: 'Pendiente', atendida: 'Atendida (en revisión)', resuelta: 'Resuelta', cancelada: 'Cancelada' }[s.estado]}</strong>${s.ocultarMientras && s.estado === 'abierta' ? ' · Tu marca está oculta mientras se corrige' : ''}</div>
+            <p>${mbEsc(s.mensaje)}</p>
+            ${s.notaProveedor ? `<p style="margin-top:8px;font-size:13px;color:var(--text-light)"><strong>Tu respuesta:</strong> ${mbEsc(s.notaProveedor)}</p>` : ''}
+            ${s.estado === 'abierta' ? `<div style="margin-top:10px"><textarea class="mx-ta" data-nota="${s.id}" maxlength="1000" placeholder="Opcional: cuéntanos qué cambiaste" style="min-height:60px;margin-bottom:8px"></textarea><button class="mx-btn prim" data-atender="${s.id}">Ya lo corregí</button></div>` : ''}
+          </div>`).join('') : '<p class="mx-ayuda" style="margin:0">No tienes avisos. ¡Todo en orden!</p>'}
+      </div>`;
+
+    const tCuenta = () => `
+      <div class="mx-card">
+        <h2>Mi acceso a la cuenta</h2>
+        <p class="mx-ayuda">Son los datos con los que entras a este panel. <strong>No se publican.</strong> Al agregar o cambiar uno te enviaremos un código de verificación y solo se guarda cuando lo confirmas.</p>
+        <div class="mx-grid2">
+          <div class="mx-campo"><label>Correo de acceso</label><div class="mx-in" style="background:var(--bg-secondary)">${CUENTA.email ? mbEsc(CUENTA.email) + (CUENTA.emailVerificado ? ' ✅ verificado' : '') : 'No agregado'}</div></div>
+          <div class="mx-campo"><label>Teléfono de acceso</label><div class="mx-in" style="background:var(--bg-secondary)">${CUENTA.telefono ? mbEsc(CUENTA.telefono) + (CUENTA.telefonoVerificado ? ' ✅ verificado' : '') : 'No agregado'}</div></div>
+        </div>
+        <div id="acceso-form" style="margin-top:6px">
+          <div class="mx-chips" style="margin-bottom:12px">
+            <label class="mx-check on"><input type="radio" name="a-canal" value="email" checked> ${CUENTA.email ? 'Cambiar correo' : 'Agregar correo'}</label>
+            <label class="mx-check" ${SMS ? '' : 'title="La verificación por SMS aún no está disponible"'}><input type="radio" name="a-canal" value="sms" ${SMS ? '' : 'disabled'}> ${CUENTA.telefono ? 'Cambiar teléfono' : 'Agregar teléfono'}${SMS ? '' : ' (próximamente)'}</label>
+          </div>
+          <div class="mx-campo"><label for="a-valor" id="a-etiqueta">Nuevo correo</label><input class="mx-in" id="a-valor" type="email" autocomplete="off"></div>
+          <div id="a-paso2" style="display:none">
+            <div class="mx-campo"><label for="a-codigo">Código de verificación</label><input class="mx-in" id="a-codigo" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="max-width:220px;letter-spacing:6px;text-align:center;font-weight:700"></div>
+          </div>
+          <div class="mx-acciones"><button class="mx-btn prim" id="btn-a-enviar">Enviar código</button><button class="mx-btn prim" id="btn-a-confirmar" style="display:none">Confirmar y guardar</button></div>
+        </div>
+      </div>`;
+
+    // ---------- render ----------
+    const TABS = { resumen: tResumen, info: tInfo, ubicacion: tUbicacion, imagenes: tImagenes, contacto: tContacto, promos: tPromos, avisos: tAvisos, cuenta: tCuenta };
+
+    const render = () => {
+      app.innerHTML = cabecera() + avisos() + tabs() + `<div id="tab-contenido">${TABS[tab]()}</div>`;
+      sucio = false;
+      afterRender();
+    };
+
+    const pintarCatPrincipal = () => {
+      const sel = $('#f-catprin'); if (!sel) return;
+      const marcadas = $$('#f-cats input:checked').map((i) => i.value);
+      const actual = sel.value || M.categoriaPrincipal || '';
+      sel.innerHTML = '<option value="">Sin categoría principal</option>' + CAT.categorias.filter((c) => marcadas.includes(c._id)).map((c) => `<option value="${mbEsc(c._id)}" ${c._id === actual ? 'selected' : ''}>${mbEsc(c.nombre)}</option>`).join('');
+    };
+
+    const pintarCiudades = () => {
+      const add = $('#f-ciudad-add'); if (!add) return;
+      const sel = new Set(borrador.ciudadesSel);
+      add.innerHTML = '<option value="">Selecciona una ciudad…</option>' + CAT.ciudades.filter((c) => !sel.has(c._id)).map((c) => `<option value="${mbEsc(c._id)}">${mbEsc(c.nombre)}${c.estado && c.estado !== c.nombre ? ', ' + mbEsc(c.estado) : ''}</option>`).join('');
+      const nombre = (id) => { const c = CAT.ciudades.find((x) => x._id === id) || M.ciudades.find((x) => x.id === id); return c ? c.nombre : '…'; };
+      $('#ciudades-sel').innerHTML = borrador.ciudadesSel.map((id) => `<span>${mbEsc(nombre(id))}<button type="button" data-quitar-ciudad="${mbEsc(id)}" aria-label="Quitar">×</button></span>`).join('')
+        + borrador.nuevas.map((n, i) => `<span>${mbEsc(n.nombre)} <em style="font-size:11px;color:var(--text-light)">(nueva)</em><button type="button" data-quitar-nueva="${i}" aria-label="Quitar">×</button></span>`).join('');
+      const prin = $('#f-ciudad-prin');
+      const actual = prin.value || M.ciudadPrincipal || '';
+      prin.innerHTML = '<option value="">Sin ciudad principal</option>' + borrador.ciudadesSel.map((id) => `<option value="${mbEsc(id)}" ${id === actual ? 'selected' : ''}>${mbEsc(nombre(id))}</option>`).join('');
+    };
+
+    const afterRender = () => {
+      if (tab === 'info') {
+        pintarCatPrincipal();
+        const corta = $('#f-corta'), cnt = $('#cnt-corta');
+        const act = () => { const n = corta.value.trim().length; cnt.textContent = `${n}/200 caracteres${n < 30 ? ' (mínimo 30 para publicar)' : ''}`; };
+        corta.addEventListener('input', act); act();
+      }
+      if (tab === 'ubicacion') pintarCiudades();
+      if (tab === 'promos') { const act = () => { const w = $('#p-porc-wrap'); if (w) w.style.display = $('#p-tipo').value === 'porcentaje' ? '' : 'none'; }; if ($('#p-tipo')) { $('#p-tipo').addEventListener('change', act); act(); } }
+      if (tab === 'cuenta') {
+        $$('input[name="a-canal"]').forEach((r) => r.addEventListener('change', () => {
+          const sms = $('input[name="a-canal"]:checked').value === 'sms';
+          $('#a-etiqueta').textContent = sms ? 'Nuevo teléfono (con código de país)' : 'Nuevo correo';
+          $('#a-valor').type = sms ? 'tel' : 'email';
+          $('#a-valor').placeholder = sms ? '+52 55 1234 5678' : 'nuevo@correo.com';
+          $$('.mx-check', $('#acceso-form')).forEach((l) => l.classList.toggle('on', l.querySelector('input').checked));
+        }));
+      }
+    };
+
+    // ---------- acciones ----------
+    const guardar = async (cuerpo, btn, etiqueta) => {
+      if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+      const r = await MarcasAPI.put('/panel/mi-marca', cuerpo);
+      if (r.status === 401) return sesionPerdida();
+      if (btn) { btn.disabled = false; btn.textContent = etiqueta; }
+      if (!r.ok) {
+        toast(r.error, 'error');
+        if (r.faltantes && r.faltantes.length) toast('Falta: ' + r.faltantes.join(', '), 'error');
+        return false;
+      }
+      aplicarRespuesta(r); borrador = {}; toast(r.mensaje || 'Cambios guardados'); render();
+      return true;
+    };
+
+    const cambiarTab = (nuevo) => {
+      if (sucio && !confirm('Tienes cambios sin guardar en esta pestaña. ¿Salir sin guardarlos?')) return;
+      tab = nuevo; borrador = {}; promoEditando = null; render(); window.scrollTo({ top: 0 });
+    };
+
+    app.addEventListener('input', (e) => { if (e.target.closest('#tab-contenido') && !['a-valor', 'a-codigo'].includes(e.target.id) && e.target.type !== 'file') sucio = true; });
+    app.addEventListener('change', (e) => {
+      const t = e.target;
+      if (t.closest('#f-cats')) { t.closest('.mx-check').classList.toggle('on', t.checked); pintarCatPrincipal(); sucio = true; }
+      if (t.id === 'p-activa') t.closest('.mx-check').classList.toggle('on', t.checked);
+      if (t.id === 'f-ciudad-add' && t.value) { borrador.ciudadesSel.push(t.value); pintarCiudades(); sucio = true; }
+      if (t.dataset && t.dataset.file) { // vista previa antes de guardar
+        const bloque = t.closest('.mx-img-bloque'); const f = t.files[0]; const btn = $('[data-subir]', bloque);
+        if (!f) { btn.disabled = true; return; }
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type)) { toast('Formato no permitido. Usa JPG, PNG o WebP.', 'error'); t.value = ''; btn.disabled = true; return; }
+        if (f.size > 5 * 1024 * 1024) { toast('La imagen supera los 5 MB.', 'error'); t.value = ''; btn.disabled = true; return; }
+        $('.mx-img-prev', bloque).innerHTML = `<img src="${URL.createObjectURL(f)}" alt="Vista previa">`;
+        btn.disabled = false;
+      }
+    });
+
+    app.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      if (e.target.id === 'f-serv-nuevo') { e.preventDefault(); $('#btn-serv-add').click(); }
+      if (e.target.id === 'f-zona-nueva') { e.preventDefault(); $('#btn-zona-add').click(); }
+    });
+
+    app.addEventListener('click', async (e) => {
+      const b = e.target.closest('button, a[data-ir]'); if (!b) return;
+      if (b.dataset.ir) { e.preventDefault(); return cambiarTab(b.dataset.ir); }
+      if (b.dataset.tab) return cambiarTab(b.dataset.tab);
+
+      if (b.id === 'btn-publicar') {
+        b.disabled = true;
+        const r = await MarcasAPI.post('/panel/mi-marca/publicar');
+        if (!r.ok) { toast(r.error, 'error'); b.disabled = false; return; }
+        aplicarRespuesta(r); toast(r.mensaje); render(); return;
+      }
+      if (b.id === 'btn-despublicar') {
+        if (!confirm('Tu marca dejará de mostrarse en el directorio. ¿Despublicar?')) return;
+        const r = await MarcasAPI.post('/panel/mi-marca/despublicar');
+        if (!r.ok) { toast(r.error, 'error'); return; }
+        aplicarRespuesta(r); toast(r.mensaje); render(); return;
+      }
+
+      // listas de texto (servicios / zonas)
+      if (b.id === 'btn-serv-add' || b.id === 'btn-zona-add') {
+        const esServ = b.id === 'btn-serv-add';
+        const inp = $(esServ ? '#f-serv-nuevo' : '#f-zona-nueva'); const v = inp.value.trim();
+        const lista = esServ ? borrador.servicios : borrador.zonas;
+        if (!v) return;
+        if (lista.length >= (esServ ? 20 : 15)) return toast(`Máximo ${esServ ? 20 : 15} elementos.`, 'error');
+        if (lista.some((x) => x.toLowerCase() === v.toLowerCase())) { inp.value = ''; return; }
+        lista.push(v); sucio = true;
+        const cont = $(`[data-lista="${esServ ? 'servicios' : 'zonas'}"]`);
+        cont.outerHTML = chipsTexto(esServ ? 'servicios' : 'zonas', lista); inp.value = ''; inp.focus(); return;
+      }
+      if (b.dataset.quitar) {
+        const lista = b.dataset.quitar === 'servicios' ? borrador.servicios : borrador.zonas;
+        lista.splice(Number(b.dataset.i), 1); sucio = true;
+        $(`[data-lista="${b.dataset.quitar}"]`).outerHTML = chipsTexto(b.dataset.quitar, lista); return;
+      }
+
+      // ciudades
+      if (b.dataset.quitarCiudad) { borrador.ciudadesSel = borrador.ciudadesSel.filter((id) => id !== b.dataset.quitarCiudad); pintarCiudades(); sucio = true; return; }
+      if (b.dataset.quitarNueva) { borrador.nuevas.splice(Number(b.dataset.quitarNueva), 1); pintarCiudades(); sucio = true; return; }
+      if (b.id === 'btn-nc-add') {
+        const nombre = $('#f-nc-nombre').value.trim(), estado = $('#f-nc-estado').value.trim();
+        if (nombre.length < 3) return toast('Escribe el nombre de la ciudad.', 'error');
+        if (borrador.nuevas.length >= 3) return toast('Puedes agregar hasta 3 ciudades nuevas a la vez.', 'error');
+        borrador.nuevas.push({ nombre, estado }); $('#f-nc-nombre').value = ''; $('#f-nc-estado').value = ''; pintarCiudades(); sucio = true; return;
+      }
+
+      // guardar pestañas
+      if (b.id === 'btn-guardar-info') {
+        const cats = $$('#f-cats input:checked').map((i) => i.value);
+        return guardar({
+          nombreComercial: $('#f-nombre').value, responsable: $('#f-resp').value, descripcionCorta: $('#f-corta').value,
+          descripcion: $('#f-desc').value, serviciosDetalle: $('#f-det').value,
+          categorias: cats, categoriaPrincipal: $('#f-catprin').value || null, servicios: borrador.servicios,
+        }, b, 'Guardar cambios');
+      }
+      if (b.id === 'btn-guardar-ubic') {
+        return guardar({
+          ciudades: borrador.ciudadesSel, nuevasCiudades: borrador.nuevas,
+          ciudadPrincipal: $('#f-ciudad-prin').value || null, zonasAdicionales: borrador.zonas,
+        }, b, 'Guardar cambios');
+      }
+      if (b.id === 'btn-guardar-contacto') {
+        return guardar({ contacto: {
+          telefono: $('#c-tel').value, whatsapp: $('#c-wa').value, email: $('#c-mail').value, sitioWeb: $('#c-web').value,
+          redes: Object.fromEntries(['instagram', 'facebook', 'tiktok', 'linkedin', 'youtube'].map((k) => [k, $(`#r-${k}`).value])),
+        } }, b, 'Guardar cambios');
+      }
+
+      // imágenes
+      if (b.dataset.subir) {
+        const tipo = b.dataset.subir; const f = $(`[data-file="${tipo}"]`).files[0]; if (!f) return;
+        const fd = new FormData(); fd.append('imagen', f);
+        b.disabled = true; b.textContent = 'Subiendo…';
+        const r = await MarcasAPI.subir(`/panel/mi-marca/imagenes/${tipo}`, fd);
+        if (!r.ok) { toast(r.error, 'error'); b.disabled = false; b.textContent = 'Guardar imagen'; return; }
+        aplicarRespuesta(r); toast(r.mensaje); render(); return;
+      }
+      if (b.dataset.borrar) {
+        if (!confirm('¿Eliminar esta imagen?')) return;
+        const r = await MarcasAPI.del(`/panel/mi-marca/imagenes/${b.dataset.borrar}`);
+        if (!r.ok) return toast(r.error, 'error');
+        aplicarRespuesta(r); toast(r.mensaje); render(); return;
+      }
+      if (b.dataset.borrarGal !== undefined) {
+        if (!confirm('¿Eliminar esta fotografía?')) return;
+        const url = (M.galeria || []).filter(mbImg)[Number(b.dataset.borrarGal)];
+        const r = await MarcasAPI.del('/panel/mi-marca/imagenes/galeria', { url });
+        if (!r.ok) return toast(r.error, 'error');
+        aplicarRespuesta(r); toast(r.mensaje); render(); return;
+      }
+
+      // promociones
+      if (b.dataset.promoEditar) { promoEditando = b.dataset.promoEditar; render(); $('#form-promo').scrollIntoView({ behavior: 'smooth' }); return; }
+      if (b.id === 'btn-cancelar-promo') { promoEditando = null; render(); return; }
+      if (b.dataset.promoToggle) {
+        const r = await MarcasAPI.put(`/panel/mi-marca/promociones/${b.dataset.promoToggle}`, { activa: b.dataset.activa !== '1' });
+        if (!r.ok) return toast(r.error, 'error');
+        aplicarRespuesta(r); toast(r.mensaje); render(); return;
+      }
+      if (b.dataset.promoBorrar) {
+        if (!confirm('¿Eliminar esta promoción?')) return;
+        const r = await MarcasAPI.del(`/panel/mi-marca/promociones/${b.dataset.promoBorrar}`);
+        if (!r.ok) return toast(r.error, 'error');
+        aplicarRespuesta(r); toast(r.mensaje); render(); return;
+      }
+      if (b.id === 'btn-guardar-promo') {
+        const id = b.dataset.id;
+        const cuerpo = {
+          tipo: $('#p-tipo').value, porcentaje: $('#p-porc').value, titulo: $('#p-titulo').value, descripcion: $('#p-desc').value,
+          condiciones: $('#p-cond').value, instrucciones: $('#p-inst').value,
+          vigenciaInicio: $('#p-ini').value || null, vigenciaFin: $('#p-fin').value || null, activa: $('#p-activa').checked,
+        };
+        b.disabled = true;
+        const r = id ? await MarcasAPI.put(`/panel/mi-marca/promociones/${id}`, cuerpo) : await MarcasAPI.post('/panel/mi-marca/promociones', cuerpo);
+        b.disabled = false;
+        if (!r.ok) return toast(r.error, 'error');
+        aplicarRespuesta(r); promoEditando = null; toast(r.mensaje); render(); return;
+      }
+
+      // avisos
+      if (b.dataset.atender) {
+        const nota = ($(`[data-nota="${b.dataset.atender}"]`) || {}).value || '';
+        b.disabled = true;
+        const r = await MarcasAPI.post(`/panel/mi-marca/solicitudes/${b.dataset.atender}/atender`, { nota });
+        if (!r.ok) { b.disabled = false; return toast(r.error, 'error'); }
+        aplicarRespuesta(r); toast(r.mensaje);
+        const s = await MarcasAPI.get('/panel/mi-marca/solicitudes'); if (s.ok) SOL = s.solicitudes;
+        render(); return;
+      }
+
+      // acceso
+      if (b.id === 'btn-a-enviar') {
+        const canal = $('input[name="a-canal"]:checked').value; const valor = $('#a-valor').value.trim();
+        if (!valor) return toast('Escribe el dato que quieres verificar.', 'error');
+        b.disabled = true;
+        const r = await MarcasAPI.post('/panel/cuenta/acceso/solicitar', canal === 'sms' ? { canal, telefono: valor } : { canal, email: valor });
+        b.disabled = false;
+        if (!r.ok) return toast(r.error, 'error');
+        toast(r.mensaje); $('#a-paso2').style.display = ''; $('#btn-a-confirmar').style.display = ''; $('#a-codigo').focus(); return;
+      }
+      if (b.id === 'btn-a-confirmar') {
+        const canal = $('input[name="a-canal"]:checked').value; const valor = $('#a-valor').value.trim(); const codigo = $('#a-codigo').value.replace(/\D/g, '');
+        if (codigo.length < 6) return toast('Escribe los 6 dígitos del código.', 'error');
+        b.disabled = true;
+        const r = await MarcasAPI.post('/panel/cuenta/acceso/confirmar', canal === 'sms' ? { canal, telefono: valor, codigo } : { canal, email: valor, codigo });
+        b.disabled = false;
+        if (!r.ok) return toast(r.error, 'error');
+        aplicarRespuesta(r); toast(r.mensaje); render(); return;
+      }
+    });
+
+    document.getElementById('btn-salir').addEventListener('click', async () => { await MarcasAPI.salir(); location.href = 'directorio.html#marcas-aliadas'; });
+
+    (async () => {
+      if (!(await MarcasAPI.restaurarSesion())) return sesionPerdida();
+      if (new URLSearchParams(location.search).get('nueva')) setTimeout(() => toast('¡Bienvenido! Completa tu perfil para publicarlo.'), 400);
+      cargarTodo();
+    })();
+  })();
+  </script>
+</body>
+</html>

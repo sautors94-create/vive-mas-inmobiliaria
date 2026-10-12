@@ -34,7 +34,7 @@ const restaurarEstadoSidebar = () => {
   });
 };
 
-const mostrarSeccion = (seccion) => {
+const mostrarSeccion = window.mostrarSeccion = (seccion) => {
   document.querySelectorAll('.dash-section').forEach(s => s.style.display = 'none');
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
   const sec = document.getElementById(`sec-${seccion}`);
@@ -59,6 +59,7 @@ if (seccion === 'pagos') cargarPagosAdmin();
   if (seccion === 'monitoreo') cargarMonitoreo();
   if (seccion === 'novedades') cargarNovedades();
   if (seccion === 'reportes') cargarReportes();
+  if (seccion === 'marcas') cargarMarcasAdmin();
 };
 
 const cargarVerificaciones = async () => {

@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/marcas.css">
   <style>
     /* === Estilos específicos de Directorio (SaaS/Fintech) === */
     .dir-hero { background: linear-gradient(135deg, var(--bg-dark) 0%, var(--primary) 60%, var(--primary-light) 100%); padding: 120px 0 60px; text-align: center; color: white; }
@@ -145,6 +146,7 @@
           <div class="stat-label">Propiedades</div>
         </div>
       </div>
+      <p style="margin-top:22px"><a href="#marcas-aliadas" style="color:inherit;font-weight:600;text-decoration:underline;opacity:.9">🤝 Ver Marcas y Profesionales Aliados con descuentos →</a></p>
     </div>
   </section>
 
@@ -204,6 +206,55 @@
         <div class="skeleton-card"></div>
         <div class="skeleton-card"></div>
       </div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN MARCAS Y PROFESIONALES ALIADOS -->
+  <section class="section mb-section" id="marcas-aliadas">
+    <div class="container">
+      <div class="mb-head">
+        <div>
+          <h2>🤝 Marcas y Profesionales Aliados</h2>
+          <p>Empresas, proveedores y profesionales independientes que ofrecen descuentos y promociones exclusivas a la comunidad de SomosViveMás: diseño, notarías, remodelación, mudanzas y más.</p>
+        </div>
+        <a class="btn btn-primary" href="marca-acceso.html">+ Agregar mi marca</a>
+      </div>
+
+      <div class="mb-search">
+        <span class="mb-search-icon">🔍</span>
+        <input type="search" id="mb-q" placeholder="Buscar por marca, servicio, categoría o palabra clave..." autocomplete="off" aria-label="Buscar marcas y profesionales">
+      </div>
+
+      <div class="mb-filtros">
+        <div class="mb-filtro-grupo">
+          <span class="mb-filtro-etiqueta">Categoría</span>
+          <div class="mb-filtro-grupo" id="mb-categorias"></div>
+        </div>
+        <div class="mb-filtro-grupo">
+          <span class="mb-filtro-etiqueta">Ciudad</span>
+          <select id="mb-ciudad-select" class="mb-select" aria-label="Agregar ciudad al filtro"><option value="">＋ Agregar ciudad…</option></select>
+          <div class="mb-filtro-grupo" id="mb-ciudades-activas"></div>
+        </div>
+      </div>
+
+      <div class="mb-barra">
+        <p>Mostrando <strong id="mb-conteo">0</strong> <span id="mb-conteo-txt">marcas</span><span id="mb-mostradas"></span>
+          <button type="button" class="mb-limpiar" id="mb-limpiar" style="display:none;margin-left:10px">Limpiar filtros</button></p>
+        <div class="dir-sort">
+          <label for="mb-orden">Ordenar:</label>
+          <select id="mb-orden">
+            <option value="recientes">Más recientes</option>
+            <option value="nombre">Nombre A-Z</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="mb-grid" class="mb-grid">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+      <button type="button" class="btn btn-outline mb-mas" id="mb-mas" style="display:none">Ver más marcas</button>
     </div>
   </section>
 
@@ -268,6 +319,8 @@
 
   <script src="../js/api.js"></script>
   <script src="../js/auth.js"></script>
+  <script src="../js/marcas-api.js"></script>
+  <script src="../js/directorio-marcas.js"></script>
   <script>
     let agencies = [];
     let currentFilter = 'all';

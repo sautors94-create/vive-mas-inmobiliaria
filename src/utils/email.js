@@ -563,7 +563,49 @@ const enviarResumenEmbajador = async (email, nombre, rankTitle, score, nextRank,
   }
 };
 
-module.exports = { 
+// ==========================================
+// CÓDIGO DE ACCESO — Marcas y Profesionales Aliados
+// ==========================================
+const enviarCodigoAccesoMarca = async (email, codigo) => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 0; }
+        .container { max-width: 520px; margin: 40px auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .header { background: linear-gradient(135deg, #0f1923, #1a472a); padding: 32px; text-align: center; }
+        .logo { font-size: 26px; font-weight: 700; color: white; }
+        .logo span { color: #f4a261; }
+        .body { padding: 36px; text-align: center; }
+        .text { font-size: 15px; color: #6b7280; line-height: 1.6; margin-bottom: 20px; }
+        .code { font-family: monospace; font-size: 34px; font-weight: 700; letter-spacing: 8px; color: #1a472a; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 18px; margin-bottom: 20px; }
+        .small { font-size: 12px; color: #9ca3af; line-height: 1.6; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header"><div class="logo">Vive<span>Más</span> · Marcas Aliadas</div></div>
+        <div class="body">
+          <div class="text">Usa este código para entrar a tu panel de marca en SomosViveMás:</div>
+          <div class="code">${codigo}</div>
+          <div class="small">El código vence en 10 minutos. Si tú no lo solicitaste, ignora este correo: nadie puede entrar sin este código.</div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: `Tu código de acceso: ${codigo} — SomosViveMás Marcas Aliadas`,
+    html,
+  });
+};
+
+module.exports = {
+  enviarCodigoAccesoMarca, 
   enviarResumenEmbajador,
   transporter,
   generarCodigo, 
