@@ -33,15 +33,30 @@ exports.registrarMarca = async (req, res) => {
     if (canal === 'email' && !email) return res.status(400).json({ error: 'El correo es obligatorio.' });
     if (canal === 'sms' && !telefono) return res.status(400).json({ error: 'El teléfono es obligatorio.' });
 
-    let cuenta = await BrandAccount.findOne({ $or: [{ email: email }, { phone: telefono }] });
+    // Si es SMS, limpiamos el número para que Twilio lo acepte (ej: +521234567890)
+    let telefonoLimpio = telefono;
+    if (canal === 'sms') {
+      telefonoLimpio = telefono.replace(/[\s\-()]/g, ''); // Quita espacios, guiones y paréntesis
+      if (!telefonoLimpio.startsWith('+')) {
+        telefonoLimpio = '+' + telefonoLimpio; // Asegura que empiece con +
+      }
+    }
+
+    let cuenta = await BrandAccount.findOne({ $or: [{ email: email }, { phone: telefonoLimpio }] });
     let esNueva = false;
 
     if (!cuenta) {
       cuenta = await BrandAccount.create({
         email: email || null,
-        phone: telefono || null
+        phone: telefonoLimpio || null
       });
       esNueva = true;
+    } else {
+      // Actualizamos el teléfono limpio si ya existía la cuenta
+      if (canal === 'sms' && cuenta.phone !== telefonoLimpio) {
+        cuenta.phone = telefonoLimpio;
+        await cuenta.save();
+      }
     }
 
     // Si eligió teléfono y Twilio está configurado, enviamos el SMS real
@@ -52,7 +67,7 @@ exports.registrarMarca = async (req, res) => {
           const twilio = require('twilio')(process.env.SID_TWILIO, process.env.TOKEN_TWILIO);
           await twilio.verify.v2(process.env.SID_SERVICIO_TWILIO)
             .verifications
-            .create({ to: telefono, channel: 'sms' });
+            .create({ to: telefonoLimpio, channel: 'sms' });
             
           return res.status(200).json({ 
             ok: true, 
@@ -62,16 +77,17 @@ exports.registrarMarca = async (req, res) => {
           });
         } catch (twilioError) {
           console.error('Error de Twilio:', twilioError.message);
-          return res.status(400).json({ error: 'No se pudo enviar el SMS. Verifica que el número incluya código de país.' });
+          // Devolvemos el mensaje real de Twilio para saber qué falló exactamente
+          return res.status(400).json({ error: `Twilio dice: ${twilioError.message}` });
         }
       } else {
         return res.status(400).json({ error: 'La verificación por SMS no está configurada en el servidor.' });
       }
     }
 
-    // Si eligió correo, generamos un código local (Aquí deberías conectar tu utils/email.js)
+    // Si eligió correo, generamos un código local
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
-    await BrandOTP.deleteMany({ accountId: cuenta._id }); // Borramos códigos viejos
+    await BrandOTP.deleteMany({ accountId: cuenta._id });
     await BrandOTP.create({
       accountId: cuenta._id,
       codigo,
@@ -79,7 +95,6 @@ exports.registrarMarca = async (req, res) => {
       expira: new Date(Date.now() + 10 * 60 * 1000)
     });
 
-    // TODO: Llamar a tu servicio de correo (utils/email.js) para enviar el "codigo"
     console.log(`[DEV] Código de verificación para Marca ${email}: ${codigo}`);
 
     res.status(200).json({ 
@@ -96,14 +111,20 @@ exports.registrarMarca = async (req, res) => {
 exports.verificarMarca = async (req, res) => {
   try {
     const { accountId, codigo, canal, email, telefono } = req.body;
-    let cuenta = await BrandAccount.findById(accountId);
+    
+    // Limpiamos el teléfono si viene en el body
+    let telefonoLimpio = telefono;
+    if (telefono) {
+      telefonoLimpio = telefono.replace(/[\s\-()]/g, '');
+      if (!telefonoLimpio.startsWith('+')) telefonoLimpio = '+' + telefonoLimpio;
+    }
 
+    let cuenta = await BrandAccount.findById(accountId);
     if (!cuenta && email) cuenta = await BrandAccount.findOne({ email });
-    if (!cuenta && telefono) cuenta = await BrandAccount.findOne({ phone: telefono });
+    if (!cuenta && telefonoLimpio) cuenta = await BrandAccount.findOne({ phone: telefonoLimpio });
 
     if (!cuenta) return res.status(404).json({ error: 'Cuenta no encontrada' });
 
-    // Si eligió teléfono y Twilio está configurado, verificamos con Twilio
     if (canal === 'sms') {
       const twilioConfigurado = !!(process.env.SID_TWILIO && process.env.TOKEN_TWILIO && process.env.SID_SERVICIO_TWILIO);
       if (twilioConfigurado) {
@@ -111,7 +132,7 @@ exports.verificarMarca = async (req, res) => {
           const twilio = require('twilio')(process.env.SID_TWILIO, process.env.TOKEN_TWILIO);
           const verification = await twilio.verify.v2(process.env.SID_SERVICIO_TWILIO)
             .verificationChecks
-            .create({ to: telefono, code: codigo });
+            .create({ to: telefonoLimpio, code: codigo });
 
           if (verification.status !== 'approved') {
             return res.status(400).json({ error: 'El código de SMS es incorrecto' });
@@ -120,11 +141,8 @@ exports.verificarMarca = async (req, res) => {
         } catch (twilioError) {
           return res.status(400).json({ error: 'Error al verificar el SMS.' });
         }
-      } else {
-        return res.status(400).json({ error: 'SMS no configurado en servidor.' });
       }
     } else {
-      // Verificamos con nuestro OTP local (para correo)
       const otp = await BrandOTP.findOne({ accountId: cuenta._id, codigo });
       if (!otp) return res.status(400).json({ error: 'Código incorrecto' });
       if (otp.expira < new Date()) return res.status(400).json({ error: 'El código ha expirado' });
@@ -135,7 +153,6 @@ exports.verificarMarca = async (req, res) => {
 
     await cuenta.save();
 
-    // Crear perfil de marca vacío si no existe
     let marca = await Brand.findOne({ accountId: cuenta._id });
     let esNueva = false;
     if (!marca) {
