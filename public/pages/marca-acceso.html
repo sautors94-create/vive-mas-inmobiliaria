@@ -43,8 +43,10 @@
           <input class="ma-input" type="email" id="in-email" placeholder="tucorreo@ejemplo.com" autocomplete="email" inputmode="email">
         </div>
         <div id="campo-sms" style="display:none">
-          <label class="ma-label" for="in-tel">Teléfono con código de país</label>
-          <input class="ma-input" type="tel" id="in-tel" placeholder="+52 55 1234 5678" autocomplete="tel" inputmode="tel">
+          <label class="ma-label" for="in-tel">Teléfono (10 dígitos)</label>
+          <div style="display:flex; align-items:center; gap:8px; background:var(--bg-secondary); border-radius:8px; padding:0 12px; border: 1px solid var(--border);">
+          <span style="font-weight:700; color:var(--text); white-space:nowrap;">🇲🇽 +52</span>
+          <input class="ma-input" style="border:none; background:transparent; box-shadow:none; padding-left:0;" type="tel" id="in-tel" placeholder="5512345678" maxlength="10" inputmode="numeric" autocomplete="tel">
         </div>
 
         <button type="button" class="ma-btn" id="btn-enviar">Enviar código de verificación</button>
@@ -81,7 +83,7 @@
       el.className = 'ma-msg' + (texto ? ' ' + tipo : '');
       el.textContent = texto || '';
     };
-    const valor = () => (canal === 'sms' ? $('in-tel').value.trim() : $('in-email').value.trim());
+    const valor = () => (canal === 'sms' ? $('in-tel').value.trim().replace(/\s/g, '') : $('in-email').value.trim());
     const cuerpo = () => (canal === 'sms' ? { canal, telefono: valor() } : { canal, email: valor() });
 
     const elegirCanal = (c) => {
