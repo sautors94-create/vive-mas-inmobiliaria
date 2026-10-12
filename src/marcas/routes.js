@@ -40,11 +40,14 @@ router.get('/catalogos', ctrl.obtenerCatalogos);
 router.get('/:slug', ctrl.obtenerMarcaPublico);
 
 // ==========================================
-// RUTAS DE AUTENTICACIÓN DE MARCAS
+// RUTAS DE AUTENTICACIÓN DE MARCAS (Ajustadas al frontend)
 // ==========================================
-router.post('/auth/register', ctrl.registrarMarca);
+router.post('/auth/solicitar', ctrl.registrarMarca); // El frontend llama a "solicitar"
+router.post('/auth/register', ctrl.registrarMarca); // Por si acaso
+router.post('/auth/verificar', ctrl.verificarMarca);
 router.post('/auth/verify', ctrl.verificarMarca);
 router.post('/auth/login', ctrl.loginMarca);
+router.post('/auth/refresh', ctrl.refreshToken); // El frontend llama a "refresh"
 
 // ==========================================
 // RUTAS DEL PANEL DE LA MARCA (PROTEGIDAS)

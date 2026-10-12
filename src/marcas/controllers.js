@@ -236,3 +236,21 @@ exports.adminCambiarStatus = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// Función para refrescar el token (requerida por el frontend)
+exports.refreshToken = async (req, res) => {
+  try {
+    // En una implementación completa, aquí validarías un refresh token de la BD.
+    // Para que no dé error y se mantenga logueado, si tiene un token viejo válido, le damos uno nuevo.
+    const oldToken = req.header('Authorization')?.replace('Bearer ', '');
+    if (!oldToken) return res.status(401).json({ error: 'No hay token' });
+
+    const decoded = jwt.verify(oldToken, BRAND_JWT_SECRET);
+    const cuenta = await BrandAccount.findById(decoded.id);
+    if (!cuenta) return res.status(404).json({ error: 'Cuenta no encontrada' });
+
+    const newToken = jwt.sign({ id: cuenta._id, brandId: cuenta.brandId }, BRAND_JWT_SECRET, { expiresIn: '7d' });
+    res.json({ ok: true, token: newToken });
+  } catch (error) {
+    res.status(401).json({ error: 'Sesión expirada, inicia sesión de nuevo' });
+  }
+};
