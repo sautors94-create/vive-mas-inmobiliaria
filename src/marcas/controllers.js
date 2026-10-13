@@ -26,43 +26,16 @@ const slugify = (text) => text.toString().toLowerCase().trim()
 // ==========================================
 // AUTENTICACIÓN DE MARCAS
 // ==========================================
-exports.registrarMarca = async (req, res) => {
-  try {
-    const { canal, email, telefono } = req.body;
-    if (!canal) return res.status(400).json({ error: 'Debes elegir un canal (email o sms).' });
-    if (canal === 'email' && !email) return res.status(400).json({ error: 'El correo es obligatorio.' });
-    
-    let telefonoLimpio = '';
-    if (canal === 'sms') {
-      if (!telefono) return res.status(400).json({ error: 'El teléfono es obligatorio.' });
-      // Quitamos espacios y guiones por si acaso
-      const soloDigitos = telefono.replace(/\D/g, '');
-      if (soloDigitos.length !== 10) {
-        return res.status(400).json({ error: 'El teléfono debe tener exactamente 10 dígitos.' });
-      }
-      telefonoLimpio = '+52' + soloDigitos; // Forzamos el prefijo de México
-    }
-
-    let cuenta = await BrandAccount.findOne({ $or: [{ email: email }, { phone: telefonoLimpio }] });
-    let esNueva = false;
-
-    if (!cuenta) {
-      cuenta = await BrandAccount.create({
-        email: email || null,
-        phone: telefonoLimpio || null
-      });
-      esNueva = true;
-    }
-
-    if (canal === 'sms') {
-      const twilioConfigurado = !!(process.env.SID_TWILIO && process.env.TOKEN_TWILIO && process.env.SID_SERVICIO_TWILIO);
       if (twilioConfigurado) {
         try {
           const client = require('twilio')(process.env.SID_TWILIO, process.env.TOKEN_TWILIO);
-          // CORRECCIÓN DE TWILIO: Se usa .v2.services(SID)
-          await client.verify.v2.services(process.env.SID_SERVICIO_TWILIO)
+          // Enviamos la verificación
+          const verification = await client.verify.v2.services(process.env.SID_SERVICIO_TWILIO)
             .verifications
             .create({ to: telefonoLimpio, channel: 'sms' });
+            
+          // IMPRIMIR RESPUESTA DE TWILIO EN LA CONSOLA DE HOSTINGER
+          console.log(`[TWILIO DEBUG] Enviando a: ${telefonoLimpio} | Estado: ${verification.status} | SID: ${verification.sid}`);
             
           return res.status(200).json({ 
             ok: true, 
@@ -71,36 +44,10 @@ exports.registrarMarca = async (req, res) => {
             espera: 60
           });
         } catch (twilioError) {
-          console.error('Error de Twilio:', twilioError.message);
+          console.error('[TWILIO DEBUG] Error de Twilio:', twilioError.message);
           return res.status(400).json({ error: `Twilio dice: ${twilioError.message}` });
         }
-      } else {
-        return res.status(400).json({ error: 'La verificación por SMS no está configurada en el servidor.' });
       }
-    }
-
-    // Si eligió correo, generamos un código local
-    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
-    await BrandOTP.deleteMany({ accountId: cuenta._id });
-    await BrandOTP.create({
-      accountId: cuenta._id,
-      codigo,
-      tipo: 'email',
-      expira: new Date(Date.now() + 10 * 60 * 1000)
-    });
-
-    console.log(`[DEV] Código de verificación para Marca ${email}: ${codigo}`);
-
-    res.status(200).json({ 
-      ok: true, 
-      mensaje: 'Cuenta creada. Revisa tu correo para el código de verificación.',
-      accountId: cuenta._id,
-      espera: 60
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
 
 exports.verificarMarca = async (req, res) => {
   try {
@@ -109,7 +56,7 @@ exports.verificarMarca = async (req, res) => {
     let telefonoLimpio = '';
     if (telefono) {
       const soloDigitos = telefono.replace(/\D/g, '');
-      telefonoLimpio = '+52' + soloDigitos;
+      telefonoLimpio = '+521' + soloDigitos; // Agregamos el 1 para móviles en México
     }
 
     let cuenta = await BrandAccount.findById(accountId);
