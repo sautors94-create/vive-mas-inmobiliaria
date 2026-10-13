@@ -136,37 +136,57 @@ exports.verificarMarca = async (req, res) => {
   try {
     const { accountId, codigo, canal, email, telefono } = req.body;
     
-    let telefonoLimpio = '';
-    if (telefono) {
-      const soloDigitos = telefono.replace(/\D/g, '');
-      telefonoLimpio = '+521' + soloDigitos;
+    let cuenta = null;
+    
+    // 1. Si el frontend nos manda el accountId, lo usamos primero (más seguro)
+    if (accountId) {
+      cuenta = await BrandAccount.findById(accountId);
     }
-
-    let cuenta = await BrandAccount.findById(accountId);
-    if (!cuenta && email) cuenta = await BrandAccount.findOne({ email });
-    if (!cuenta && telefonoLimpio) cuenta = await BrandAccount.findOne({ phone: telefonoLimpio });
+    
+    // 2. Si no, buscamos por email
+    if (!cuenta && email) {
+      cuenta = await BrandAccount.findOne({ email });
+    }
+    
+    // 3. Si no, buscamos por teléfono (buscando ambos formatos +52 y +521)
+    if (!cuenta && telefono) {
+      const soloDigitos = telefono.replace(/\D/g, '');
+      cuenta = await BrandAccount.findOne({ 
+        $or: [
+          { phone: '+52' + soloDigitos },
+          { phone: '+521' + soloDigitos }
+        ]
+      });
+    }
 
     if (!cuenta) return res.status(404).json({ error: 'Cuenta no encontrada' });
 
+    // Si elegimos SMS y Twilio está configurado, verificamos con Twilio
     if (canal === 'sms') {
       const twilioConfigurado = !!(process.env.SID_TWILIO && process.env.TOKEN_TWILIO && process.env.SID_SERVICIO_TWILIO);
       if (twilioConfigurado) {
         try {
           const client = require('twilio')(process.env.SID_TWILIO, process.env.TOKEN_TWILIO);
+          // Twilio necesita el formato exacto con el que se envió. Lo reconstruimos:
+          const telefonoTwilio = '+521' + telefono.replace(/\D/g, '');
+          
           const verification = await client.verify.v2.services(process.env.SID_SERVICIO_TWILIO)
             .verificationChecks
-            .create({ to: telefonoLimpio, code: codigo });
+            .create({ to: telefonoTwilio, code: codigo });
 
           if (verification.status !== 'approved') {
             return res.status(400).json({ error: 'El código de SMS es incorrecto' });
           }
           cuenta.phoneVerified = true;
+          // Actualizamos el teléfono en la BD al formato correcto por si acaso
+          cuenta.phone = telefonoTwilio;
         } catch (twilioError) {
           console.error('Error al verificar Twilio:', twilioError.message);
           return res.status(400).json({ error: 'Error al verificar el SMS.' });
         }
       }
     } else {
+      // Verificación por correo
       const otp = await BrandOTP.findOne({ accountId: cuenta._id, codigo });
       if (!otp) return res.status(400).json({ error: 'Código incorrecto' });
       if (otp.expira < new Date()) return res.status(400).json({ error: 'El código ha expirado' });

@@ -127,6 +127,7 @@
       $('sub-2').textContent = canal === 'sms'
         ? `Enviamos un SMS al ${valor()}. Escribe el código de 6 dígitos.`
         : `Enviamos un código a ${valor()}. Revisa tu bandeja de entrada (y la carpeta de spam).`;
+      if (r.accountId) localStorage.setItem('vm_brand_pending_id', r.accountId);
       msg('msg-2', esReenvio ? 'Te enviamos un código nuevo.' : '', 'ok');
       $('in-codigo').value = '';
       $('in-codigo').focus();
@@ -134,17 +135,25 @@
       $('btn-enviar').disabled = false;
     };
 
-    const verificar = async () => {
+        const verificar = async () => {
       const codigo = $('in-codigo').value.replace(/\D/g, '');
       if (codigo.length < 6) { msg('msg-2', 'Escribe los 6 dígitos del código.', 'error'); return; }
       const btn = $('btn-verificar');
       btn.disabled = true; btn.textContent = 'Verificando…';
-      const r = await MarcasAPI.post('/auth/verificar', { ...cuerpo(), codigo }, { sesion: false });
+      
+      // Obtenemos el accountId que guardamos cuando pedimos el código
+      const accountId = localStorage.getItem('vm_brand_pending_id') || null;
+      
+      const r = await MarcasAPI.post('/auth/verificar', { ...cuerpo(), codigo, accountId }, { sesion: false });
+      
       if (!r.ok) {
         btn.disabled = false; btn.textContent = 'Verificar y continuar';
         msg('msg-2', r.error, 'error');
         return;
       }
+      // Si salió bien, borramos el ID temporal
+      localStorage.removeItem('vm_brand_pending_id');
+      
       MarcasAPI.guardar(r.accessToken);
       msg('msg-2', r.esNueva ? '¡Listo! Creamos tu cuenta. Entrando a tu panel…' : 'Verificado. Entrando a tu panel…', 'ok');
       setTimeout(() => { location.href = 'marca-panel.html' + (r.esNueva ? '?nueva=1' : ''); }, 600);
