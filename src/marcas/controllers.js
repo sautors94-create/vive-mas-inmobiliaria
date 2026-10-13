@@ -208,12 +208,26 @@ exports.loginMarca = async (req, res) => {
 // ==========================================
 exports.obtenerMiMarca = async (req, res) => {
   try {
-    const marca = await Brand.findOne({ accountId: req.user.id })
+    // Buscamos la marca y populamos la cuenta para saber el email/teléfono
+    let marca = await Brand.findOne({ accountId: req.user.id })
+      .populate('accountId', 'email phone emailVerified phoneVerified')
       .populate('categorias', 'nombre slug')
       .populate('ciudadPrincipal', 'nombre slug')
       .populate('ciudadesCobertura', 'nombre slug');
+    
     if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
-    res.json({ ok: true, marca });
+
+    // Nos aseguramos de que los arreglos siempre existan para el frontend
+    if (!marca.servicios) marca.servicios = [];
+    if (!marca.ciudadesCobertura) marca.ciudadesCobertura = [];
+    if (!marca.categorias) marca.categorias = [];
+    if (!marca.solicitudesModeracion) marca.solicitudesModeracion = [];
+    
+    // Devolvemos la cuenta adjunta para que el frontend la pueda leer
+    const respuesta = marca.toObject();
+    respuesta.cuenta = marca.accountId;
+    
+    res.json({ ok: true, marca: respuesta });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -365,5 +379,33 @@ exports.refreshToken = async (req, res) => {
     res.json({ ok: true, accessToken: newToken });
   } catch (error) {
     res.status(401).json({ error: 'Sesión expirada, inicia sesión de nuevo' });
+  }
+};
+// Obtener solicitudes de moderación
+exports.obtenerSolicitudes = async (req, res) => {
+  try {
+    const marca = await Brand.findOne({ accountId: req.user.id }).select('solicitudesModeracion');
+    if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
+    res.json({ ok: true, solicitudes: marca.solicitudesModeracion || [] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Resolver una solicitud de moderación
+exports.resolverSolicitud = async (req, res) => {
+  try {
+    const { solicitudId } = req.params;
+    const marca = await Brand.findOne({ accountId: req.user.id });
+    if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
+
+    const solicitud = marca.solicitudesModeracion.id(solicitudId);
+    if (!solicitud) return res.status(404).json({ error: 'Solicitud no encontrada' });
+
+    solicitud.estado = 'atendida';
+    await marca.save();
+    res.json({ ok: true, mensaje: 'Solicitud marcada como atendida' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };

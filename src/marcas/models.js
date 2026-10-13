@@ -39,6 +39,19 @@ const BrandSchema = new mongoose.Schema({
     vigencia: Date,
     condiciones: String
   }],
+    servicios: [{ type: String, default: [] }],
+  redesSociales: {
+    facebook: { type: String, default: '' },
+    instagram: { type: String, default: '' },
+    linkedin: { type: String, default: '' }
+  },
+  solicitudesModeracion: [{
+    motivo: { type: String, required: true },
+    campo: { type: String, default: 'general' },
+    mensaje: { type: String, required: true },
+    fecha: { type: Date, default: Date.now },
+    estado: { type: String, enum: ['abierta', 'atendida'], default: 'abierta' }
+  }],
   status: { 
     type: String, 
     enum: ['borrador', 'publicado', 'despublicado', 'bloqueado', 'eliminado'], 
