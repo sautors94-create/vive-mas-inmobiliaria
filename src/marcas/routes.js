@@ -67,7 +67,8 @@ router.put('/panel/mi-marca/solicitudes/:solicitudId/resolver', authBrand, ctrl.
 // ==========================================
 adminRouter.get('/', ctrl.adminObtenerMarcas);
 adminRouter.put('/:id/status', ctrl.adminCambiarStatus);
-adminRouter.post('/:id/reset-password', ctrl.adminResetPasswordMarca); // <--- AGREGAR ESTA LÍNEA
+adminRouter.post('/:id/reset-password', ctrl.adminResetPasswordMarca); 
+
 module.exports = {
   marcasRouter: router,
   adminMarcasRouter: adminRouter

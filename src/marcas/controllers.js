@@ -370,8 +370,26 @@ exports.adminCambiarStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+
+    // Si el admin decide ELIMINAR, borramos la marca y la cuenta para liberar el correo/teléfono
+    if (status === 'eliminado') {
+      const marca = await Brand.findById(id);
+      if (marca) {
+        // Guardamos un registro en la consola de Hostinger antes de borrar
+        console.log(`[ADMIN] Eliminando permanentemente: ${marca.nombreComercial} (ID: ${marca._id})`);
+        
+        if (marca.accountId) {
+          await BrandAccount.deleteOne({ _id: marca.accountId });
+        }
+        await Brand.deleteOne({ _id: id });
+      }
+      return res.json({ ok: true, mensaje: 'Marca y cuenta eliminadas permanentemente. El correo/teléfono ya está libre para registrarse de nuevo.' });
+    }
+
+    // Para bloquear o despublicar, solo actualizamos el estado
     const marca = await Brand.findByIdAndUpdate(id, { status }, { new: true });
     if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
+    
     res.json({ ok: true, marca });
   } catch (error) {
     res.status(500).json({ error: error.message });
