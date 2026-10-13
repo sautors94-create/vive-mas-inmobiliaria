@@ -57,9 +57,12 @@ router.post('/auth/refresh', ctrl.refreshToken);
 router.get('/panel/mi-marca', authBrand, ctrl.obtenerMiMarca);
 router.put('/panel/mi-marca', authBrand, ctrl.actualizarMiMarca);
 router.put('/panel/publicar', authBrand, ctrl.publicarMarca);
-router.delete('/panel/mi-marca', authBrand, ctrl.eliminarMiMarca); 
+router.delete('/panel/mi-marca', authBrand, ctrl.eliminarMiMarca);
+router.post('/panel/mi-marca/imagenes/galeria', authBrand, ctrl.subirImagenGaleria);
+router.post('/panel/mi-marca/promociones', authBrand, ctrl.agregarPromocion); 
+
 // Rutas de Solicitudes de Moderación
-router.get('/panel/mi-marca/solicitudes', authBrand, ctrl.obtenerSolicitudes); // <--- Agregada
+router.get('/panel/mi-marca/solicitudes', authBrand, ctrl.obtenerSolicitudes); 
 router.put('/panel/mi-marca/solicitudes/:solicitudId/resolver', authBrand, ctrl.resolverSolicitud); // <--- Agregada
 
 // ==========================================

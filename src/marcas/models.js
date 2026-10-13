@@ -29,6 +29,7 @@ const BrandSchema = new mongoose.Schema({
   ciudadesCobertura: [{ type: mongoose.Schema.Types.ObjectId, ref: 'BrandCity' }],
   logo: { type: String, default: '' },
   portada: { type: String, default: '' },
+  galeria: [{ type: String, default: [] }],
   telefono: { type: String, default: '' },
   whatsapp: { type: String, default: '' },
   emailContacto: { type: String, default: '' },

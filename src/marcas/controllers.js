@@ -231,20 +231,25 @@ exports.obtenerMiMarca = async (req, res) => {
     
     if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
 
-    if (!marca.servicios) marca.servicios = [];
-    if (!marca.ciudadesCobertura) marca.ciudadesCobertura = [];
-    if (!marca.categorias) marca.categorias = [];
-    if (!marca.solicitudesModeracion) marca.solicitudesModeracion = [];
-    
+    // Convertimos a objeto para asegurarnos de que todos los arreglos existan
     const respuesta = marca.toObject();
-    respuesta.cuenta = marca.accountId;
+    respuesta.ciudadesCobertura = respuesta.ciudadesCobertura || [];
+    respuesta.categorias = respuesta.categorias || [];
+    respuesta.promociones = respuesta.promociones || [];
+    respuesta.servicios = respuesta.servicios || [];
+    respuesta.solicitudesModeracion = respuesta.solicitudesModeracion || [];
+    respuesta.galeria = respuesta.galeria || [];
+    
+    // Nos aseguramos de que la cuenta nunca sea undefined para el frontend
+    if (!respuesta.cuenta) {
+      respuesta.cuenta = { email: '', phone: '', emailVerified: false, phoneVerified: false };
+    }
     
     res.json({ ok: true, marca: respuesta });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
 exports.actualizarMiMarca = async (req, res) => {
   try {
     const marca = await Brand.findOne({ accountId: req.user.id });
@@ -520,6 +525,42 @@ exports.eliminarMiMarca = async (req, res) => {
     await Brand.deleteOne({ _id: marca._id });
 
     res.json({ ok: true, mensaje: 'Tu marca y cuenta han sido eliminadas permanentemente.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+// ==========================================
+// SUBIR IMAGEN A GALERÍA
+// ==========================================
+exports.subirImagenGaleria = async (req, res) => {
+  try {
+    const marca = await Brand.findOne({ accountId: req.user.id });
+    if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
+    
+    const { url } = req.body;
+    if (!marca.galeria) marca.galeria = [];
+    if (url) marca.galeria.push(url);
+    
+    await marca.save();
+    res.json({ ok: true, marca });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ==========================================
+// AGREGAR PROMOCIÓN
+// ==========================================
+exports.agregarPromocion = async (req, res) => {
+  try {
+    const marca = await Brand.findOne({ accountId: req.user.id });
+    if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
+    
+    if (!marca.promociones) marca.promociones = [];
+    marca.promociones.push(req.body);
+    
+    await marca.save();
+    res.json({ ok: true, marca });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
