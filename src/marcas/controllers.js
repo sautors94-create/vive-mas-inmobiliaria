@@ -463,7 +463,28 @@ exports.adminResetPasswordMarca = async (req, res) => {
       } catch (mailError) { console.error('Error al enviar correo:', mailError.message); }
     }
 
-    res.json({ ok: true, passwordTemporal: tempPass, mensaje: 'Contraseña generada. Cópiala y dásela al cliente.' });
+        let correoEnviado = false;
+    if (cuenta.email) {
+      try {
+        const nodemailer = require('nodemailer');
+        let transporter = nodemailer.createTransport({
+          host: process.env.EMAIL_HOST || 'smtp.hostinger.com',
+          port: process.env.EMAIL_PORT || 465, secure: true,
+          auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+        });
+        await transporter.sendMail({
+          from: `"SomosViveMás" <${process.env.EMAIL_USER}>`,
+          to: cuenta.email,
+          subject: 'Tu nueva contraseña de Marca - SomosViveMás',
+          html: `<p>El administrador ha reseteado tu contraseña.</p><p>Tu nueva contraseña temporal es: <b>${tempPass}</b></p>`
+        });
+        correoEnviado = true;
+      } catch (mailError) { 
+        console.error('Error al enviar correo:', mailError.message); 
+      }
+    }
+
+    res.json({ ok: true, passwordTemporal: tempPass, correoEnviado, mensaje: correoEnviado ? 'Contraseña enviada por correo.' : 'No se pudo enviar el correo, entra a los logs del servidor para ver el error.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
