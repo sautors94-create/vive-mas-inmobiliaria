@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex">
-  <title>Agregar mi marca — Vive Más Inmobiliaria</title>
+  <title>Acceso Marcas — Vive Más Inmobiliaria</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
@@ -26,17 +26,23 @@
 
   <main class="ma-wrap">
     <div class="ma-card">
-      <!-- Paso 1: identificación -->
-      <section id="paso-1">
-        <h1>Agrega tu marca</h1>
-        <p class="ma-sub">Publica tu perfil en el Directorio y ofrece descuentos a la comunidad de SomosViveMás. Crea tu cuenta en segundos con tu correo o teléfono.</p>
+      <!-- Tabs para cambiar entre Registro y Login -->
+      <div class="ma-tabs" role="tablist" style="margin-bottom: 20px;">
+        <button type="button" class="ma-tab activo" id="tab-registro" role="tab">📝 Registrar marca</button>
+        <button type="button" class="ma-tab" id="tab-login" role="tab">🔑 Iniciar sesión</button>
+      </div>
 
-        <div class="ma-tabs" role="tablist">
+      <div id="msg-1" class="ma-msg" role="alert"></div>
+
+      <!-- FORMULARIO DE REGISTRO -->
+      <section id="sec-registro">
+        <h1>Agrega tu marca</h1>
+        <p class="ma-sub">Publica tu perfil en el Directorio. Crea tu cuenta en segundos con tu correo o teléfono.</p>
+
+        <div class="ma-tabs" role="tablist" style="margin-bottom: 15px;">
           <button type="button" class="ma-tab activo" id="tab-email" role="tab">✉️ Correo</button>
           <button type="button" class="ma-tab" id="tab-sms" role="tab">📱 Teléfono</button>
         </div>
-
-        <div id="msg-1" class="ma-msg" role="alert"></div>
 
         <div id="campo-email">
           <label class="ma-label" for="in-email">Correo electrónico</label>
@@ -51,17 +57,41 @@
           </div>
         </div>
 
-        <!-- CAMPO DE CONTRASEÑA NUEVO -->
         <div style="margin-top: 15px;">
           <label class="ma-label" for="in-pass">Crea una contraseña</label>
           <input class="ma-input" type="password" id="in-pass" placeholder="Mínimo 6 caracteres" minlength="6" required>
         </div>
 
         <button type="button" class="ma-btn" id="btn-enviar" style="margin-top: 20px;">Enviar código de verificación</button>
-        <p class="ma-nota">Te enviaremos un código para confirmar que el correo o teléfono es tuyo. Con tu correo/teléfono y contraseña podrás iniciar sesión cuando quieras.</p>
+        <p class="ma-nota">Te enviaremos un código para confirmar que el correo o teléfono es tuyo.</p>
       </section>
 
-      <!-- Paso 2: código -->
+      <!-- FORMULARIO DE LOGIN -->
+      <section id="sec-login" style="display:none">
+        <h1>Iniciar sesión</h1>
+        <p class="ma-sub">Ingresa con tu correo o teléfono y tu contraseña para administrar tu marca.</p>
+
+        <div id="campo-email-login" style="margin-bottom: 15px;">
+          <label class="ma-label" for="in-email-login">Correo electrónico</label>
+          <input class="ma-input" type="email" id="in-email-login" placeholder="tucorreo@ejemplo.com">
+        </div>
+        <div id="campo-sms-login" style="display:none; margin-bottom: 15px;">
+          <label class="ma-label" for="in-tel-login">Teléfono (10 dígitos)</label>
+          <div style="display:flex; align-items:center; gap:8px; background:var(--bg-secondary); border-radius:8px; padding:0 12px; border: 1px solid var(--border);">
+            <span style="font-weight:700; color:var(--text); white-space:nowrap;">🇲🇽 +52</span>
+            <input class="ma-input" style="border:none; background:transparent; box-shadow:none; padding-left:0;" type="tel" id="in-tel-login" placeholder="5512345678" maxlength="10">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label class="ma-label" for="in-pass-login">Contraseña</label>
+          <input class="ma-input" type="password" id="in-pass-login" placeholder="Tu contraseña">
+        </div>
+
+        <button type="button" class="ma-btn" id="btn-login">Entrar a mi panel</button>
+      </section>
+
+      <!-- Paso 2: código (Registro) -->
       <section id="paso-2" style="display:none">
         <h1>Escribe tu código</h1>
         <p class="ma-sub" id="sub-2"></p>
@@ -92,9 +122,25 @@
       el.textContent = texto || '';
     };
     
+    // Cambiar entre pestañas Registro y Login
+    $('tab-registro').addEventListener('click', () => {
+      $('tab-registro').classList.add('activo');
+      $('tab-login').classList.remove('activo');
+      $('sec-registro').style.display = 'block';
+      $('sec-login').style.display = 'none';
+      msg('msg-1', '');
+    });
+
+    $('tab-login').addEventListener('click', () => {
+      $('tab-login').classList.add('activo');
+      $('tab-registro').classList.remove('activo');
+      $('sec-login').style.display = 'block';
+      $('sec-registro').style.display = 'none';
+      msg('msg-1', '');
+    });
+
+    // Lógica de canales (Email/SMS) para Registro
     const valor = () => (canal === 'sms' ? $('in-tel').value.trim().replace(/\s/g, '') : $('in-email').value.trim());
-    
-    // Ahora enviamos la contraseña junto con los datos
     const cuerpo = () => {
       const pass = $('in-pass').value.trim();
       if (canal === 'sms') return { canal, telefono: valor(), password: pass };
@@ -112,12 +158,35 @@
     $('tab-email').addEventListener('click', () => elegirCanal('email'));
     $('tab-sms').addEventListener('click', () => { if (!$('tab-sms').disabled) elegirCanal('sms'); });
 
+    // Lógica de Login
+    $('tab-email-login').style.display = 'block'; // Por defecto mostramos email en login
+    // (Asumimos que para login solo usaremos email para simplificar, si no, se puede replicar la lógica de canales)
+    
+    $('btn-login').addEventListener('click', async () => {
+      const email = $('in-email-login').value.trim();
+      const pass = $('in-pass-login').value.trim();
+      if (!email || !pass) { msg('msg-1', 'Escribe tu correo y contraseña.', 'error'); return; }
+      
+      const btn = $('btn-login');
+      btn.disabled = true; btn.textContent = 'Ingresando...';
+      const r = await MarcasAPI.post('/auth/login', { email, password: pass }, { sesion: false });
+      btn.disabled = false; btn.textContent = 'Entrar a mi panel';
+
+      if (!r.ok) {
+        msg('msg-1', r.error || 'Error al iniciar sesión.', 'error');
+        return;
+      }
+      MarcasAPI.guardar(r.accessToken);
+      location.href = 'marca-panel.html';
+    });
+
+    // Contador regresivo registro
     const cuentaRegresiva = (seg) => {
       clearInterval(reenvioTimer);
       const b = $('btn-reenviar');
       let resto = seg;
       const pintar = () => {
-        if (resto > 0) { b.disabled = true; b.textContent = `Reenviar código en ${resto}s`; }
+        if (resto > 0) { b.disabled = true; b.textContent = `Reenviar en ${resto}s`; }
         else { b.disabled = false; b.textContent = 'Reenviar código'; clearInterval(reenvioTimer); }
       };
       pintar();
@@ -126,14 +195,9 @@
 
     const pedirCodigo = async (esReenvio) => {
       if (enviando) return;
-      if (!valor()) { msg(esReenvio ? 'msg-2' : 'msg-1', canal === 'sms' ? 'Escribe tu teléfono.' : 'Escribe tu correo electrónico.', 'error'); return; }
-      
-      // Validamos que haya escrito una contraseña
+      if (!valor()) { msg(esReenvio ? 'msg-2' : 'msg-1', canal === 'sms' ? 'Escribe tu teléfono.' : 'Escribe tu correo.', 'error'); return; }
       const pass = $('in-pass').value.trim();
-      if (!pass || pass.length < 6) {
-        msg('msg-1', 'La contraseña debe tener al menos 6 caracteres.', 'error');
-        return;
-      }
+      if (!pass || pass.length < 6) { msg('msg-1', 'La contraseña debe tener al menos 6 caracteres.', 'error'); return; }
 
       enviando = true;
       const btn = esReenvio ? $('btn-reenviar') : $('btn-enviar');
@@ -147,27 +211,21 @@
         return;
       }
       
-      $('paso-1').style.display = 'none';
+      $('sec-registro').style.display = 'none';
       $('paso-2').style.display = '';
-      $('sub-2').textContent = canal === 'sms'
-        ? `Enviamos un SMS al ${valor()}. Escribe el código de 6 dígitos.`
-        : `Enviamos un código a ${valor()}. Revisa tu bandeja de entrada (y la carpeta de spam).`;
-      msg('msg-2', esReenvio ? 'Te enviamos un código nuevo.' : '', 'ok');
+      $('sub-2').textContent = canal === 'sms' ? `Enviamos un SMS al ${valor()}.` : `Enviamos un código a ${valor()}.`;
+      msg('msg-2', '', 'ok');
       $('in-codigo').value = '';
       $('in-codigo').focus();
       cuentaRegresiva(r.espera || 60);
-      $('btn-enviar').disabled = false;
-
-      // Guardamos el accountId si viene para usarlo al verificar
       if (r.accountId) localStorage.setItem('vm_brand_pending_id', r.accountId);
     };
 
     const verificar = async () => {
       const codigo = $('in-codigo').value.replace(/\D/g, '');
-      if (codigo.length < 6) { msg('msg-2', 'Escribe los 6 dígitos del código.', 'error'); return; }
+      if (codigo.length < 6) { msg('msg-2', 'Escribe los 6 dígitos.', 'error'); return; }
       const btn = $('btn-verificar');
       btn.disabled = true; btn.textContent = 'Verificando…';
-      
       const accountId = localStorage.getItem('vm_brand_pending_id') || null;
       const r = await MarcasAPI.post('/auth/verificar', { ...cuerpo(), codigo, accountId }, { sesion: false });
       
@@ -177,22 +235,18 @@
         return;
       }
       localStorage.removeItem('vm_brand_pending_id');
-      
       MarcasAPI.guardar(r.accessToken);
-      msg('msg-2', r.esNueva ? '¡Listo! Creamos tu cuenta. Entrando a tu panel…' : 'Verificado. Entrando a tu panel…', 'ok');
-      setTimeout(() => { location.href = 'marca-panel.html' + (r.esNueva ? '?nueva=1' : ''); }, 600);
+      msg('msg-2', '¡Listo! Entrando a tu panel…', 'ok');
+      setTimeout(() => { location.href = 'marca-panel.html'; }, 600);
     };
 
     $('btn-enviar').addEventListener('click', () => pedirCodigo(false));
     $('btn-reenviar').addEventListener('click', () => pedirCodigo(true));
     $('btn-verificar').addEventListener('click', verificar);
-    $('in-codigo').addEventListener('keydown', (e) => { if (e.key === 'Enter') verificar(); });
-    $('in-email').addEventListener('keydown', (e) => { if (e.key === 'Enter') pedirCodigo(false); });
-    $('in-tel').addEventListener('keydown', (e) => { if (e.key === 'Enter') pedirCodigo(false); });
     $('btn-cambiar').addEventListener('click', () => {
       clearInterval(reenvioTimer);
       $('paso-2').style.display = 'none';
-      $('paso-1').style.display = '';
+      $('sec-registro').style.display = '';
       msg('msg-1', '');
     });
 
@@ -202,7 +256,6 @@
         const d = await res.json();
         if (d.sms === false) { 
           $('tab-sms').disabled = true; 
-          $('tab-sms').title = 'La verificación por SMS no está disponible por ahora'; 
           $('tab-sms').textContent = '📱 Teléfono (próximamente)'; 
         }
       } catch (e) { /* */ }

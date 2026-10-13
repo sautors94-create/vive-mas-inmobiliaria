@@ -99,6 +99,8 @@ const renderizarMarcasAdmin = () => {
             ` : `
               <button class="btn btn-outline admin-mini-btn" style="color:#16a34a;border-color:#bbf7d0" onclick="cambiarStatusMarca('${m._id}', 'publicado')">Desbloquear</button>
             `}
+              <button class="btn btn-outline admin-mini-btn" style="color:#f59e0b;border-color:#fde68a" onclick="resetPasswordMarca('${m._id}', '${escapeHtml(m.accountId?.email || 'Sin correo')}')">🔑 Contraseña</button>
+            ` : `
             ${m.status !== 'eliminado' ? `
               <button class="btn btn-outline admin-mini-btn" style="color:#dc2626;border-color:#fecaca" onclick="cambiarStatusMarca('${m._id}', 'eliminado')">Eliminar</button>
             ` : ''}
@@ -154,4 +156,21 @@ window.cambiarStatusMarca = async (id, nuevoStatus) => {
 // Placeholder para el botón de categorías y ciudades (futura funcionalidad)
 window.abrirCatalogosMarcas = () => {
   dsToast({ title: 'Próximamente', message: 'La edición de categorías y ciudades estará disponible aquí pronto.', type: 'info' });
+};
+// Resetear contraseña de una marca
+window.resetPasswordMarca = async (marcaId, email) => {
+  if (!confirm(`¿Generar una contraseña temporal para esta marca (${email})? Se le enviará por correo si tiene uno válido.`)) return;
+  
+  try {
+    const res = await api.post(`/admin/marcas/${marcaId}/reset-password`, {});
+    if (res.ok) {
+      // Mostramos la contraseña temporal en un prompt para que el admin la copie
+      prompt('✅ Contraseña temporal generada. Cópiala y entrégasela al cliente:', res.passwordTemporal);
+      dsToast({ title: 'Contraseña reseteada', message: 'Se envió por correo si estaba disponible.', type: 'success' });
+    } else {
+      dsToast({ title: 'Error', message: res.error || 'No se pudo resetear.', type: 'error' });
+    }
+  } catch (e) {
+    dsToast({ title: 'Error de conexión', type: 'error' });
+  }
 };

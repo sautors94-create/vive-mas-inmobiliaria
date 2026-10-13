@@ -249,6 +249,25 @@ app.get('/agentes-fundadores/panel', (req, res) => {
 // ==========================================
 app.get('/:operacion(renta|venta)/:tipo(departamentos|casas|terrenos|locales)/:estado?/:ciudad?', seoController.showDynamicSEOPage);
 
+// ==========================================
+// RUTAS PÚBLICAS DE MARCAS Y PROFESIONALES
+// ==========================================
+app.get('/marcas/acceso', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/pages/marca-acceso.html'));
+});
+
+app.get('/marcas/panel', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/pages/marca-panel.html'));
+});
+
+app.get('/marca/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/pages/marca.html'));
+});
+
+// 404 (Esto debe quedar abajo del todo)
+app.use((req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' });
+});
 // ✅ CORRECCIÓN: Eliminé el middleware 404 duplicado que tenías
 // 404
 app.use((req, res) => {

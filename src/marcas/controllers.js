@@ -427,3 +427,44 @@ exports.resolverSolicitud = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// ==========================================
+// ADMIN: RESETEAR CONTRASEÑA DE MARCA
+// ==========================================
+exports.adminResetPasswordMarca = async (req, res) => {
+  try {
+    const { id } = req.params; // ID de la marca
+    const marca = await Brand.findById(id);
+    if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
+
+    const cuenta = await BrandAccount.findById(marca.accountId);
+    if (!cuenta) return res.status(404).json({ error: 'Cuenta de marca no encontrada' });
+
+    // Generar contraseña temporal
+    const tempPass = Math.random().toString(36).slice(-8);
+    const salt = await bcrypt.genSalt(10);
+    cuenta.password = await bcrypt.hash(tempPass, salt);
+    await cuenta.save();
+
+    // Si tiene correo, se le envía (usando tu Nodemailer)
+    if (cuenta.email) {
+      try {
+        const nodemailer = require('nodemailer');
+        let transporter = nodemailer.createTransport({
+          host: process.env.EMAIL_HOST || 'smtp.hostinger.com',
+          port: process.env.EMAIL_PORT || 465, secure: true,
+          auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+        });
+        await transporter.sendMail({
+          from: `"SomosViveMás" <${process.env.EMAIL_USER}>`,
+          to: cuenta.email,
+          subject: 'Tu nueva contraseña de Marca - SomosViveMás',
+          html: `<p>El administrador ha reseteado tu contraseña.</p><p>Tu nueva contraseña temporal es: <b>${tempPass}</b></p><p>Úsala para iniciar sesión en el panel de tu marca.</p>`
+        });
+      } catch (mailError) { console.error('Error al enviar correo:', mailError.message); }
+    }
+
+    res.json({ ok: true, passwordTemporal: tempPass, mensaje: 'Contraseña generada. Cópiala y dásela al cliente.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
