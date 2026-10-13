@@ -5,6 +5,9 @@ let marMarcasData = [];
 let marPagina = 1;
 const marLimit = 12;
 
+// Función para escapar HTML y evitar inyección de código en el panel
+const esc = (str) => String(str ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 // Cargar todas las marcas desde el backend
 window.cargarMarcasAdmin = async () => {
   const lista = document.getElementById('mar-lista');
@@ -84,23 +87,22 @@ const renderizarMarcasAdmin = () => {
           </div>
           <div class="prop-admin-info">
             <div class="prop-admin-titulo">
-              ${escapeHtml(m.nombreComercial)} 
+              ${esc(m.nombreComercial)} 
               ${tieneSolicitudes ? '<span style="color:#dc2626;font-size:16px;" title="Tiene solicitudes de moderación pendientes">⚠️</span>' : ''}
             </div>
-            <div class="prop-admin-meta">${escapeHtml(contacto)}</div>
+            <div class="prop-admin-meta">${esc(contacto)}</div>
             <div style="margin-top:4px;">
               <span style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${estadoBg};color:${estadoColor};border:1px solid ${estadoColor}30;text-transform:capitalize;">${m.status}</span>
             </div>
           </div>
           <div class="prop-admin-actions" style="align-items: flex-start; flex-wrap: wrap;">
             <button class="btn btn-outline admin-mini-btn" onclick="window.open('/marca/${m.slug}', '_blank')">Ver Perfil</button>
+            <button class="btn btn-outline admin-mini-btn" style="color:#f59e0b;border-color:#fde68a" onclick="resetPasswordMarca('${m._id}', '${esc(m.accountId?.email || 'Sin correo')}')">🔑 Contraseña</button>
             ${m.status !== 'bloqueado' ? `
               <button class="btn btn-outline admin-mini-btn" style="color:#dc2626;border-color:#fecaca" onclick="cambiarStatusMarca('${m._id}', 'bloqueado')">Bloquear</button>
             ` : `
               <button class="btn btn-outline admin-mini-btn" style="color:#16a34a;border-color:#bbf7d0" onclick="cambiarStatusMarca('${m._id}', 'publicado')">Desbloquear</button>
             `}
-              <button class="btn btn-outline admin-mini-btn" style="color:#f59e0b;border-color:#fde68a" onclick="resetPasswordMarca('${m._id}', '${escapeHtml(m.accountId?.email || 'Sin correo')}')">🔑 Contraseña</button>
-            ` : `
             ${m.status !== 'eliminado' ? `
               <button class="btn btn-outline admin-mini-btn" style="color:#dc2626;border-color:#fecaca" onclick="cambiarStatusMarca('${m._id}', 'eliminado')">Eliminar</button>
             ` : ''}
@@ -153,18 +155,13 @@ window.cambiarStatusMarca = async (id, nuevoStatus) => {
   }
 };
 
-// Placeholder para el botón de categorías y ciudades (futura funcionalidad)
-window.abrirCatalogosMarcas = () => {
-  dsToast({ title: 'Próximamente', message: 'La edición de categorías y ciudades estará disponible aquí pronto.', type: 'info' });
-};
-// Resetear contraseña de una marca
+// Resetear contraseña de una marca (desde el admin)
 window.resetPasswordMarca = async (marcaId, email) => {
   if (!confirm(`¿Generar una contraseña temporal para esta marca (${email})? Se le enviará por correo si tiene uno válido.`)) return;
   
   try {
     const res = await api.post(`/admin/marcas/${marcaId}/reset-password`, {});
     if (res.ok) {
-      // Mostramos la contraseña temporal en un prompt para que el admin la copie
       prompt('✅ Contraseña temporal generada. Cópiala y entrégasela al cliente:', res.passwordTemporal);
       dsToast({ title: 'Contraseña reseteada', message: 'Se envió por correo si estaba disponible.', type: 'success' });
     } else {
@@ -173,4 +170,9 @@ window.resetPasswordMarca = async (marcaId, email) => {
   } catch (e) {
     dsToast({ title: 'Error de conexión', type: 'error' });
   }
+};
+
+// Placeholder para el botón de categorías y ciudades (futura funcionalidad)
+window.abrirCatalogosMarcas = () => {
+  dsToast({ title: 'Próximamente', message: 'La edición de categorías y ciudades estará disponible aquí pronto.', type: 'info' });
 };

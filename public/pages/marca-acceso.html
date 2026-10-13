@@ -69,18 +69,11 @@
       <!-- FORMULARIO DE LOGIN -->
       <section id="sec-login" style="display:none">
         <h1>Iniciar sesión</h1>
-        <p class="ma-sub">Ingresa con tu correo o teléfono y tu contraseña para administrar tu marca.</p>
+        <p class="ma-sub">Ingresa con tu correo y tu contraseña para administrar tu marca.</p>
 
         <div id="campo-email-login" style="margin-bottom: 15px;">
           <label class="ma-label" for="in-email-login">Correo electrónico</label>
           <input class="ma-input" type="email" id="in-email-login" placeholder="tucorreo@ejemplo.com">
-        </div>
-        <div id="campo-sms-login" style="display:none; margin-bottom: 15px;">
-          <label class="ma-label" for="in-tel-login">Teléfono (10 dígitos)</label>
-          <div style="display:flex; align-items:center; gap:8px; background:var(--bg-secondary); border-radius:8px; padding:0 12px; border: 1px solid var(--border);">
-            <span style="font-weight:700; color:var(--text); white-space:nowrap;">🇲🇽 +52</span>
-            <input class="ma-input" style="border:none; background:transparent; box-shadow:none; padding-left:0;" type="tel" id="in-tel-login" placeholder="5512345678" maxlength="10">
-          </div>
         </div>
 
         <div style="margin-bottom: 20px;">
@@ -159,9 +152,6 @@
     $('tab-sms').addEventListener('click', () => { if (!$('tab-sms').disabled) elegirCanal('sms'); });
 
     // Lógica de Login
-    $('tab-email-login').style.display = 'block'; // Por defecto mostramos email en login
-    // (Asumimos que para login solo usaremos email para simplificar, si no, se puede replicar la lógica de canales)
-    
     $('btn-login').addEventListener('click', async () => {
       const email = $('in-email-login').value.trim();
       const pass = $('in-pass-login').value.trim();
