@@ -507,3 +507,20 @@ exports.adminResetPasswordMarca = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// ==========================================
+// PROVEEDOR: ELIMINAR SU PROPIA CUENTA
+// ==========================================
+exports.eliminarMiMarca = async (req, res) => {
+  try {
+    const marca = await Brand.findOne({ accountId: req.user.id });
+    if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
+
+    // Borramos la marca y la cuenta de la base de datos permanentemente
+    await BrandAccount.deleteOne({ _id: req.user.id });
+    await Brand.deleteOne({ _id: marca._id });
+
+    res.json({ ok: true, mensaje: 'Tu marca y cuenta han sido eliminadas permanentemente.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

@@ -57,7 +57,7 @@ router.post('/auth/refresh', ctrl.refreshToken);
 router.get('/panel/mi-marca', authBrand, ctrl.obtenerMiMarca);
 router.put('/panel/mi-marca', authBrand, ctrl.actualizarMiMarca);
 router.put('/panel/publicar', authBrand, ctrl.publicarMarca);
-
+router.delete('/panel/mi-marca', authBrand, ctrl.eliminarMiMarca); 
 // Rutas de Solicitudes de Moderación
 router.get('/panel/mi-marca/solicitudes', authBrand, ctrl.obtenerSolicitudes); // <--- Agregada
 router.put('/panel/mi-marca/solicitudes/:solicitudId/resolver', authBrand, ctrl.resolverSolicitud); // <--- Agregada
