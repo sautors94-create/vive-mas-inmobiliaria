@@ -573,5 +573,92 @@
     })();
   })();
   </script>
+  <!-- MODAL DE INACTIVIDAD -->
+<div id="sesion-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;align-items:center;justify-content:center;font-family:inherit;">
+  <div style="background:white;border-radius:16px;padding:30px;text-align:center;max-width:400px;width:90%;box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+    <div style="font-size:40px;margin-bottom:10px;">⏳</div>
+    <h3 style="margin-bottom:10px;color:var(--text);">Tu sesión está por expirar</h3>
+    <p style="color:var(--text-light);margin-bottom:20px;">Por seguridad, tu sesión se cerrará en <strong id="contador-sesion" style="color:#dc2626;font-size:20px;">60</strong> segundos.</p>
+    <div style="display:flex;gap:10px;">
+      <button id="btn-cerrar-sesion" style="flex:1;padding:10px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Cerrar sesión</button>
+      <button id="btn-continuar-sesion" style="flex:1;padding:10px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Continuar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let tiempoInactividad = 4 * 60 * 1000; // 4 minutos de inactividad (4000 ms * 60 * 4)
+  let tiempoCierre = 60; // 60 segundos para el contador
+  let timerInactividad;
+  let intervaloContador;
+  const modal = document.getElementById('sesion-modal');
+  const contadorEl = document.getElementById('contador-sesion');
+
+  function resetearTemporizador() {
+    clearTimeout(timerInactividad);
+    clearInterval(intervaloContador);
+    modal.style.display = 'none';
+    
+    // Si el usuario hace algo, volvemos a empezar el conteo de 4 minutos
+    timerInactividad = setTimeout(mostrarAviso, tiempoInactividad);
+  }
+
+  function mostrarAviso() {
+    modal.style.display = 'flex';
+    let segundosRestantes = tiempoCierre;
+    contadorEl.textContent = segundosRestantes;
+    
+    intervaloContador = setInterval(() => {
+      segundosRestantes--;
+      contadorEl.textContent = segundosRestantes;
+      if (segundosRestantes <= 0) {
+        cerrarSesion();
+      }
+    }, 1000);
+  }
+
+  async function continuarSesion() {
+    // Llamamos a la API para renovar el token
+    const tokenActual = sessionStorage.getItem('vm_brand_token');
+    try {
+      const res = await fetch(`${API_URL}/api/marcas/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${tokenActual}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.accessToken) {
+          sessionStorage.setItem('vm_brand_token', data.accessToken);
+          resetearTemporizador(); // Reiniciamos el conteo
+        } else {
+          cerrarSesion();
+        }
+      } else {
+        cerrarSesion();
+      }
+    } catch (e) {
+      cerrarSesion();
+    }
+  }
+
+  function cerrarSesion() {
+    sessionStorage.removeItem('vm_brand_token');
+    clearInterval(intervaloContador);
+    window.location.href = 'marca-acceso.html';
+  }
+
+  // Eventos que detectan actividad del usuario
+  document.onmousemove = resetearTemporizador;
+  document.onkeydown = resetearTemporizador;
+  document.onclick = resetearTemporizador;
+  document.onscroll = resetearTemporizador;
+
+  // Asignar botones
+  document.getElementById('btn-continuar-sesion').addEventListener('click', continuarSesion);
+  document.getElementById('btn-cerrar-sesion').addEventListener('click', cerrarSesion);
+
+  // Iniciar el temporizador al cargar la página
+  window.onload = resetearTemporizador;
+</script>
 </body>
 </html>

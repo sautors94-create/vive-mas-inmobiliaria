@@ -2,8 +2,18 @@ const { Brand, BrandAccount, BrandOTP } = require('./models');
 const { BrandCategory, BrandCity } = require('./models');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const BRAND_JWT_SECRET = process.env.JWT_BRAND_SECRET || process.env.JWT_SECRET + '_brand';
+
+// Función auxiliar para generar slug
+const slugify = (text) => text.toString().toLowerCase().trim()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+
+// ==========================================
+// AUTENTICACIÓN DE MARCAS
+// ==========================================
 
 // Función para saber qué métodos de registro están activos
 exports.obtenerCanales = async (req, res) => {
@@ -19,50 +29,44 @@ exports.obtenerCanales = async (req, res) => {
   }
 };
 
-const slugify = (text) => text.toString().toLowerCase().trim()
-  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
-
-// ==========================================
-// AUTENTICACIÓN DE MARCAS
-// ==========================================
 exports.registrarMarca = async (req, res) => {
   try {
-    const { canal, email, telefono } = req.body;
-    if (!canal) return res.status(400).json({ error: 'Debes elegir un canal (email o sms).' });
+    const { canal, email, telefono, password } = req.body;
+    if (!canal) return res.status(400).json({ error: 'Debes elegir un canal.' });
+    if (!password) return res.status(400).json({ error: 'La contraseña es obligatoria.' });
     if (canal === 'email' && !email) return res.status(400).json({ error: 'El correo es obligatorio.' });
     
     let telefonoLimpio = '';
     if (canal === 'sms') {
       if (!telefono) return res.status(400).json({ error: 'El teléfono es obligatorio.' });
       const soloDigitos = telefono.replace(/\D/g, '');
-      if (soloDigitos.length !== 10) {
-        return res.status(400).json({ error: 'El teléfono debe tener exactamente 10 dígitos.' });
-      }
-      telefonoLimpio = '+521' + soloDigitos; // Forzamos el prefijo de México con el 1
+      if (soloDigitos.length !== 10) return res.status(400).json({ error: 'El teléfono debe tener 10 dígitos.' });
+      telefonoLimpio = '+521' + soloDigitos;
     }
 
     let cuenta = await BrandAccount.findOne({ $or: [{ email: email }, { phone: telefonoLimpio }] });
-    let esNueva = false;
-
-    if (!cuenta) {
-      cuenta = await BrandAccount.create({
-        email: email || null,
-        phone: telefonoLimpio || null
-      });
-      esNueva = true;
+    if (cuenta) {
+      return res.status(400).json({ error: 'Ya existe una cuenta con este correo o teléfono. Intenta iniciar sesión.' });
     }
 
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    cuenta = await BrandAccount.create({
+      email: email || null,
+      phone: telefonoLimpio || null,
+      password: hashedPassword
+    });
+
+    // --- Lógica de Twilio (SMS) ---
     if (canal === 'sms') {
       const twilioConfigurado = !!(process.env.SID_TWILIO && process.env.TOKEN_TWILIO && process.env.SID_SERVICIO_TWILIO);
       if (twilioConfigurado) {
         try {
           const client = require('twilio')(process.env.SID_TWILIO, process.env.TOKEN_TWILIO);
-          const verification = await client.verify.v2.services(process.env.SID_SERVICIO_TWILIO)
+          await client.verify.v2.services(process.env.SID_SERVICIO_TWILIO)
             .verifications
             .create({ to: telefonoLimpio, channel: 'sms' });
-            
-          console.log(`[TWILIO DEBUG] Enviando a: ${telefonoLimpio} | Estado: ${verification.status} | SID: ${verification.sid}`);
             
           return res.status(200).json({ 
             ok: true, 
@@ -71,62 +75,31 @@ exports.registrarMarca = async (req, res) => {
             espera: 60
           });
         } catch (twilioError) {
-          console.error('[TWILIO DEBUG] Error de Twilio:', twilioError.message);
           return res.status(400).json({ error: `Twilio dice: ${twilioError.message}` });
         }
-      } else {
-        return res.status(400).json({ error: 'La verificación por SMS no está configurada en el servidor.' });
       }
     }
 
-    // Si eligió correo, generamos un código local y lo enviamos por correo real
+    // --- Lógica de Correo ---
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
     await BrandOTP.deleteMany({ accountId: cuenta._id });
-    await BrandOTP.create({
-      accountId: cuenta._id,
-      codigo,
-      tipo: 'email',
-      expira: new Date(Date.now() + 10 * 60 * 1000)
-    });
+    await BrandOTP.create({ accountId: cuenta._id, codigo, tipo: 'email', expira: new Date(Date.now() + 10 * 60 * 1000) });
 
     try {
       const nodemailer = require('nodemailer');
       let transporter = nodemailer.createTransport({
         host: process.env.EMAIL_HOST || 'smtp.hostinger.com',
-        port: process.env.EMAIL_PORT || 465,
-        secure: true,
-        auth: {
-          user: process.env.EMAIL_USER, 
-          pass: process.env.EMAIL_PASS  
-        }
+        port: process.env.EMAIL_PORT || 465, secure: true,
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
       });
-
       await transporter.sendMail({
         from: `"SomosViveMás" <${process.env.EMAIL_USER}>`,
-        to: email,
-        subject: 'Tu código de verificación - SomosViveMás',
-        html: `
-          <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
-            <h2>Verifica tu cuenta de Marca</h2>
-            <p>Estás a un paso de publicar tu marca en el directorio de SomosViveMás.</p>
-            <p>Tu código de verificación es:</p>
-            <h1 style="color: #1a472a; letter-spacing: 5px; font-size: 40px;">${codigo}</h1>
-            <p>Este código expirará en 10 minutos.</p>
-          </div>
-        `
+        to: email, subject: 'Tu código de verificación - SomosViveMás',
+        html: `<div style="font-family: Arial; text-align: center; padding: 20px;"><h2>Verifica tu cuenta de Marca</h2><h1 style="color: #1a472a; font-size: 40px;">${codigo}</h1></div>`
       });
-    } catch (mailError) {
-      console.error('Error al enviar correo:', mailError.message);
-    }
+    } catch (mailError) { console.error('Error al enviar correo:', mailError.message); }
 
-    console.log(`[DEV] Código de verificación para Marca ${email}: ${codigo}`);
-
-    res.status(200).json({ 
-      ok: true, 
-      mensaje: 'Cuenta creada. Revisa tu correo para el código de verificación.',
-      accountId: cuenta._id,
-      espera: 60
-    });
+    res.status(200).json({ ok: true, mensaje: 'Cuenta creada. Revisa tu correo.', accountId: cuenta._id, espera: 60 });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -138,17 +111,12 @@ exports.verificarMarca = async (req, res) => {
     
     let cuenta = null;
     
-    // 1. Si el frontend nos manda el accountId, lo usamos primero (más seguro)
     if (accountId) {
       cuenta = await BrandAccount.findById(accountId);
     }
-    
-    // 2. Si no, buscamos por email
     if (!cuenta && email) {
       cuenta = await BrandAccount.findOne({ email });
     }
-    
-    // 3. Si no, buscamos por teléfono (buscando ambos formatos +52 y +521)
     if (!cuenta && telefono) {
       const soloDigitos = telefono.replace(/\D/g, '');
       cuenta = await BrandAccount.findOne({ 
@@ -161,13 +129,11 @@ exports.verificarMarca = async (req, res) => {
 
     if (!cuenta) return res.status(404).json({ error: 'Cuenta no encontrada' });
 
-    // Si elegimos SMS y Twilio está configurado, verificamos con Twilio
     if (canal === 'sms') {
       const twilioConfigurado = !!(process.env.SID_TWILIO && process.env.TOKEN_TWILIO && process.env.SID_SERVICIO_TWILIO);
       if (twilioConfigurado) {
         try {
           const client = require('twilio')(process.env.SID_TWILIO, process.env.TOKEN_TWILIO);
-          // Twilio necesita el formato exacto con el que se envió. Lo reconstruimos:
           const telefonoTwilio = '+521' + telefono.replace(/\D/g, '');
           
           const verification = await client.verify.v2.services(process.env.SID_SERVICIO_TWILIO)
@@ -178,7 +144,6 @@ exports.verificarMarca = async (req, res) => {
             return res.status(400).json({ error: 'El código de SMS es incorrecto' });
           }
           cuenta.phoneVerified = true;
-          // Actualizamos el teléfono en la BD al formato correcto por si acaso
           cuenta.phone = telefonoTwilio;
         } catch (twilioError) {
           console.error('Error al verificar Twilio:', twilioError.message);
@@ -186,7 +151,6 @@ exports.verificarMarca = async (req, res) => {
         }
       }
     } else {
-      // Verificación por correo
       const otp = await BrandOTP.findOne({ accountId: cuenta._id, codigo });
       if (!otp) return res.status(400).json({ error: 'Código incorrecto' });
       if (otp.expira < new Date()) return res.status(400).json({ error: 'El código ha expirado' });
@@ -211,7 +175,7 @@ exports.verificarMarca = async (req, res) => {
       esNueva = true;
     }
 
-    const token = jwt.sign({ id: cuenta._id, brandId: marca._id }, BRAND_JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: cuenta._id, brandId: marca._id }, BRAND_JWT_SECRET, { expiresIn: '5m' });
 
     res.json({ ok: true, accessToken: token, marca, esNueva });
   } catch (error) {
@@ -220,7 +184,38 @@ exports.verificarMarca = async (req, res) => {
 };
 
 exports.loginMarca = async (req, res) => {
-  res.status(501).json({ error: 'El login se hace a través del flujo de código de verificación.' });
+  try {
+    const { email, telefono, password } = req.body;
+    
+    let cuenta = null;
+    
+    if (email) {
+      cuenta = await BrandAccount.findOne({ email });
+    } else if (telefono) {
+      const soloDigitos = telefono.replace(/\D/g, '');
+      cuenta = await BrandAccount.findOne({ 
+        $or: [
+          { phone: '+52' + soloDigitos },
+          { phone: '+521' + soloDigitos }
+        ]
+      });
+    }
+
+    if (!cuenta) return res.status(404).json({ error: 'Cuenta no encontrada' });
+    
+    if (!cuenta.emailVerified && !cuenta.phoneVerified) {
+      return res.status(403).json({ error: 'Debes verificar tu correo o teléfono primero.' });
+    }
+
+    const valid = await bcrypt.compare(password, cuenta.password);
+    if (!valid) return res.status(400).json({ error: 'Contraseña incorrecta' });
+
+    const token = jwt.sign({ id: cuenta._id, brandId: cuenta.brandId }, BRAND_JWT_SECRET, { expiresIn: '5m' });
+    
+    res.json({ ok: true, accessToken: token });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 // ==========================================
@@ -228,7 +223,6 @@ exports.loginMarca = async (req, res) => {
 // ==========================================
 exports.obtenerMiMarca = async (req, res) => {
   try {
-    // Buscamos la marca y populamos la cuenta para saber el email/teléfono
     let marca = await Brand.findOne({ accountId: req.user.id })
       .populate('accountId', 'email phone emailVerified phoneVerified')
       .populate('categorias', 'nombre slug')
@@ -237,13 +231,11 @@ exports.obtenerMiMarca = async (req, res) => {
     
     if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
 
-    // Nos aseguramos de que los arreglos siempre existan para el frontend
     if (!marca.servicios) marca.servicios = [];
     if (!marca.ciudadesCobertura) marca.ciudadesCobertura = [];
     if (!marca.categorias) marca.categorias = [];
     if (!marca.solicitudesModeracion) marca.solicitudesModeracion = [];
     
-    // Devolvemos la cuenta adjunta para que el frontend la pueda leer
     const respuesta = marca.toObject();
     respuesta.cuenta = marca.accountId;
     
@@ -386,6 +378,9 @@ exports.adminCambiarStatus = async (req, res) => {
   }
 };
 
+// ==========================================
+// REFRESCAR TOKEN (Inactividad)
+// ==========================================
 exports.refreshToken = async (req, res) => {
   try {
     const oldToken = req.header('Authorization')?.replace('Bearer ', '');
@@ -395,13 +390,17 @@ exports.refreshToken = async (req, res) => {
     const cuenta = await BrandAccount.findById(decoded.id);
     if (!cuenta) return res.status(404).json({ error: 'Cuenta no encontrada' });
 
-    const newToken = jwt.sign({ id: cuenta._id, brandId: cuenta.brandId }, BRAND_JWT_SECRET, { expiresIn: '7d' });
+    const newToken = jwt.sign({ id: cuenta._id, brandId: cuenta.brandId }, BRAND_JWT_SECRET, { expiresIn: '5m' });
+    
     res.json({ ok: true, accessToken: newToken });
   } catch (error) {
     res.status(401).json({ error: 'Sesión expirada, inicia sesión de nuevo' });
   }
 };
-// Obtener solicitudes de moderación
+
+// ==========================================
+// SOLICITUDES DE MODERACIÓN
+// ==========================================
 exports.obtenerSolicitudes = async (req, res) => {
   try {
     const marca = await Brand.findOne({ accountId: req.user.id }).select('solicitudesModeracion');
@@ -412,7 +411,6 @@ exports.obtenerSolicitudes = async (req, res) => {
   }
 };
 
-// Resolver una solicitud de moderación
 exports.resolverSolicitud = async (req, res) => {
   try {
     const { solicitudId } = req.params;

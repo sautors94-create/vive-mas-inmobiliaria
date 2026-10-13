@@ -10,10 +10,22 @@ const MarcasAPI = (() => {
 
   let renovando = null;
   const renovar = () => {
+    // Si no hay token, no intentamos renovar (evita el error 401 en la consola)
+    const currentToken = token();
+    if (!currentToken) return Promise.resolve(false);
+
     if (!renovando) {
-      renovando = fetch(`${base()}/auth/refresh`, { method: 'POST', credentials: 'include' })
+      renovando = fetch(`${base()}/auth/refresh`, { 
+        method: 'POST', 
+        headers: { 'Authorization': `Bearer ${currentToken}` },
+        credentials: 'include' 
+      })
         .then((r) => (r.ok ? r.json() : null))
-        .then((d) => { if (d && d.accessToken) { guardar(d.accessToken); return true; } guardar(''); return false; })
+        .then((d) => { 
+          if (d && d.accessToken) { guardar(d.accessToken); return true; } 
+          guardar(''); 
+          return false; 
+        })
         .catch(() => false)
         .finally(() => { renovando = null; });
     }
@@ -48,7 +60,11 @@ const MarcasAPI = (() => {
     del: (r, b, o) => llamar('DELETE', r, b, o),
     subir: (r, formData) => llamar('POST', r, formData),
     haySesion: () => !!token(),
-    async restaurarSesion() { return token() ? true : renovar(); },
+    async restaurarSesion() { 
+      // Si hay token, asumemos que la sesión sigue activa. 
+      // Si el token ya expiró, cualquier petición al backend devolverá 401 y el panel lo expulsará.
+      return !!token(); 
+    },
     async salir() { try { await fetch(`${base()}/auth/logout`, { method: 'POST', credentials: 'include' }); } catch (e) { /* noop */ } guardar(''); },
   };
 })();
