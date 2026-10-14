@@ -79,13 +79,57 @@
       if (r.status === 401 || r.status === 403) return sesionPerdida();
       if (r.status === 410) { app.innerHTML = `<div class="mp-estado"><h2>Esta marca fue eliminada</h2><p>${mbEsc(r.error)}</p></div>`; return; }
       if (!r.ok) { app.innerHTML = `<div class="mp-estado"><h2>No pudimos cargar tu panel</h2><p>${mbEsc(r.error || '')}</p><p style="margin-top:14px"><button class="mx-btn prim" onclick="location.reload()">Reintentar</button></p></div>`; return; }
-      M = r.marca; CUENTA = r.cuenta; SMS = !!r.smsDisponible;
-      if (c.ok) CAT = { categorias: c.categorias, ciudades: c.ciudades };
+      
+      M = r.marca || {}; 
+      CUENTA = r.cuenta || {};
+      SMS = !!r.smsDisponible;
+
+      // --- NORMALIZACIÓN ANTI-ERRORES (FIX undefined) ---
+      M.ciudades = M.ciudades || M.ciudadesCobertura || [];
+      M.categorias = M.categorias || [];
+      M.servicios = M.servicios || [];
+      M.zonasAdicionales = M.zonasAdicionales || [];
+      M.promociones = M.promociones || [];
+      M.galeria = M.galeria || [];
+      M.contacto = M.contacto || {};
+      M.contacto.redes = M.contacto.redes || {};
+      M.faltantes = M.faltantes || [];
+      M.solicitudesAbiertas = M.solicitudesAbiertas || 0;
+
+      CUENTA.email = CUENTA.email || '';
+      CUENTA.telefono = CUENTA.telefono || CUENTA.phone || '';
+      CUENTA.emailVerificado = CUENTA.emailVerificado || CUENTA.emailVerified || false;
+      CUENTA.telefonoVerificado = CUENTA.telefonoVerificado || CUENTA.phoneVerified || false;
+      // -------------------------------------------------
+
+      if (c.ok) CAT = { categorias: c.categorias || [], ciudades: c.ciudades || [] };
       SOL = s.ok ? s.solicitudes : [];
       render();
     };
 
-    const aplicarRespuesta = (r) => { if (r.marca) M = r.marca; if (r.cuenta) CUENTA = r.cuenta; };
+    const aplicarRespuesta = (r) => { 
+      if (r.marca) {
+        M = r.marca;
+        // Volvemos a normalizar para no perder el fix
+        M.ciudades = M.ciudades || M.ciudadesCobertura || [];
+        M.categorias = M.categorias || [];
+        M.servicios = M.servicios || [];
+        M.zonasAdicionales = M.zonasAdicionales || [];
+        M.promociones = M.promociones || [];
+        M.galeria = M.galeria || [];
+        M.contacto = M.contacto || {};
+        M.contacto.redes = M.contacto.redes || {};
+        M.faltantes = M.faltantes || [];
+        M.solicitudesAbiertas = M.solicitudesAbiertas || 0;
+      } 
+      if (r.cuenta) {
+        CUENTA = r.cuenta;
+        CUENTA.email = CUENTA.email || '';
+        CUENTA.telefono = CUENTA.telefono || CUENTA.phone || '';
+        CUENTA.emailVerificado = CUENTA.emailVerificado || CUENTA.emailVerified || false;
+        CUENTA.telefonoVerificado = CUENTA.telefonoVerificado || CUENTA.phoneVerified || false;
+      }
+    };
 
     // ---------- piezas ----------
     const cabecera = () => `
@@ -162,7 +206,7 @@
     };
 
     const tUbicacion = () => {
-      borrador.ciudadesSel = borrador.ciudadesSel || M.ciudades.map((c) => c.id);
+      borrador.ciudadesSel = borrador.ciudadesSel || (M.ciudades || []).map((c) => c.id || c._id);
       borrador.nuevas = borrador.nuevas || [];
       borrador.zonas = borrador.zonas || [...M.zonasAdicionales];
       return `
@@ -272,9 +316,9 @@
 
     const tPromos = () => `
       <div class="mx-card">
-        <h2>Tus promociones (${M.promociones.length}/10)</h2>
+        <h2>Tus promociones (${(M.promociones || []).length}/10)</h2>
         <p class="mx-ayuda">Solo las promociones activas y vigentes se muestran públicamente.</p>
-        ${M.promociones.length ? M.promociones.map((p) => `
+        ${(M.promociones || []).length ? M.promociones.map((p) => `
           <div class="mx-promo ${p.activa ? '' : 'inactiva'}">
             <div class="mx-promo-cab"><strong>🏷️ ${mbEsc(etiquetaP(p))}</strong>${estadoPromo(p)}</div>
             <p style="font-size:13px;color:var(--text-light);margin-bottom:6px;white-space:pre-line">${mbEsc(p.descripcion)}</p>
@@ -286,7 +330,7 @@
             </div>
           </div>`).join('') : '<p class="mx-ayuda" style="margin:0">Aún no tienes promociones. Crea la primera abajo.</p>'}
       </div>
-      ${M.promociones.length < 10 || promoEditando ? formPromo(promoEditando ? M.promociones.find((x) => x.id === promoEditando) : null) : ''}`;
+      ${(M.promociones || []).length < 10 || promoEditando ? formPromo(promoEditando ? M.promociones.find((x) => x.id === promoEditando) : null) : ''}`;
 
     const tAvisos = () => `
       <div class="mx-card">
@@ -565,6 +609,22 @@
     });
 
     document.getElementById('btn-salir').addEventListener('click', async () => { await MarcasAPI.salir(); location.href = 'directorio.html#marcas-aliadas'; });
+
+    // Listener para eliminar la marca propia
+    document.getElementById('btn-eliminar-mi-marca')?.addEventListener('click', async () => {
+      if (!confirm('¿ESTÁS SEGURO? Se borrará tu marca y tu cuenta. Esta acción no se puede deshacer.')) return;
+      const btn = document.getElementById('btn-eliminar-mi-marca');
+      btn.disabled = true; btn.textContent = 'Eliminando...';
+      const res = await MarcasAPI.del('/panel/mi-marca');
+      if (res.ok) {
+        alert('Tu marca ha sido eliminada correctamente.');
+        MarcasAPI.guardar(''); // Borramos su token de sesión
+        window.location.href = 'marca-acceso.html'; // Lo mandamos al login
+      } else {
+        alert('Error: ' + (res.error || 'No se pudo eliminar.'));
+        btn.disabled = false; btn.textContent = '🗑️ Eliminar mi marca permanentemente';
+      }
+    });
 
     (async () => {
       if (!(await MarcasAPI.restaurarSesion())) return sesionPerdida();
