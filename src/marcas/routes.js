@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const adminRouter = express.Router();
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() }); // Usamos memoria para subir a Cloudinary
 const ctrl = require('./controllers');
 
 const BRAND_JWT_SECRET = process.env.JWT_BRAND_SECRET || process.env.JWT_SECRET + '_brand';
@@ -37,7 +39,7 @@ const authAdmin = (req, res, next) => {
 // ==========================================
 router.get('/publico', ctrl.obtenerMarcasPublico);
 router.get('/publico/filtros', ctrl.obtenerCatalogos);
-router.get('/publico/catalogos', ctrl.obtenerCatalogos); // <--- Agregada para el frontend
+router.get('/publico/catalogos', ctrl.obtenerCatalogos);
 router.get('/publico/:slug', ctrl.obtenerMarcaPublico);
 
 // ==========================================
@@ -58,19 +60,25 @@ router.get('/panel/mi-marca', authBrand, ctrl.obtenerMiMarca);
 router.put('/panel/mi-marca', authBrand, ctrl.actualizarMiMarca);
 router.put('/panel/publicar', authBrand, ctrl.publicarMarca);
 router.delete('/panel/mi-marca', authBrand, ctrl.eliminarMiMarca);
-router.post('/panel/mi-marca/imagenes/galeria', authBrand, ctrl.subirImagenGaleria);
-router.post('/panel/mi-marca/promociones', authBrand, ctrl.agregarPromocion); 
+
+// Rutas de Imágenes (con multer para recibir archivos)
+router.post('/panel/mi-marca/imagenes/:tipo', authBrand, upload.single('imagen'), ctrl.subirImagenMarca);
+router.post('/panel/mi-marca/imagenes/galeria', authBrand, upload.single('imagen'), ctrl.subirImagenGaleria);
+router.delete('/panel/mi-marca/imagenes/galeria', authBrand, ctrl.eliminarImagenGaleria);
+
+// Rutas de Promociones
+router.post('/panel/mi-marca/promociones', authBrand, ctrl.agregarPromocion);
 
 // Rutas de Solicitudes de Moderación
-router.get('/panel/mi-marca/solicitudes', authBrand, ctrl.obtenerSolicitudes); 
-router.put('/panel/mi-marca/solicitudes/:solicitudId/resolver', authBrand, ctrl.resolverSolicitud); // <--- Agregada
+router.get('/panel/mi-marca/solicitudes', authBrand, ctrl.obtenerSolicitudes);
+router.put('/panel/mi-marca/solicitudes/:solicitudId/resolver', authBrand, ctrl.resolverSolicitud);
 
 // ==========================================
 // RUTAS DEL ADMINISTRADOR
 // ==========================================
 adminRouter.get('/', ctrl.adminObtenerMarcas);
 adminRouter.put('/:id/status', ctrl.adminCambiarStatus);
-adminRouter.post('/:id/reset-password', ctrl.adminResetPasswordMarca); 
+adminRouter.post('/:id/reset-password', ctrl.adminResetPasswordMarca);
 
 module.exports = {
   marcasRouter: router,

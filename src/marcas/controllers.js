@@ -239,17 +239,21 @@ exports.obtenerMiMarca = async (req, res) => {
     respuesta.servicios = respuesta.servicios || [];
     respuesta.solicitudesModeracion = respuesta.solicitudesModeracion || [];
     respuesta.galeria = respuesta.galeria || [];
+    respuesta.contacto = respuesta.contacto || {};
+    respuesta.contacto.redes = respuesta.contacto.redes || {};
     
-    // Nos aseguramos de que la cuenta nunca sea undefined para el frontend
-    if (!respuesta.cuenta) {
-      respuesta.cuenta = { email: '', phone: '', emailVerified: false, phoneVerified: false };
-    }
+    // Enviamos la cuenta EN LA RAÍZ de la respuesta, que es donde la busca el frontend
+    const cuenta = marca.accountId ? marca.accountId.toObject() : {};
     
-    res.json({ ok: true, marca: respuesta });
+    // Avisamos al frontend si Twilio está activo
+    const smsDisponible = !!(process.env.SID_TWILIO && process.env.TOKEN_TWILIO && process.env.SID_SERVICIO_TWILIO);
+
+    res.json({ ok: true, marca: respuesta, cuenta, smsDisponible });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 exports.actualizarMiMarca = async (req, res) => {
   try {
     const marca = await Brand.findOne({ accountId: req.user.id });
@@ -380,18 +384,15 @@ exports.adminCambiarStatus = async (req, res) => {
     if (status === 'eliminado') {
       const marca = await Brand.findById(id);
       if (marca) {
-        // Guardamos un registro en la consola de Hostinger antes de borrar
         console.log(`[ADMIN] Eliminando permanentemente: ${marca.nombreComercial} (ID: ${marca._id})`);
-        
         if (marca.accountId) {
           await BrandAccount.deleteOne({ _id: marca.accountId });
         }
         await Brand.deleteOne({ _id: id });
       }
-      return res.json({ ok: true, mensaje: 'Marca y cuenta eliminadas permanentemente. El correo/teléfono ya está libre para registrarse de nuevo.' });
+      return res.json({ ok: true, mensaje: 'Marca y cuenta eliminadas permanentemente.' });
     }
 
-    // Para bloquear o despublicar, solo actualizamos el estado
     const marca = await Brand.findByIdAndUpdate(id, { status }, { new: true });
     if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
     
@@ -450,43 +451,25 @@ exports.resolverSolicitud = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 // ==========================================
 // ADMIN: RESETEAR CONTRASEÑA DE MARCA
 // ==========================================
 exports.adminResetPasswordMarca = async (req, res) => {
   try {
-    const { id } = req.params; // ID de la marca
+    const { id } = req.params;
     const marca = await Brand.findById(id);
     if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
 
     const cuenta = await BrandAccount.findById(marca.accountId);
     if (!cuenta) return res.status(404).json({ error: 'Cuenta de marca no encontrada' });
 
-    // Generar contraseña temporal
     const tempPass = Math.random().toString(36).slice(-8);
     const salt = await bcrypt.genSalt(10);
     cuenta.password = await bcrypt.hash(tempPass, salt);
     await cuenta.save();
 
-    // Si tiene correo, se le envía (usando tu Nodemailer)
-    if (cuenta.email) {
-      try {
-        const nodemailer = require('nodemailer');
-        let transporter = nodemailer.createTransport({
-          host: process.env.EMAIL_HOST || 'smtp.hostinger.com',
-          port: process.env.EMAIL_PORT || 465, secure: true,
-          auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-        });
-        await transporter.sendMail({
-          from: `"SomosViveMás" <${process.env.EMAIL_USER}>`,
-          to: cuenta.email,
-          subject: 'Tu nueva contraseña de Marca - SomosViveMás',
-          html: `<p>El administrador ha reseteado tu contraseña.</p><p>Tu nueva contraseña temporal es: <b>${tempPass}</b></p><p>Úsala para iniciar sesión en el panel de tu marca.</p>`
-        });
-      } catch (mailError) { console.error('Error al enviar correo:', mailError.message); }
-    }
-
-        let correoEnviado = false;
+    let correoEnviado = false;
     if (cuenta.email) {
       try {
         const nodemailer = require('nodemailer');
@@ -507,11 +490,12 @@ exports.adminResetPasswordMarca = async (req, res) => {
       }
     }
 
-    res.json({ ok: true, passwordTemporal: tempPass, correoEnviado, mensaje: correoEnviado ? 'Contraseña enviada por correo.' : 'No se pudo enviar el correo, entra a los logs del servidor para ver el error.' });
+    res.json({ ok: true, passwordTemporal: tempPass, correoEnviado, mensaje: correoEnviado ? 'Contraseña enviada por correo.' : 'No se pudo enviar el correo, revisa los logs.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 // ==========================================
 // PROVEEDOR: ELIMINAR SU PROPIA CUENTA
 // ==========================================
@@ -520,7 +504,6 @@ exports.eliminarMiMarca = async (req, res) => {
     const marca = await Brand.findOne({ accountId: req.user.id });
     if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
 
-    // Borramos la marca y la cuenta de la base de datos permanentemente
     await BrandAccount.deleteOne({ _id: req.user.id });
     await Brand.deleteOne({ _id: marca._id });
 
@@ -529,27 +512,75 @@ exports.eliminarMiMarca = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 // ==========================================
-// SUBIR IMAGEN A GALERÍA
+// IMÁGENES (SUBIR A CLOUDINARY)
 // ==========================================
+exports.subirImagenMarca = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se seleccionó ningún archivo.' });
+    const marca = await Brand.findOne({ accountId: req.user.id });
+    if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
+
+    const tipo = req.params.tipo;
+    if (!['logo', 'portada', 'fotoPerfil'].includes(tipo)) {
+      return res.status(400).json({ error: 'Tipo de imagen no válido.' });
+    }
+
+    const cloudinary = require('../config/cloudinary');
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = 'data:' + req.file.mimetype + ';base64,' + b64;
+    const result = await cloudinary.uploader.upload(dataURI, { folder: `vive-mas/marcas/${marca._id}` });
+
+    marca[tipo] = result.secure_url;
+    await marca.save();
+    res.json({ ok: true, marca, mensaje: 'Imagen actualizada correctamente' });
+  } catch (error) {
+    console.error('Error al subir imagen:', error.message);
+    res.status(500).json({ error: 'No se pudo subir la imagen. Revisa tu configuración de Cloudinary.' });
+  }
+};
+
 exports.subirImagenGaleria = async (req, res) => {
   try {
+    if (!req.file) return res.status(400).json({ error: 'No se seleccionó archivo.' });
     const marca = await Brand.findOne({ accountId: req.user.id });
     if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
     
-    const { url } = req.body;
     if (!marca.galeria) marca.galeria = [];
-    if (url) marca.galeria.push(url);
-    
+    if (marca.galeria.length >= 8) return res.status(400).json({ error: 'Máximo 8 fotos en galería.' });
+
+    const cloudinary = require('../config/cloudinary');
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = 'data:' + req.file.mimetype + ';base64,' + b64;
+    const result = await cloudinary.uploader.upload(dataURI, { folder: `vive-mas/marcas/${marca._id}/galeria` });
+
+    marca.galeria.push(result.secure_url);
     await marca.save();
-    res.json({ ok: true, marca });
+    res.json({ ok: true, marca, mensaje: 'Imagen agregada a la galería' });
+  } catch (error) {
+    console.error('Error al subir a galería:', error.message);
+    res.status(500).json({ error: 'No se pudo subir la imagen.' });
+  }
+};
+
+exports.eliminarImagenGaleria = async (req, res) => {
+  try {
+    const { url } = req.body;
+    const marca = await Brand.findOne({ accountId: req.user.id });
+    if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
+
+    if (!marca.galeria) marca.galeria = [];
+    marca.galeria = marca.galeria.filter(u => u !== url);
+    await marca.save();
+    res.json({ ok: true, marca, mensaje: 'Foto eliminada de la galería' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
 // ==========================================
-// AGREGAR PROMOCIÓN
+// PROMOCIONES
 // ==========================================
 exports.agregarPromocion = async (req, res) => {
   try {
@@ -557,10 +588,11 @@ exports.agregarPromocion = async (req, res) => {
     if (!marca) return res.status(404).json({ error: 'Marca no encontrada' });
     
     if (!marca.promociones) marca.promociones = [];
+    if (marca.promociones.length >= 10) return res.status(400).json({ error: 'Máximo 10 promociones.' });
+
     marca.promociones.push(req.body);
-    
     await marca.save();
-    res.json({ ok: true, marca });
+    res.json({ ok: true, marca, mensaje: 'Promoción agregada correctamente' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
