@@ -49,7 +49,36 @@ const {
   BrandAuditLog,
 } = require('./models');
 const User = require('../models/User');
-const { transporter, correoConfigurado } = require('../utils/email');
+const bcrypt = require('bcryptjs');
+// ---------------------------------------------------------------
+// CORREO — ACCESO HÍBRIDO (no exige que email.js exporte nada):
+// El repositorio conserva SU propio src/utils/email.js (con las
+// funciones del registro de usuarios). Si ese módulo expone un
+// `transporter` lo reutilizamos; si no, Marcas construye el suyo
+// con las mismas variables EMAIL_*. Así el módulo Marcas NO puede
+// romper (ni ser roto por) el email.js del resto del sitio.
+// ---------------------------------------------------------------
+const _moduloEmail = require('../utils/email');
+const correoConfigurado = typeof _moduloEmail.correoConfigurado === 'function'
+  ? _moduloEmail.correoConfigurado
+  : () => !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+let transporterPropio = null;
+const transporterMarcas = () => {
+  const t = _moduloEmail && _moduloEmail.transporter;
+  if (t && typeof t.sendMail === 'function') return t; // banco de pruebas / email.js compatible
+  if (!transporterPropio) {
+    const nodemailer = require('nodemailer');
+    transporterPropio = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST || 'smtp.hostinger.com',
+      port: Number(process.env.EMAIL_PORT || 465),
+      secure: String(process.env.EMAIL_SECURE == null ? 'true' : process.env.EMAIL_SECURE) !== 'false',
+      auth: process.env.EMAIL_USER
+        ? { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+        : undefined,
+    });
+  }
+  return transporterPropio;
+};
 const twilio = require('../utils/twilioVerify');
 const cloud = require('../config/cloudinary');
 const slugify = require('./utils/slugify');
@@ -143,12 +172,12 @@ const enviarCorreoCodigo = (para, codigo) => {
   // transporter, sendMail reventaba con TypeError críptico → 500 genérico.
   // Con este guardia el error llega clasificado (ETRANSPORT) al log y al
   // campo "detalle" de la respuesta.
-  if (!transporter || typeof transporter.sendMail !== 'function') {
-    const error = new Error('src/utils/email.js no exporta un transporter utilizable');
+  if (!transporterMarcas() || typeof transporterMarcas().sendMail !== 'function') {
+    const error = new Error('No hay transporte de correo utilizable para Marcas');
     error.code = 'ETRANSPORT';
     return Promise.reject(error);
   }
-  return transporter.sendMail({
+  return transporterMarcas().sendMail({
     from: `"SomosViveMás" <${process.env.EMAIL_USER || 'no-reply@somosvivemas.com'}>`,
     to: para,
     subject: `Tu código: ${codigo} (válido 10 minutos) - SomosViveMás`,
@@ -628,6 +657,96 @@ exports.refrescarSesion = async (req, res) => {
   } catch (error) {
     console.error('[marcas][refrescarSesion]', error && error.message);
     return res.status(500).json({ error: 'No se pudo refrescar la sesión.' });
+  }
+};
+
+/**
+ * POST /api/marcas/auth/login — ACCESO CON CONTRASEÑA (diseño del dueño):
+ * - Login diario del proveedor: email + contraseña (el OTP queda para
+ *   inscribirse y para cambiar medios de contacto).
+ * - Cuenta sin contraseña o password incorrecta → 401 GENÉRICO (con compare
+ *   "fantasma" para no filtrar por tiempos si el email existe).
+ * - Respuesta idéntica a verificarCodigo: accessToken + cookie de refresco.
+ */
+exports.loginMarca = async (req, res) => {
+  try {
+    const emailLimpio = porCadena(req.body && req.body.email).toLowerCase();
+    const password = porCadena(req.body && req.body.password);
+    if (!emailLimpio || !EMAIL_RX.test(emailLimpio) || !password) {
+      return res.status(400).json({ error: 'Debes enviar tu correo y contraseña.' });
+    }
+
+    const igualador = bcrypt.hashSync('igualador-de-tiempo-marcas', 10); // compare fantasma
+    const cuenta = await BrandAccount.findOne({ email: emailLimpio }).select('+password');
+    if (!cuenta || !cuenta.password) {
+      await bcrypt.compare(password, igualador);
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
+    }
+
+    const passwordOk = await bcrypt.compare(password, cuenta.password);
+    if (!passwordOk) {
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
+    }
+
+    // La cuenta existe y la contraseña es correcta: misma sesión que verificar.
+    // ⚠️ NUNCA devolver el documento con el hash: se neutraliza el campo
+    // (fue cargado con select('+password') para el compare).
+    cuenta.password = undefined;
+    const marca = await Brand.findOne({ cuenta: cuenta._id });
+    res.cookie('vm_brand_refresh', firmarRefresco(cuenta), {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: REFRESCO_DIAS * 24 * 60 * 60 * 1000,
+      path: '/api/marcas/auth',
+    });
+    return res.json({
+      ok: true,
+      accessToken: firmarAcceso(cuenta),
+      esNueva: false,
+      marca,
+      cuenta,
+    });
+  } catch (error) {
+    console.error('[marcas][loginMarca]', error && error.message);
+    return res.status(500).json({ error: 'No se pudo iniciar sesión. Intenta de nuevo.' });
+  }
+};
+
+/**
+ * POST /api/marcas/panel/cuenta/contrasena — crear o cambiar la contraseña.
+ * - Sin contraseña previa: basta { nueva } (p. ej. al terminar el registro OTP).
+ * - Con contraseña previa: exige { actual, nueva } (cambio desde el panel).
+ * Mínimo 8 caracteres. Guarda SOLO el hash (bcrypt 10 rondas).
+ */
+exports.fijarContrasena = async (req, res) => {
+  try {
+    const actual = porCadena(req.body && req.body.actual);
+    const nueva = porCadena(req.body && req.body.nueva);
+    if (nueva.length < 8 || nueva.length > 128) {
+      return res.status(400).json({ error: 'La nueva contraseña debe tener entre 8 y 128 caracteres.' });
+    }
+
+    const cuenta = await BrandAccount.findById(req.marcaCuenta._id).select('+password');
+    if (!cuenta) return res.status(401).json({ error: 'Sesión no válida.' });
+
+    if (cuenta.password) {
+      if (!actual) {
+        return res.status(400).json({ error: 'Escribe tu contraseña actual para poder cambiarla.' });
+      }
+      const actualOk = await bcrypt.compare(actual, cuenta.password);
+      if (!actualOk) {
+        return res.status(401).json({ error: 'Tu contraseña actual no coincide.' });
+      }
+    }
+
+    const eraCambio = !!cuenta.password;
+    cuenta.password = await bcrypt.hash(nueva, 10);
+    await cuenta.save();
+    return res.json({ ok: true, mensaje: eraCambio ? 'Contraseña actualizada.' : 'Contraseña creada.' });
+  } catch (error) {
+    console.error('[marcas][fijarContrasena]', error && error.message);
+    return res.status(500).json({ error: 'No se pudo guardar la contraseña.' });
   }
 };
 

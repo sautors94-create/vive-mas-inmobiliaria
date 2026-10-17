@@ -441,7 +441,13 @@ const bajarPlanesVencidos = async () => {
 // CRON NATIVO: ENVÍO DE CORREOS SEMANALES (Lunes 9:00 AM)
 // ==========================================
 const FounderModel = require('./nuevo-modulo/models/Founder');
-const { enviarResumenEmbajador } = require('./utils/email');
+// Acceso TOLERANTE al módulo de correo: si tu email.js no exporta
+// enviarResumenEmbajador, el cron semanal se omite con un aviso en lugar
+// de fallar (TypeError) cada semana.
+const _moduloEmailApp = require('./utils/email');
+const enviarResumenEmbajador = typeof _moduloEmailApp.enviarResumenEmbajador === 'function'
+  ? _moduloEmailApp.enviarResumenEmbajador
+  : async () => { console.warn('[email] enviarResumenEmbajador no existe en utils/email: resumen omitido'); return { ok: false, omitido: true }; };
 
 let lastEmailWeekSent = '';
 

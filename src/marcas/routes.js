@@ -108,6 +108,7 @@ const marcasAuthLimiter = (req, res, next) => {
 marcasRouter.get('/auth/canales', ctrl.canales);
 marcasRouter.post('/auth/solicitar', marcasAuthLimiter, ctrl.solicitarCodigo);
 marcasRouter.post('/auth/verificar', ctrl.verificarCodigo);
+marcasRouter.post('/auth/login', marcasAuthLimiter, ctrl.loginMarca);
 marcasRouter.post('/auth/refrescar', ctrl.refrescarSesion);
 
 // ============================================================
@@ -137,6 +138,7 @@ panelRouter.get('/mi-marca/solicitudes', ctrl.obtenerSolicitudes);
 panelRouter.post('/mi-marca/solicitudes/:solicitudId/atender', ctrl.atenderSolicitud);
 panelRouter.post('/cuenta/acceso/solicitar', ctrl.solicitarAcceso);
 panelRouter.post('/cuenta/acceso/confirmar', ctrl.confirmarAcceso);
+panelRouter.post('/cuenta/contrasena', ctrl.fijarContrasena);
 panelRouter.delete('/mi-marca', ctrl.eliminarMiMarca);
 
 marcasRouter.use('/panel', panelRouter);
