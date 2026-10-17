@@ -10,10 +10,15 @@
 //     La cookie de refresco expira sola (httpOnly, no se puede borrar desde JS).
 const MarcasAPI = (() => {
   const KEY = 'vm_brand_token';
+  // Marca en localStorage de que el dispositivo YA tuvo sesión de marca.
+  // Evita llamar a /auth/refrescar en cada visita de un desconocido (que
+  // pintaba un 401 inútil en la consola del navegador).
+  const SESION_FLAG = 'vm_brand_had_session';
   const base = () => `${API_URL}/api/marcas`;
 
   const token = () => { try { return sessionStorage.getItem(KEY) || ''; } catch (e) { return ''; } };
   const guardar = (t) => { try { t ? sessionStorage.setItem(KEY, t) : sessionStorage.removeItem(KEY); } catch (e) { /* sin storage */ } };
+  const marcarSesion = () => { try { localStorage.setItem(SESION_FLAG, '1'); } catch (e) { /* sin storage */ } };
 
   let renovando = null;
   const renovar = () => {
@@ -26,7 +31,7 @@ const MarcasAPI = (() => {
       })
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => {
-          if (d && d.accessToken) { guardar(d.accessToken); return true; }
+          if (d && d.accessToken) { guardar(d.accessToken); marcarSesion(); return true; }
           guardar('');
           return false;
         })
@@ -65,13 +70,22 @@ const MarcasAPI = (() => {
     subir: (r, formData) => llamar('POST', r, formData),
     haySesion: () => !!token(),
     async restaurarSesion() {
-      // Si hay token asumimos sesión activa; si expiró, la primera llamada al
+      // Con token asumimos sesión activa; si expiró, la primera llamada al
       // panel devolverá 401 y este cliente intentará renovar con la cookie.
-      // Si la cookie también murió, el panel expulsa al acceso. Para forzar
-      // una verificación temprana (p. ej. al abrir el panel) llama a renovar().
-      return !!(token() || await renovar());
+      // SIN token sólo intentamos refrescar si este dispositivo YA tuvo una
+      // sesión (bandera en localStorage): un visitante nuevo no genera el
+      // 401 de /auth/refrescar en la consola.
+      if (token()) return true;
+      let huboSesion = false;
+      try { huboSesion = localStorage.getItem(SESION_FLAG) === '1'; } catch (e) { huboSesion = false; }
+      if (!huboSesion) return false;
+      return renovar();
     },
-    async salir() { guardar(''); },
+    async salir() {
+      guardar('');
+      try { localStorage.removeItem(SESION_FLAG); } catch (e) { /* sin storage */ }
+    },
+    marcarSesion,
   };
 })();
 

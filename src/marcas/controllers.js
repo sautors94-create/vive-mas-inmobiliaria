@@ -49,7 +49,7 @@ const {
   BrandAuditLog,
 } = require('./models');
 const User = require('../models/User');
-const { transporter } = require('../utils/email');
+const { transporter, correoConfigurado } = require('../utils/email');
 const twilio = require('../utils/twilioVerify');
 const cloud = require('../config/cloudinary');
 const slugify = require('./utils/slugify');
@@ -111,12 +111,44 @@ const firmarRefresco = (cuenta) =>
 const codigoOTP = () => String(Math.floor(100000 + Math.random() * 900000));
 
 /**
+ * Traduce un error interno (SMTP / MongoDB) a una causa accionable y SEGURA
+ * (sin filtrar mensajes crudos del servidor al cliente). El detalle completo
+ * queda en el registro del hosting vía console.error.
+ */
+const clasificarErrorInterno = (error) => {
+  const codigo = error && (error.code || error.responseCode);
+  const texto = String((error && error.message) || '');
+  if (codigo === 'ETRANSPORT') {
+    return 'El servidor de correo no está preparado (email.js no exporta transporter).';
+  }
+  if (codigo === 'EAUTH' || codigo === 535 || codigo === 530 || /auth|login|credential/i.test(texto)) {
+    return 'El servidor de correo rechazó las credenciales de envío (EMAIL_USER/EMAIL_PASS).';
+  }
+  if (['ECONNREFUSED', 'ETIMEDOUT', 'ESOCKET', 'EAI_AGAIN', 'ECONNECTION', 'EDNS'].includes(codigo)) {
+    return 'El servidor no pudo conectarse al servidor de correo saliente.';
+  }
+  if (codigo === 11000 || (error && error.name === 'MongoServerError') || /mong/i.test(texto)) {
+    return 'Error de base de datos. Revisa el registro del servidor.';
+  }
+  return 'Error interno. Revisa el registro del servidor.';
+};
+
+/**
  * Envío del correo de código. Va DIRECTO por transporter.sendMail (no por
  * enviarCorreo) para que el banco de pruebas intercepte el envío aunque el
  * servidor no tenga EMAIL_USER configurado.
  */
-const enviarCorreoCodigo = (para, codigo) =>
-  transporter.sendMail({
+const enviarCorreoCodigo = (para, codigo) => {
+  // Guardia: si el email.js del servidor quedó con una versión que no exporta
+  // transporter, sendMail reventaba con TypeError críptico → 500 genérico.
+  // Con este guardia el error llega clasificado (ETRANSPORT) al log y al
+  // campo "detalle" de la respuesta.
+  if (!transporter || typeof transporter.sendMail !== 'function') {
+    const error = new Error('src/utils/email.js no exporta un transporter utilizable');
+    error.code = 'ETRANSPORT';
+    return Promise.reject(error);
+  }
+  return transporter.sendMail({
     from: `"SomosViveMás" <${process.env.EMAIL_USER || 'no-reply@somosvivemas.com'}>`,
     to: para,
     subject: `Tu código: ${codigo} (válido 10 minutos) - SomosViveMás`,
@@ -127,6 +159,7 @@ const enviarCorreoCodigo = (para, codigo) =>
       <p style="color:#777">El código expira en 10 minutos. Si no solicitaste este correo, ignóralo.</p>
     </div>`,
   });
+};
 
 /** Un solo código activo por destino+canal: borra previos y crea el nuevo. */
 const crearOTP = async (destino, canal) => {
@@ -421,6 +454,19 @@ exports.solicitarCodigo = async (req, res) => {
       if (!email || !EMAIL_RX.test(porCadena(email))) {
         return res.status(400).json({ error: 'El correo no es válido.' });
       }
+      // Diagnóstico temprano: sin credenciales SMTP, sendMail fallaría más
+      // adelante con un 500 críptico. En producción respondemos 503 con causa
+      // clara (espejo del canal SMS). Los tests (NODE_ENV != production)
+      // interceptan el envío vía stub y NO cambian de comportamiento.
+      const smtpListo = typeof correoConfigurado === 'function'
+        ? correoConfigurado()
+        : !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+      if (process.env.NODE_ENV === 'production' && !smtpListo) {
+        return res.status(503).json({
+          error: 'El envío de códigos por correo no está disponible por ahora.',
+          detalle: 'SMTP_NO_CONFIGURADO',
+        });
+      }
       emailVisible = porCadena(email);
       destino = emailVisible.toLowerCase();
     } else {
@@ -453,8 +499,12 @@ exports.solicitarCodigo = async (req, res) => {
       espera: 60,
     });
   } catch (error) {
-    console.error('[marcas][solicitarCodigo]', error && error.message);
-    return res.status(500).json({ error: 'No se pudo enviar el código. Intenta de nuevo.' });
+    // Código del error visible en el registro del hosting (Hostinger).
+    console.error('[marcas][solicitarCodigo]', error && (error.code || error.responseCode || error.name), '-', error && error.message);
+    return res.status(500).json({
+      error: 'No se pudo enviar el código. Intenta de nuevo.',
+      detalle: clasificarErrorInterno(error),
+    });
   }
 };
 
@@ -550,8 +600,11 @@ exports.verificarCodigo = async (req, res) => {
       cuenta,
     });
   } catch (error) {
-    console.error('[marcas][verificarCodigo]', error && error.message);
-    return res.status(500).json({ error: 'No se pudo verificar el código. Intenta de nuevo.' });
+    console.error('[marcas][verificarCodigo]', error && (error.code || error.name), '-', error && error.message);
+    return res.status(500).json({
+      error: 'No se pudo verificar el código. Intenta de nuevo.',
+      detalle: clasificarErrorInterno(error),
+    });
   }
 };
 

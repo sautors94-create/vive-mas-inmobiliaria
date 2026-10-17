@@ -30,8 +30,9 @@
         ACCESO OTP-ONLY (contrato del backend v2):
         - NO existe login con contraseña. La sesión se abre con un código
           verificado por correo o SMS (Twilio Verify).
-        - Registrar y entrar son EL MISMO flujo: si el correo/teléfono ya tiene
-          cuenta, el backend la reutiliza; si es nuevo, la crea verificada.
+        - Dos modos visuales, UN MISMO flujo: "Crear cuenta" y "Iniciar sesión"
+          llaman a los mismos endpoints; el backend reutiliza la cuenta si el
+          correo/teléfono ya existe (get-or-create) y la crea si es nueva.
         - POST /auth/solicitar  { canal, email | telefono }  → envía el código
         - POST /auth/verificar  { canal, codigo, email | telefono }
           → { accessToken, esNueva, marca, cuenta } + cookie httpOnly de refresco
@@ -41,8 +42,14 @@
 
       <!-- Paso 1: identificación -->
       <section id="sec-1">
-        <h1>Agrega o administra tu marca</h1>
-        <p class="ma-sub">Publica tu perfil en el Directorio. Entra con tu correo o teléfono y te enviaremos un código de verificación. Sin contraseñas.</p>
+        <!-- Modo: crear cuenta / iniciar sesión (mismo flujo OTP, distinto texto) -->
+        <div class="ma-tabs" role="tablist" style="margin-bottom: 18px;">
+          <button type="button" class="ma-tab activo" id="tab-registro" role="tab">🆕 Crear cuenta</button>
+          <button type="button" class="ma-tab" id="tab-login" role="tab">🔑 Iniciar sesión</button>
+        </div>
+
+        <h1 id="titulo-1">Agrega tu marca al directorio</h1>
+        <p class="ma-sub" id="sub-1">Registra tu marca o negocio y aparece en el Directorio de Marcas. Te enviaremos un código de verificación a tu correo o teléfono. Sin contraseñas.</p>
 
         <div class="ma-tabs" role="tablist" style="margin-bottom: 15px;">
           <button type="button" class="ma-tab activo" id="tab-email" role="tab">✉️ Correo</button>
@@ -63,7 +70,7 @@
         </div>
 
         <button type="button" class="ma-btn" id="btn-enviar" style="margin-top: 20px;">Enviar código de verificación</button>
-        <p class="ma-nota">Te enviaremos un código para confirmar que el correo o teléfono es tuyo. Si ya tienes una marca, entrarás directo a tu panel.</p>
+        <p class="ma-nota" id="nota-1">Te enviaremos un código para confirmar que el correo o teléfono es tuyo. Al verificarlo, tu marca queda registrada y entrarás a tu panel.</p>
       </section>
 
       <!-- Paso 2: código -->
@@ -86,10 +93,40 @@
   <script src="../js/marcas-api.js"></script>
   <script>
   (() => {
+    console.log('[marca-acceso] v2.2 — OTP con pestañas Crear cuenta / Iniciar sesión');
     const $ = (id) => document.getElementById(id);
     let canal = 'email';
     let reenvioTimer = null;
     let enviando = false;
+
+    // Modo de la pantalla: "registro" (crear cuenta) o "login" (iniciar sesión).
+    // Con OTP-only AMBOS usan el mismo flujo (solicitar → verificar): el backend
+    // reutiliza la cuenta si ya existe, así que la diferencia es solo el texto.
+    let modo = 'registro';
+    const COPIA_MODO = {
+      registro: {
+        titulo: 'Agrega tu marca al directorio',
+        sub: 'Registra tu marca o negocio y aparece en el Directorio de Marcas. Te enviaremos un código de verificación a tu correo o teléfono. Sin contraseñas.',
+        nota: 'Te enviaremos un código para confirmar que el correo o teléfono es tuyo. Al verificarlo, tu marca queda registrada y entrarás a tu panel.',
+      },
+      login: {
+        titulo: 'Inicia sesión en tu panel',
+        sub: 'Ingresa el correo o teléfono con el que registraste tu marca y te enviaremos un código de acceso. Sin contraseñas.',
+        nota: 'Si el correo o teléfono ya tiene una marca, entrarás directo a tu panel. Si es nuevo, se creará tu cuenta automáticamente.',
+      },
+    };
+    const elegirModo = (m) => {
+      modo = m;
+      $('tab-registro').classList.toggle('activo', m === 'registro');
+      $('tab-login').classList.toggle('activo', m === 'login');
+      const c = COPIA_MODO[m];
+      $('titulo-1').textContent = c.titulo;
+      $('sub-1').textContent = c.sub;
+      $('nota-1').textContent = c.nota;
+      msg('msg-1', '');
+    };
+    $('tab-registro').addEventListener('click', () => elegirModo('registro'));
+    $('tab-login').addEventListener('click', () => elegirModo('login'));
 
     const msg = (id, texto, tipo) => {
       const el = $(id);
@@ -145,7 +182,8 @@
       enviando = false;
 
       if (!r.ok) {
-        msg(esReenvio ? 'msg-2' : 'msg-1', r.error || 'No se pudo enviar el código.', 'error');
+        // El backend incluye "detalle" con la causa (SMTP/BD) para diagnóstico.
+        msg(esReenvio ? 'msg-2' : 'msg-1', (r.error || 'No se pudo enviar el código.') + (r.detalle ? ` — ${r.detalle}` : ''), 'error');
         // El backend aplica cooldown de 60s por destino: al recibir 429 dejamos
         // el reloj corriendo si venía de un envío previo; si no, reactivamos.
         if (esReenvio) cuentaRegresiva(r.espera || 60); else btn.disabled = false;
@@ -173,10 +211,11 @@
 
       if (!r.ok) {
         btn.disabled = false; btn.textContent = 'Verificar y continuar';
-        msg('msg-2', r.error || 'El código no pudo verificarse.', 'error');
+        msg('msg-2', (r.error || 'El código no pudo verificarse.') + (r.detalle ? ` — ${r.detalle}` : ''), 'error');
         return;
       }
       MarcasAPI.guardar(r.accessToken);
+      MarcasAPI.marcarSesion(); // recuerda el dispositivo para restaurar sesión sin 401
       msg('msg-2', r.esNueva ? '¡Cuenta creada! Entrando a tu panel…' : '¡Bienvenido de vuelta! Entrando a tu panel…', 'ok');
       setTimeout(() => { location.href = 'marca-panel.html' + (r.esNueva ? '?nueva=1' : ''); }, 600);
     };
