@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('express-async-errors'); // convierte throws en rutas async en errores que llegan al manejador global
 const connectDB = require('./config/database');
 connectDB();
 
@@ -10,6 +11,11 @@ const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
+const path = require('path');
+const mongoose = require('mongoose');
+
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const EN_PRODUCCION = NODE_ENV === 'production';
 
 const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
@@ -25,13 +31,12 @@ const { webhookStripe } = require('./routes/pagos');
 const { iniciarMarketingAutomation } = require('../services/marketingAutomation');
 const metaOAuthRoutes = require('../services/marketingAutomation/auth/metaOAuth.routes');
 
-// ✅ NUEVO: CRM DE LEADS
-const leadRoutes = require('./routes/lead.routes'); 
+// NUEVO: CRM DE LEADS
+const leadRoutes = require('./routes/lead.routes');
 
 // ==========================================
 // MÓDULOS NUEVOS: AGENTES FUNDADORES & SEO
 // ==========================================
-const path = require('path');
 const seoController = require('./nuevo-modulo/controllers/seoController');
 const founderController = require('./nuevo-modulo/controllers/founderController');
 const foundersRoutes = require('./nuevo-modulo/routes/founders');
@@ -53,17 +58,19 @@ const app = express();
 // "1" = confiar solo en el primer proxy (el de Hostinger), no en cualquiera.
 app.set('trust proxy', 1);
 
-// ⚠️ CRÍTICO: el webhook de Stripe debe registrarse ANTES de express.json()
+// CRÍTICO: el webhook de Stripe debe registrarse ANTES de express.json()
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), webhookStripe);
 
 // ==========================================
-// ✅ RATE LIMITERS CORREGIDOS
+// RATE LIMITERS
 // ==========================================
 
 // 1. Limitador para Login y Registro (Evita fuerza bruta)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 15, // ✅ Subí a 15 para evitar bloqueos mientras pruebas
+  max: 15,
+  standardHeaders: true, // cabeceras RateLimit-* estándar
+  legacyHeaders: false,  // sin X-RateLimit-* (menos ruido/fugas de info)
   message: { error: 'Demasiados intentos de registro/login. Intenta de nuevo en 15 minutos.' }
 });
 
@@ -71,6 +78,8 @@ const authLimiter = rateLimit({
 const contactLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { error: 'Has enviado muchos mensajes. Intenta de nuevo en 15 minutos.' }
 });
 
@@ -78,16 +87,29 @@ const contactLimiter = rateLimit({
 const postLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { error: 'Has publicado muchas propiedades. Intenta de nuevo en una hora.' },
-  skip: (req) => req.method === 'GET' // el catálogo público hace GET y no debe contar contra este límite
+  // Solo cuentan las operaciones de escritura: el catálogo público (GET) no consume cupo
+  skip: (req) => !['POST', 'PUT', 'PATCH'].includes(req.method)
 });
 
-// NOTA: El chatbot (Max/Vivi) tiene SU PROPIO rate limiter adentro 
+// NOTA: El chatbot (Max/Vivi) tiene SU PROPIO rate limiter adentro
 // en chatBotController.js, por lo que NO necesita uno global aquí.
 
-// Seguridad y headers
+// ==========================================
+// SEGURIDAD Y HEADERS
+// ==========================================
+
+// CSP aplicada (compatible con el frontend actual: mantiene 'unsafe-inline'
+// temporalmente porque las páginas públicas usan scripts/estilos inline y
+// atributos onclick; quitarlo sin migrar rompería el sitio).
+// Endurecimientos seguros añadidos: object-src 'none', base-uri 'self',
+// frame-ancestors 'self' (anti-clickjacking) y upgrade-insecure-requests
+// en producción. Sin riesgo de rompimiento.
 app.use(helmet({
   contentSecurityPolicy: {
+    useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "unpkg.com", "cdnjs.cloudflare.com", "cdn.sheetjs.com"],
@@ -97,30 +119,108 @@ app.use(helmet({
       imgSrc: ["'self'", "data:", "blob:", "res.cloudinary.com", "*.cloudinary.com", "*.tile.openstreetmap.org", "*.basemaps.cartocdn.com", "nominatim.openstreetmap.org", "unpkg.com", "api.qrserver.com", "images.unsplash.com"],
       connectSrc: ["'self'", "nominatim.openstreetmap.org", "ip-api.com", "*.openstreetmap.org", "unpkg.com", "api.zippopotam.us", "api.groq.com", "generativelanguage.googleapis.com"],
       workerSrc: ["'self'", "blob:"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      frameAncestors: ["'self'"],
+      ...(EN_PRODUCCION ? { upgradeInsecureRequests: [] } : {})
     }
   }
 }));
 
-app.use(cors({ origin: process.env.CLIENT_URL || '*', credentials: true }));
-app.use(morgan('dev'));
+// POLÍTICA ESTRICTA EN MODO REPORTE (no bloquea nada, solo avisa en la
+// consola del navegador). Sirve de guía de migración: cuando los reportes
+// estén limpios (scripts inline convertidos a archivos .js), copia estas
+// directivas a la CSP de arriba y elimina 'unsafe-inline'.
+const CSP_ESTRICTA_REPORTE = [
+  "default-src 'self'",
+  "script-src 'self' fonts.googleapis.com unpkg.com cdnjs.cloudflare.com cdn.sheetjs.com",
+  "style-src 'self' fonts.googleapis.com fonts.gstatic.com unpkg.com",
+  "font-src 'self' fonts.gstatic.com",
+  "img-src 'self' data: blob: res.cloudinary.com *.cloudinary.com *.tile.openstreetmap.org *.basemaps.cartocdn.com nominatim.openstreetmap.org unpkg.com api.qrserver.com images.unsplash.com",
+  "connect-src 'self' nominatim.openstreetmap.org ip-api.com *.openstreetmap.org unpkg.com api.zippopotam.us api.groq.com generativelanguage.googleapis.com",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "frame-ancestors 'self'"
+].join('; ');
+
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy-Report-Only', CSP_ESTRICTA_REPORTE);
+  next();
+});
+
+// ==========================================
+// CORS CON WHITELIST (antes quedaba abierto a cualquier origen)
+// - CLIENT_URL admite VARIOS orígenes separados por coma.
+// - Sin CLIENT_URL en producción: solo el mismo origen sirve (el propio
+//   backend hospeda el frontend), nunca '*'.
+// - Peticiones sin cabecera Origin (curl, health checks, server-to-server):
+//   permitidas siempre.
+// - Origen no autorizado: se responde SIN cabeceras CORS (el navegador lo
+//   bloquea) y se registra en el log.
+// ==========================================
+const origenesPermitidos = (process.env.CLIENT_URL || '')
+  .split(',')
+  .map((s) => s.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
+if (origenesPermitidos.length === 0) {
+  console.warn('[CORS] CLIENT_URL no definida: CORS limitado a mismo origen. Define CLIENT_URL en .env (admite lista separada por comas).');
+}
+
+if (!EN_PRODUCCION) {
+  // Puertos comunes de desarrollo local (live-server, VS Code, etc.)
+  origenesPermitidos.push(
+    'http://localhost:3000', 'http://127.0.0.1:3000',
+    'http://localhost:5500', 'http://127.0.0.1:5500',
+    'http://localhost:5501', 'http://127.0.0.1:5501'
+  );
+}
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin) return callback(null, true); // curl / misma página / health checks
+    if (origenesPermitidos.includes(origin)) return callback(null, true);
+    if (!EN_PRODUCCION && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+    console.warn(`[CORS] Origen bloqueado: ${origin}`);
+    return callback(null, false); // sin cabeceras CORS -> el navegador lo bloquea
+  },
+  credentials: true
+}));
+
+app.use(morgan(EN_PRODUCCION ? 'combined' : 'dev'));
 
 // Body parsers (DESPUÉS del webhook raw)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(express.static('public'));
+
+// Ruta ABSOLUTA (antes 'public' dependía del directorio desde donde se
+// arrancara el proceso: si PM2/Hostinger arrancaba desde otra carpeta,
+// CSS/JS/HTML dejaban de servirse).
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
 app.use(mongoSanitize());
 app.use(xss());
 
-// ✅ APLICAR RATE LIMITING SOLO DONDE ES NECESARIO (Eliminado el global)
+// APLICAR RATE LIMITING SOLO DONDE ES NECESARIO
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/registro', authLimiter);
 app.use('/api/mensajes', contactLimiter);
-app.use('/api/propiedades', postLimiter); // Limita solo POST/PUT, no GET
+app.use('/api/propiedades', postLimiter);
 
-// Health check
+// Health check (con estado de BD para monitoreo en Hostinger)
+const ESTADOS_DB = ['desconectada', 'conectada', 'conectando', 'desconectando'];
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', proyecto: 'Vive Mas Inmobiliaria', version: '1.0.0' });
+  res.json({
+    status: 'ok',
+    proyecto: 'Vive Mas Inmobiliaria',
+    version: '1.0.0',
+    entorno: NODE_ENV,
+    db: ESTADOS_DB[mongoose.connection.readyState] || 'desconocida'
+  });
 });
 
 // Rutas principales
@@ -138,7 +238,7 @@ app.use('/api/services', servicesRoutes);
 app.use('/api/reportes', reportRoutes);
 app.use('/api', pagoRoutes);
 
-// ✅ NUEVO: RUTAS DEL CRM DE LEADS
+// NUEVO: RUTAS DEL CRM DE LEADS
 app.use('/api/leads', leadRoutes);
 
 // ==========================================
@@ -163,10 +263,10 @@ app.get('/api/directorio', async (req, res) => {
         propietario: u._id,
         status: 'aprobada'
       });
-      
+
       // Determinar si es empresa (KYB) o persona (KYC)
       const esEmpresa = u.kyb && u.kyb.status === 'aprobado';
-      
+
       return {
         id: u._id,
         name: u.nombre,
@@ -174,7 +274,7 @@ app.get('/api/directorio', async (req, res) => {
         location: esEmpresa ? (u.kyb?.estado || 'México') : (u.kyc?.estado || 'México'),
         city: esEmpresa ? (u.kyb?.ciudad || 'Mexico') : (u.kyc?.ciudad || 'Mexico'),
         properties: numPropiedades,
-        verified: true, 
+        verified: true,
         phone: u.telefono || '',
         email: u.email,
         image: u.avatar || '',
@@ -197,24 +297,34 @@ const Waitlist = require('./models/Waitlist');
 
 app.post('/api/waitlist/premium', async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email || !email.includes('@')) {
+    // Normalización y validación estricta (antes solo pedía un '@')
+    const email = String(req.body.email || '').trim().toLowerCase();
+    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ error: 'Email inválido' });
     }
-    
+
     await Waitlist.create({ email });
     res.json({ ok: true });
   } catch (error) {
     // Si el error es de duplicado, ya estaba registrado
     if (error.code === 11000) {
-      return res.json({ ok: true }); 
+      return res.json({ ok: true });
     }
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
 
-// Categorías y ciudades iniciales del directorio de marcas (solo inserta lo que falta)
-require('mongoose').connection.once('open', sembrarCatalogos);
+// Categorías y ciudades iniciales del directorio de marcas (solo inserta lo que falta).
+// Corrige la carrera: si la conexión ya estaba abierta cuando se registró el
+// listener 'open', el seed nunca se ejecutaba.
+const sembrar = () => Promise.resolve(sembrarCatalogos())
+  .catch((e) => console.error('Error sembrando catálogos:', e.message));
+
+if (mongoose.connection.readyState === 1) {
+  sembrar();
+} else {
+  mongoose.connection.once('open', sembrar);
+}
 
 // Inicializar módulo de Marketing Automation
 iniciarMarketingAutomation();
@@ -264,12 +374,7 @@ app.get('/marca/:slug', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/pages/marca.html'));
 });
 
-// 404 (Esto debe quedar abajo del todo)
-app.use((req, res) => {
-  res.status(404).json({ error: 'Ruta no encontrada' });
-});
-// ✅ CORRECCIÓN: Eliminé el middleware 404 duplicado que tenías
-// 404
+// 404 (único; debe quedar debajo de todas las rutas)
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
 });
@@ -283,10 +388,10 @@ const ejecutarPurgaMensajes = async () => {
   try {
     const deletedCount = await purgarMensajesAntiguos();
     if (deletedCount > 0) {
-      console.log(`🗑️ Purga de mensajes: ${deletedCount} mensaje(s) de más de 6 meses eliminados.`);
+      console.log(`Purga de mensajes: ${deletedCount} mensaje(s) de más de 6 meses eliminados.`);
     }
   } catch (error) {
-    console.error('❌ Error en purga de mensajes antiguos:', error.message);
+    console.error('Error en purga de mensajes antiguos:', error.message);
   }
 };
 
@@ -312,7 +417,7 @@ const bajarPlanesVencidos = async () => {
     if (usuariosVencidos.length === 0) return;
 
     for (const u of usuariosVencidos) {
-      console.log(`⏰ Plan vencido: ${u.email} (${u.plan}) → gratuito`);
+      console.log(`Plan vencido: ${u.email} (${u.plan}) → gratuito`);
       u.plan = 'gratuito';
       u.planFechaFin = null;
       u.planCancelado = false;
@@ -326,17 +431,17 @@ const bajarPlanesVencidos = async () => {
       );
     }
 
-    console.log(`⏰ ${usuariosVencidos.length} usuario(s) bajados a gratuito por vencimiento.`);
+    console.log(`${usuariosVencidos.length} usuario(s) bajados a gratuito por vencimiento.`);
   } catch (error) {
-    console.error('❌ Error en cron de planes vencidos:', error.message);
+    console.error('Error en cron de planes vencidos:', error.message);
   }
 };
+
 // ==========================================
 // CRON NATIVO: ENVÍO DE CORREOS SEMANALES (Lunes 9:00 AM)
 // ==========================================
 const FounderModel = require('./nuevo-modulo/models/Founder');
-const UserModel = require('./models/User');
-const { enviarResumenEmbajador } = require('./utils/email'); // Ajusta la ruta si es necesario
+const { enviarResumenEmbajador } = require('./utils/email');
 
 let lastEmailWeekSent = '';
 
@@ -350,11 +455,11 @@ const getNextRank = (score) => {
 
 // Función para obtener el número de semana del año (para no enviarlo dos veces)
 const getWeekNumber = (d) => {
-    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-    var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-    var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
-    return d.getUTCFullYear() + "-" + weekNo;
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return d.getUTCFullYear() + "-" + weekNo;
 }
 
 // Revisa cada hora si es lunes a las 9 AM (o 21 hrs por si hay desfase de horario del servidor)
@@ -368,15 +473,15 @@ setInterval(async () => {
   if ((day === 1 && hour === 9) || (day === 1 && hour === 21)) {
     if (lastEmailWeekSent !== weekKey) {
       lastEmailWeekSent = weekKey;
-      console.log('📧 Iniciando envío de correos semanales de embajadores...');
+      console.log('Iniciando envío de correos semanales de embajadores...');
       try {
         const founders = await FounderModel.find({ userId: { $ne: null } }).populate('userId', 'nombre email notificaciones');
-        
+
         let enviados = 0;
         for (const founder of founders) {
           if (founder.userId && founder.userId.notificaciones && founder.userId.notificaciones.novedades !== false) {
             const rankInfo = getNextRank(founder.score || 0);
-            
+
             await enviarResumenEmbajador(
               founder.userId.email,
               founder.userId.nombre,
@@ -387,14 +492,14 @@ setInterval(async () => {
             );
             enviados++;
           }
-          
+
           // Aprovechamos el ciclo para reiniciar el weekScore de todos
           founder.weekScore = 0;
           await founder.save();
         }
-        console.log(`✅ Correos semanales enviados: ${enviados}. Scores semanales reiniciados.`);
+        console.log(`Correos semanales enviados: ${enviados}. Scores semanales reiniciados.`);
       } catch (err) {
-        console.error('❌ Error en cron semanal de embajadores:', err);
+        console.error('Error en cron semanal de embajadores:', err);
       }
     }
   }
@@ -404,6 +509,7 @@ setInterval(async () => {
 // MANEJADOR DE ERRORES GLOBAL — debe ir al final, después de todas las rutas.
 // ==========================================
 app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err); // si ya se respondió, delegar al manejador por defecto
   if (err && err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({ error: 'El archivo es demasiado grande.' });
   }
@@ -413,7 +519,7 @@ app.use((err, req, res, next) => {
   if (err && err.type === 'entity.parse.failed') {
     return res.status(400).json({ error: 'Solicitud mal formada.' });
   }
-  console.error('❌ Error no controlado:', err);
+  console.error('Error no controlado:', err);
   res.status(err?.status || err?.statusCode || 500).json({
     error: err?.message || 'Ocurrió un error inesperado. Intenta de nuevo.'
   });

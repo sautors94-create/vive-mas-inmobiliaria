@@ -1,9 +1,119 @@
+'use strict';
+
+/**
+ * src/controllers/chatbot.controller.js
+ * ---------------------------------------------------------------------------
+ * Correcciones aplicadas sobre la version original (mismas rutas, mismos
+ * nombres exportados, misma logica de negocio; los catalogos de servicios,
+ * keywords, FAQs, prompts y maquinas de estado se conservan INTACTOS):
+ *
+ * CRITICOS
+ *  1. Groq PEREZOSO: antes `throw new Error("FATAL...")` + `new Groq()` a
+ *     nivel de modulo tumbaban TODA la app al hacer require sin GROQ_API_KEY
+ *     (mismo patron que Stripe en auth.controller.js; era el ultimo eslabon
+ *     del critico 3 "la app no arranca sin .env"). Ahora getGroq() inicializa
+ *     al primer uso y devuelve null si no hay key, sin lanzar nada.
+ *  2. Degradacion controlada: sin Groq, Vivi responde con un mensaje de
+ *     servicio (ok:true) y Max sigue operando con su motor determinista
+ *     (deteccion de servicio, FAQs, precios, flujos y captura de leads), que
+ *     no necesita IA. El bot ya NO pierde leads cuando Groq esta caido o sin
+ *     configurar.
+ *  3. Aislamiento de fallos del LLM: la llamada a Groq dentro de
+ *     chatServicios tiene su propio try/catch; si Groq falla (401, 429, red,
+ *     modelo), la conversacion cae a un fallback determinista en lugar de
+ *     morir con 500 a mitad del funnel.
+ *
+ * ALTOS
+ *  4. Folio fantasma: en ambas creaciones de lead se asignaba folio y
+ *     leadGuardado=true ANTES de Lead.create; si la BD fallaba, el usuario
+ *     recibia un numero de solicitud inexistente y el lead jamas se
+ *     reintentaba. Ahora el folio se comunica SOLO si el lead quedo guardado;
+ *     en fallo se loguea el payload completo (recuperable manualmente) y el
+ *     siguiente mensaje reintenta el guardado.
+ *  5. Respuestas de error: chatServicios devolvia {error:'Error al procesar.'}
+ *     sin el campo `respuesta` (rompia el chat del frontend) y guardarLead
+ *     devolvia error.message interno (fuga de detalles de Mongo). Ahora al
+ *     cliente salen mensajes genericos; el detalle queda en logs internos.
+ *  6. Rate limiter acotado: la IP sale de x-forwarded-for (header
+ *     falsificable) y el Map crecia sin limite => DoS de memoria. Cap de
+ *     10,000 IPs con expulsion de las mas viejas + .unref() en el barrido
+ *     periodico (ya no sostiene el proceso vivo en pruebas/apagados).
+ *
+ * MEDIOS / BUGS
+ *  7. historial saneado antes de ir al LLM: Array check, whitelist de roles,
+ *     coercion a String y tope de 800 chars por item (antes `h.text ||
+ *     h.content` sin tope => abuso de tokens / items malformados).
+ *  8. `mensaje` exige ser string no vacio (antes `if (!mensaje)` aceptaba
+ *     objetos/arrays y se colaba al resto del pipeline).
+ *  9. guardarLead endurecido: valida email si viene (antes guardaba basura),
+ *     topes de longitud (nombre/servicio 100) y telefono normalizado antes
+ *     de validar; el error interno ya no llega al cliente.
+ * 10. Cache de regex en contieneAlgunaPalabra: se compilaba una RegExp por
+ *     palabra en CADA mensaje (detectarTipoServicio la invoca ~100 veces por
+ *     request). Cache acotada solo para las listas fijas del catalogo.
+ * 11. El aviso de mensaje >1000 chars devuelve la memoria YA sanitizada
+ *     (antes devolvia memoriaRaw sin filtrar).
+ * 12. El pegado original termina con un `}` sobrante despues de module.exports
+ *     (SyntaxError si estaba asi en el repo); esta version queda limpia.
+ * 13. Nombre contaminado en el lead: "me llamo Ana López y mi número es..."
+ *     capturaba "Ana López y mi número es" como nombre (el regex de nombres
+ *     se comia todas las palabras con letras). Ahora se corta en la primera
+ *     palabra conectora (y, mi, es, celular...) => "Ana López".
+ * 14. Telefono perdido por el monto: "mi presupuesto es 2 millones, mi
+ *     celular es 5512345678" no capturaba el telefono porque el guard
+ *     anti-falsos-positivos rechazaba si HABIA dinero en cualquier parte
+ *     anterior del mensaje. Ahora solo lo rechaza si el monto esta
+ *     INMEDIATAMENTE antes del numero (que es el caso real de colision).
+ *
+ * NOTAS DE OPERACION
+ *  - Sin GROQ_API_KEY el servicio de chat funciona en modo determinista y
+ *    sigue capturando leads; solo se pierden las respuestas "conversacionales"
+ *    del LLM (se sustituyen por texto del catalogo).
+ *  - El rate limiter vive en memoria (valido para una instancia). Si el
+ *    backend corre multi-instancia (PM2 cluster/k8s), moverlo a Redis.
+ */
+
 const Groq = require('groq-sdk');
-const crypto = require('crypto'); 
+const crypto = require('crypto');
 const Lead = require('../models/Lead');
 
-if (!process.env.GROQ_API_KEY) throw new Error("❌ FATAL: Falta GROQ_API_KEY");
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+/* ==========================================================
+   LOGS ESTRUCTURADOS
+========================================================== */
+const logBot = (evento, datos = {}) => {
+    console.log(JSON.stringify({ timestamp: new Date().toISOString(), nivel: 'BOT', evento, ...datos }));
+};
+
+/* ==========================================================
+   GROQ PEREZOSO (fix critico 1): nunca instanciar ni lanzar
+   en el require del modulo. Devuelve null si no hay key => los
+   controladores degradan en lugar de tumbar la app.
+========================================================== */
+let clienteGroq = null;
+let avisoSinGroqEmitido = false;
+
+const getGroq = () => {
+    if (!process.env.GROQ_API_KEY) {
+        if (!avisoSinGroqEmitido) {
+            logBot('CHATBOT_DEGRADADO', {
+                motivo: 'Falta GROQ_API_KEY',
+                efecto: 'Max/Vivi operan en modo determinista; la captura de leads sigue activa',
+            });
+            avisoSinGroqEmitido = true;
+        }
+        return null;
+    }
+    if (!clienteGroq) {
+        try {
+            clienteGroq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        } catch (error) {
+            console.error('[chatbot] No se pudo inicializar Groq:', error.message);
+            avisoSinGroqEmitido = true;
+            return null;
+        }
+    }
+    return clienteGroq;
+};
 
 /* ==========================================================
    CONFIGURACIONES DE MODELO
@@ -11,13 +121,6 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 // Ajustado: Menos tokens máximos y mayor penalización por repetición para evitar respuestas largas y "paja".
 const CONFIG_VIVI = { model: "openai/gpt-oss-120b", temperature: 0.4, top_p: 0.8, frequency_penalty: 0.6, presence_penalty: 0.3, max_tokens: 150 };
 const CONFIG_MAX = { model: "openai/gpt-oss-120b", temperature: 0.4, top_p: 0.8, frequency_penalty: 0.6, presence_penalty: 0.3, max_tokens: 200 };
-
-/* ==========================================================
-   SISTEMA DE LOGS ESTRUCTURADOS
-========================================================== */
-const logBot = (evento, datos = {}) => {
-    console.log(JSON.stringify({ timestamp: new Date().toISOString(), nivel: 'BOT', evento, ...datos }));
-};
 
 /* ==========================================================
    CATÁLOGO DE SERVICIOS
@@ -127,11 +230,21 @@ const SOLUCIONES_SOPORTE = {
 const getFechaActual = () => new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 const normalizarTexto = (texto = '') => String(texto).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
+// [FIX 10] Cache de regex: las listas de palabras son fijas (catalogo), asi que
+// compilar la misma RegExp una sola vez es seguro y elimina ~100 new RegExp
+// por mensaje. Techo de 500 entradas por seguridad.
+const _regexCache = new Map();
+
 const contieneAlgunaPalabra = (texto, palabras = []) => {
     const contenido = normalizarTexto(texto);
     return palabras.some(palabra => {
-        const safeWord = normalizarTexto(palabra).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        return new RegExp(`\\b${safeWord}\\b`, "i").test(contenido);
+        let re = _regexCache.get(palabra);
+        if (!re) {
+            const safeWord = normalizarTexto(palabra).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            re = new RegExp(`\\b${safeWord}\\b`, "i");
+            if (_regexCache.size < 500) _regexCache.set(palabra, re);
+        }
+        return re.test(contenido);
     });
 };
 
@@ -156,6 +269,40 @@ const sanitizarMemoria = (m = {}) => {
 
 const generarFolio = () => `VM-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 const CIUDADES_MX = ["mexico", "cdmx", "ciudad de mexico", "monterrey", "guadalajara", "queretaro", "puebla", "cancun", "merida", "toluca", "tijuana", "leon", "aguascalientes", "chihuahua", "morelia", "veracruz", "polanco", "santa fe", "coyoacán", "tlalpan", "zapopan", "san pedro garza", "zona sur", "zona norte"];
+
+// [FIX 13] Conectoras que nunca son parte de un nombre de persona (se
+// excluyen de/del/la/los para proteger apellidos compuestos como "De la O").
+const NO_NOMBRE = ['y', 'e', 'mi', 'mis', 'me', 'es', 'son', 'soy', 'llamo', 'número', 'numero', 'teléfono', 'telefono', 'celular', 'whatsapp', 'correo', 'email', 'mail', 'gracias', 'hola', 'por', 'favor'];
+
+// [FIX 8] Mensaje del chat normalizado: exige string no vacio.
+const extraerMensaje = (body = {}) => {
+    const m = body && typeof body === 'object' ? body.mensaje : body;
+    if (typeof m !== 'string') return null;
+    const t = m.trim();
+    return t.length > 0 ? t : null;
+};
+
+// [FIX 7] historial saneado antes de ir al LLM: roles validos, coercion a
+// String y tope por item (evita abuso de tokens con textos gigantes o items
+// malformados que antes viajaban tal cual al SDK).
+const MAX_ITEMS_HISTORIAL = 10;
+const MAX_CHARS_ITEM_HISTORIAL = 800;
+
+const sanearHistorial = (historial, maxItems = MAX_ITEMS_HISTORIAL) => {
+    if (!Array.isArray(historial)) return [];
+    return historial
+        .filter((h) => h && typeof h === 'object' && (h.role === 'user' || h.role === 'assistant'))
+        .slice(-maxItems)
+        .map((h) => ({ role: h.role, content: String(h.text != null ? h.text : (h.content != null ? h.content : '')).slice(0, MAX_CHARS_ITEM_HISTORIAL).trim() }))
+        .filter((h) => h.content.length > 0);
+};
+
+// IP del cliente (el header x-forwarded-for es falsificable; por eso el
+// rateLimiter acota su Map, ver fix 6).
+const obtenerIp = (req) => {
+    const fwd = req.headers && req.headers['x-forwarded-for'];
+    return (String(fwd ? fwd.split(',')[0] : (req.socket && req.socket.remoteAddress) || 'desconocida')).trim() || 'desconocida';
+};
 
 /* ==========================================================
    DETECCIÓN DE SERVICIOS Y ENTIDADES
@@ -217,11 +364,16 @@ const extraerEntidades = (mensaje) => {
     let tel = null;
     const pCtx = msg.match(/(?:tel[eé]fono|celular|whatsapp|ll[áa]mame|mi n[uú]mero(?:\s*es)?|contacto|:\s*)\s*(?:\+52\s?)?(\d[\s-]?){10,12}/i); if (pCtx) { const l = pCtx[0].replace(/\D/g, ''); if (validarTelefonoMX(l)) tel = l; }
     if (!tel) { const pP = msg.match(/\+52\s?(\d{10})/); if (pP && validarTelefonoMX(pP[1])) tel = pP[1]; }
-    if (!tel) { const pD = msg.match(/(?:^|\s)(\d{10})(?:\s|$|[.,;!])/); if (pD && validarTelefonoMX(pD[1])) { const a = msg.substring(0, pD.index).toLowerCase(); if (!/[\$]|pesos|mxn|millon/i.test(a)) tel = pD[1]; } }
+    if (!tel) { const pD = msg.match(/(?:^|\s)(\d{10})(?:\s|$|[.,;!])/); if (pD && validarTelefonoMX(pD[1])) { const a = msg.substring(0, pD.index); if (!/(?:\$|pesos|mxn|millon(?:es)?)\s*$/i.test(a)) tel = pD[1]; } }
     res.telefono = tel;
     const eM = msg.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i); if (eM) res.email = eM[0].toLowerCase();
     const pN = [/mi nombre es\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+)+)/i, /me llamo\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+)+)/i, /soy\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+)?)/i];
-    for (const p of pN) { const m = msg.match(p); if (m && m[1]) { const pos = m[1].trim(); if (!contieneAlgunaPalabra(pos, ['casa', 'departamento', 'renta', 'servicio']) && pos.length >= 3) { res.nombre = pos.split(' ').map(x => x.charAt(0).toUpperCase() + x.slice(1)).join(' '); break; } } }
+    for (const p of pN) { const m = msg.match(p); if (m && m[1]) { let pos = m[1].trim();
+        // [FIX 13] corta el nombre en la primera conectora detectada
+        const tokens = pos.split(/\s+/);
+        const corte = tokens.findIndex(t => NO_NOMBRE.includes(normalizarTexto(t)));
+        if (corte > 0) pos = tokens.slice(0, corte).join(' ');
+        if (!contieneAlgunaPalabra(pos, ['casa', 'departamento', 'renta', 'servicio']) && pos.length >= 3) { res.nombre = pos.split(' ').map(x => x.charAt(0).toUpperCase() + x.slice(1)).join(' '); break; } } }
     if (contieneAlgunaPalabra(msgN, ["vivir", "habitar", "familia", "personal"])) res.uso = "Vivir"; else if (contieneAlgunaPalabra(msgN, ["inversion", "invertir", "negocio"])) res.uso = "Inversión";
     res.presupuesto = extraerPresupuestoAvanzado(mensaje);
     if (!res.ciudad) { for (const c of CIUDADES_MX) { if (msgN.includes(c)) { res.ciudad = c.charAt(0).toUpperCase() + c.slice(1); break; } } }
@@ -275,6 +427,70 @@ const RESPUESTAS_DIRECTAS = {
 const obtenerRespuestaDirecta = (i) => { const o = RESPUESTAS_DIRECTAS[i]; return o ? o[Math.floor(Math.random() * o.length)] : null; };
 
 /* ==========================================================
+   DEGRADACIÓN SIN LLM (fix critico 2 y 3)
+   Respuesta determinista cuando Groq no esta disponible (sin
+   key, 401, 429, red...). Mantiene el funnel vivo: la deteccion
+   de servicio, las preguntas del flujo y la captura de leads no
+   dependen de la IA.
+========================================================== */
+const RESPUESTA_SOPORTE_DEGRADADO = "En este momento el soporte en línea no está disponible. Escríbenos a soporte@somosvivemas.com y con gusto te ayudamos. 😊";
+
+const respuestaSinLLM = (memoria, instruccion, servicioInfo) => {
+    if (servicioInfo) {
+        let r = `${servicioInfo.descripcion} ${servicioInfo.cta}`;
+        if (!memoria.ciudad) r += " ¿Me confirmas en qué ciudad o zona lo necesitas?";
+        return r;
+    }
+    const directa = obtenerRespuestaDirecta(instruccion);
+    if (directa) return directa;
+    if (!memoria.ciudad) return "¿En qué ciudad o zona buscas el servicio? 😊";
+    if (!(memoria.nombre && memoria.telefono)) return obtenerRespuestaDirecta('pedir_datos');
+    return "¡Listo! Un asesor se pondrá en contacto contigo muy pronto.";
+};
+
+/* ==========================================================
+   GUARDADO DE LEADS (fix alto 4)
+   Un solo punto de guardado. El folio SOLO se comunica si el
+   lead quedo en BD; en fallo se loguea el payload completo para
+   recuperacion manual y el lead NO se marca como guardado (el
+   siguiente mensaje reintenta).
+========================================================== */
+const persistirLead = async ({ memoria, historial, ip }) => {
+    const folio = generarFolio();
+    const payload = {
+        nombre: memoria.nombre,
+        telefono: memoria.telefono,
+        email: memoria.email,
+        servicio: (memoria.servicio && SERVICIOS_VIVE_MAS[memoria.servicio] && SERVICIOS_VIVE_MAS[memoria.servicio].nombre) || 'Asesoría general',
+        tipo: memoria.tipoFlujo || 'servicio',
+        conversacion: JSON.stringify(sanearHistorial(historial, 20)),
+        ip,
+        ciudad: memoria.ciudad,
+        pais: "México",
+        folio
+    };
+    await Lead.create(payload);
+    logBot('LEAD_COMPLETO', { folio, servicio: memoria.servicio });
+    return folio;
+};
+
+const registrarFalloLead = (error, memoria, folio) => {
+    // El payload completo queda en el log para recuperacion manual (CRM/CSV)
+    logBot('ERROR_GUARDADO_LEAD', {
+        error: error.message,
+        folioIntentado: folio,
+        recuperable: true,
+        datos: {
+            nombre: memoria.nombre,
+            telefono: memoria.telefono,
+            email: memoria.email,
+            servicio: memoria.servicio,
+            ciudad: memoria.ciudad
+        }
+    });
+};
+
+/* ==========================================================
    PROMPT DE MAX (Humanizado, Conciso y con Lógica de Valuación)
 ========================================================== */
 const generarPromptMax = (memoria, estado, instruccion, servicioInfo) => {
@@ -298,7 +514,7 @@ PASO 3: NUNCA pidas datos de contacto ANTES de haber dado el estimado rápido al
         p += `\nINSTRUCCIÓN: Responde a la duda del usuario. Si pide valuación, dala. Si pide info, da el beneficio y usa el CTA: "${servicioInfo.cta}"`;
     }
 
-    p += `\n\n--- MEMORIA ---\nServicio: ${memoria.servicio ? SERVICIOS_VIVE_MAS[memoria.servicio]?.nombre : 'Por detectar'}\nCiudad: ${memoria.ciudad || 'No'}\n`;
+    p += `\n\n--- MEMORIA ---\nServicio: ${memoria.servicio ? (SERVICIOS_VIVE_MAS[memoria.servicio] ? SERVICIOS_VIVE_MAS[memoria.servicio].nombre : 'Por detectar') : 'Por detectar'}\nCiudad: ${memoria.ciudad || 'No'}\n`;
     if (memoria.tipoFlujo === 'propiedad') p += `Uso: ${memoria.uso || 'No'}\nPresupuesto: ${memoria.presupuesto || 'No'}\n`;
     p += `Nombre: ${memoria.nombre || 'No'}\nTel: ${memoria.telefono || 'No'}\nEmail: ${memoria.email || 'No'}\nEstado: ${estado}`;
 
@@ -324,19 +540,40 @@ PASO 3: NUNCA pidas datos de contacto ANTES de haber dado el estimado rápido al
 };
 
 /* ==========================================================
-   RATE LIMITER
+   RATE LIMITER (fix alto 6: Map acotado + barrido con unref)
 ========================================================== */
-const rateLimiter = { intentos: new Map(), MAX: 30, WINDOW: 15 * 60 * 1000, verificar(ip) { const a = Date.now(); const r = this.intentos.get(ip); if (!r || a - r.inicio > this.WINDOW) { this.intentos.set(ip, { inicio: a, c: 1 }); return { ok: true }; } if (r.c >= this.MAX) { logBot('RATE_LIMIT', { ip }); return { ok: false, msg: `Intenta en ${Math.ceil((this.WINDOW - (a - r.inicio)) / 60000)} min.` }; } r.c++; return { ok: true }; } };
-setInterval(() => { const a = Date.now(); for (const [ip, r] of rateLimiter.intentos.entries()) if (a - r.inicio > rateLimiter.WINDOW) rateLimiter.intentos.delete(ip); }, 3600000);
+const rateLimiter = { 
+    intentos: new Map(), 
+    MAX: 30, 
+    WINDOW: 15 * 60 * 1000, 
+    MAX_IPS: 10000,
+    verificar(ip) { 
+        const a = Date.now();
+        // La IP viene de un header falsificable: sin tope, un atacante con
+        // IPs unicas creceria este Map hasta agotar memoria.
+        while (this.intentos.size >= this.MAX_IPS && !this.intentos.has(ip)) {
+            const masVieja = this.intentos.keys().next().value;
+            this.intentos.delete(masVieja);
+        }
+        const r = this.intentos.get(ip);
+        if (!r || a - r.inicio > this.WINDOW) { this.intentos.set(ip, { inicio: a, c: 1 }); return { ok: true }; }
+        if (r.c >= this.MAX) { logBot('RATE_LIMIT', { ip }); return { ok: false, msg: `Intenta en ${Math.ceil((this.WINDOW - (a - r.inicio)) / 60000)} min.` }; }
+        r.c++; 
+        return { ok: true }; 
+    } 
+};
+const barridoIps = setInterval(() => { const a = Date.now(); for (const [ip, r] of rateLimiter.intentos.entries()) if (a - r.inicio > rateLimiter.WINDOW) rateLimiter.intentos.delete(ip); }, 3600000);
+if (typeof barridoIps.unref === 'function') barridoIps.unref();
 
 /* ==========================================================
    CONTROLADORES
 ========================================================== */
 const chatSoporte = async (req, res) => {
     try {
-        const { mensaje, historial = [] } = req.body;
+        const mensaje = extraerMensaje(req.body);
         if (!mensaje) return res.status(400).json({ error: 'Mensaje requerido' });
-        const ip = req.headers["x-forwarded-for"]?.split(',')[0] || req.socket.remoteAddress;
+        const historial = Array.isArray(req.body && req.body.historial) ? req.body.historial : [];
+        const ip = obtenerIp(req);
         const rate = rateLimiter.verificar(ip); if (!rate.ok) return res.status(429).json({ error: rate.msg });
         if (mensaje.length > 1000) return res.json({ ok: true, respuesta: "¿Podrías resumirme tu consulta? 😊", tipo: 'soporte', esLead: false });
 
@@ -345,26 +582,38 @@ const chatSoporte = async (req, res) => {
         
         for (const config of Object.values(SOLUCIONES_SOPORTE)) { if (contieneAlgunaPalabra(mensaje, config.palabras)) return res.json({ ok: true, respuesta: config.solucion, tipo: 'soporte', esLead: false }); }
 
+        // [FIX 2] Sin Groq configurado: respuesta de servicio, no 500 ni crash
+        const groq = getGroq();
+        if (!groq) return res.json({ ok: true, respuesta: RESPUESTA_SOPORTE_DEGRADADO, tipo: 'soporte', esLead: false });
+
         const SISTEMA_VIVI = `Eres Vivi, soporte de Vive Más. PROHIBIDO: Inglés. TEMAS: Login, planes, publicar. Fuera de tema: "Puedo ayudarte únicamente con servicios inmobiliarios, administración y soporte de Vive Más."`;
-        const messages = [{ role: "system", content: SISTEMA_VIVI + `\nFecha: ${getFechaActual()}` }, ...historial.filter(h => h.role === "user" || h.role === "assistant").slice(-10).map(h => ({ role: h.role, content: h.text || h.content })), { role: "user", content: mensaje }];
+        const messages = [{ role: "system", content: SISTEMA_VIVI + `\nFecha: ${getFechaActual()}` }, ...sanearHistorial(historial, 10), { role: "user", content: mensaje }];
         
         const completion = await groq.chat.completions.create({ ...CONFIG_VIVI, messages });
-        let respuesta = completion.choices?.[0]?.message?.content?.trim() || "¿Podrías repetirlo?";
-        if (/(regarding|about|please|sorry)/i.test(respuesta)) { const r2 = await groq.chat.completions.create({ ...CONFIG_VIVI, messages: [...messages, {role:"assistant", content:respuesta}, {role:"user", content:"SOLO español."}], temperature: 0.2 }); const fix = r2.choices?.[0]?.message?.content?.trim(); if (fix && !/(regarding|please)/i.test(fix)) respuesta = fix; else respuesta = "Entiendo. ¿Podrías darme más detalles? 😊"; }
+        let respuesta = (completion.choices && completion.choices[0] && completion.choices[0].message && completion.choices[0].message.content || "").trim() || "¿Podrías repetirlo?";
+        if (/(regarding|about|please|sorry)/i.test(respuesta)) { const r2 = await groq.chat.completions.create({ ...CONFIG_VIVI, messages: [...messages, {role:"assistant", content:respuesta}, {role:"user", content:"SOLO español."}], temperature: 0.2 }); const fix = (r2.choices && r2.choices[0] && r2.choices[0].message && r2.choices[0].message.content || "").trim(); if (fix && !/(regarding|please)/i.test(fix)) respuesta = fix; else respuesta = "Entiendo. ¿Podrías darme más detalles? 😊"; }
         
         return res.json({ ok: true, respuesta: respuesta.replace(/¿Hay algo más.*?\?/gi, '').replace(/\n{3,}/g, "\n\n").trim(), tipo: "soporte", esLead: /nombre|telefono|contactar/i.test((respuesta + " " + mensaje).toLowerCase()) });
-    } catch (error) { logBot('ERROR_VALIDACION', { bot: 'Vivi', error: error.message }); return res.status(500).json({ ok: false, respuesta: "Hubo un problema técnico. Escribe a soporte@somosvivemas.com. 😊", tipo: "soporte", esLead: false }); }
+    } catch (error) {
+        // [FIX 5] detalle interno solo en el log; al cliente, mensaje amable
+        logBot('ERROR_VALIDACION', { bot: 'Vivi', error: error.message });
+        return res.status(500).json({ ok: false, respuesta: "Hubo un problema técnico. Escribe a soporte@somosvivemas.com. 😊", tipo: "soporte", esLead: false });
+    }
 };
 
 const chatServicios = async (req, res) => {
     try {
-        const { mensaje, historial = [], estado: estadoActual = 'inicio', memoria: memoriaRaw = {} } = req.body;
+        const mensaje = extraerMensaje(req.body);
         if (!mensaje) return res.status(400).json({ error: "Mensaje requerido" });
-        const ip = req.headers["x-forwarded-for"]?.split(',')[0] || req.socket.remoteAddress;
+        const estadoActual = (req.body && req.body.estado) || 'inicio';
+        const historial = Array.isArray(req.body && req.body.historial) ? req.body.historial : [];
+        const ip = obtenerIp(req);
         const rate = rateLimiter.verificar(ip); if (!rate.ok) return res.status(429).json({ error: rate.msg });
-        if (mensaje.length > 1000) return res.json({ ok: true, respuesta: "¿Podrías resumirme tu consulta? 😊", tipo: "servicios", esLead: false, estado: estadoActual, memoria: memoriaRaw });
 
-        const memoriaCompleta = sanitizarMemoria(memoriaRaw);
+        // [FIX 11] la memoria se sanitiza ANTES de cualquier return temprano
+        const memoriaCompleta = sanitizarMemoria((req.body && req.body.memoria) || {});
+
+        if (mensaje.length > 1000) return res.json({ ok: true, respuesta: "¿Podrías resumirme tu consulta? 😊", tipo: "servicios", esLead: false, estado: estadoActual, memoria: memoriaCompleta });
 
         if (contieneAlgunaPalabra(mensaje, ["gracias", "muchas gracias", "adios", "adiós", "nos vemos", "bye", "hasta luego", "que tengas buen dia"])) {
             logBot('DESPEDIDA_DETECTADA', { msg: mensaje.substring(0, 30) });
@@ -408,33 +657,31 @@ const chatServicios = async (req, res) => {
 
         if ((quiereAsesorExplicito || respuestaAfirmativaCorta) && memoriaCompleta.nombre && memoriaCompleta.telefono && !memoriaCompleta.leadGuardado) {
             logBot('ASESOR_DIRECTO_CON_DATOS', { nombre: memoriaCompleta.nombre });
-            const folio = memoriaCompleta.folio || generarFolio();
-            memoriaCompleta.folio = folio;
-            memoriaCompleta.leadGuardado = true;
-            
             try {
-                await Lead.create({ 
-                    nombre: memoriaCompleta.nombre, 
-                    telefono: memoriaCompleta.telefono, 
-                    email: memoriaCompleta.email, 
-                    servicio: SERVICIOS_VIVE_MAS[memoriaCompleta.servicio]?.nombre || 'Asesoría general', 
-                    tipo: memoriaCompleta.tipoFlujo || 'servicio', 
-                    conversacion: JSON.stringify(historial.slice(-20)), 
-                    ip, 
-                    ciudad: memoriaCompleta.ciudad, 
-                    pais: "México", 
-                    folio 
+                const folio = await persistirLead({ memoria: memoriaCompleta, historial, ip });
+                memoriaCompleta.folio = folio;
+                memoriaCompleta.leadGuardado = true;
+                return res.json({ 
+                    ok: true, 
+                    respuesta: `¡Listo ${memoriaCompleta.nombre}! Un asesor te contactará muy pronto.\n\n📋 Tu número de solicitud es: *${folio}*\n\n¿Necesitas algo más?`, 
+                    tipo: "servicios", 
+                    esLead: true, 
+                    estado: 'completado', 
+                    memoria: memoriaCompleta 
                 });
-            } catch (e) { logBot('ERROR_VALIDACION', { error: e.message }); }
-            
-            return res.json({ 
-                ok: true, 
-                respuesta: `¡Listo ${memoriaCompleta.nombre}! Un asesor te contactará muy pronto.\n\n📋 Tu número de solicitud es: *${folio}*\n\n¿Necesitas algo más?`, 
-                tipo: "servicios", 
-                esLead: true, 
-                estado: 'completado', 
-                memoria: memoriaCompleta 
-            });
+            } catch (e) {
+                // [FIX 4] sin folio fantasma: se informa contacto y el siguiente
+                // mensaje reintenta el guardado (leadGuardado queda false)
+                registrarFalloLead(e, memoriaCompleta);
+                return res.json({ 
+                    ok: true, 
+                    respuesta: `¡Listo ${memoriaCompleta.nombre}! Un asesor te contactará muy pronto.\n\n¿Necesitas algo más?`, 
+                    tipo: "servicios", 
+                    esLead: true, 
+                    estado: 'completado', 
+                    memoria: memoriaCompleta 
+                });
+            }
         }
 
         if (!memoriaCompleta.servicio) {
@@ -473,61 +720,74 @@ const chatServicios = async (req, res) => {
         }
 
         if (usoLLM) {
-            const systemPrompt = generarPromptMax(memoriaCompleta, nuevoEstado, instruccionActual, servicioInfo);
-            const messages = [{ role: "system", content: systemPrompt }, ...historial.filter(h => h.role === "user" || h.role === "assistant").slice(-8).map(h => ({ role: h.role, content: h.text || h.content })), { role: "user", content: mensaje }];
-            const completion = await groq.chat.completions.create({ ...CONFIG_MAX, messages });
-            respuesta = completion.choices?.[0]?.message?.content?.trim() || "¿Podrías contarme un poco más?";
-            respuesta = respuesta.replace(/¿Hay algo más.*?\?/gi, "").replace(/\n{3,}/g, "\n\n").trim();
+            // [FIX 3] El LLM esta aislado: si Groq falta o falla, la conversacion
+            // cae al modo determinista y el funnel no se rompe.
+            const groq = getGroq();
+            if (!groq) {
+                respuesta = respuestaSinLLM(memoriaCompleta, instruccionActual, servicioInfo);
+            } else {
+                try {
+                    const systemPrompt = generarPromptMax(memoriaCompleta, nuevoEstado, instruccionActual, servicioInfo);
+                    const messages = [{ role: "system", content: systemPrompt }, ...sanearHistorial(historial, 8), { role: "user", content: mensaje }];
+                    const completion = await groq.chat.completions.create({ ...CONFIG_MAX, messages });
+                    respuesta = (completion.choices && completion.choices[0] && completion.choices[0].message && completion.choices[0].message.content || "").trim() || "¿Podrías contarme un poco más?";
+                    respuesta = respuesta.replace(/¿Hay algo más.*?\?/gi, "").replace(/\n{3,}/g, "\n\n").trim();
+                } catch (e) {
+                    logBot('LLM_ERROR', { bot: 'Max', error: e.message, fallback: 'determinista' });
+                    respuesta = respuestaSinLLM(memoriaCompleta, instruccionActual, servicioInfo);
+                }
+            }
         }
 
         const tieneDatosCompletos = memoriaCompleta.nombre && memoriaCompleta.telefono;
         const llmIntentoCerrar = contieneAlgunaPalabra(respuesta, ["contactara pronto", "te contactara", "te llamar", "te llamaremos", "te pondra en contacto"]);
         
         if ((nuevoEstado === 'completado' || llmIntentoCerrar) && tieneDatosCompletos && !memoriaCompleta.leadGuardado) {
-            const folio = memoriaCompleta.folio || generarFolio();
-            memoriaCompleta.folio = folio;
-            memoriaCompleta.leadGuardado = true;
-            
             try {
-                await Lead.create({ 
-                    nombre: memoriaCompleta.nombre, 
-                    telefono: memoriaCompleta.telefono, 
-                    email: memoriaCompleta.email, 
-                    servicio: SERVICIOS_VIVE_MAS[memoriaCompleta.servicio]?.nombre || 'Asesoría general', 
-                    tipo: memoriaCompleta.tipoFlujo || 'servicio', 
-                    conversacion: JSON.stringify(historial.slice(-20)), 
-                    ip, 
-                    ciudad: memoriaCompleta.ciudad, 
-                    pais: "México", 
-                    folio 
-                });
-                
-                if (!nuevoEstado || nuevoEstado !== 'completado') nuevoEstado = 'completado';
-                
+                // El folio SIEMPRE nace del guardado real en BD (autoridad del
+                // servidor); nunca se reutiliza uno que venga en la memoria.
+                const folio = await persistirLead({ memoria: memoriaCompleta, historial, ip });
+                memoriaCompleta.folio = folio;
+                memoriaCompleta.leadGuardado = true;
+                nuevoEstado = 'completado';
                 if (!respuesta.includes(folio)) {
                     respuesta += `\n\n📋 Tu número de solicitud es: *${folio}*`;
                 }
-                logBot('LEAD_COMPLETO', { folio, servicio: memoriaCompleta.servicio });
-            } catch (e) { 
-                logBot('ERROR_VALIDACION', { error: e.message }); 
-                if (!respuesta.includes(folio)) respuesta += `\n\n📋 Tu número de solicitud es: *${folio}*`; 
+            } catch (e) {
+                // [FIX 4] folio solo si quedo guardado; payload logueado para
+                // recuperacion manual y reintento en el siguiente mensaje
+                registrarFalloLead(e, memoriaCompleta, memoriaCompleta.folio || null);
+                memoriaCompleta.leadGuardado = false;
             }
         }
 
         return res.json({ ok: true, respuesta, tipo: "servicios", esLead: nuevoEstado === 'completado', estado: nuevoEstado, memoria: memoriaCompleta });
-    } catch (error) { logBot('ERROR_VALIDACION', { bot: 'Max', error: error.message }); return res.status(500).json({ error: "Error al procesar." }); }
+    } catch (error) {
+        // [FIX 5] misma forma de respuesta que el resto del controlador
+        logBot('ERROR_VALIDACION', { bot: 'Max', error: error.message });
+        return res.status(500).json({ ok: false, respuesta: "Hubo un problema al procesar tu mensaje. Intenta de nuevo en un momento. 😊", tipo: "servicios", esLead: false });
+    }
 };
 
 const guardarLead = async (req, res) => {
     try {
-        const { nombre, telefono, email, servicio } = req.body;
+        const { nombre, telefono, email, servicio } = (req.body && typeof req.body === 'object') ? req.body : {};
         if (!nombre || !telefono) return res.status(400).json({ error: "Nombre y teléfono requeridos" });
-        if (!validarTelefonoMX(telefono)) return res.status(400).json({ error: "Teléfono inválido." });
+        // [FIX 9] normalizar antes de validar + email opcional validado + topes
+        const telLimpio = String(telefono).replace(/\D/g, '');
+        if (!validarTelefonoMX(telLimpio)) return res.status(400).json({ error: "Teléfono inválido." });
+        if (email && !validarEmail(email)) return res.status(400).json({ error: "Correo inválido." });
+        const nombreLimpio = String(nombre).trim().substring(0, 100);
+        const servicioLimpio = servicio ? String(servicio).trim().substring(0, 100) : undefined;
         const folio = generarFolio();
-        const lead = await Lead.create({ nombre, telefono: telefono.replace(/\D/g,''), email, servicio, folio, pais: "México" });
+        const lead = await Lead.create({ nombre: nombreLimpio, telefono: telLimpio, email: email ? String(email).trim().toLowerCase() : undefined, servicio: servicioLimpio, folio, pais: "México" });
         logBot('DATOS_CAPTURADOS', { folio, origen: 'manual' });
         res.json({ ok: true, mensaje: "Lead guardado.", lead, folio });
-    } catch (error) { logBot('ERROR_VALIDACION', { error: error.message }); res.status(500).json({ error: error.message }); }
+    } catch (error) {
+        // [FIX 5] error.message interno ya no llega al cliente
+        logBot('ERROR_VALIDACION', { origen: 'manual', error: error.message });
+        res.status(500).json({ error: "No se pudo guardar la solicitud. Intenta de nuevo." });
+    }
 };
 
 module.exports = { chatSoporte, chatServicios, guardarLead, rateLimiter };
