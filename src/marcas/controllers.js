@@ -631,9 +631,18 @@ exports.autenticarMarca = async (req, res, next) => {
 exports.obtenerMiMarca = async (req, res) => {
   try {
     const marca = await Brand.findById(req.marca._id).populate(POPULATE_PANEL);
+    // La cuenta es del PROPIO proveedor (sesión de marca): solo los 4 campos
+    // que consume la pestaña "Mi acceso" del panel. Nunca credenciales.
+    const cta = req.marcaCuenta || {};
     return res.json({
       ok: true,
       marca: conExtrasDePanel(marca),
+      cuenta: {
+        email: cta.email || '',
+        telefono: cta.telefono || '',
+        emailVerificado: !!cta.emailVerificado,
+        telefonoVerificado: !!cta.telefonoVerificado,
+      },
       smsDisponible: twilio.twilioVerifyConfigurado(),
     });
   } catch (error) {

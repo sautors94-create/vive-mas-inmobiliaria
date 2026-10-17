@@ -26,18 +26,23 @@
 
   <main class="ma-wrap">
     <div class="ma-card">
-      <!-- Tabs para cambiar entre Registro y Login -->
-      <div class="ma-tabs" role="tablist" style="margin-bottom: 20px;">
-        <button type="button" class="ma-tab activo" id="tab-registro" role="tab">📝 Registrar marca</button>
-        <button type="button" class="ma-tab" id="tab-login" role="tab">🔑 Iniciar sesión</button>
-      </div>
+      <!--
+        ACCESO OTP-ONLY (contrato del backend v2):
+        - NO existe login con contraseña. La sesión se abre con un código
+          verificado por correo o SMS (Twilio Verify).
+        - Registrar y entrar son EL MISMO flujo: si el correo/teléfono ya tiene
+          cuenta, el backend la reutiliza; si es nuevo, la crea verificada.
+        - POST /auth/solicitar  { canal, email | telefono }  → envía el código
+        - POST /auth/verificar  { canal, codigo, email | telefono }
+          → { accessToken, esNueva, marca, cuenta } + cookie httpOnly de refresco
+      -->
 
       <div id="msg-1" class="ma-msg" role="alert"></div>
 
-      <!-- FORMULARIO DE REGISTRO -->
-      <section id="sec-registro">
-        <h1>Agrega tu marca</h1>
-        <p class="ma-sub">Publica tu perfil en el Directorio. Crea tu cuenta en segundos con tu correo o teléfono.</p>
+      <!-- Paso 1: identificación -->
+      <section id="sec-1">
+        <h1>Agrega o administra tu marca</h1>
+        <p class="ma-sub">Publica tu perfil en el Directorio. Entra con tu correo o teléfono y te enviaremos un código de verificación. Sin contraseñas.</p>
 
         <div class="ma-tabs" role="tablist" style="margin-bottom: 15px;">
           <button type="button" class="ma-tab activo" id="tab-email" role="tab">✉️ Correo</button>
@@ -48,7 +53,7 @@
           <label class="ma-label" for="in-email">Correo electrónico</label>
           <input class="ma-input" type="email" id="in-email" placeholder="tucorreo@ejemplo.com" autocomplete="email" inputmode="email">
         </div>
-        
+
         <div id="campo-sms" style="display:none">
           <label class="ma-label" for="in-tel">Teléfono (10 dígitos)</label>
           <div style="display:flex; align-items:center; gap:8px; background:var(--bg-secondary); border-radius:8px; padding:0 12px; border: 1px solid var(--border);">
@@ -57,34 +62,11 @@
           </div>
         </div>
 
-        <div style="margin-top: 15px;">
-          <label class="ma-label" for="in-pass">Crea una contraseña</label>
-          <input class="ma-input" type="password" id="in-pass" placeholder="Mínimo 6 caracteres" minlength="6" required>
-        </div>
-
         <button type="button" class="ma-btn" id="btn-enviar" style="margin-top: 20px;">Enviar código de verificación</button>
-        <p class="ma-nota">Te enviaremos un código para confirmar que el correo o teléfono es tuyo.</p>
+        <p class="ma-nota">Te enviaremos un código para confirmar que el correo o teléfono es tuyo. Si ya tienes una marca, entrarás directo a tu panel.</p>
       </section>
 
-      <!-- FORMULARIO DE LOGIN -->
-      <section id="sec-login" style="display:none">
-        <h1>Iniciar sesión</h1>
-        <p class="ma-sub">Ingresa con tu correo y tu contraseña para administrar tu marca.</p>
-
-        <div id="campo-email-login" style="margin-bottom: 15px;">
-          <label class="ma-label" for="in-email-login">Correo electrónico</label>
-          <input class="ma-input" type="email" id="in-email-login" placeholder="tucorreo@ejemplo.com">
-        </div>
-
-        <div style="margin-bottom: 20px;">
-          <label class="ma-label" for="in-pass-login">Contraseña</label>
-          <input class="ma-input" type="password" id="in-pass-login" placeholder="Tu contraseña">
-        </div>
-
-        <button type="button" class="ma-btn" id="btn-login">Entrar a mi panel</button>
-      </section>
-
-      <!-- Paso 2: código (Registro) -->
+      <!-- Paso 2: código -->
       <section id="paso-2" style="display:none">
         <h1>Escribe tu código</h1>
         <p class="ma-sub" id="sub-2"></p>
@@ -114,31 +96,11 @@
       el.className = 'ma-msg' + (texto ? ' ' + tipo : '');
       el.textContent = texto || '';
     };
-    
-    // Cambiar entre pestañas Registro y Login
-    $('tab-registro').addEventListener('click', () => {
-      $('tab-registro').classList.add('activo');
-      $('tab-login').classList.remove('activo');
-      $('sec-registro').style.display = 'block';
-      $('sec-login').style.display = 'none';
-      msg('msg-1', '');
-    });
 
-    $('tab-login').addEventListener('click', () => {
-      $('tab-login').classList.add('activo');
-      $('tab-registro').classList.remove('activo');
-      $('sec-login').style.display = 'block';
-      $('sec-registro').style.display = 'none';
-      msg('msg-1', '');
-    });
-
-    // Lógica de canales (Email/SMS) para Registro
     const valor = () => (canal === 'sms' ? $('in-tel').value.trim().replace(/\s/g, '') : $('in-email').value.trim());
-    const cuerpo = () => {
-      const pass = $('in-pass').value.trim();
-      if (canal === 'sms') return { canal, telefono: valor(), password: pass };
-      return { canal, email: valor(), password: pass };
-    };
+    const cuerpo = () => (canal === 'sms'
+      ? { canal, telefono: valor() }
+      : { canal, email: valor() });
 
     const elegirCanal = (c) => {
       canal = c;
@@ -147,30 +109,12 @@
       $('campo-email').style.display = c === 'email' ? '' : 'none';
       $('campo-sms').style.display = c === 'sms' ? '' : 'none';
       msg('msg-1', '');
+      msg('msg-2', '');
     };
     $('tab-email').addEventListener('click', () => elegirCanal('email'));
     $('tab-sms').addEventListener('click', () => { if (!$('tab-sms').disabled) elegirCanal('sms'); });
 
-    // Lógica de Login
-    $('btn-login').addEventListener('click', async () => {
-      const email = $('in-email-login').value.trim();
-      const pass = $('in-pass-login').value.trim();
-      if (!email || !pass) { msg('msg-1', 'Escribe tu correo y contraseña.', 'error'); return; }
-      
-      const btn = $('btn-login');
-      btn.disabled = true; btn.textContent = 'Ingresando...';
-      const r = await MarcasAPI.post('/auth/login', { email, password: pass }, { sesion: false });
-      btn.disabled = false; btn.textContent = 'Entrar a mi panel';
-
-      if (!r.ok) {
-        msg('msg-1', r.error || 'Error al iniciar sesión.', 'error');
-        return;
-      }
-      MarcasAPI.guardar(r.accessToken);
-      location.href = 'marca-panel.html';
-    });
-
-    // Contador regresivo registro
+    // Contador regresivo del cooldown de reenvío
     const cuentaRegresiva = (seg) => {
       clearInterval(reenvioTimer);
       const b = $('btn-reenviar');
@@ -185,49 +129,56 @@
 
     const pedirCodigo = async (esReenvio) => {
       if (enviando) return;
-      if (!valor()) { msg(esReenvio ? 'msg-2' : 'msg-1', canal === 'sms' ? 'Escribe tu teléfono.' : 'Escribe tu correo.', 'error'); return; }
-      const pass = $('in-pass').value.trim();
-      if (!pass || pass.length < 6) { msg('msg-1', 'La contraseña debe tener al menos 6 caracteres.', 'error'); return; }
+      if (!valor()) {
+        msg(esReenvio ? 'msg-2' : 'msg-1', canal === 'sms' ? 'Escribe tu teléfono (10 dígitos).' : 'Escribe tu correo.', 'error');
+        return;
+      }
+      if (canal === 'sms' && !/^\d{10}$/.test(valor())) {
+        msg(esReenvio ? 'msg-2' : 'msg-1', 'El teléfono debe tener exactamente 10 dígitos.', 'error');
+        return;
+      }
 
       enviando = true;
       const btn = esReenvio ? $('btn-reenviar') : $('btn-enviar');
       btn.disabled = true;
       const r = await MarcasAPI.post('/auth/solicitar', cuerpo(), { sesion: false });
       enviando = false;
-      
+
       if (!r.ok) {
-        msg(esReenvio ? 'msg-2' : 'msg-1', r.error, 'error');
-        if (esReenvio) cuentaRegresiva(r.espera || 0); else btn.disabled = false;
+        msg(esReenvio ? 'msg-2' : 'msg-1', r.error || 'No se pudo enviar el código.', 'error');
+        // El backend aplica cooldown de 60s por destino: al recibir 429 dejamos
+        // el reloj corriendo si venía de un envío previo; si no, reactivamos.
+        if (esReenvio) cuentaRegresiva(r.espera || 60); else btn.disabled = false;
         return;
       }
-      
-      $('sec-registro').style.display = 'none';
+
+      $('sec-1').style.display = 'none';
       $('paso-2').style.display = '';
-      $('sub-2').textContent = canal === 'sms' ? `Enviamos un SMS al ${valor()}.` : `Enviamos un código a ${valor()}.`;
+      $('sub-2').textContent = canal === 'sms' ? `Enviamos un SMS al +52 ${valor()}.` : `Enviamos un código a ${valor()}.`;
       msg('msg-2', '', 'ok');
       $('in-codigo').value = '';
       $('in-codigo').focus();
       cuentaRegresiva(r.espera || 60);
-      if (r.accountId) localStorage.setItem('vm_brand_pending_id', r.accountId);
     };
 
     const verificar = async () => {
       const codigo = $('in-codigo').value.replace(/\D/g, '');
-      if (codigo.length < 6) { msg('msg-2', 'Escribe los 6 dígitos.', 'error'); return; }
+      if (codigo.length < 6) { msg('msg-2', 'Escribe los 6 dígitos del código.', 'error'); return; }
       const btn = $('btn-verificar');
       btn.disabled = true; btn.textContent = 'Verificando…';
-      const accountId = localStorage.getItem('vm_brand_pending_id') || null;
-      const r = await MarcasAPI.post('/auth/verificar', { ...cuerpo(), codigo, accountId }, { sesion: false });
-      
+
+      // IMPORTANTE: el backend NO pide accountId (la cuenta se crea/reutiliza
+      // aquí mismo, verificada). El cuerpo es { canal, codigo, email|telefono }.
+      const r = await MarcasAPI.post('/auth/verificar', { ...cuerpo(), codigo }, { sesion: false });
+
       if (!r.ok) {
         btn.disabled = false; btn.textContent = 'Verificar y continuar';
-        msg('msg-2', r.error, 'error');
+        msg('msg-2', r.error || 'El código no pudo verificarse.', 'error');
         return;
       }
-      localStorage.removeItem('vm_brand_pending_id');
       MarcasAPI.guardar(r.accessToken);
-      msg('msg-2', '¡Listo! Entrando a tu panel…', 'ok');
-      setTimeout(() => { location.href = 'marca-panel.html'; }, 600);
+      msg('msg-2', r.esNueva ? '¡Cuenta creada! Entrando a tu panel…' : '¡Bienvenido de vuelta! Entrando a tu panel…', 'ok');
+      setTimeout(() => { location.href = 'marca-panel.html' + (r.esNueva ? '?nueva=1' : ''); }, 600);
     };
 
     $('btn-enviar').addEventListener('click', () => pedirCodigo(false));
@@ -236,20 +187,26 @@
     $('btn-cambiar').addEventListener('click', () => {
       clearInterval(reenvioTimer);
       $('paso-2').style.display = 'none';
-      $('sec-registro').style.display = '';
+      $('sec-1').style.display = '';
       msg('msg-1', '');
+      msg('msg-2', '');
     });
+
+    // Enter en los inputs
+    $('in-codigo').addEventListener('keydown', (e) => { if (e.key === 'Enter') verificar(); });
+    $('in-email').addEventListener('keydown', (e) => { if (e.key === 'Enter') pedirCodigo(false); });
+    $('in-tel').addEventListener('keydown', (e) => { if (e.key === 'Enter') pedirCodigo(false); });
 
     (async () => {
       try {
         const res = await fetch(`${API_URL}/api/marcas/auth/canales`);
         const d = await res.json();
-        if (d.sms === false) { 
-          $('tab-sms').disabled = true; 
-          $('tab-sms').textContent = '📱 Teléfono (próximamente)'; 
+        if (d && d.sms === false) {
+          $('tab-sms').disabled = true;
+          $('tab-sms').textContent = '📱 Teléfono (próximamente)';
         }
-      } catch (e) { /* */ }
-      
+      } catch (e) { /* sin diagnóstico de canales: seguimos con email */ }
+
       if (await MarcasAPI.restaurarSesion()) location.replace('marca-panel.html');
     })();
   })();

@@ -67,6 +67,10 @@
     const fechaHora = (iso) => iso ? new Date(iso).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '';
     const fechaInput = (iso) => iso ? new Date(iso).toISOString().slice(0, 10) : '';
 
+    // Límites REALES del backend (controllers.js) — alinear el texto con la API
+    // evita que el usuario escriba contenido que luego el servidor rechace.
+    const LIMITES = { servicios: 15, zonas: 8, promoDescripcion: 500, promoCondiciones: 300, descripcionCorta: 160 };
+
     // ---------- carga ----------
     const sesionPerdida = () => { MarcasAPI.guardar(''); location.replace('marca-acceso.html'); };
 
@@ -79,9 +83,9 @@
       if (r.status === 401 || r.status === 403) return sesionPerdida();
       if (r.status === 410) { app.innerHTML = `<div class="mp-estado"><h2>Esta marca fue eliminada</h2><p>${mbEsc(r.error)}</p></div>`; return; }
       if (!r.ok) { app.innerHTML = `<div class="mp-estado"><h2>No pudimos cargar tu panel</h2><p>${mbEsc(r.error || '')}</p><p style="margin-top:14px"><button class="mx-btn prim" onclick="location.reload()">Reintentar</button></p></div>`; return; }
-      
-      M = r.marca || {}; 
-      CUENTA = r.cuenta || {};
+
+      M = r.marca || {};
+      CUENTA = r.cuenta || {};   // el backend entrega { email, telefono, emailVerificado, telefonoVerificado }
       SMS = !!r.smsDisponible;
 
       // --- NORMALIZACIÓN ANTI-ERRORES (FIX undefined) ---
@@ -107,7 +111,7 @@
       render();
     };
 
-    const aplicarRespuesta = (r) => { 
+    const aplicarRespuesta = (r) => {
       if (r.marca) {
         M = r.marca;
         // Volvemos a normalizar para no perder el fix
@@ -121,7 +125,7 @@
         M.contacto.redes = M.contacto.redes || {};
         M.faltantes = M.faltantes || [];
         M.solicitudesAbiertas = M.solicitudesAbiertas || 0;
-      } 
+      }
       if (r.cuenta) {
         CUENTA = r.cuenta;
         CUENTA.email = CUENTA.email || '';
@@ -183,12 +187,12 @@
           <h2>Información general</h2>
           <p class="mx-ayuda">Esto es lo que verá la comunidad en tu tarjeta y en tu perfil.</p>
           <div class="mx-grid2">
-            <div class="mx-campo"><label for="f-nombre">Nombre comercial o marca personal *</label><input class="mx-in" id="f-nombre" maxlength="100" value="${mbEsc(M.nombreComercial)}"></div>
+            <div class="mx-campo"><label for="f-nombre">Nombre comercial o marca personal *</label><input class="mx-in" id="f-nombre" maxlength="80" value="${mbEsc(M.nombreComercial)}"></div>
             <div class="mx-campo"><label for="f-resp">Nombre del profesional o responsable</label><input class="mx-in" id="f-resp" maxlength="100" value="${mbEsc(M.responsable)}"></div>
           </div>
-          <div class="mx-campo"><label for="f-corta">Descripción breve * <small style="display:inline">(mín. 30, máx. 200 caracteres)</small></label><textarea class="mx-ta" id="f-corta" maxlength="200" style="min-height:70px">${mbEsc(M.descripcionCorta)}</textarea><small id="cnt-corta"></small></div>
-          <div class="mx-campo"><label for="f-desc">Descripción de la marca</label><textarea class="mx-ta" id="f-desc" maxlength="3000" style="min-height:130px">${mbEsc(M.descripcion)}</textarea></div>
-          <div class="mx-campo"><label for="f-det">Descripción detallada de tus servicios</label><textarea class="mx-ta" id="f-det" maxlength="3000" style="min-height:130px">${mbEsc(M.serviciosDetalle)}</textarea></div>
+          <div class="mx-campo"><label for="f-corta">Descripción breve * <small style="display:inline">(mín. 30, máx. ${LIMITES.descripcionCorta} caracteres)</small></label><textarea class="mx-ta" id="f-corta" maxlength="${LIMITES.descripcionCorta}" style="min-height:70px">${mbEsc(M.descripcionCorta)}</textarea><small id="cnt-corta"></small></div>
+          <div class="mx-campo"><label for="f-desc">Descripción de la marca</label><textarea class="mx-ta" id="f-desc" maxlength="2000" style="min-height:130px">${mbEsc(M.descripcion)}</textarea></div>
+          <div class="mx-campo"><label for="f-det">Descripción detallada de tus servicios</label><textarea class="mx-ta" id="f-det" maxlength="2000" style="min-height:130px">${mbEsc(M.serviciosDetalle)}</textarea></div>
         </div>
         <div class="mx-card">
           <h2>Categorías de servicio *</h2>
@@ -198,7 +202,7 @@
         </div>
         <div class="mx-card">
           <h2>Servicios o especialidades</h2>
-          <p class="mx-ayuda">Palabras que la gente podría buscar (ej. "persianas enrollables", "avalúos"). Máximo 20.</p>
+          <p class="mx-ayuda">Palabras que la gente podría buscar (ej. "persianas enrollables", "avalúos"). Máximo ${LIMITES.servicios}.</p>
           <div style="display:flex;gap:8px"><input class="mx-in" id="f-serv-nuevo" maxlength="60" placeholder="Escribe un servicio y presiona Enter"><button type="button" class="mx-btn" id="btn-serv-add">Agregar</button></div>
           ${chipsTexto('servicios', borrador.servicios)}
         </div>
@@ -226,7 +230,7 @@
         </div>
         <div class="mx-card">
           <h2>Zonas adicionales de servicio</h2>
-          <p class="mx-ayuda">Colonias, municipios o regiones (ej. "Toluca y alrededores"). Máximo 15.</p>
+          <p class="mx-ayuda">Colonias, municipios o regiones (ej. "Toluca y alrededores"). Máximo ${LIMITES.zonas}.</p>
           <div style="display:flex;gap:8px"><input class="mx-in" id="f-zona-nueva" maxlength="80" placeholder="Escribe una zona y presiona Enter"><button type="button" class="mx-btn" id="btn-zona-add">Agregar</button></div>
           ${chipsTexto('zonas', borrador.zonas)}
         </div>
@@ -272,23 +276,31 @@
       return `
         <div class="mx-card">
           <h2>Datos de contacto públicos</h2>
-          <p class="mx-ayuda">Esto <strong>sí se muestra</strong> en tu perfil público. Es independiente de los datos con los que entras a tu cuenta (pestaña “Mi acceso”). Deja vacío lo que no quieras publicar.</p>
+          <p class="mx-ayuda">Esto <strong>sí se muestra</strong> en tu perfil público. Es independiente de los datos con los que entras a tu cuenta (pestaña "Mi acceso"). Deja vacío lo que no quieras publicar.</p>
           <div class="mx-grid2">
             <div class="mx-campo"><label for="c-tel">Teléfono</label><input class="mx-in" id="c-tel" type="tel" maxlength="30" value="${mbEsc(c.telefono)}" placeholder="55 1234 5678"></div>
             <div class="mx-campo"><label for="c-wa">WhatsApp</label><input class="mx-in" id="c-wa" type="tel" maxlength="30" value="${mbEsc(c.whatsapp)}" placeholder="55 1234 5678"></div>
-            <div class="mx-campo"><label for="c-mail">Correo de contacto</label><input class="mx-in" id="c-mail" type="email" maxlength="254" value="${mbEsc(c.email)}"></div>
-            <div class="mx-campo"><label for="c-web">Sitio web</label><input class="mx-in" id="c-web" maxlength="300" value="${mbEsc(c.sitioWeb)}" placeholder="https://"></div>
+            <div class="mx-campo"><label for="c-mail">Correo de contacto</label><input class="mx-in" id="c-mail" type="email" maxlength="120" value="${mbEsc(c.email)}"></div>
+            <div class="mx-campo"><label for="c-web">Sitio web</label><input class="mx-in" id="c-web" maxlength="200" value="${mbEsc(c.sitioWeb)}" placeholder="https://"></div>
           </div>
           <h2 style="margin-top:8px;font-size:15px">Redes sociales</h2>
           <div class="mx-grid2" style="margin-top:10px">
-            ${[['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['linkedin', 'LinkedIn'], ['youtube', 'YouTube']].map(([k, n]) => `<div class="mx-campo"><label for="r-${k}">${n}</label><input class="mx-in" id="r-${k}" maxlength="300" value="${mbEsc(r[k])}" placeholder="https://"></div>`).join('')}
+            ${[['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['x', 'X (Twitter)'], ['linkedin', 'LinkedIn'], ['youtube', 'YouTube']].map(([k, n]) => `<div class="mx-campo"><label for="r-${k}">${n}</label><input class="mx-in" id="r-${k}" maxlength="200" value="${mbEsc(r[k])}" placeholder="https://"></div>`).join('')}
           </div>
         </div>
         <div class="mx-barra-fija"><button class="mx-btn prim" id="btn-guardar-contacto">Guardar cambios</button></div>`;
     };
 
-    const estadoPromo = (p) => !p.activa ? '<span class="mx-pill off">Inactiva</span>' : (p.vigente ? '<span class="mx-pill on">Vigente</span>' : '<span class="mx-pill venc">Fuera de vigencia</span>');
-    const etiquetaP = (p) => p.titulo || (p.tipo === 'porcentaje' ? `${p.porcentaje}% de descuento` : ({ monto: 'Descuento en monto', dos_por_uno: '2x1', cortesia: 'Cortesía', otro: 'Promoción' }[p.tipo]));
+    // La vigencia se calcula AQUÍ: el backend no manda un campo "vigente" en
+    // las promociones del panel (solo en el listado público).
+    const promoEstaVigente = (p) => {
+      const hoy = new Date();
+      if (p.vigenciaFin && new Date(p.vigenciaFin) < hoy) return false;
+      if (p.vigenciaInicio && new Date(p.vigenciaInicio) > hoy) return false;
+      return true;
+    };
+    const estadoPromo = (p) => !p.activa ? '<span class="mx-pill off">Inactiva</span>' : (promoEstaVigente(p) ? '<span class="mx-pill on">Vigente</span>' : '<span class="mx-pill venc">Fuera de vigencia</span>');
+    const etiquetaP = (p) => p.titulo || ({ porcentaje: `${p.porcentaje}% de descuento`, monto: 'Descuento en monto', cortesia: 'Cortesía / servicio gratis', otro: 'Promoción' }[p.tipo] || 'Promoción');
 
     const formPromo = (p) => {
       p = p || { tipo: 'porcentaje', activa: true };
@@ -298,13 +310,12 @@
           <p class="mx-ayuda">Los beneficios los otorgas tú directamente. SomosViveMás no valida ni canjea descuentos: indica con claridad cómo solicitarlos.</p>
           <div class="mx-grid2">
             <div class="mx-campo"><label for="p-tipo">Tipo de beneficio *</label><select class="mx-sel" id="p-tipo">
-              ${[['porcentaje', 'Porcentaje de descuento'], ['monto', 'Descuento en monto'], ['dos_por_uno', '2x1'], ['cortesia', 'Cortesía / servicio gratis'], ['otro', 'Otro']].map(([v, n]) => `<option value="${v}" ${p.tipo === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+              ${[['porcentaje', 'Porcentaje de descuento'], ['monto', 'Descuento en monto'], ['cortesia', 'Cortesía / servicio gratis'], ['otro', 'Otro']].map(([v, n]) => `<option value="${v}" ${p.tipo === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
             <div class="mx-campo" id="p-porc-wrap"><label for="p-porc">Porcentaje (1-100) *</label><input class="mx-in" id="p-porc" type="number" min="1" max="100" value="${p.porcentaje || ''}"></div>
           </div>
           <div class="mx-campo"><label for="p-titulo">Etiqueta visual (opcional)</label><input class="mx-in" id="p-titulo" maxlength="80" value="${mbEsc(p.titulo)}" placeholder="Ej. 20% OFF · Cotización gratis"><small>Es el texto destacado en tu tarjeta. Si lo dejas vacío usamos el tipo de beneficio.</small></div>
-          <div class="mx-campo"><label for="p-desc">Descripción del beneficio *</label><textarea class="mx-ta" id="p-desc" maxlength="600" style="min-height:80px">${mbEsc(p.descripcion)}</textarea></div>
-          <div class="mx-campo"><label for="p-cond">Condiciones de aplicación</label><textarea class="mx-ta" id="p-cond" maxlength="800" style="min-height:70px">${mbEsc(p.condiciones)}</textarea></div>
-          <div class="mx-campo"><label for="p-inst">Instrucciones para solicitarlo</label><textarea class="mx-ta" id="p-inst" maxlength="600" style="min-height:70px" placeholder="Ej. Menciona que vienes de SomosViveMás al contactarnos por WhatsApp.">${mbEsc(p.instrucciones)}</textarea></div>
+          <div class="mx-campo"><label for="p-desc">Descripción del beneficio *</label><textarea class="mx-ta" id="p-desc" maxlength="${LIMITES.promoDescripcion}" style="min-height:80px">${mbEsc(p.descripcion)}</textarea><small>Mínimo 15 caracteres.</small></div>
+          <div class="mx-campo"><label for="p-cond">Condiciones e instrucciones para solicitarlo</label><textarea class="mx-ta" id="p-cond" maxlength="${LIMITES.promoCondiciones}" style="min-height:70px" placeholder="Ej. Vigente con el proyecto firmado antes del 31 de dic. Menciona que vienes de SomosViveMás al contactarnos.">${mbEsc(p.condiciones)}</textarea></div>
           <div class="mx-grid2">
             <div class="mx-campo"><label for="p-ini">Vigente desde</label><input class="mx-in" id="p-ini" type="date" value="${fechaInput(p.vigenciaInicio)}"></div>
             <div class="mx-campo"><label for="p-fin">Vigente hasta</label><input class="mx-in" id="p-fin" type="date" value="${fechaInput(p.vigenciaFin)}"><small>Déjalo vacío si no vence.</small></div>
@@ -313,7 +324,6 @@
           <div class="mx-acciones"><button class="mx-btn prim" id="btn-guardar-promo" data-id="${p.id || ''}">${p.id ? 'Guardar cambios' : 'Crear promoción'}</button>${p.id ? '<button class="mx-btn" id="btn-cancelar-promo">Cancelar</button>' : ''}</div>
         </div>`;
     };
-
     const tPromos = () => `
       <div class="mx-card">
         <h2>Tus promociones (${(M.promociones || []).length}/10)</h2>
@@ -332,6 +342,7 @@
       </div>
       ${(M.promociones || []).length < 10 || promoEditando ? formPromo(promoEditando ? M.promociones.find((x) => x.id === promoEditando) : null) : ''}`;
 
+    const ESTADOS_SOL = { abierta: 'Pendiente', atendida: 'Atendida (en revisión)', resuelta: 'Resuelta' };
     const tAvisos = () => `
       <div class="mx-card">
         <h2>Avisos del equipo de SomosViveMás</h2>
@@ -339,9 +350,8 @@
         ${SOL.length ? SOL.map((s) => `
           <div class="mx-aviso ${s.estado === 'abierta' ? 'abierta' : ''}">
             <h3>${mbEsc(s.motivo)}</h3>
-            <div class="mx-meta">${mbEsc(s.de)} · ${fechaHora(s.creadaEn)} · Qué corregir: <strong>${mbEsc(CAMPOS[s.campo] || 'Otro')}</strong> · <strong>${{ abierta: 'Pendiente', atendida: 'Atendida (en revisión)', resuelta: 'Resuelta', cancelada: 'Cancelada' }[s.estado]}</strong>${s.ocultarMientras && s.estado === 'abierta' ? ' · Tu marca está oculta mientras se corrige' : ''}</div>
+            <div class="mx-meta">${mbEsc(s.de || 'Equipo SomosViveMás')} · ${fechaHora(s.createdAt)} · Qué corregir: <strong>${mbEsc(CAMPOS[s.campo] || 'Otro')}</strong> · <strong>${ESTADOS_SOL[s.estado] || mbEsc(s.estado)}</strong>${s.ocultarMientras && s.estado === 'abierta' ? ' · Tu marca está oculta mientras se corrige' : ''}</div>
             <p>${mbEsc(s.mensaje)}</p>
-            ${s.notaProveedor ? `<p style="margin-top:8px;font-size:13px;color:var(--text-light)"><strong>Tu respuesta:</strong> ${mbEsc(s.notaProveedor)}</p>` : ''}
             ${s.estado === 'abierta' ? `<div style="margin-top:10px"><textarea class="mx-ta" data-nota="${s.id}" maxlength="1000" placeholder="Opcional: cuéntanos qué cambiaste" style="min-height:60px;margin-bottom:8px"></textarea><button class="mx-btn prim" data-atender="${s.id}">Ya lo corregí</button></div>` : ''}
           </div>`).join('') : '<p class="mx-ayuda" style="margin:0">No tienes avisos. ¡Todo en orden!</p>'}
       </div>`;
@@ -399,7 +409,7 @@
       if (tab === 'info') {
         pintarCatPrincipal();
         const corta = $('#f-corta'), cnt = $('#cnt-corta');
-        const act = () => { const n = corta.value.trim().length; cnt.textContent = `${n}/200 caracteres${n < 30 ? ' (mínimo 30 para publicar)' : ''}`; };
+        const act = () => { const n = corta.value.trim().length; cnt.textContent = `${n}/${LIMITES.descripcionCorta} caracteres${n < 30 ? ' (mínimo 30 para publicar)' : ''}`; };
         corta.addEventListener('input', act); act();
       }
       if (tab === 'ubicacion') pintarCiudades();
@@ -475,13 +485,14 @@
         aplicarRespuesta(r); toast(r.mensaje); render(); return;
       }
 
-      // listas de texto (servicios / zonas)
+      // listas de texto (servicios / zonas) — límites del BACKEND: 15 y 8
       if (b.id === 'btn-serv-add' || b.id === 'btn-zona-add') {
         const esServ = b.id === 'btn-serv-add';
         const inp = $(esServ ? '#f-serv-nuevo' : '#f-zona-nueva'); const v = inp.value.trim();
         const lista = esServ ? borrador.servicios : borrador.zonas;
+        const tope = esServ ? LIMITES.servicios : LIMITES.zonas;
         if (!v) return;
-        if (lista.length >= (esServ ? 20 : 15)) return toast(`Máximo ${esServ ? 20 : 15} elementos.`, 'error');
+        if (lista.length >= tope) return toast(`Máximo ${tope} elementos.`, 'error');
         if (lista.some((x) => x.toLowerCase() === v.toLowerCase())) { inp.value = ''; return; }
         lista.push(v); sucio = true;
         const cont = $(`[data-lista="${esServ ? 'servicios' : 'zonas'}"]`);
@@ -508,7 +519,7 @@
         const cats = $$('#f-cats input:checked').map((i) => i.value);
         return guardar({
           nombreComercial: $('#f-nombre').value, responsable: $('#f-resp').value, descripcionCorta: $('#f-corta').value,
-          descripcion: $('#f-desc').value, serviciosDetalle: $('#f-det').value,
+          descripcion: $('#f-desc').value,
           categorias: cats, categoriaPrincipal: $('#f-catprin').value || null, servicios: borrador.servicios,
         }, b, 'Guardar cambios');
       }
@@ -521,7 +532,7 @@
       if (b.id === 'btn-guardar-contacto') {
         return guardar({ contacto: {
           telefono: $('#c-tel').value, whatsapp: $('#c-wa').value, email: $('#c-mail').value, sitioWeb: $('#c-web').value,
-          redes: Object.fromEntries(['instagram', 'facebook', 'tiktok', 'linkedin', 'youtube'].map((k) => [k, $(`#r-${k}`).value])),
+          redes: Object.fromEntries(['instagram', 'facebook', 'tiktok', 'x', 'linkedin', 'youtube'].map((k) => [k, $(`#r-${k}`).value])),
         } }, b, 'Guardar cambios');
       }
 
@@ -566,7 +577,7 @@
         const id = b.dataset.id;
         const cuerpo = {
           tipo: $('#p-tipo').value, porcentaje: $('#p-porc').value, titulo: $('#p-titulo').value, descripcion: $('#p-desc').value,
-          condiciones: $('#p-cond').value, instrucciones: $('#p-inst').value,
+          condiciones: $('#p-cond').value,
           vigenciaInicio: $('#p-ini').value || null, vigenciaFin: $('#p-fin').value || null, activa: $('#p-activa').checked,
         };
         b.disabled = true;
@@ -582,9 +593,9 @@
         b.disabled = true;
         const r = await MarcasAPI.post(`/panel/mi-marca/solicitudes/${b.dataset.atender}/atender`, { nota });
         if (!r.ok) { b.disabled = false; return toast(r.error, 'error'); }
-        aplicarRespuesta(r); toast(r.mensaje);
+        toast(r.mensaje || 'Gracias. El equipo SomosViveMás revisará tu corrección.');
         const s = await MarcasAPI.get('/panel/mi-marca/solicitudes'); if (s.ok) SOL = s.solicitudes;
-        render(); return;
+        await cargarTodo(); return;
       }
 
       // acceso
@@ -619,7 +630,7 @@
       if (res.ok) {
         alert('Tu marca ha sido eliminada correctamente.');
         MarcasAPI.guardar(''); // Borramos su token de sesión
-        window.location.href = 'marca-acceso.html'; // Lo mandamos al login
+        window.location.href = 'marca-acceso.html'; // Lo mandamos al acceso
       } else {
         alert('Error: ' + (res.error || 'No se pudo eliminar.'));
         btn.disabled = false; btn.textContent = '🗑️ Eliminar mi marca permanentemente';
@@ -656,7 +667,7 @@
   </button>
 </div>
 <script>
-  let tiempoInactividad = 4 * 60 * 1000; // 4 minutos de inactividad (4000 ms * 60 * 4)
+  let tiempoInactividad = 4 * 60 * 1000; // 4 minutos de inactividad
   let tiempoCierre = 60; // 60 segundos para el contador
   let timerInactividad;
   let intervaloContador;
@@ -667,7 +678,7 @@
     clearTimeout(timerInactividad);
     clearInterval(intervaloContador);
     modal.style.display = 'none';
-    
+
     // Si el usuario hace algo, volvemos a empezar el conteo de 4 minutos
     timerInactividad = setTimeout(mostrarAviso, tiempoInactividad);
   }
@@ -676,7 +687,7 @@
     modal.style.display = 'flex';
     let segundosRestantes = tiempoCierre;
     contadorEl.textContent = segundosRestantes;
-    
+
     intervaloContador = setInterval(() => {
       segundosRestantes--;
       contadorEl.textContent = segundosRestantes;
@@ -687,24 +698,22 @@
   }
 
   async function continuarSesion() {
-    // Llamamos a la API para renovar el token
-    const tokenActual = sessionStorage.getItem('vm_brand_token');
+    // Renovar token contra /auth/refrescar (endpoint v2): usa la cookie
+    // httpOnly vm_brand_refresh; NO lleva Authorization.
     try {
-      const res = await fetch(`${API_URL}/api/marcas/auth/refresh`, {
+      const res = await fetch(`${API_URL}/api/marcas/auth/refrescar`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${tokenActual}` }
+        credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
         if (data.accessToken) {
           sessionStorage.setItem('vm_brand_token', data.accessToken);
           resetearTemporizador(); // Reiniciamos el conteo
-        } else {
-          cerrarSesion();
+          return;
         }
-      } else {
-        cerrarSesion();
       }
+      cerrarSesion();
     } catch (e) {
       cerrarSesion();
     }

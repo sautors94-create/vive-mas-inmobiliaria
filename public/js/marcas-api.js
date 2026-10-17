@@ -1,6 +1,13 @@
 // Cliente de la API de Marcas y Profesionales Aliados.
 // Usa su PROPIA sesión (vm_brand_token): es independiente de la sesión de usuarios/admin.
 // Requiere api.js (API_URL) cargado antes.
+//
+// CONTRATO BACKEND v2 (OTP-only):
+//   - Refresh: POST /api/marcas/auth/refrescar (¡con Z!) — usa la cookie
+//     httpOnly vm_brand_refresh (path /api/marcas/auth) que el backend puso
+//     al verificar el código. No lleva Authorization.
+//   - NO existe /auth/logout (ni /auth/login): salir = borrar el token local.
+//     La cookie de refresco expira sola (httpOnly, no se puede borrar desde JS).
 const MarcasAPI = (() => {
   const KEY = 'vm_brand_token';
   const base = () => `${API_URL}/api/marcas`;
@@ -10,21 +17,18 @@ const MarcasAPI = (() => {
 
   let renovando = null;
   const renovar = () => {
-    // Si no hay token, no intentamos renovar (evita el error 401 en la consola)
-    const currentToken = token();
-    if (!currentToken) return Promise.resolve(false);
-
+    // Sin cookie de refresco (p. ej. otra pestaña nueva) el backend responde
+    // 401 y devolvemos false: el panel mandará al usuario al acceso.
     if (!renovando) {
-      renovando = fetch(`${base()}/auth/refresh`, { 
-        method: 'POST', 
-        headers: { 'Authorization': `Bearer ${currentToken}` },
-        credentials: 'include' 
+      renovando = fetch(`${base()}/auth/refrescar`, {
+        method: 'POST',
+        credentials: 'include' // envía la cookie httpOnly vm_brand_refresh
       })
         .then((r) => (r.ok ? r.json() : null))
-        .then((d) => { 
-          if (d && d.accessToken) { guardar(d.accessToken); return true; } 
-          guardar(''); 
-          return false; 
+        .then((d) => {
+          if (d && d.accessToken) { guardar(d.accessToken); return true; }
+          guardar('');
+          return false;
         })
         .catch(() => false)
         .finally(() => { renovando = null; });
@@ -60,12 +64,14 @@ const MarcasAPI = (() => {
     del: (r, b, o) => llamar('DELETE', r, b, o),
     subir: (r, formData) => llamar('POST', r, formData),
     haySesion: () => !!token(),
-    async restaurarSesion() { 
-      // Si hay token, asumemos que la sesión sigue activa. 
-      // Si el token ya expiró, cualquier petición al backend devolverá 401 y el panel lo expulsará.
-      return !!token(); 
+    async restaurarSesion() {
+      // Si hay token asumimos sesión activa; si expiró, la primera llamada al
+      // panel devolverá 401 y este cliente intentará renovar con la cookie.
+      // Si la cookie también murió, el panel expulsa al acceso. Para forzar
+      // una verificación temprana (p. ej. al abrir el panel) llama a renovar().
+      return !!(token() || await renovar());
     },
-    async salir() { try { await fetch(`${base()}/auth/logout`, { method: 'POST', credentials: 'include' }); } catch (e) { /* noop */ } guardar(''); },
+    async salir() { guardar(''); },
   };
 })();
 
