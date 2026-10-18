@@ -39,6 +39,7 @@
   <script src="../js/marcas-api.js"></script>
   <script>
   (() => {
+    console.log('[marca-panel] v2.3 (URLs mismo-origen)');
     const app = document.getElementById('app');
     let M = null;               // marca (panel)
     let CUENTA = null;          // cuenta de acceso
@@ -701,7 +702,7 @@
     // Renovar token contra /auth/refrescar (endpoint v2): usa la cookie
     // httpOnly vm_brand_refresh; NO lleva Authorization.
     try {
-      const res = await fetch(`${API_URL}/api/marcas/auth/refrescar`, {
+      const res = await fetch(MarcasAPI.urlPara('/api/marcas/auth/refrescar'), {
         method: 'POST',
         credentials: 'include'
       });
