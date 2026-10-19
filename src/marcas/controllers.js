@@ -795,14 +795,45 @@ exports.autenticarMarca = async (req, res, next) => {
     const cuenta = await BrandAccount.findById(decoded.id);
     if (!cuenta) return res.status(401).json({ error: 'Sesión expirada, inicia sesión de nuevo' });
 
-    let marca = await Brand.findOne(filtroMarcaDeCuenta(cuenta._id));
-    if (!marca) marca = await crearBorrador(cuenta);
+    let marca = null;
+    try {
+      marca = await Brand.findOne(filtroMarcaDeCuenta(cuenta._id));
+    } catch (e) {
+      // Un documento legado que el schema nuevo no puede hidratar NO debe
+      // tumbar la sesión: se registra y se intenta el borrador abajo.
+      console.error('[marcas][autenticarMarca] findOne:', e && e.message);
+    }
+    if (!marca) {
+      try {
+        marca = await crearBorrador(cuenta);
+      } catch (e) {
+        // CARRERA BENIGNA (causa del 401 intermitente del panel): el panel
+        // lanza 3 peticiones en paralelo al cargar (mi-marca, catalogos,
+        // solicitudes) y TODAS pasan por aquí cuando la marca aún no existe.
+        // El índice unique de `cuenta` rechaza a las sobrantes (E11000):
+        // la marca ya existe — se re-busca y la sesión continúa.
+        console.error('[marcas][autenticarMarca] crearBorrador:', e && e.message);
+        marca = await Brand.findOne(filtroMarcaDeCuenta(cuenta._id)).catch(() => null);
+      }
+    }
+    if (!marca) {
+      // El token es VÁLIDO pero la cuenta quedó sin marca y no pudo crearse.
+      // 503 (no 401): el panel muestra "No pudimos cargar tu panel + Reintentar"
+      // en lugar de expulsar al usuario al login por un problema de datos.
+      return res.status(503).json({ error: 'No pudimos preparar tu espacio de marca. Intenta de nuevo en unos segundos.' });
+    }
     // Upgrade perezoso de documentos legados (creados con accountId): se les
     // escribe `cuenta` una sola vez para que el índice unique y las consultas
-    // futuras funcionen siempre por el campo nuevo.
+    // futuras funcionen siempre por el campo nuevo. NUNCA tumba una sesión
+    // válida: si el guardado falla (datos legados inusuales), se registra y
+    // se continúa con el documento en memoria; el upgrade se reintenta después.
     if (!marca.cuenta && marca.accountId) {
       marca.cuenta = marca.accountId;
-      await marca.save({ validateModifiedOnly: true });
+      try {
+        await marca.save({ validateModifiedOnly: true });
+      } catch (e) {
+        console.error('[marcas][autenticarMarca] upgrade legado:', e && e.message);
+      }
     }
     if (marca.estado === 'eliminado') {
       return res.status(410).json({
@@ -844,6 +875,23 @@ exports.obtenerMiMarca = async (req, res) => {
   } catch (error) {
     console.error('[marcas][obtenerMiMarca]', error && error.message);
     return res.status(500).json({ error: 'No se pudo cargar tu marca.' });
+  }
+};
+
+/**
+ * GET /api/marcas/panel/mi-marca/vista-previa — la marca en su forma PÚBLICA
+ * sin importar el estado (borrador incluido). La consume marca.html?vista=previa
+ * con la sesión del panel y usa el MISMO serializer del perfil público, para que
+ * la previsualización muestre EXACTAMENTE lo que verá el público.
+ */
+exports.vistaPreviaMarca = async (req, res) => {
+  try {
+    const marca = await Brand.findById(req.marca._id).populate(POPULATE_PUBLICO);
+    if (!marca) return res.status(404).json({ error: 'Marca no encontrada.' });
+    return res.json({ ok: true, previa: true, marca: aPerfilPublico(marca) });
+  } catch (error) {
+    console.error('[marcas][vistaPreviaMarca]', error && error.message);
+    return res.status(500).json({ error: 'No se pudo generar la vista previa.' });
   }
 };
 
@@ -1566,10 +1614,27 @@ exports.obtenerFiltrosPublico = async (req, res) => {
 /** GET /api/marcas/publico/catalogos — catálogos ACTIVOS para formularios. */
 exports.obtenerCatalogos = async (req, res) => {
   try {
-    const [categorias, ciudades] = await Promise.all([
+    const activos = () => Promise.all([
       BrandCategory.find({ activa: true }).sort({ nombre: 1 }),
       BrandCity.find({ activa: true }).sort({ nombre: 1 }),
     ]);
+    let [categorias, ciudades] = await activos();
+    // AUTOCURACIÓN (v6): una BD de producción recién migrada llega SIN
+    // catálogos y los formularios del panel quedaban vacíos ("Selecciona una
+    // ciudad…" sin opciones, cero categorías → Publicar deshabilitado para
+    // siempre). Si ambos están vacíos se siembran AL VUELO: bulkWrite upsert
+    // con $setOnInsert — idempotente y NUNCA pisa datos existentes.
+    if (!categorias.length && !ciudades.length) {
+      try {
+        const seed = require('./utils/seed');
+        if (typeof seed.sembrarCatalogos === 'function') {
+          await seed.sembrarCatalogos();
+          [categorias, ciudades] = await activos();
+        }
+      } catch (e) {
+        console.error('[marcas][obtenerCatalogos] autocuración:', e && e.message);
+      }
+    }
     return res.json({ ok: true, categorias, ciudades });
   } catch (error) {
     console.error('[marcas][obtenerCatalogos]', error && error.message);

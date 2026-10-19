@@ -126,6 +126,7 @@ const panelRouter = express.Router();
 panelRouter.use(ctrl.autenticarMarca);
 
 panelRouter.get('/mi-marca', ctrl.obtenerMiMarca);
+panelRouter.get('/mi-marca/vista-previa', ctrl.vistaPreviaMarca);
 panelRouter.put('/mi-marca', ctrl.actualizarMiMarca);
 panelRouter.post('/mi-marca/publicar', ctrl.publicarMarca);
 panelRouter.post('/mi-marca/despublicar', ctrl.despublicarMarca);
