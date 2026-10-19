@@ -125,6 +125,186 @@ const aObjectId = (valor) => {
 
 const porCadena = (valor) => String(valor == null ? '' : valor).trim();
 
+// ============================================================
+// CATÁLOGO BASE (v7) — copia CANÓNICA de src/marcas/utils/seed.js v3.
+// La autocuración v6 dependía de que la utils/seed.js de producción
+// exportara sembrarCatalogos: si ese archivo quedó VIEJO, el guard
+// typeof se lo saltaba EN SILENCIO y los dropdowns del panel volvían a
+// quedarse vacíos ("Selecciona una ciudad…" sin opciones, cero
+// categorías → Publicar deshabilitado). Con esta base EMBEBIDA el
+// rescate funciona siempre, exista o no seed.js.
+// 8 categorías + 63 ciudades; upsert por slug con $setOnInsert →
+// idempotente, race-safe y NUNCA pisa documentos existentes.
+// ============================================================
+const CATALOGO_CATEGORIAS = [
+  'Arquitectura y diseño de interiores',
+  'Notarías y servicios legales',
+  'Persianas, cortinas y decoración',
+  'Remodelación, construcción y mantenimiento',
+  'Mudanzas y logística',
+  'Fotografía y servicios inmobiliarios',
+  'Servicios para el hogar',
+  'Otros servicios profesionales',
+];
+
+// [nombre, estado] — mismas 63 ciudades del seed v3 (el slug es la clave).
+const CATALOGO_CIUDADES = [
+  ['Aguascalientes', 'Aguascalientes'],
+  ['Ensenada', 'Baja California'],
+  ['Mexicali', 'Baja California'],
+  ['Tecate', 'Baja California'],
+  ['Tijuana', 'Baja California'],
+  ['La Paz', 'Baja California Sur'],
+  ['San José del Cabo', 'Baja California Sur'],
+  ['Calkiní', 'Campeche'],
+  ['Campeche', 'Campeche'],
+  ['Tapachula', 'Chiapas'],
+  ['Tuxtla Gutiérrez', 'Chiapas'],
+  ['Chihuahua', 'Chihuahua'],
+  ['Ciudad Juárez', 'Chihuahua'],
+  ['Delicias', 'Chihuahua'],
+  ['Monclova', 'Coahuila'],
+  ['Saltillo', 'Coahuila'],
+  ['Torreón', 'Coahuila'],
+  ['Colima', 'Colima'],
+  ['Manzanillo', 'Colima'],
+  ['Acapulco', 'Guerrero'],
+  ['Chilpancingo', 'Guerrero'],
+  ['Zihuatanejo', 'Guerrero'],
+  ['Gómez Palacio', 'Durango'],
+  ['Durango', 'Durango'],
+  ['Celaya', 'Guanajuato'],
+  ['Guanajuato', 'Guanajuato'],
+  ['Irapuato', 'Guanajuato'],
+  ['León', 'Guanajuato'],
+  ['San Miguel de Allende', 'Guanajuato'],
+  ['Pachuca', 'Hidalgo'],
+  ['Tulancingo', 'Hidalgo'],
+  ['Guadalajara', 'Jalisco'],
+  ['Puerto Vallarta', 'Jalisco'],
+  ['Tlaquepaque', 'Jalisco'],
+  ['Zapopan', 'Jalisco'],
+  ['Ciudad de México', 'Ciudad de México'],
+  ['Naucalpan', 'Estado de México'],
+  ['Tlalnepantla', 'Estado de México'],
+  ['Toluca', 'Estado de México'],
+  ['Morelia', 'Michoacán'],
+  ['Uruapan', 'Michoacán'],
+  ['Zamora', 'Michoacán'],
+  ['Cuernavaca', 'Morelos'],
+  ['Jiutepec', 'Morelos'],
+  ['Tepic', 'Nayarit'],
+  ['Monterrey', 'Nuevo León'],
+  ['San Pedro Garza García', 'Nuevo León'],
+  ['Oaxaca', 'Oaxaca'],
+  ['Huatulco', 'Oaxaca'],
+  ['Cholula', 'Puebla'],
+  ['Puebla', 'Puebla'],
+  ['Querétaro', 'Querétaro'],
+  ['San Juan del Río', 'Querétaro'],
+  ['Cancún', 'Quintana Roo'],
+  ['Chetumal', 'Quintana Roo'],
+  ['Playa del Carmen', 'Quintana Roo'],
+  ['San Luis Potosí', 'San Luis Potosí'],
+  ['Culiacán', 'Sinaloa'],
+  ['Mazatlán', 'Sinaloa'],
+  ['Hermosillo', 'Sonora'],
+  ['Ciudad Obregón', 'Sonora'],
+  ['Villahermosa', 'Tabasco'],
+  ['Tampico', 'Tamaulipas'],
+].map(([nombre, estado]) => ({ nombre, estado: estado || '' }));
+
+// Dedupe de rescates concurrentes: si 2 peticiones llegan a la vez, ambas
+// comparten la MISMA promesa (y el bulkWrite upsert hace el resto seguro).
+let _sembrandoBase = null;
+const sembrarCatalogoBase = async () => {
+  if (mongoose.connection.readyState !== 1) return false;
+  if (!_sembrandoBase) {
+    _sembrandoBase = (async () => {
+      try {
+        await Promise.all([
+          BrandCategory.bulkWrite(
+            CATALOGO_CATEGORIAS.map((nombre) => ({
+              updateOne: {
+                filter: { slug: slugify(nombre) },
+                update: { $setOnInsert: { nombre, slug: slugify(nombre), activa: true } },
+                upsert: true,
+              },
+            })),
+            { ordered: false },
+          ),
+          BrandCity.bulkWrite(
+            CATALOGO_CIUDADES.map(({ nombre, estado }) => ({
+              updateOne: {
+                filter: { slug: slugify(nombre) },
+                update: { $setOnInsert: { nombre, estado, slug: slugify(nombre), activa: true } },
+                upsert: true,
+              },
+            })),
+            { ordered: false },
+          ),
+        ]);
+        return true;
+      } catch (e) {
+        // Choque E11000 de carrera u otro error de escritura: el rescate
+        // NUNCA debe tumbar la petición.
+        console.error('[marcas][sembrarCatalogoBase]', e && e.message);
+        return false;
+      } finally {
+        _sembrandoBase = null;
+      }
+    })();
+  }
+  return _sembrandoBase;
+};
+
+const ES_ID_24 = (v) => /^[0-9a-f]{24}$/i.test(String(v || ''));
+
+/**
+ * v7 — resuelve una lista de entradas de catálogo aceptando TRES formas:
+ *   ObjectId (24 hex)  ·  slug ("san-jose-del-cabo")  ·  nombre ("San José del Cabo")
+ * El panel v2.4 puede llevar seleccionadas opciones del CATÁLOGO DE RESPALDO
+ * (sin _id) cuando la API de catálogos aún no devolvía documentos reales;
+ * así el guardado resuelve por slug/nombre en vez de rechazar con 400 y el
+ * flujo "completar perfil → Publicar" nunca se atasca por el catálogo.
+ * Devuelve { ids: [ObjectId], faltantes: [String] }. Compatibilidad total:
+ * si todo lo que llega son ObjectId el comportamiento es IDÉNTICO al v6.
+ */
+const resolverListaCatalogo = async (entradas, { Modelo, soloActivas }) => {
+  const crudos = [];
+  for (const c of (entradas || [])) {
+    const s = porCadena(c);
+    if (s) crudos.push(s);
+  }
+  if (!crudos.length) return { ids: [], faltantes: [] };
+
+  // Autorrescate: si la tabla está VACÍA (BD recién migrada que nunca llamó
+  // a /publico/catalogos) se siembra la base ANTES de resolver.
+  try {
+    if ((await Modelo.countDocuments({})) === 0) await sembrarCatalogoBase();
+  } catch (e) { /* sin rescate: seguimos y las no encontradas irán a faltantes */ }
+
+  const ids = new Set();
+  const faltantes = [];
+  const textos = [];
+  for (const s of crudos) {
+    if (ES_ID_24(s)) ids.add(s.toLowerCase());
+    else textos.push(s);
+  }
+  for (const s of textos) {
+    const slug = slugify(s);
+    let doc = await Modelo.findOne(soloActivas ? { slug, activa: true } : { slug }).select('_id').lean();
+    if (!doc) {
+      // 2ª oportunidad: nombre EXACTO (por si el slug difiere en puntuación).
+      const rx = new RegExp(`^${escaparRegex(s)}$`, 'i');
+      doc = await Modelo.findOne(soloActivas ? { nombre: rx, activa: true } : { nombre: rx }).select('_id').lean();
+    }
+    if (doc) ids.add(String(doc._id));
+    else faltantes.push(s);
+  }
+  return { ids: [...ids].map(aObjectId).filter(Boolean), faltantes };
+};
+
 const firmarAcceso = (cuenta) =>
   jwt.sign({ id: cuenta._id, tipo: 'marca' }, brandSecret(), {
     expiresIn: `${ACCESO_MINUTOS}m`,
@@ -943,25 +1123,23 @@ exports.actualizarMiMarca = async (req, res) => {
     }
 
     // --- Categorías ---
+    // v7: se aceptan ObjectId, slug o NOMBRE (compatibilidad total con v6:
+    // si llegan ObjectId el comportamiento es idéntico).
     if (b.categorias !== undefined || b.categoriaPrincipal !== undefined) {
       if (b.categorias !== undefined && !Array.isArray(b.categorias)) {
         return res.status(400).json({ error: 'Categorías inválidas.' });
       }
       const pedidas = b.categorias !== undefined ? b.categorias.map(String) : marca.categorias.map(String);
-      const unicos = [...new Set(pedidas)];
-      const objectIds = unicos.map(aObjectId);
-      if (objectIds.some((o) => !o)) {
-        return res.status(400).json({ error: 'Hay categorías inválidas.' });
-      }
-      const activas = await BrandCategory.find({ _id: { $in: objectIds }, activa: true }).select('_id').lean();
-      if (activas.length !== objectIds.length) {
+      const { ids, faltantes } = await resolverListaCatalogo(pedidas, { Modelo: BrandCategory, soloActivas: true });
+      if (faltantes.length) {
         return res.status(400).json({ error: 'Hay categorías inexistentes o inactivas.' });
       }
-      marca.categorias = objectIds;
+      marca.categorias = ids;
       const principalPedida = b.categoriaPrincipal !== undefined ? b.categoriaPrincipal : marca.categoriaPrincipal;
       if (principalPedida) {
-        const principalId = String(aObjectId(principalPedida) || '');
-        if (!principalId || !objectIds.some((o) => String(o) === principalId)) {
+        const prin = await resolverListaCatalogo([principalPedida], { Modelo: BrandCategory, soloActivas: true });
+        const principalId = prin.ids.length ? String(prin.ids[0]) : '';
+        if (!principalId || !marca.categorias.some((o) => String(o) === principalId)) {
           return res.status(400).json({ error: 'La categoría principal debe estar entre las categorías de tu marca.' });
         }
         marca.categoriaPrincipal = principalId;
@@ -1001,18 +1179,18 @@ exports.actualizarMiMarca = async (req, res) => {
         }
       }
 
-      const unicos = [...new Set(ids)];
-      const objectIds = unicos.map(aObjectId);
-      if (objectIds.some((o) => !o)) return res.status(400).json({ error: 'Hay ciudades inválidas.' });
-      const existentes = await BrandCity.find({ _id: { $in: objectIds } }).select('_id').lean();
-      if (existentes.length !== objectIds.length) {
+      // v7: resolución ObjectId/slug/nombre + validación de existencia
+      // (las ciudades nuevas creadas arriba ya vienen como ObjectId real).
+      const resueltas = await resolverListaCatalogo(ids, { Modelo: BrandCity, soloActivas: false });
+      if (resueltas.faltantes.length) {
         return res.status(400).json({ error: 'Hay ciudades inexistentes.' });
       }
-      marca.ciudades = objectIds;
+      marca.ciudades = resueltas.ids;
       const principalPedida = b.ciudadPrincipal !== undefined ? b.ciudadPrincipal : marca.ciudadPrincipal;
       if (principalPedida) {
-        const principalId = String(aObjectId(principalPedida) || '');
-        if (!principalId || !objectIds.some((o) => String(o) === principalId)) {
+        const prin = await resolverListaCatalogo([principalPedida], { Modelo: BrandCity, soloActivas: false });
+        const principalId = prin.ids.length ? String(prin.ids[0]) : '';
+        if (!principalId || !marca.ciudades.some((o) => String(o) === principalId)) {
           return res.status(400).json({ error: 'La ciudad principal debe estar entre las ciudades de cobertura.' });
         }
         marca.ciudadPrincipal = principalId;
@@ -1611,7 +1789,17 @@ exports.obtenerFiltrosPublico = async (req, res) => {
   }
 };
 
-/** GET /api/marcas/publico/catalogos — catálogos ACTIVOS para formularios. */
+/**
+ * GET /api/marcas/publico/catalogos — catálogos ACTIVOS para formularios.
+ * v7 — AUTOCURACIÓN REFORZADA:
+ *   - Dispara si EITHER (cualquiera de los dos) está vacío; v6 exigía que
+ *     AMBOS lo estuvieran y una BD medio sembrada seguía mostrando huecos.
+ *   - El rescate usa la base EMBEBIDA (sembrarCatalogoBase): ya NO depende
+ *     de la versión de utils/seed.js que haya en producción.
+ *   - Última red: si tras el rescate SIGUE vacío (Mongo readOnly, etc.), se
+ *     entrega la base SIN _id marcada temporal:true — el panel la pinta y
+ *     el guardado la resuelve por slug (resolverListaCatalogo).
+ */
 exports.obtenerCatalogos = async (req, res) => {
   try {
     const activos = () => Promise.all([
@@ -1619,21 +1807,19 @@ exports.obtenerCatalogos = async (req, res) => {
       BrandCity.find({ activa: true }).sort({ nombre: 1 }),
     ]);
     let [categorias, ciudades] = await activos();
-    // AUTOCURACIÓN (v6): una BD de producción recién migrada llega SIN
-    // catálogos y los formularios del panel quedaban vacíos ("Selecciona una
-    // ciudad…" sin opciones, cero categorías → Publicar deshabilitado para
-    // siempre). Si ambos están vacíos se siembran AL VUELO: bulkWrite upsert
-    // con $setOnInsert — idempotente y NUNCA pisa datos existentes.
-    if (!categorias.length && !ciudades.length) {
+    if (!categorias.length || !ciudades.length) {
       try {
-        const seed = require('./utils/seed');
-        if (typeof seed.sembrarCatalogos === 'function') {
-          await seed.sembrarCatalogos();
-          [categorias, ciudades] = await activos();
-        }
+        await sembrarCatalogoBase();
       } catch (e) {
         console.error('[marcas][obtenerCatalogos] autocuración:', e && e.message);
       }
+      [categorias, ciudades] = await activos();
+    }
+    if (!categorias.length) {
+      categorias = CATALOGO_CATEGORIAS.map((nombre) => ({ nombre, slug: slugify(nombre), temporal: true }));
+    }
+    if (!ciudades.length) {
+      ciudades = CATALOGO_CIUDADES.map(({ nombre, estado }) => ({ nombre, estado, slug: slugify(nombre), temporal: true }));
     }
     return res.json({ ok: true, categorias, ciudades });
   } catch (error) {

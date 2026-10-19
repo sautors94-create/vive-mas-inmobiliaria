@@ -27,15 +27,19 @@
   <main class="ma-wrap">
     <div class="ma-card">
       <!--
-        ACCESO DE MARCAS v3.0 (diseño del dueño):
+        ACCESO DE MARCAS v3.1 (diseño del dueño + alternador a prueba de todo):
         - INICIAR SESIÓN = correo + CONTRASEÑA (POST /auth/login). El código
           (OTP) NO es para el día a día: solo para inscribirse y para entrar
           cuando se olvidó la contraseña.
         - CREAR CUENTA = OTP: solicitar → verificar → (si es nueva) crear
           contraseña. POST /auth/solicitar { canal, email|telefono } y
           POST /auth/verificar { canal, codigo, email|telefono }.
-        - CAMBIO DE MEDIOS DE CONTACTO: se hace DENTRO del panel
-          (Mi acceso → /panel/cuenta/acceso/*), también con código.
+        - v3.1 — FIX del alternador: el botón "Iniciar sesión" SIEMPRE lleva a
+          la pantalla de contraseña, ESTÉ donde esté (antes, desde la pantalla
+          OTP solo cambiaba el texto y el campo de contraseña "desaparecía").
+          Conmutador único con atributo hidden + display (no se cuelga con
+          ningún CSS/inline), delegación de eventos y entrada directa al
+          registro vía marca-acceso.html?modo=registro (o #registro).
       -->
 
       <div id="msg-1" class="ma-msg" role="alert"></div>
@@ -127,7 +131,7 @@
   <script src="../js/marcas-api.js"></script>
   <script>
   (() => {
-    console.log('[marca-acceso] v3.0 — login con contraseña + OTP para registro');
+    console.log('[marca-acceso] v3.1 — alternador login/registro corregido + ?modo=registro');
     const $ = (id) => document.getElementById(id);
     let canal = 'email';
     let reenvioTimer = null;
@@ -155,23 +159,49 @@
       el.textContent = texto || '';
     };
 
-    // ── Visibilidad de pantallas ──
-    const mostrar = (id) => {
-      ['sec-clave', 'sec-1', 'paso-2', 'paso-3'].forEach((s) => { $(s).style.display = s === id ? '' : 'none'; });
+    // ── Visibilidad de pantallas (v3.1 — conmutador ÚNICO e idempotente) ──
+    // ANTES: cada función pintaba a su manera y, desde la pantalla OTP, el
+    // botón "Iniciar sesión" solo cambiaba el TEXTO (no los campos): el usuario
+    // alternaba y el campo de contraseña "desaparecía". AHORA:
+    //   1) un solo conmutador `pantalla()` que SIEMPRE escribe el estado
+    //      completo de las 4 secciones (atributo hidden + display inline),
+    //   2) "Iniciar sesión" lleva SIEMPRE a la pantalla de contraseña,
+    //   3) al mostrar sec-clave se limpia CUALQUIER residuo inline sobre el
+    //      campo de contraseña (cinturón y tirantes).
+    const PANTALLAS = ['sec-clave', 'sec-1', 'paso-2', 'paso-3'];
+
+    const pantalla = (id, enfocar) => {
+      PANTALLAS.forEach((s) => {
+        const el = $(s);
+        if (!el) return;
+        const visible = s === id;
+        el.hidden = !visible;              // nadie lo pisa con CSS del hosting
+        el.style.display = visible ? '' : 'none'; // coherente aunque [hidden]
+      });                                   // se definiera con otro display
+      if (id === 'sec-clave') {
+        // El campo de contraseña JAMÁS queda oculto en esta pantalla.
+        const pass = $('in-pass');
+        if (pass) { pass.hidden = false; pass.style.display = ''; }
+        const lbl = pass && pass.previousElementSibling;
+        if (lbl && lbl.tagName === 'LABEL') { lbl.hidden = false; lbl.style.display = ''; }
+        // Sólo enfocamos si el usuario LLEGÓ aquí con un clic (no en la carga
+        // inicial, para no disparar el teclado en móvil sin motivo).
+        if (enfocar && pass) { try { pass.focus({ preventScroll: true }); } catch (e) { /* viejo */ } }
+      }
     };
 
     const pintarTabsModo = (m) => {
-      $('tab-registro').classList.toggle('activo', m === 'registro');
-      $('tab-login').classList.toggle('activo', m === 'login');
-      $('tab-registro-otp').classList.toggle('activo', m === 'registro');
-      $('tab-login-otp').classList.toggle('activo', m === 'login');
+      // Las 2 parejas de pestañas (pantalla clave y pantalla OTP) reflejan
+      // SIEMPRE el mismo modo; con guard por si algún botón no existe.
+      [['tab-registro', 'registro'], ['tab-login', 'login'], ['tab-registro-otp', 'registro'], ['tab-login-otp', 'login']]
+        .forEach(([id, modoTab]) => { const el = $(id); if (el) el.classList.toggle('activo', m === modoTab); });
     };
 
     const irAPantallaClave = () => {
       modo = 'login';
       pintarTabsModo('login');
       msg('msg-1', '');
-      mostrar('sec-clave');
+      pantalla('sec-clave', true);
     };
 
     const irAOTP = (m) => {
@@ -182,15 +212,33 @@
       $('sub-1').textContent = c.sub;
       $('nota-1').textContent = c.nota;
       msg('msg-1', '');
-      mostrar('sec-1');
+      pantalla('sec-1');
     };
 
-    // Pestañas (ambas parejas sincronizadas)
-    $('tab-registro').addEventListener('click', () => irAOTP('registro'));
-    $('tab-login').addEventListener('click', () => irAPantallaClave());
-    $('tab-registro-otp').addEventListener('click', () => irAOTP('registro'));
-    $('tab-login-otp').addEventListener('click', () => irAOTP('login'));
-    $('btn-ir-otp').addEventListener('click', () => irAOTP('login'));
+    // Pestañas — DELEGACIÓN en document: aunque el DOM cambie o un botón falte,
+    // cada clic encuentra su manejador. Las 4 pestañas se comportan IGUAL:
+    //   "Crear cuenta" → pantalla OTP de registro · "Iniciar sesión" → pantalla
+    //   de contraseña. (El acceso por código "olvidé mi contraseña" sigue
+    //   disponible con el enlace "Entra con un código" de la pantalla clave.)
+    document.addEventListener('click', (e) => {
+      const t = e.target.closest('#tab-registro, #tab-registro-otp, #tab-login, #tab-login-otp, #btn-ir-otp');
+      if (!t) return;
+      if (t.id === 'tab-registro' || t.id === 'tab-registro-otp') return irAOTP('registro');
+      if (t.id === 'btn-ir-otp') return irAOTP('login');
+      return irAPantallaClave(); // tab-login y tab-login-otp → contraseña SIEMPRE
+    });
+
+    // v3.1: entrada directa al registro — "Agregar mi marca" puede enlazar a
+    // marca-acceso.html?modo=registro (o #registro) y aterriza en Crear cuenta.
+    const modoInicial = (() => {
+      try {
+        const p = new URLSearchParams(location.search).get('modo') || '';
+        const h = String(location.hash || '').replace(/^#/, '');
+        return String(p || h || '').toLowerCase();
+      } catch (e) { return ''; }
+    })();
+    if (modoInicial === 'registro') irAOTP('registro');
+    else pantalla('sec-clave', false); // por defecto: iniciar sesión (también normaliza #login)
 
     const valor = () => (canal === 'sms' ? $('in-tel').value.trim().replace(/\s/g, '') : $('in-email').value.trim());
     const cuerpo = () => (canal === 'sms'
@@ -246,7 +294,7 @@
         return;
       }
 
-      mostrar('paso-2');
+      pantalla('paso-2');
       $('sub-2').textContent = canal === 'sms' ? `Enviamos un SMS al +52 ${valor()}.` : `Enviamos un código a ${valor()}.`;
       msg('msg-2', '', 'ok');
       $('in-codigo').value = '';
@@ -274,7 +322,7 @@
         // Cuenta nueva → crear contraseña (paso 3). El token ya está guardado:
         // el POST al panel lleva el Bearer automáticamente.
         msg('msg-2', '', 'ok');
-        mostrar('paso-3');
+        pantalla('paso-3');
         $('in-nueva').value = '';
         $('in-nueva2').value = '';
         $('in-nueva').focus();
@@ -329,8 +377,8 @@
     $('btn-verificar').addEventListener('click', verificar);
     $('btn-cambiar').addEventListener('click', () => {
       clearInterval(reenvioTimer);
-      mostrar('sec-1');
-      msg('msg-1', '');
+      if (modo === 'login' || modo === 'registro') irAOTP(modo);
+      else irAPantallaClave();
       msg('msg-2', '');
     });
 

@@ -39,7 +39,7 @@
   <script src="../js/marcas-api.js"></script>
   <script>
   (() => {
-    console.log('[marca-panel] v2.3 (URLs mismo-origen)');
+    console.log('[marca-panel] v2.4 (catálogos a prueba de todo + respaldo integrado)');
     const app = document.getElementById('app');
     let M = null;               // marca (panel)
     let CUENTA = null;          // cuenta de acceso
@@ -71,6 +71,56 @@
     // Límites REALES del backend (controllers.js) — alinear el texto con la API
     // evita que el usuario escriba contenido que luego el servidor rechace.
     const LIMITES = { servicios: 15, zonas: 8, promoDescripcion: 500, promoCondiciones: 300, descripcionCorta: 160 };
+
+    // ---------- catálogo de respaldo (v2.4) ----------
+    // MISMA lista canónica que siembra el backend (seed.js v3 / controllers.js v7).
+    // Se usa SOLO si /publico/catalogos falla o llega vacío (o a medias): así los
+    // dropdowns de "Ciudades de cobertura" y "Categorías de servicio" NUNCA quedan
+    // vacíos y el flujo "completar → Vista previa → Publicar" puede completarse.
+    // Las entradas de respaldo NO tienen _id: se envían por SLUG y el backend v7
+    // las resuelve por slug/nombre (resolverListaCatalogo). Si la API SÍ trajo
+    // documentos reales, se usan esos y este respaldo no interviene.
+    const slugFrontal = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const CATALOGO_BASE = {
+      categorias: [
+        'Arquitectura y diseño de interiores',
+        'Notarías y servicios legales',
+        'Persianas, cortinas y decoración',
+        'Remodelación, construcción y mantenimiento',
+        'Mudanzas y logística',
+        'Fotografía y servicios inmobiliarios',
+        'Servicios para el hogar',
+        'Otros servicios profesionales',
+      ].map((nombre) => ({ nombre, slug: slugFrontal(nombre) })),
+      ciudades: [
+        ['Aguascalientes', 'Aguascalientes'], ['Ensenada', 'Baja California'], ['Mexicali', 'Baja California'],
+        ['Tecate', 'Baja California'], ['Tijuana', 'Baja California'], ['La Paz', 'Baja California Sur'],
+        ['San José del Cabo', 'Baja California Sur'], ['Calkiní', 'Campeche'], ['Campeche', 'Campeche'],
+        ['Tapachula', 'Chiapas'], ['Tuxtla Gutiérrez', 'Chiapas'], ['Chihuahua', 'Chihuahua'],
+        ['Ciudad Juárez', 'Chihuahua'], ['Delicias', 'Chihuahua'], ['Monclova', 'Coahuila'],
+        ['Saltillo', 'Coahuila'], ['Torreón', 'Coahuila'], ['Colima', 'Colima'], ['Manzanillo', 'Colima'],
+        ['Acapulco', 'Guerrero'], ['Chilpancingo', 'Guerrero'], ['Zihuatanejo', 'Guerrero'],
+        ['Gómez Palacio', 'Durango'], ['Durango', 'Durango'], ['Celaya', 'Guanajuato'],
+        ['Guanajuato', 'Guanajuato'], ['Irapuato', 'Guanajuato'], ['León', 'Guanajuato'],
+        ['San Miguel de Allende', 'Guanajuato'], ['Pachuca', 'Hidalgo'], ['Tulancingo', 'Hidalgo'],
+        ['Guadalajara', 'Jalisco'], ['Puerto Vallarta', 'Jalisco'], ['Tlaquepaque', 'Jalisco'],
+        ['Zapopan', 'Jalisco'], ['Ciudad de México', 'Ciudad de México'], ['Naucalpan', 'Estado de México'],
+        ['Tlalnepantla', 'Estado de México'], ['Toluca', 'Estado de México'], ['Morelia', 'Michoacán'],
+        ['Uruapan', 'Michoacán'], ['Zamora', 'Michoacán'], ['Cuernavaca', 'Morelos'], ['Jiutepec', 'Morelos'],
+        ['Tepic', 'Nayarit'], ['Monterrey', 'Nuevo León'], ['San Pedro Garza García', 'Nuevo León'],
+        ['Oaxaca', 'Oaxaca'], ['Huatulco', 'Oaxaca'], ['Cholula', 'Puebla'], ['Puebla', 'Puebla'],
+        ['Querétaro', 'Querétaro'], ['San Juan del Río', 'Querétaro'], ['Cancún', 'Quintana Roo'],
+        ['Chetumal', 'Quintana Roo'], ['Playa del Carmen', 'Quintana Roo'], ['San Luis Potosí', 'San Luis Potosí'],
+        ['Culiacán', 'Sinaloa'], ['Mazatlán', 'Sinaloa'], ['Hermosillo', 'Sonora'], ['Ciudad Obregón', 'Sonora'],
+        ['Villahermosa', 'Tabasco'], ['Tampico', 'Tamaulipas'],
+      ].map(([nombre, estado]) => ({ nombre, estado, slug: slugFrontal(nombre) })),
+    };
+    // Identificador estable de una entrada de catálogo: _id real (API) o slug
+    // (respaldo). Los 3 formatos que puede traer el backend quedan cubiertos.
+    const idDe = (c) => (c && (c._id || c.id || c.slug)) || '';
+    // M.categoriaPrincipal / M.ciudadPrincipal llegan como objeto poblado
+    // (toJSON con virtuals) o id suelto; esto devuelve SIEMPRE el string id.
+    const idDeValor = (v) => (v && typeof v === 'object' ? idDe(v) : (v || ''));
 
     // ---------- carga ----------
     const sesionPerdida = () => { MarcasAPI.guardar(''); location.replace('marca-acceso.html'); };
@@ -108,6 +158,11 @@
       // -------------------------------------------------
 
       if (c.ok) CAT = { categorias: c.categorias || [], ciudades: c.ciudades || [] };
+      else console.warn('[marca-panel] /publico/catalogos no respondió OK → uso el catálogo de respaldo integrado');
+      // RESPALDO v2.4: si la API no trajo (o trajo a medias) los catálogos,
+      // completamos con la base integrada — nunca selects vacíos.
+      if (!CAT.categorias.length) { CAT.categorias = CATALOGO_BASE.categorias; console.warn('[marca-panel] categorías vacías desde la API → respaldo integrado'); }
+      if (!CAT.ciudades.length) { CAT.ciudades = CATALOGO_BASE.ciudades; console.warn('[marca-panel] ciudades vacías desde la API → respaldo integrado'); }
       SOL = s.ok ? s.solicitudes : [];
       render();
     };
@@ -182,7 +237,7 @@
 
     const tInfo = () => {
       borrador.servicios = borrador.servicios || [...M.servicios];
-      const sel = new Set(M.categorias.map((c) => c.id));
+      const sel = new Set(M.categorias.map((x) => idDe(x)));
       return `
         <div class="mx-card">
           <h2>Información general</h2>
@@ -198,7 +253,7 @@
         <div class="mx-card">
           <h2>Categorías de servicio *</h2>
           <p class="mx-ayuda">Elige todas las que apliquen (máximo 8). Aparecerás en la búsqueda de cada una.</p>
-          <div class="mx-chips" id="f-cats">${CAT.categorias.map((c) => `<label class="mx-check ${sel.has(c._id) ? 'on' : ''}"><input type="checkbox" value="${mbEsc(c._id)}" ${sel.has(c._id) ? 'checked' : ''}> ${mbEsc(c.icono || '')} ${mbEsc(c.nombre)}</label>`).join('')}</div>
+          <div class="mx-chips" id="f-cats">${CAT.categorias.map((c) => `<label class="mx-check ${sel.has(idDe(c)) ? 'on' : ''}"><input type="checkbox" value="${mbEsc(idDe(c))}" ${sel.has(idDe(c)) ? 'checked' : ''}> ${mbEsc(c.icono || '')} ${mbEsc(c.nombre)}</label>`).join('')}</div>
           <div class="mx-campo" style="margin-top:16px"><label for="f-catprin">Categoría principal (opcional)</label><select class="mx-sel" id="f-catprin"></select></div>
         </div>
         <div class="mx-card">
@@ -211,7 +266,7 @@
     };
 
     const tUbicacion = () => {
-      borrador.ciudadesSel = borrador.ciudadesSel || (M.ciudades || []).map((c) => c.id || c._id);
+      borrador.ciudadesSel = borrador.ciudadesSel || (M.ciudades || []).map((c) => idDe(c));
       borrador.nuevas = borrador.nuevas || [];
       borrador.zonas = borrador.zonas || [...M.zonasAdicionales];
       return `
@@ -390,19 +445,19 @@
     const pintarCatPrincipal = () => {
       const sel = $('#f-catprin'); if (!sel) return;
       const marcadas = $$('#f-cats input:checked').map((i) => i.value);
-      const actual = sel.value || M.categoriaPrincipal || '';
-      sel.innerHTML = '<option value="">Sin categoría principal</option>' + CAT.categorias.filter((c) => marcadas.includes(c._id)).map((c) => `<option value="${mbEsc(c._id)}" ${c._id === actual ? 'selected' : ''}>${mbEsc(c.nombre)}</option>`).join('');
+      const actual = sel.value || idDeValor(M.categoriaPrincipal);
+      sel.innerHTML = '<option value="">Sin categoría principal</option>' + CAT.categorias.filter((c) => marcadas.includes(idDe(c))).map((c) => `<option value="${mbEsc(idDe(c))}" ${idDe(c) === actual ? 'selected' : ''}>${mbEsc(c.nombre)}</option>`).join('');
     };
 
     const pintarCiudades = () => {
       const add = $('#f-ciudad-add'); if (!add) return;
       const sel = new Set(borrador.ciudadesSel);
-      add.innerHTML = '<option value="">Selecciona una ciudad…</option>' + CAT.ciudades.filter((c) => !sel.has(c._id)).map((c) => `<option value="${mbEsc(c._id)}">${mbEsc(c.nombre)}${c.estado && c.estado !== c.nombre ? ', ' + mbEsc(c.estado) : ''}</option>`).join('');
-      const nombre = (id) => { const c = CAT.ciudades.find((x) => x._id === id) || M.ciudades.find((x) => x.id === id); return c ? c.nombre : '…'; };
+      add.innerHTML = '<option value="">Selecciona una ciudad…</option>' + CAT.ciudades.filter((c) => !sel.has(idDe(c))).map((c) => `<option value="${mbEsc(idDe(c))}">${mbEsc(c.nombre)}${c.estado && c.estado !== c.nombre ? ', ' + mbEsc(c.estado) : ''}</option>`).join('');
+      const nombre = (id) => { const c = CAT.ciudades.find((x) => idDe(x) === id) || M.ciudades.find((x) => idDe(x) === id); return c ? c.nombre : id; };
       $('#ciudades-sel').innerHTML = borrador.ciudadesSel.map((id) => `<span>${mbEsc(nombre(id))}<button type="button" data-quitar-ciudad="${mbEsc(id)}" aria-label="Quitar">×</button></span>`).join('')
         + borrador.nuevas.map((n, i) => `<span>${mbEsc(n.nombre)} <em style="font-size:11px;color:var(--text-light)">(nueva)</em><button type="button" data-quitar-nueva="${i}" aria-label="Quitar">×</button></span>`).join('');
       const prin = $('#f-ciudad-prin');
-      const actual = prin.value || M.ciudadPrincipal || '';
+      const actual = prin.value || idDeValor(M.ciudadPrincipal);
       prin.innerHTML = '<option value="">Sin ciudad principal</option>' + borrador.ciudadesSel.map((id) => `<option value="${mbEsc(id)}" ${id === actual ? 'selected' : ''}>${mbEsc(nombre(id))}</option>`).join('');
     };
 
