@@ -133,8 +133,13 @@ const porCadena = (valor) => String(valor == null ? '' : valor).trim();
 // quedarse vacíos ("Selecciona una ciudad…" sin opciones, cero
 // categorías → Publicar deshabilitado). Con esta base EMBEBIDA el
 // rescate funciona siempre, exista o no seed.js.
-// 8 categorías + 63 ciudades; upsert por slug con $setOnInsert →
-// idempotente, race-safe y NUNCA pisa documentos existentes.
+// 8 categorías + 63 ciudades; upsert por slug con $set → idempotente,
+// race-safe y ADEMÁS REPARA documentos viejos: v7 usaba $setOnInsert, que
+// en una BD con entradas previas de un seed antiguo (mismo slug, sin el
+// campo `activa` o desactivadas) no tocaba NADA — el catálogo seguía
+// viéndose vacío y el guardado moría con "inexistentes o inactivas".
+// Con $set el mismo upsert normaliza nombre/estado y DEJA ACTIVA la
+// entrada ya existente.
 // ============================================================
 const CATALOGO_CATEGORIAS = [
   'Arquitectura y diseño de interiores',
@@ -227,7 +232,9 @@ const sembrarCatalogoBase = async () => {
             CATALOGO_CATEGORIAS.map((nombre) => ({
               updateOne: {
                 filter: { slug: slugify(nombre) },
-                update: { $setOnInsert: { nombre, slug: slugify(nombre), activa: true } },
+                // v8: $set (no $setOnInsert) → si el slug YA existía de un
+                // seed viejo, se repara: nombre canónico + activa:true.
+                update: { $set: { nombre, slug: slugify(nombre), activa: true } },
                 upsert: true,
               },
             })),
@@ -237,7 +244,8 @@ const sembrarCatalogoBase = async () => {
             CATALOGO_CIUDADES.map(({ nombre, estado }) => ({
               updateOne: {
                 filter: { slug: slugify(nombre) },
-                update: { $setOnInsert: { nombre, estado, slug: slugify(nombre), activa: true } },
+                // v8: $set también repara ciudades viejas sin `activa`.
+                update: { $set: { nombre, estado, slug: slugify(nombre), activa: true } },
                 upsert: true,
               },
             })),
@@ -261,14 +269,21 @@ const sembrarCatalogoBase = async () => {
 const ES_ID_24 = (v) => /^[0-9a-f]{24}$/i.test(String(v || ''));
 
 /**
- * v7 — resuelve una lista de entradas de catálogo aceptando TRES formas:
+ * v8 — resuelve una lista de entradas de catálogo aceptando TRES formas:
  *   ObjectId (24 hex)  ·  slug ("san-jose-del-cabo")  ·  nombre ("San José del Cabo")
- * El panel v2.4 puede llevar seleccionadas opciones del CATÁLOGO DE RESPALDO
- * (sin _id) cuando la API de catálogos aún no devolvía documentos reales;
- * así el guardado resuelve por slug/nombre en vez de rechazar con 400 y el
- * flujo "completar perfil → Publicar" nunca se atasca por el catálogo.
- * Devuelve { ids: [ObjectId], faltantes: [String] }. Compatibilidad total:
- * si todo lo que llega son ObjectId el comportamiento es IDÉNTICO al v6.
+ * v8 — CADENA DE RESCATE (producción demostró que una BD con documentos de
+ * un seed viejo — sin el campo `activa` o desactivados — convertía cualquier
+ * guardado en un 400 "inexistentes o inactivas"):
+ *   1) búsqueda por slug / nombre SIN filtrar `activa`;
+ *   2) si el documento existe pero está inactivo → SE REACTIVA al momento;
+ *   3) si no existe → re-siembra la base canónica y reintenta por slug
+ *      (cubre cualquier slug del catálogo base aunque la BD no lo tenga aún).
+ * Deliberadamente SIN autocreación de entradas desconocidas: el contrato
+ * (marcas.integration) exige 400 para basura tipo "no-es-id" y el panel
+ * v2.5 sólo puede enviar _id reales, slugs del catálogo o nombres de la
+ * base, así que con 1)+2)+3) el guardado del panel ya nunca muere.
+ * Compatibilidad total: los ObjectId siguen el mismo camino que en v6/v7.
+ * Devuelve { ids: [ObjectId], faltantes: [String] }.
  */
 const resolverListaCatalogo = async (entradas, { Modelo, soloActivas }) => {
   const crudos = [];
@@ -282,7 +297,7 @@ const resolverListaCatalogo = async (entradas, { Modelo, soloActivas }) => {
   // a /publico/catalogos) se siembra la base ANTES de resolver.
   try {
     if ((await Modelo.countDocuments({})) === 0) await sembrarCatalogoBase();
-  } catch (e) { /* sin rescate: seguimos y las no encontradas irán a faltantes */ }
+  } catch (e) { /* sin rescate: seguimos con la cadena de abajo */ }
 
   const ids = new Set();
   const faltantes = [];
@@ -291,16 +306,35 @@ const resolverListaCatalogo = async (entradas, { Modelo, soloActivas }) => {
     if (ES_ID_24(s)) ids.add(s.toLowerCase());
     else textos.push(s);
   }
+
+  let baseReSembrada = false;
   for (const s of textos) {
     const slug = slugify(s);
-    let doc = await Modelo.findOne(soloActivas ? { slug, activa: true } : { slug }).select('_id').lean();
+    // (1) v8: búsqueda SIN filtro `activa` — los documentos viejos "sin
+    // activa" dejan de ser un muro invisible para el guardado.
+    let doc = await Modelo.findOne({ slug }).select('_id activa').lean();
     if (!doc) {
-      // 2ª oportunidad: nombre EXACTO (por si el slug difiere en puntuación).
+      // (2ª forma) nombre EXACTO (por si el slug difiere en puntuación).
       const rx = new RegExp(`^${escaparRegex(s)}$`, 'i');
-      doc = await Modelo.findOne(soloActivas ? { nombre: rx, activa: true } : { nombre: rx }).select('_id').lean();
+      doc = await Modelo.findOne({ nombre: rx }).select('_id activa').lean();
     }
-    if (doc) ids.add(String(doc._id));
-    else faltantes.push(s);
+    if (doc) {
+      // (2) v8: exists pero inactivo → reactivación inmediata (self-heal).
+      if (soloActivas && !doc.activa) {
+        try { await Modelo.updateOne({ _id: doc._id }, { $set: { activa: true } }); } catch (e) { /* el doc existe y se usa igual */ }
+      }
+      ids.add(String(doc._id));
+      continue;
+    }
+    // (3) v8: re-siembra de la base canónica + reintento por slug — todo
+    // slug que el panel v2.5 puede enviar pertenece a la base canónica.
+    if (!baseReSembrada) {
+      try { await sembrarCatalogoBase(); } catch (e) { /* sin rescate */ }
+      baseReSembrada = true;
+      try { doc = await Modelo.findOne({ slug }).select('_id activa').lean(); } catch (e) { /* sin rescate */ }
+    }
+    if (doc) { ids.add(String(doc._id)); continue; }
+    faltantes.push(s);
   }
   return { ids: [...ids].map(aObjectId).filter(Boolean), faltantes };
 };
@@ -1130,6 +1164,8 @@ exports.actualizarMiMarca = async (req, res) => {
         return res.status(400).json({ error: 'Categorías inválidas.' });
       }
       const pedidas = b.categorias !== undefined ? b.categorias.map(String) : marca.categorias.map(String);
+      // v8: el resolutor repara/reactiva/resiembra → el guardado del panel
+      // ya nunca muere por deriva del catálogo (basura desconocida → 400).
       const { ids, faltantes } = await resolverListaCatalogo(pedidas, { Modelo: BrandCategory, soloActivas: true });
       if (faltantes.length) {
         return res.status(400).json({ error: 'Hay categorías inexistentes o inactivas.' });
@@ -1179,7 +1215,7 @@ exports.actualizarMiMarca = async (req, res) => {
         }
       }
 
-      // v7: resolución ObjectId/slug/nombre + validación de existencia
+      // v7/v8: resolución ObjectId/slug/nombre + reactivación/re-siembra
       // (las ciudades nuevas creadas arriba ya vienen como ObjectId real).
       const resueltas = await resolverListaCatalogo(ids, { Modelo: BrandCity, soloActivas: false });
       if (resueltas.faltantes.length) {
@@ -1799,6 +1835,13 @@ exports.obtenerFiltrosPublico = async (req, res) => {
  *   - Última red: si tras el rescate SIGUE vacío (Mongo readOnly, etc.), se
  *     entrega la base SIN _id marcada temporal:true — el panel la pinta y
  *     el guardado la resuelve por slug (resolverListaCatalogo).
+ * v8 — RESPUESTA BLINDADA:
+ *   - sembrarCatalogoBase ahora REPARA documentos viejos ($set con activa:
+ *     true) → una BD de un seed antiguo se normaliza en la primera llamada.
+ *   - La respuesta lleva `v: 8` (el panel la muestra en consola: así se
+ *     verifica desde el navegador que el backend desplegado es el v8) y
+ *     DOBLE forma (plana + `catalogos:{}`) por compatibilidad con cualquier
+ *     página que lea la anidada.
  */
 exports.obtenerCatalogos = async (req, res) => {
   try {
@@ -1821,7 +1864,13 @@ exports.obtenerCatalogos = async (req, res) => {
     if (!ciudades.length) {
       ciudades = CATALOGO_CIUDADES.map(({ nombre, estado }) => ({ nombre, estado, slug: slugify(nombre), temporal: true }));
     }
-    return res.json({ ok: true, categorias, ciudades });
+    return res.json({
+      ok: true,
+      v: 8,
+      categorias,
+      ciudades,
+      catalogos: { categorias, ciudades }, // forma anidada por compatibilidad
+    });
   } catch (error) {
     console.error('[marcas][obtenerCatalogos]', error && error.message);
     return res.status(500).json({ error: 'No se pudieron cargar los catálogos.' });

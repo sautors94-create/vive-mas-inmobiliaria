@@ -39,7 +39,7 @@
   <script src="../js/marcas-api.js"></script>
   <script>
   (() => {
-    console.log('[marca-panel] v2.4 (catálogos a prueba de todo + respaldo integrado)');
+    console.log('[marca-panel] v2.5 (catálogos normalizados+fusionados · guardado sin bloqueos)');
     const app = document.getElementById('app');
     let M = null;               // marca (panel)
     let CUENTA = null;          // cuenta de acceso
@@ -72,14 +72,14 @@
     // evita que el usuario escriba contenido que luego el servidor rechace.
     const LIMITES = { servicios: 15, zonas: 8, promoDescripcion: 500, promoCondiciones: 300, descripcionCorta: 160 };
 
-    // ---------- catálogo de respaldo (v2.4) ----------
-    // MISMA lista canónica que siembra el backend (seed.js v3 / controllers.js v7).
-    // Se usa SOLO si /publico/catalogos falla o llega vacío (o a medias): así los
-    // dropdowns de "Ciudades de cobertura" y "Categorías de servicio" NUNCA quedan
-    // vacíos y el flujo "completar → Vista previa → Publicar" puede completarse.
-    // Las entradas de respaldo NO tienen _id: se envían por SLUG y el backend v7
-    // las resuelve por slug/nombre (resolverListaCatalogo). Si la API SÍ trajo
-    // documentos reales, se usan esos y este respaldo no interviene.
+    // ---------- catálogo base integrado (v2.4→v2.5) ----------
+    // MISMA lista canónica que siembra el backend (seed.js v3 / controllers v8).
+    // En v2.5 la base ya no es un "respaldo de emergencia" sino la mitad
+    // inferior de una FUSIÓN permanente: cualquier hueco o forma rara que
+    // traiga la API se completa con estas entradas (dedupe por slug), de modo
+    // que los dropdowns de "Ciudades de cobertura" y "Categorías de servicio"
+    // NUNCA quedan vacíos ni con opciones en blanco. Las entradas sin _id se
+    // envían por SLUG y el backend v8 las resuelve (o las crea) al guardar.
     const slugFrontal = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     const CATALOGO_BASE = {
       categorias: [
@@ -157,12 +157,39 @@
       CUENTA.telefonoVerificado = CUENTA.telefonoVerificado || CUENTA.phoneVerified || false;
       // -------------------------------------------------
 
-      if (c.ok) CAT = { categorias: c.categorias || [], ciudades: c.ciudades || [] };
-      else console.warn('[marca-panel] /publico/catalogos no respondió OK → uso el catálogo de respaldo integrado');
-      // RESPALDO v2.4: si la API no trajo (o trajo a medias) los catálogos,
-      // completamos con la base integrada — nunca selects vacíos.
-      if (!CAT.categorias.length) { CAT.categorias = CATALOGO_BASE.categorias; console.warn('[marca-panel] categorías vacías desde la API → respaldo integrado'); }
-      if (!CAT.ciudades.length) { CAT.ciudades = CATALOGO_BASE.ciudades; console.warn('[marca-panel] ciudades vacías desde la API → respaldo integrado'); }
+      // --- v2.5: NORMALIZACIÓN + FUSIÓN de catálogos ---
+      // La API puede traer documentos completos, entradas temporales sin _id,
+      // CADENAS sueltas ("Guadalajara") o formas de filtros ({nombre,total}).
+      // TODO se normaliza a { _id, nombre, estado, slug } y se FUNDE con la
+      // base integrada (la API manda; la base rellena huecos y deduplica por
+      // slug). Mueren para siempre: dropdown vacío, opciones en blanco y el
+      // 400 "inexistentes o inactivas" al guardar.
+      const entradaCatalogo = (x) => {
+        if (x && typeof x === 'object') {
+          const nombre = String(x.nombre || x.name || '').trim();
+          if (!nombre) return null;
+          return { _id: String(x._id || x.id || ''), nombre, estado: String(x.estado || '').trim(), slug: slugFrontal(x.slug || nombre) };
+        }
+        const s = String(x == null ? '' : x).trim();
+        return s ? { _id: '', nombre: s, estado: '', slug: slugFrontal(s) } : null;
+      };
+      const fusionarCatalogo = (deAPI, deBase) => {
+        const vistas = new Set(); const salida = [];
+        for (const e of deAPI.concat(deBase)) {
+          if (e && !vistas.has(e.slug)) { vistas.add(e.slug); salida.push(e); }
+        }
+        return salida;
+      };
+      const crudas = (c && c.ok) ? {
+        categorias: c.categorias || (c.catalogos && c.catalogos.categorias) || [],
+        ciudades: c.ciudades || (c.catalogos && c.catalogos.ciudades) || [],
+      } : { categorias: [], ciudades: [] };
+      CAT = {
+        categorias: fusionarCatalogo(crudas.categorias.map(entradaCatalogo).filter(Boolean), CATALOGO_BASE.categorias),
+        ciudades: fusionarCatalogo(crudas.ciudades.map(entradaCatalogo).filter(Boolean), CATALOGO_BASE.ciudades),
+      };
+      console.log('[marca-panel] catálogos: ' + CAT.categorias.length + ' categorías, ' + CAT.ciudades.length + ' ciudades'
+        + (c && c.ok ? (c.v ? ' (backend v' + c.v + ' OK)' : ' · backend SIN marcador de versión → controllers.js viejo: sube el v8') : ' · API sin respuesta OK → fusión con base integrada'));
       SOL = s.ok ? s.solicitudes : [];
       render();
     };
