@@ -218,10 +218,27 @@ const slugUnico = async (base, exceptoId) => {
   return `${raiz}-${Date.now().toString(36)}`;
 };
 
+/**
+ * Filtro ANTI-MEZCLA DE VERSIONES: localiza la marca de una cuenta tanto si
+ * fue creada con el campo nuevo (`cuenta`) como con el legado (`accountId`,
+ * monolito viejo de models.js). Así un documento antiguo NUNCA provoca la
+ * creación de un borrador duplicado ni un ValidationError.
+ */
+const filtroMarcaDeCuenta = (idCuenta) => ({
+  $or: [{ cuenta: idCuenta }, { accountId: idCuenta }],
+});
+
 /** Borrador mínimo con el que toda cuenta verificada entra al panel. */
 const crearBorrador = async (cuenta) => {
   const slug = await slugUnico(`marca-${String(cuenta._id).slice(-6)}`);
-  return Brand.create({ cuenta: cuenta._id, nombreComercial: 'Mi Nueva Marca', slug });
+  // Se guardan AMBOS campos (cuenta + accountId legado) para que el documento
+  // también sea visible para cualquier código/vista que aún lea accountId.
+  return Brand.create({
+    cuenta: cuenta._id,
+    accountId: cuenta._id,
+    nombreComercial: 'Mi Nueva Marca',
+    slug,
+  });
 };
 
 // ============================================================
@@ -611,7 +628,7 @@ exports.verificarCodigo = async (req, res) => {
     // Toda cuenta verificada es operable; el BORRADOR de marca se crea de
     // forma perezosa en el primer acceso al panel (el spec cuenta las marcas
     // de la BD y exige que verificar NO las multiplique).
-    const marca = await Brand.findOne({ cuenta: cuenta._id });
+    const marca = await Brand.findOne(filtroMarcaDeCuenta(cuenta._id));
 
     res.cookie('vm_brand_refresh', firmarRefresco(cuenta), {
       httpOnly: true,
@@ -692,7 +709,7 @@ exports.loginMarca = async (req, res) => {
     // ⚠️ NUNCA devolver el documento con el hash: se neutraliza el campo
     // (fue cargado con select('+password') para el compare).
     cuenta.password = undefined;
-    const marca = await Brand.findOne({ cuenta: cuenta._id });
+    const marca = await Brand.findOne(filtroMarcaDeCuenta(cuenta._id));
     res.cookie('vm_brand_refresh', firmarRefresco(cuenta), {
       httpOnly: true,
       sameSite: 'lax',
@@ -778,8 +795,15 @@ exports.autenticarMarca = async (req, res, next) => {
     const cuenta = await BrandAccount.findById(decoded.id);
     if (!cuenta) return res.status(401).json({ error: 'Sesión expirada, inicia sesión de nuevo' });
 
-    let marca = await Brand.findOne({ cuenta: cuenta._id });
+    let marca = await Brand.findOne(filtroMarcaDeCuenta(cuenta._id));
     if (!marca) marca = await crearBorrador(cuenta);
+    // Upgrade perezoso de documentos legados (creados con accountId): se les
+    // escribe `cuenta` una sola vez para que el índice unique y las consultas
+    // futuras funcionen siempre por el campo nuevo.
+    if (!marca.cuenta && marca.accountId) {
+      marca.cuenta = marca.accountId;
+      await marca.save({ validateModifiedOnly: true });
+    }
     if (marca.estado === 'eliminado') {
       return res.status(410).json({
         error: 'Esta cuenta fue eliminada. Contacta al equipo SomosViveMás si crees que es un error.',

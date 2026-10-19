@@ -164,8 +164,16 @@ const origenesPermitidos = (process.env.CLIENT_URL || '')
   .map((s) => s.trim().replace(/\/+$/, ''))
   .filter(Boolean);
 
+// Dominio propio: el 1º de CLIENT_URL, o DOMINIO_PUBLICO, o el dominio del
+// proyecto. Con la normalización www↔dominio-desnudo de abajo basta UNA
+// entrada para cubrir ambas variantes.
+const DOMINIO_PROPIO = (process.env.DOMINIO_PUBLICO
+  || (() => { try { return new URL(origenesPermitidos[0] || 'https://somosvivemas.com').hostname; } catch { return 'somosvivemas.com'; } })())
+  .replace(/^www\./, '')
+  .toLowerCase();
+
 if (origenesPermitidos.length === 0) {
-  console.warn('[CORS] CLIENT_URL no definida: CORS limitado a mismo origen. Define CLIENT_URL en .env (admite lista separada por comas).');
+  console.warn('[CORS] CLIENT_URL no definida: CORS limitado a mismo origen + dominio propio (' + DOMINIO_PROPIO + '). Define CLIENT_URL en .env (admite lista separada por comas).');
 }
 
 if (!EN_PRODUCCION) {
@@ -177,17 +185,46 @@ if (!EN_PRODUCCION) {
   );
 }
 
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin) return callback(null, true); // curl / misma página / health checks
-    if (origenesPermitidos.includes(origin)) return callback(null, true);
-    if (!EN_PRODUCCION && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-      return callback(null, true);
-    }
-    console.warn(`[CORS] Origen bloqueado: ${origin}`);
-    return callback(null, false); // sin cabeceras CORS -> el navegador lo bloquea
-  },
-  credentials: true
+// 'www.somosvivemas.com:443' → 'somosvivemas.com'
+const hostDesnudo = (h) => String(h || '').toLowerCase().trim().replace(/:\d+$/, '').replace(/^www\./, '');
+
+const URLSegura = (s) => { try { return new URL(s); } catch { return null; } };
+
+/**
+ * ¿El origen de la petición es de CONFIANZA? (v5 — anti "Origen bloqueado")
+ * 1) MISMO ORIGEN: el hostname del Origin coincide con el Host del servidor.
+ *    El backend hospeda su propio frontend → sus llamadas NUNCA se bloquean,
+ *    sea www o dominio desnudo, sin depender del .env.
+ * 2) CLIENT_URL: comparación normalizada (www ↔ dominio desnudo, sin puerto).
+ * 3) DOMINIO PROPIO: se auto-permiten las variantes del dominio del proyecto
+ *    (somosvivemas.com / www.somosvivemas.com) como cinturón de seguridad.
+ * 4) Desarrollo local: localhost/127.0.0.1 (solo fuera de producción).
+ */
+const origenDeConfianza = (origin, req) => {
+  if (!origin) return true; // curl / misma página / health checks
+  const o = URLSegura(origin);
+  if (!o) return false;
+  const hostOrigen = hostDesnudo(o.hostname);
+  if (hostOrigen === hostDesnudo(req && req.headers && req.headers.host)) return true;
+  if (origenesPermitidos.some((p) => {
+    const q = URLSegura(/^[a-z][a-z0-9+.-]*:\/\//i.test(p) ? p : `https://${p}`);
+    return q ? hostDesnudo(q.hostname) === hostOrigen : hostDesnudo(p) === hostOrigen;
+  })) return true;
+  if (hostOrigen === DOMINIO_PROPIO || hostOrigen === `www.${DOMINIO_PROPIO}`) return true;
+  if (!EN_PRODUCCION && /^(localhost|127\.0\.0\.1)$/.test(hostOrigen)) return true;
+  return false;
+};
+
+// Configuración DINÁMICA (recibe req) para poder comparar contra el Host del
+// propio servidor: esto es lo que mata el "[CORS] Origen bloqueado:
+// https://somosvivemas.com" aunque el .env esté incompleto.
+app.use(cors((req, callback) => {
+  const origin = req.headers.origin;
+  if (origenDeConfianza(origin, req)) {
+    return callback(null, { origin: true, credentials: true });
+  }
+  console.warn(`[CORS] Origen bloqueado: ${origin || '(sin origen)'} — host pedido: ${req.headers.host || '?'}. Añádelo a CLIENT_URL en .env si es legítimo.`);
+  return callback(null, { origin: false }); // sin cabeceras CORS -> el navegador lo bloquea
 }));
 
 app.use(morgan(EN_PRODUCCION ? 'combined' : 'dev'));
@@ -227,6 +264,48 @@ app.get('/health', (req, res) => {
 app.use('/api/auth/meta', metaOAuthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/marcas', marcasRouter);
+
+// ==========================================
+// SALUD DEL PANEL ADMIN (v5) — registrada ANTES del montaje /api/admin para
+// que esta ruta responda SIEMPRE, aunque admin.routes.js falle o esté en otra
+// versión. Cura el "GET /api/admin/salud 500" del panel: no depende de ningún
+// controller externo, todo va en try/catch y degrada con gracia.
+// ==========================================
+app.get('/api/admin/salud', async (req, res) => {
+  const estado = {
+    ok: true,
+    status: 'ok',
+    proyecto: 'Vive Mas Inmobiliaria',
+    version: '1.0.0',
+    entorno: NODE_ENV,
+    db: ESTADOS_DB[mongoose.connection.readyState] || 'desconocida',
+    uptimeSegundos: Math.round(process.uptime()),
+    memoriaMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
+    timestamp: new Date().toISOString(),
+  };
+  try {
+    // Conteos informativos (opcionales: si un modelo no existe, no tumba la ruta)
+    const Brand = mongoose.models.Brand;
+    const BrandAccount = mongoose.models.BrandAccount;
+    if (Brand && mongoose.connection.readyState === 1) {
+      estado.marcas = {
+        total: await Brand.countDocuments({ estado: { $ne: 'eliminado' } }),
+        publicadas: await Brand.countDocuments({ estado: 'publicado' }),
+      };
+    }
+    if (BrandAccount && mongoose.connection.readyState === 1) {
+      estado.cuentasMarcas = await BrandAccount.estimatedDocumentCount();
+    }
+  } catch (e) {
+    // Los conteos son best-effort: la salud NUNCA debe 500 por ellos.
+    estado.advertencia = `conteos omitidos: ${e && e.message}`;
+  }
+  return res.json(estado);
+});
+
+// MÓDULO DE HERRAMIENTAS PÚBLICAS (calculadora de renta, etc.)
+app.use('/api/herramientas', require('./routes/herramientas.routes'));
+
 app.use('/api/admin/marcas', authMiddleware, requireRole('admin'), adminMarcasRouter);
 app.use('/api/admin', adminRoutes);
 app.use('/api/propiedades', propertyRoutes);

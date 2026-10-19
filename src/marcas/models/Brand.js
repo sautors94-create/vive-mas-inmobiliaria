@@ -2,8 +2,8 @@
 
 /**
  * src/marcas/models/Brand.js — Marca / Profesional aliado del directorio.
+ * v4 (2026-10-18) — COMPATIBILIDAD CON DOCUMENTOS LEGADOS.
  * ---------------------------------------------------------------------------
- * Reescrito según el contrato de tests/marcas.integration.js (Camino B).
  * Cambios de contrato respecto a la versión monolítica antigua (models.js):
  *   - `cuenta`   : ref a BrandAccount (antes `accountId`)
  *   - `estado`   : borrador|publicado|despublicado|bloqueado|desactivado|eliminado
@@ -15,6 +15,16 @@
  *   - `busqueda` : texto normalizado (sin acentos/minúsculas) para el buscador
  *   - Virtuals: `id`, `nombre`, `visiblePublicamente`, `solicitudesAbiertas`
  *   - `motivoBloqueo`/`ocultoPorModeracion`/`eliminadoEn` para moderación
+ *
+ * NOVEDAD v4 — CONVIVENCIA CON EL ESQUEMA VIEJO (defensa anti versiones mezcladas):
+ *   - Se declara `accountId` (ObjectId, opcional) para que los documentos
+ *     antiguos —creados con el monolito— se HIDRATEN en vez de descartarse.
+ *   - Hook pre('validate'): si un documento trae solo uno de los dos campos,
+ *     se completa el otro → required `cuenta` nunca vuelve a explotar.
+ *   - `cuenta` unique + sparse: los documentos viejos (sin `cuenta`) no
+ *     chocan contra el índice único.
+ *   - `strictPopulate: false`: si algún populate apunta a un path que el
+ *     schema no conoce (mezcla de versiones), se ignora en vez de 500.
  *
  * PRIVACIDAD: los serializadores públicos viven en controllers.js; este modelo
  * NUNCA debe enviarse crudo al público (expone estado interno y moderación).
@@ -79,7 +89,11 @@ const contactoSchema = new Schema(
 
 const brandSchema = new Schema(
   {
-    cuenta: { type: Schema.Types.ObjectId, ref: 'BrandAccount', required: true, unique: true, index: true },
+    // `cuenta` es el nombre NUEVO; `accountId` el LEGADO. El hook de abajo
+    // mantiene ambos sincronizados para que las dos generaciones de datos
+    // (y de código) convivan sin ValidationError.
+    cuenta: { type: Schema.Types.ObjectId, ref: 'BrandAccount', required: true, unique: true, sparse: true, index: true },
+    accountId: { type: Schema.Types.ObjectId, ref: 'BrandAccount', index: true }, // LEGADO (solo lectura/compat)
     nombreComercial: { type: String, trim: true, default: 'Mi Nueva Marca', maxlength: 80 },
     slug: { type: String, required: true, unique: true, index: true },
     responsable: { type: String, trim: true, maxlength: 100, default: '' },
@@ -111,8 +125,22 @@ const brandSchema = new Schema(
     eliminadoEn: { type: Date },
     busqueda: { type: String, default: '' },
   },
-  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+  // strictPopulate:false → un populate de una versión contra el schema de otra
+  // se convierte en no-op (no lanza) en lugar de un 500 en producción.
+  { timestamps: true, strictPopulate: false, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+// ---------- Sincronización legado ↔ nuevo (anti-mezcla de versiones) ----------
+
+brandSchema.pre('validate', function sincronizarCuentaLegada(next) {
+  try {
+    if (!this.cuenta && this.accountId) this.cuenta = this.accountId;
+    if (!this.accountId && this.cuenta) this.accountId = this.cuenta;
+    next();
+  } catch (e) {
+    next(e);
+  }
+});
 
 // ---------- Virtuals ----------
 

@@ -58,6 +58,9 @@
  *  18. ultimaActividad se escribe con updateOne (no user.save() completo,
  *      que hacia escritura total + carrera con otros guards del modelo).
  *  19. Comparacion de codigos con crypto.timingSafeEqual.
+ *  20. compararPasswordSegura(): login/cambios de contraseña no revientan
+ *      en 500 si el modelo User desplegado carece de compararPassword
+ *      (degrada a bcrypt.compare directo).
  *
  * NOTAS DE OPERACION
  *  - Los limitadores anti-abuso viven en memoria (valido para una instancia).
@@ -116,6 +119,21 @@ const TAM_MAX_DOCUMENTO_BYTES = 10 * 1024 * 1024; // 10MB
 const validarPasswordSegura = (password) => PASSWORD_REGEX.test(password || '');
 const esEmailValido = (email) => typeof email === 'string' && email.length <= 254 && EMAIL_REGEX.test(email);
 const limpiarTelefono = (telefono) => (typeof telefono === 'string' ? telefono.replace(/\D/g, '').trim() : '');
+
+// ---------------------------------------------------------------------------
+// Fix 20 (defensa en profundidad): comparación de contraseña tolerante.
+// Si el modelo User desplegado NO tuviera el método compararPassword
+// (p. ej. una versión recortada del modelo), antes esto revientaba con
+// TypeError -> 500 en cada login. Ahora degrada a bcrypt.compare directo.
+// ---------------------------------------------------------------------------
+const compararPasswordSegura = async (user, candidata) => {
+  if (!user) return false;
+  if (typeof user.compararPassword === 'function') {
+    return user.compararPassword(candidata);
+  }
+  if (!user.password) return false;
+  return bcrypt.compare(String(candidata), String(user.password));
+};
 
 const esDocumentoValido = (archivo) =>
   Boolean(
@@ -639,7 +657,7 @@ const login = async (req, res) => {
       return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
 
-    const passwordOk = await user.compararPassword(password);
+    const passwordOk = await compararPasswordSegura(user, password);
     if (!passwordOk) {
       registrarFalloLogin(identificador, ip);
       return res.status(401).json({ error: 'Credenciales incorrectas' });
@@ -1014,7 +1032,7 @@ const desactivar2FA = async (req, res) => {
     const user = await User.findById(req.user.id).select('+password');
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    const passwordOk = await user.compararPassword(password);
+    const passwordOk = await compararPasswordSegura(user, password);
     if (!passwordOk) return res.status(401).json({ error: 'Contraseña incorrecta' });
 
     user.twoFactorEnabled = false;
@@ -1601,7 +1619,7 @@ const eliminarMiCuenta = async (req, res) => {
     const user = await User.findById(req.user.id).select('+password');
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    const coincide = await user.compararPassword(password);
+    const coincide = await compararPasswordSegura(user, password);
     if (!coincide) return res.status(401).json({ error: 'Contraseña incorrecta.' });
 
     if (user.role === 'admin') return res.status(403).json({ error: 'Las cuentas de administrador no se pueden eliminar desde aquí.' });
@@ -1655,13 +1673,13 @@ const cambiarPassword = async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
     // Verificar que la contraseña actual sea correcta
-    const esCorrecta = await user.compararPassword(passwordActual);
+    const esCorrecta = await compararPasswordSegura(user, passwordActual);
     if (!esCorrecta) {
       return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
     }
 
     // Validar que la nueva no sea igual a la actual
-    const esIgual = await user.compararPassword(nuevaPassword);
+    const esIgual = await compararPasswordSegura(user, nuevaPassword);
     if (esIgual) {
       return res.status(400).json({ error: 'La nueva contraseña no puede ser igual a la actual' });
     }

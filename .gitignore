@@ -1,24 +1,26 @@
- 
-# Dependencias
+# ===== Dependencias (las instala el servidor con npm install) =====
 node_modules/
 
-# Variables de entorno
+# ===== Entorno y secretos (JAMAS subir el .env real) =====
 .env
-.env.local
-.env.production
+.env.*
+!.env.example
 
-# Logs
+# ===== Logs =====
+logs/
 *.log
 npm-debug.log*
-nodemon-debug.log*
+test-run.log
 
-# Archivos de sistema
+# ===== Sistema operativo =====
 .DS_Store
 Thumbs.db
 
-# Uploads locales
-uploads/
+# ===== Editor / respaldos =====
+*.bak
+.vscode/
+.idea/
 
-# Build
+# ===== Build artifacts =====
 dist/
-build/
+coverage/
