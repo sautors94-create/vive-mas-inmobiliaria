@@ -127,10 +127,14 @@ app.use(helmet({
   }
 }));
 
-// POLÍTICA ESTRICTA EN MODO REPORTE (no bloquea nada, solo avisa en la
-// consola del navegador). Sirve de guía de migración: cuando los reportes
-// estén limpios (scripts inline convertidos a archivos .js), copia estas
-// directivas a la CSP de arriba y elimina 'unsafe-inline'.
+// POLÍTICA ESTRICTA EN MODO REPORTE — APAGADA POR DEFECTO desde v5.1.
+// Historia: se activó como guía de migración a una CSP estricta, pero el
+// frontend aún usa scripts/estilos inline de forma masiva (chatbot.js,
+// main.js, social-widget.js, api.js), así que la consola del navegador se
+// llenaba de cientos de reportes que NO bloquean nada y tapan los errores
+// reales (500/404/CORS). Decisión: dejarla opt-in. Si más adelante se
+// migran los inline a archivos y se quiere retomar la telemetría, basta
+// definir CSP_REPORTE=1 en el .env de Hostinger — sin tocar código.
 const CSP_ESTRICTA_REPORTE = [
   "default-src 'self'",
   "script-src 'self' fonts.googleapis.com unpkg.com cdnjs.cloudflare.com cdn.sheetjs.com",
@@ -144,10 +148,13 @@ const CSP_ESTRICTA_REPORTE = [
   "frame-ancestors 'self'"
 ].join('; ');
 
-app.use((req, res, next) => {
-  res.setHeader('Content-Security-Policy-Report-Only', CSP_ESTRICTA_REPORTE);
-  next();
-});
+if (process.env.CSP_REPORTE === '1') {
+  console.log('[CSP] Report-Only ACTIVADO vía CSP_REPORTE=1 (solo registra, no bloquea)');
+  app.use((req, res, next) => {
+    res.setHeader('Content-Security-Policy-Report-Only', CSP_ESTRICTA_REPORTE);
+    next();
+  });
+}
 
 // ==========================================
 // CORS CON WHITELIST (antes quedaba abierto a cualquier origen)
