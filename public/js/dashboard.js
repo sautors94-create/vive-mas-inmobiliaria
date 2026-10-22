@@ -3,6 +3,154 @@ if (!auth.isLoggedIn()) window.location.href = 'login.html';
 const user = auth.getUser();
 let mapaPublicar = null;
 let markerPublicar = null;
+let mapaGoogle = null;
+let markerGoogle = null;
+
+// ==================== CONFIGURACIÓN DE MAPAS (paso 4 de publicación) ====================
+// ¿Quieres Google Maps (la misma app que usas en propiedad.html)?
+//   1. En consola de Google Cloud → Credenciales, crea/usa una API Key con
+//      "Maps JavaScript API" y "Geocoding API" activadas.
+//   2. Pégala abajo entre las comillas. Ejemplo:  googleMapsKey: 'AIza...'
+// Si se deja vacía, el panel usa automáticamente el motor libre (mapa moderno
+// CARTO/Leaflet, sin API key y sin costo). Si Google falla (key inválida o sin
+// internet), el sistema regresa solo al motor libre — nunca se rompe el paso 4.
+// Con key activa, el buscador de CP usa Geocoding de Google (cubre TODOS los CP
+// de México y desaparece el error 404 de zippopotam de la consola).
+const MAPAS_CONFIG = {
+  googleMapsKey: '',
+  centroPorDefecto: [19.4326, -99.1332],
+  zoomPorDefecto: 12
+};
+
+let coordsCP = null;      // { cp, lat, lng } recordadas del CP del paso 3
+let centradoToken = 0;    // evita que una búsqueda vieja sobreescriba a la nueva
+let cpToken = 0;          // igual para la búsqueda por código postal
+let googleCargando = null;
+
+const cargarGoogleMaps = () => new Promise((resolve, reject) => {
+  if (window.google && window.google.maps && window.google.maps.Map) return resolve();
+  if (googleCargando) return googleCargando.then(resolve, reject);
+  googleCargando = new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(MAPAS_CONFIG.googleMapsKey) + '&language=es&region=MX&callback=__vmGoogleListo';
+    window.__vmGoogleListo = () => res();
+    s.onerror = () => rej(new Error('No se pudo cargar el SDK de Google Maps'));
+    document.head.appendChild(s);
+    setTimeout(() => rej(new Error('Google Maps tardó demasiado en responder')), 8000);
+  });
+  googleCargando.then(resolve, reject);
+});
+
+// Busca una dirección/CP y regresa { lat, lng, detalles } con el motor configurado
+const geoBuscarGoogle = async (query) => {
+  await cargarGoogleMaps();
+  return new Promise((resolve) => {
+    try {
+      new google.maps.Geocoder().geocode({ address: query, region: 'mx' }, (results, status) => {
+        if (status !== 'OK' || !results || !results.length) return resolve(null);
+        const comps = {};
+        (results[0].address_components || []).forEach((c) => (c.types || []).forEach((t) => { comps[t] = c.long_name; }));
+        resolve({
+          lat: results[0].geometry.location.lat(),
+          lng: results[0].geometry.location.lng(),
+          detalles: comps
+        });
+      });
+    } catch (e) { resolve(null); }
+  });
+};
+
+const geoBuscarNominatim = async (query) => {
+  try {
+    const res = await fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(query) + '&format=json&limit=1&addressdetails=1&accept-language=es');
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) return null;
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), detalles: data[0].address || {} };
+  } catch (e) { return null; }
+};
+
+const geoBuscar = (query) => (MAPAS_CONFIG.googleMapsKey ? geoBuscarGoogle(query) : geoBuscarNominatim(query));
+
+// Nombre bonito del estado seleccionado (usa el TEXTO del option — "Estado de México",
+// "Yucatán" — y no el value interno sin acentos, para que la búsqueda sea precisa)
+const textoEstadoSeleccionado = () => {
+  const sel = document.getElementById('p-estado');
+  if (!sel || !sel.value) return '';
+  const opt = sel.options[sel.selectedIndex];
+  return ((opt && opt.text) ? opt.text : sel.value).trim();
+};
+
+// Estilos modernos del mapa libre (una sola vez, acordes al diseño del sitio)
+const inyectarEstilosMapa = () => {
+  if (document.getElementById('vm-mapa-estilos')) return;
+  const st = document.createElement('style');
+  st.id = 'vm-mapa-estilos';
+  st.textContent = [
+    '#mapa-publicar{border-radius:12px;overflow:hidden;font-family:Inter,sans-serif;background:#eef2f1;box-shadow:0 10px 30px rgba(15,23,42,.08)}',
+    '#mapa-publicar .leaflet-control-zoom{border:none;box-shadow:0 4px 14px rgba(15,23,42,.16);border-radius:10px;overflow:hidden}',
+    '#mapa-publicar .leaflet-control-zoom a{width:34px;height:34px;line-height:32px;color:#1a472a;border-bottom:1px solid #eef2f1;font-weight:600}',
+    '#mapa-publicar .leaflet-control-zoom a:hover{background:#f0fdf4;color:#143621}',
+    '#mapa-publicar .leaflet-control-attribution{background:rgba(255,255,255,.8);font-size:9px;border-radius:8px 0 0 0;padding:1px 6px;color:#94a3b8}',
+    '#mapa-publicar .leaflet-control-attribution a{color:#64748b}',
+    '.vm-map-hint{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:850;background:rgba(255,255,255,.96);border:1px solid rgba(26,71,42,.18);color:#1a472a;font:600 12px Inter,sans-serif;padding:7px 14px;border-radius:50px;box-shadow:0 6px 18px rgba(15,23,42,.14);pointer-events:none;white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .35s ease}',
+    '.vm-map-hint.vm-visible{opacity:1}',
+    '.vm-map-hint .vm-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1a472a;margin-right:6px;vertical-align:middle}',
+    '@keyframes vmPinPulse{0%{transform:scale(.55);opacity:.55}70%{transform:scale(2.1);opacity:0}100%{transform:scale(2.1);opacity:0}}',
+    '@keyframes vmPinDrop{0%{transform:translateY(-12px) scale(.85);opacity:0}60%{transform:translateY(0) scale(1.05);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}'
+  ].join('\n');
+  document.head.appendChild(st);
+};
+
+const mostrarHintMapa = (texto) => {
+  const cont = document.getElementById('mapa-publicar');
+  if (!cont || !texto) return;
+  let hint = cont.querySelector('.vm-map-hint');
+  if (!hint) {
+    hint = document.createElement('div');
+    hint.className = 'vm-map-hint';
+    cont.appendChild(hint);
+  }
+  hint.innerHTML = '<span class="vm-dot"></span>' + escapeHtmlLocal(texto);
+  hint.classList.add('vm-visible');
+  clearTimeout(hint.__vmTimer);
+  hint.__vmTimer = setTimeout(() => hint.classList.remove('vm-visible'), 5000);
+};
+
+const ocultarHintMapa = () => {
+  const hint = document.querySelector('#mapa-publicar .vm-map-hint');
+  if (hint) hint.classList.remove('vm-visible');
+};
+
+// Centra el mapa en cualquier motor (Google o libre)
+const centrarMapaEn = (lat, lng, zoom, etiqueta) => {
+  if (mapaGoogle) {
+    mapaGoogle.setCenter({ lat: lat, lng: lng });
+    mapaGoogle.setZoom(zoom);
+  } else if (mapaPublicar) {
+    mapaPublicar.setView([lat, lng], zoom);
+  } else {
+    return;
+  }
+  if (etiqueta) mostrarHintMapa('Centrado en ' + etiqueta + ' — haz clic para marcar tu ubicación');
+};
+
+// Limpia marca/coordenadas/CP (al abrir "Nueva publicación" de cero)
+const limpiarMapaPublicar = () => {
+  coordsCP = null;
+  if (markerPublicar && mapaPublicar) { try { mapaPublicar.removeLayer(markerPublicar); } catch (e) {} }
+  markerPublicar = null;
+  if (markerGoogle) { try { markerGoogle.setMap(null); } catch (e) {} }
+  markerGoogle = null;
+  ['p-lat', 'p-lng'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['coord-lat', 'coord-lng'].forEach((id) => { const el = document.getElementById(id); if (el) el.textContent = '--'; });
+  const lbl = document.getElementById('coord-estado-label');
+  if (lbl) lbl.textContent = '';
+  const cpLbl = document.getElementById('p-cp-estado');
+  if (cpLbl) cpLbl.textContent = '';
+  ocultarHintMapa();
+};
 
 // ==================== CRÉDITOS / FINANCIAMIENTO ====================
 // Muestra u oculta el selector de créditos según la operación (solo venta)
@@ -104,26 +252,91 @@ const seleccionarEstadoPorTexto = (select, texto) => {
   if (match) select.value = match.value;
 };
 
-const buscarPorCP = async (cp) => {
-  if (!cp || cp.length < 5) return;
-  try {
-    const res = await fetch(`https://api.zippopotam.us/MX/${cp}`);
-    if (!res.ok) return;
-    const data = await res.json();
-    if (!data.places || !data.places.length) return;
-    const lugar = data.places[0];
-    const estado = document.getElementById('p-estado');
-    const ciudad = document.getElementById('p-ciudad');
-    const colonia = document.getElementById('p-colonia');
-    const estadoLabel = document.getElementById('p-cp-estado');
-    if (ciudad) ciudad.value = lugar['place name'] || '';
-    if (colonia) colonia.value = lugar['place name'] || '';
-    if (estadoLabel) estadoLabel.textContent = `✓ ${lugar['state']}`;
-    // Intentar seleccionar el estado en el select (solo si aún no está seleccionado)
-    if (estado && !estado.value) {
-      seleccionarEstadoPorTexto(estado, lugar['state'] || lugar['state abbreviation']);
+const buscarPorCP = async (valor) => {
+  const cp = String(valor || '').replace(/\D/g, '').slice(0, 5);
+  if (cp.length < 5) return;
+  const token = ++cpToken;
+  const estadoEl = document.getElementById('p-estado');
+  const ciudadEl = document.getElementById('p-ciudad');
+  const coloniaEl = document.getElementById('p-colonia');
+  const labelEl = document.getElementById('p-cp-estado');
+
+  const aplicar = (info) => {
+    if (token !== cpToken) return; // llegaron datos de una búsqueda vieja: ignorar
+    if (info.ciudad && ciudadEl) ciudadEl.value = info.ciudad;
+    if (info.colonia && coloniaEl) coloniaEl.value = info.colonia;
+    if (info.estado) {
+      if (labelEl) labelEl.textContent = '✓ ' + info.estado;
+      if (estadoEl && !estadoEl.value) seleccionarEstadoPorTexto(estadoEl, info.estado);
     }
-  } catch (e) {}
+    if (info.lat && info.lng) coordsCP = { cp: cp, lat: info.lat, lng: info.lng };
+  };
+
+  const marcarNoEncontrado = () => {
+    if (token !== cpToken) return;
+    if (labelEl) labelEl.textContent = '⚠️ CP no encontrado — elige estado y ciudad manualmente';
+  };
+
+  try {
+    // 1) Con API key de Google: Geocoding oficial (cubre TODOS los CP de México,
+    //    sin errores 404 en consola y con coordenadas exactas para el mapa)
+    if (MAPAS_CONFIG.googleMapsKey) {
+      const r = await geoBuscarGoogle(cp + ', México');
+      if (token === cpToken) {
+        if (r) {
+          const a = r.detalles || {};
+          aplicar({
+            ciudad: a.locality || a.administrative_area_level_2 || a.postal_town || '',
+            colonia: a.neighborhood || a.sublocality_level_2 || a.sublocality_level_1 || a.sublocality || '',
+            estado: a.administrative_area_level_1 || '',
+            lat: r.lat, lng: r.lng
+          });
+        } else {
+          marcarNoEncontrado();
+        }
+      }
+      return;
+    }
+
+    // 2) Sin key: Zippopotam primero (rápido; cubre la mayoría de CP urbanos)
+    let res = null;
+    try { res = await fetch('https://api.zippopotam.us/MX/' + cp); } catch (e) { res = null; }
+    if (token !== cpToken) return;
+    if (res && res.ok) {
+      const data = await res.json().catch(() => null);
+      if (token !== cpToken) return;
+      if (data && data.places && data.places.length) {
+        const lugar = data.places[0];
+        aplicar({
+          ciudad: lugar['place name'] || '',
+          colonia: lugar['place name'] || '',
+          estado: lugar['state'] || '',
+          lat: parseFloat(lugar.latitude) || null,
+          lng: parseFloat(lugar.longitude) || null
+        });
+        return;
+      }
+    }
+
+    // 3) Respaldo Nominatim (algunos CP que Zippopotam no conoce)
+    const r2 = await geoBuscarNominatim(cp + ', México');
+    if (token !== cpToken) return;
+    if (r2) {
+      const a = r2.detalles || {};
+      aplicar({
+        ciudad: a.city || a.town || a.village || a.municipality || '',
+        colonia: a.suburb || a.neighbourhood || '',
+        estado: a.state || '',
+        lat: r2.lat, lng: r2.lng
+      });
+      return;
+    }
+
+    // 4) Ninguna fuente lo conoce: aviso amable, sin romper nada
+    marcarNoEncontrado();
+  } catch (e) {
+    marcarNoEncontrado();
+  }
 };
 // ==========================================
 // MODAL DE PLANES Y PASARELA STRIPE
@@ -574,32 +787,81 @@ const mostrarDetalleKpi = (key, label) => {
 
 
 const iniciarMapaPublicar = () => {
-  if (mapaPublicar) { mapaPublicar.invalidateSize(); return; }
+  // ── Motor Google Maps (si hay API key en MAPAS_CONFIG) ──
+  if (MAPAS_CONFIG.googleMapsKey) {
+    if (mapaGoogle) { centrarMapaDesdePaso3(); return; }
+    cargarGoogleMaps()
+      .then(() => {
+        const cont = document.getElementById('mapa-publicar');
+        if (!cont || mapaGoogle || mapaPublicar) return;
+        mapaGoogle = new google.maps.Map(cont, {
+          center: { lat: MAPAS_CONFIG.centroPorDefecto[0], lng: MAPAS_CONFIG.centroPorDefecto[1] },
+          zoom: MAPAS_CONFIG.zoomPorDefecto,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false
+        });
+        mapaGoogle.addListener('click', (e) => {
+          if (!e.latLng) return;
+          colocarMarker(e.latLng.lat(), e.latLng.lng());
+          geocodificarCoordenadas(e.latLng.lat(), e.latLng.lng());
+        });
+        centrarMapaDesdePaso3();
+      })
+      .catch((err) => {
+        console.warn('Google Maps no disponible, se usa el mapa libre:', err && err.message);
+        MAPAS_CONFIG.googleMapsKey = ''; // no reintentar en esta sesión
+        iniciarMapaPublicar();
+      });
+    return;
+  }
+  // ── Motor libre (Leaflet + tiles CARTO Voyager: moderno, sin API key) ──
+  if (mapaPublicar) { mapaPublicar.invalidateSize(); centrarMapaDesdePaso3(); return; }
+  inyectarEstilosMapa();
   setTimeout(() => {
-    const centro = [19.4326, -99.1332];
-    mapaPublicar = L.map('mapa-publicar').setView(centro, 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap',
-      maxZoom: 19
+    mapaPublicar = L.map('mapa-publicar').setView(MAPAS_CONFIG.centroPorDefecto, MAPAS_CONFIG.zoomPorDefecto);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20
     }).addTo(mapaPublicar);
     mapaPublicar.on('click', (e) => {
       const { lat, lng } = e.latlng;
       colocarMarker(lat, lng);
       geocodificarCoordenadas(lat, lng);
     });
+    centrarMapaDesdePaso3();
   }, 300);
 };
 
+const pinDivIconLeaflet = () => L.divIcon({
+  className: '',
+  html: '<div style="position:relative;width:28px;height:28px">' +
+        '<div style="position:absolute;inset:0;border-radius:50%;background:rgba(26,71,42,.4);animation:vmPinPulse 1.8s ease-out infinite"></div>' +
+        '<div style="position:absolute;left:5px;top:5px;width:18px;height:18px;border-radius:50%;background:#1a472a;border:3px solid #fff;box-shadow:0 3px 10px rgba(15,23,42,.35);animation:vmPinDrop .35s ease"></div>' +
+      '</div>',
+  iconSize: [28, 28],
+  iconAnchor: [14, 14]
+});
+
 const colocarMarker = (lat, lng) => {
-  if (markerPublicar) mapaPublicar.removeLayer(markerPublicar);
-  markerPublicar = L.marker([lat, lng], {
-    icon: L.divIcon({
-      className: '',
-      html: '<div style="background:#1a472a;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>',
-      iconSize: [16, 16],
-      iconAnchor: [8, 8]
-    })
-  }).addTo(mapaPublicar);
+  lat = parseFloat(lat); lng = parseFloat(lng);
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+  ocultarHintMapa();
+  if (mapaGoogle) {
+    if (markerGoogle) markerGoogle.setMap(null);
+    markerGoogle = new google.maps.Marker({
+      position: { lat: lat, lng: lng },
+      map: mapaGoogle,
+      title: 'Ubicación de tu propiedad',
+      animation: (window.google && google.maps.Animation) ? google.maps.Animation.DROP : undefined
+    });
+  } else if (mapaPublicar) {
+    if (markerPublicar) mapaPublicar.removeLayer(markerPublicar);
+    markerPublicar = L.marker([lat, lng], { icon: pinDivIconLeaflet() }).addTo(mapaPublicar);
+  } else {
+    return;
+  }
   document.getElementById('p-lat').value = lat.toFixed(6);
   document.getElementById('p-lng').value = lng.toFixed(6);
   document.getElementById('coord-lat').textContent = lat.toFixed(6);
@@ -607,53 +869,127 @@ const colocarMarker = (lat, lng) => {
 };
 
 const geocodificarCoordenadas = async (lat, lng) => {
+  const pintar = (info) => {
+    // Solo autocompletar el estado si aún no se ha seleccionado uno (evita borrar el que eligió el usuario)
+    const estadoSelect = document.getElementById('p-estado');
+    if (info.estado && estadoSelect && !estadoSelect.value) {
+      seleccionarEstadoPorTexto(estadoSelect, info.estado);
+    }
+    if (info.ciudad) document.getElementById('p-ciudad').value = info.ciudad;
+    if (info.colonia) document.getElementById('p-colonia').value = info.colonia;
+    if (info.calle) document.getElementById('p-direccion').value = `${info.calle}${info.numero ? ' ' + info.numero : ''}`;
+    const lbl = document.getElementById('coord-estado-label');
+    if (lbl) lbl.textContent = `📍 ${info.colonia ? info.colonia + ', ' : ''}${info.ciudad || ''}`;
+  };
+
+  // Motor Google (si está configurado)
+  if (MAPAS_CONFIG.googleMapsKey && mapaGoogle) {
+    try {
+      await cargarGoogleMaps();
+      new google.maps.Geocoder().geocode({ location: { lat: lat, lng: lng }, language: 'es' }, (results, status) => {
+        if (status !== 'OK' || !results || !results.length) return;
+        const a = {};
+        (results[0].address_components || []).forEach((c) => (c.types || []).forEach((t) => { a[t] = c.long_name; }));
+        pintar({
+          estado: a.administrative_area_level_1 || '',
+          ciudad: a.locality || a.administrative_area_level_2 || '',
+          colonia: a.neighborhood || a.sublocality_level_1 || a.sublocality || '',
+          calle: a.route || '',
+          numero: a.street_number || ''
+        });
+      });
+    } catch (e) {}
+    return;
+  }
+
+  // Motor libre (Nominatim)
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`);
     const data = await res.json();
     if (data.address) {
-      const estado = data.address.state || '';
-      const ciudad = data.address.city || data.address.town || data.address.municipality || '';
-      const colonia = data.address.suburb || data.address.neighbourhood || '';
-const calle = data.address.road || '';
-      const numero = data.address.house_number || '';
-      // Solo autocompletar el estado si aún no se ha seleccionado uno (evita borrar el que eligió el usuario)
-      const estadoSelect = document.getElementById('p-estado');
-      if (estado && estadoSelect && !estadoSelect.value) {
-        seleccionarEstadoPorTexto(estadoSelect, estado);
-      }
-      if (ciudad) document.getElementById('p-ciudad').value = ciudad;
-      if (colonia) document.getElementById('p-colonia').value = colonia;
-      if (calle) document.getElementById('p-direccion').value = `${calle}${numero ? ' ' + numero : ''}`;
-      document.getElementById('coord-estado-label').textContent = `📍 ${colonia ? colonia + ', ' : ''}${ciudad}`;
+      pintar({
+        estado: data.address.state || '',
+        ciudad: data.address.city || data.address.town || data.address.municipality || '',
+        colonia: data.address.suburb || data.address.neighbourhood || '',
+        calle: data.address.road || '',
+        numero: data.address.house_number || ''
+      });
     }
   } catch (e) {}
 };
 
+// Centra el mapa según lo que el usuario ya eligió en el paso 3 (estado, CP,
+// colonia o ciudad). Prioridad: marca puesta > CP > colonia+ciudad > ciudad > estado.
+const centrarMapaDesdePaso3 = async () => {
+  if (!mapaPublicar && !mapaGoogle) return;
+  const token = ++centradoToken;
+  const v = (id) => (document.getElementById(id)?.value || '').trim();
+
+  // 1) Ya hay marca puesta → solo encuadrarla (no geocodificar nada)
+  const latTxt = v('p-lat'), lngTxt = v('p-lng');
+  if (latTxt && lngTxt) {
+    const latM = parseFloat(latTxt), lngM = parseFloat(lngTxt);
+    if (!Number.isNaN(latM) && !Number.isNaN(lngM)) {
+      centrarMapaEn(latM, lngM, 16, 'tu ubicación marcada');
+      return;
+    }
+  }
+
+  const cp = v('p-cp').replace(/\D/g, '').slice(0, 5);
+  const colonia = v('p-colonia');
+  const ciudad = v('p-ciudad');
+  const estadoTxt = textoEstadoSeleccionado();
+
+  // 2) Coordenadas recordadas del CP que escribió en el paso 3
+  if (cp && coordsCP && coordsCP.cp === cp) {
+    centrarMapaEn(coordsCP.lat, coordsCP.lng, 15, 'CP ' + cp);
+    return;
+  }
+
+  // 3) Colonia + ciudad (+ estado): máxima precisión disponible
+  if (colonia && ciudad) {
+    const r = await geoBuscar([colonia, ciudad, estadoTxt, 'México'].filter(Boolean).join(', '));
+    if (token !== centradoToken) return;
+    if (r) return centrarMapaEn(r.lat, r.lng, 15, colonia);
+  }
+
+  // 4) Ciudad (+ estado)
+  if (ciudad) {
+    const r = await geoBuscar([ciudad, estadoTxt, 'México'].filter(Boolean).join(', '));
+    if (token !== centradoToken) return;
+    if (r) return centrarMapaEn(r.lat, r.lng, 13, ciudad);
+  }
+
+  // 5) Solo estado → vista panorámica de todo el estado
+  if (estadoTxt) {
+    const r = await geoBuscar(estadoTxt + ', México');
+    if (token !== centradoToken) return;
+    if (r) return centrarMapaEn(r.lat, r.lng, 7, estadoTxt);
+  }
+
+  // 6) Nada seleccionado: vista nacional por defecto (como siempre)
+  centrarMapaEn(MAPAS_CONFIG.centroPorDefecto[0], MAPAS_CONFIG.centroPorDefecto[1], MAPAS_CONFIG.zoomPorDefecto, null);
+};
+
 const buscarDireccion = async () => {
   const direccion = document.getElementById('p-direccion').value.trim();
-  const estado = document.getElementById('p-estado').value;
+  const estadoTxt = textoEstadoSeleccionado();
   const ciudad = document.getElementById('p-ciudad').value.trim();
+  const colonia = document.getElementById('p-colonia').value.trim();
   if (!direccion && !ciudad) {
     dsToast({ title: 'Falta la dirección', message: 'Escribe una dirección o ciudad para buscar.', type: 'error' });
     return;
   }
 
-  const query = `${direccion} ${ciudad} ${estado} México`.trim();
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&accept-language=es`);
-    const data = await res.json();
-    if (data.length > 0) {
-      const lat = parseFloat(data[0].lat);
-      const lng = parseFloat(data[0].lon);
-      mapaPublicar.setView([lat, lng], 16);
-      colocarMarker(lat, lng);
-      geocodificarCoordenadas(lat, lng);
-    } else {
-      dsToast({ title: 'Sin resultados', message: 'No se encontró la dirección. Haz clic directamente en el mapa.', type: 'error' });
-    }
-  } catch (e) {
-    dsToast({ title: 'Error al buscar', message: 'No se pudo geocodificar. Haz clic directamente en el mapa.', type: 'error' });
+  const query = [direccion, colonia, ciudad, estadoTxt, 'México'].filter(Boolean).join(', ');
+  const r = await geoBuscar(query);
+  if (!r) {
+    dsToast({ title: 'Sin resultados', message: 'No se encontró la dirección. Haz clic directamente en el mapa.', type: 'error' });
+    return;
   }
+  centrarMapaEn(r.lat, r.lng, 16, null);
+  colocarMarker(r.lat, r.lng);
+  geocodificarCoordenadas(r.lat, r.lng);
 };
 
 let fotosOrden = []; // array de objetos: { file, dataUrl }
@@ -1347,10 +1683,11 @@ const resetFormularioPropiedad = () => {
   if (titulo) titulo.textContent = 'Nueva publicación';
   if (aviso) aviso.style.display = 'none';
   if (fotosWrap) fotosWrap.style.display = 'none';
-  ['p-titulo','p-precio','p-operacion','p-tipo','p-descripcion','p-estado','p-ciudad','p-colonia','p-direccion','p-recamaras','p-banos','p-medios-banos','p-estacionamientos','p-m2'].forEach(id => {
+  ['p-titulo','p-precio','p-operacion','p-tipo','p-descripcion','p-estado','p-ciudad','p-colonia','p-direccion','p-recamaras','p-banos','p-medios-banos','p-estacionamientos','p-m2','p-cp'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  limpiarMapaPublicar();
   document.querySelectorAll('.credito-checkbox').forEach(c => c.checked = false);
   const chkRemate = document.getElementById('p-es-remate');
   if (chkRemate) chkRemate.checked = false;
@@ -2429,8 +2766,13 @@ window.setPublicarStep = (n) => {
   if (submitWrap) submitWrap.style.display = publicarPaso === 7 ? 'block' : 'none';
 
   if (publicarPaso === 4) {
-    if (mapaPublicar) {
-      setTimeout(() => mapaPublicar.invalidateSize(), 100);
+    if (mapaGoogle) {
+      setTimeout(() => {
+        try { if (window.google && window.google.maps) google.maps.event.trigger(mapaGoogle, 'resize'); } catch (e) {}
+        centrarMapaDesdePaso3();
+      }, 100);
+    } else if (mapaPublicar) {
+      setTimeout(() => { mapaPublicar.invalidateSize(); centrarMapaDesdePaso3(); }, 100);
     } else {
       iniciarMapaPublicar();
     }
