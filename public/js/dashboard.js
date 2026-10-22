@@ -3040,60 +3040,6 @@ window.guardarNuevoLead = async () => {
   }
 };
 
-const initDragAndDropCRM = () => {
-  let draggedCard = null;
-  let draggedLeadId = null;
-
-  document.querySelectorAll('.kanban-card').forEach(card => {
-    card.addEventListener('dragstart', (e) => {
-      draggedCard = e.target;
-      draggedLeadId = e.target.dataset.leadId;
-      setTimeout(() => e.target.classList.add('dragging'), 0);
-    });
-    card.addEventListener('dragend', (e) => {
-      e.target.classList.remove('dragging');
-      draggedCard = null;
-      draggedLeadId = null;
-    });
-  });
-
-  document.querySelectorAll('.kanban-column').forEach(col => {
-    col.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      col.classList.add('drop-active');
-    });
-    col.addEventListener('dragleave', (e) => {
-      col.classList.remove('drop-active');
-    });
-    col.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      col.classList.remove('drop-active');
-      if (!draggedLeadId) return;
-
-      const nuevaEtapa = col.dataset.etapa;
-      const dropContainer = col.querySelector('.kanban-cards-container');
-      if (draggedCard && dropContainer) {
-        dropContainer.appendChild(draggedCard);
-      }
-
-      try {
-        const res = await api.put(`/leads/${draggedLeadId}/mover`, { nuevaEtapa });
-        if (!res.ok) throw new Error('No se pudo mover');
-        
-        document.querySelectorAll('.kanban-column').forEach(c => {
-          const count = c.querySelectorAll('.kanban-card').length;
-          c.querySelector('.kanban-column-count').textContent = count;
-        });
-
-        dsToast({ title: 'Lead movido', message: `Ahora en: ${nuevaEtapa}`, type: 'success', duration: 2000 });
-      } catch (err) {
-        dsToast({ title: 'Error', message: 'No se pudo guardar el cambio.', type: 'error' });
-        cargarCRMLeads(); 
-      }
-    });
-  });
-};
-
 window.abrirModalLead = (leadId) => {
   const modal = document.getElementById('crm-lead-modal');
   const content = document.getElementById('crm-lead-modal-content');
