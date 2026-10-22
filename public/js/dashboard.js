@@ -11,15 +11,26 @@ let markerGoogle = null;
 //   1. En consola de Google Cloud → Credenciales, crea/usa una API Key con
 //      "Maps JavaScript API" y "Geocoding API" activadas.
 //   2. Pégala abajo entre las comillas. Ejemplo:  googleMapsKey: 'AIza...'
-// Si se deja vacía, el panel usa automáticamente el motor libre (mapa moderno
-// CARTO/Leaflet, sin API key y sin costo). Si Google falla (key inválida o sin
-// internet), el sistema regresa solo al motor libre — nunca se rompe el paso 4.
-// Con key activa, el buscador de CP usa Geocoding de Google (cubre TODOS los CP
-// de México y desaparece el error 404 de zippopotam de la consola).
+// Si se deja vacía, el panel usa automáticamente el motor libre (Leaflet, sin
+// costo): tiles modernos de CARTO + capa Satélite de Esri. CARTO anunció que
+// exigirá API key (carto.com/basemaps), así que si sus tiles empiezan a fallar
+// el mapa cambia SOLO al respaldo de Esri (gratis, sin key) — el paso 4 nunca
+// se queda sin mapa. Si Google falla (key inválida o sin internet), el sistema
+// regresa solo al motor libre. Con key activa, el buscador de CP usa Geocoding
+// de Google (cubre TODOS los CP de México y desaparece el error 404 de
+// zippopotam de la consola).
 const MAPAS_CONFIG = {
   googleMapsKey: '',
   centroPorDefecto: [19.4326, -99.1332],
-  zoomPorDefecto: 12
+  zoomPorDefecto: 12,
+  // Tiles del motor libre. "principal" = CARTO Voyager (moderno); "respaldo" y
+  // "satelite" = Esri (gratuitos y SIN API key). Puedes cambiar las URLs aquí
+  // sin tocar el resto del código.
+  tilesLibres: {
+    principal: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    respaldo: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    satelite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+  }
 };
 
 let coordsCP = null;      // { cp, lat, lng } recordadas del CP del paso 3
@@ -94,6 +105,9 @@ const inyectarEstilosMapa = () => {
     '#mapa-publicar .leaflet-control-zoom a:hover{background:#f0fdf4;color:#143621}',
     '#mapa-publicar .leaflet-control-attribution{background:rgba(255,255,255,.8);font-size:9px;border-radius:8px 0 0 0;padding:1px 6px;color:#94a3b8}',
     '#mapa-publicar .leaflet-control-attribution a{color:#64748b}',
+    '#mapa-publicar .leaflet-control-layers{border:none;border-radius:12px;box-shadow:0 4px 14px rgba(15,23,42,.16);padding:8px 10px;font:600 12px Inter,sans-serif;color:#1a472a;background:rgba(255,255,255,.96)}',
+    '#mapa-publicar .leaflet-control-layers-list label{display:flex;align-items:center;gap:6px;padding:3px 2px;cursor:pointer}',
+    '#mapa-publicar .leaflet-control-layers-toggle{width:36px;height:36px;background-size:20px}',
     '.vm-map-hint{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:850;background:rgba(255,255,255,.96);border:1px solid rgba(26,71,42,.18);color:#1a472a;font:600 12px Inter,sans-serif;padding:7px 14px;border-radius:50px;box-shadow:0 6px 18px rgba(15,23,42,.14);pointer-events:none;white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .35s ease}',
     '.vm-map-hint.vm-visible{opacity:1}',
     '.vm-map-hint .vm-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1a472a;margin-right:6px;vertical-align:middle}',
@@ -815,16 +829,48 @@ const iniciarMapaPublicar = () => {
       });
     return;
   }
-  // ── Motor libre (Leaflet + tiles CARTO Voyager: moderno, sin API key) ──
+  // ── Motor libre (Leaflet: CARTO Voyager moderno + Satélite Esri, sin key) ──
+  // CARTO avisó que exigirá API key (carto.com/basemaps): si sus tiles fallan,
+  // el mapa cambia solo al respaldo de Esri (gratis, sin key). Nunca se rompe.
   if (mapaPublicar) { mapaPublicar.invalidateSize(); centrarMapaDesdePaso3(); return; }
   inyectarEstilosMapa();
   setTimeout(() => {
     mapaPublicar = L.map('mapa-publicar').setView(MAPAS_CONFIG.centroPorDefecto, MAPAS_CONFIG.zoomPorDefecto);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    const t = MAPAS_CONFIG.tilesLibres || {};
+    const capaPrincipal = L.tileLayer(t.principal || 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 20
-    }).addTo(mapaPublicar);
+    });
+    // Respaldo y Satélite: servicios de Esri, gratuitos y SIN API key
+    const capaRespaldo = L.tileLayer(t.respaldo || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri y colaboradores',
+      maxZoom: 19
+    });
+    const capaSatelite = L.tileLayer(t.satelite || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
+      maxZoom: 19
+    });
+    // Con 4 tiles fallidos de CARTO (401/403 si un día exige key, o red caída)
+    // se activa el respaldo de Esri y se actualiza el selector — sin intervención.
+    let fallosTiles = 0, respaldoActivado = false, controlCapas = null;
+    const crearControlCapas = (base) => {
+      if (!L.control || !L.control.layers) return;
+      if (controlCapas) { try { mapaPublicar.removeControl(controlCapas); } catch (e) {} }
+      controlCapas = L.control.layers({ 'Mapa': base, 'Satélite': capaSatelite }, null, { position: 'topright' }).addTo(mapaPublicar);
+    };
+    capaPrincipal.on('tileerror', () => {
+      fallosTiles++;
+      if (fallosTiles >= 4 && !respaldoActivado && mapaPublicar) {
+        respaldoActivado = true;
+        try { mapaPublicar.removeLayer(capaPrincipal); } catch (e) {}
+        capaRespaldo.addTo(mapaPublicar).bringToBack();
+        crearControlCapas(capaRespaldo);
+        mostrarHintMapa('Cambiamos a un mapa alternativo por un problema temporal del proveedor');
+      }
+    });
+    crearControlCapas(capaPrincipal);
+    capaPrincipal.addTo(mapaPublicar);
     mapaPublicar.on('click', (e) => {
       const { lat, lng } = e.latlng;
       colocarMarker(lat, lng);
