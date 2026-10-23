@@ -199,15 +199,31 @@
   };
 
   // ── colocación: después del título (y del badge, si ya existe) ──
+  // IMPORTANTE: se inserta dentro del PADRE REAL del h1. En producción
+  // el h1 puede venir anidado (p. ej. <div id="propiedad-contenido">
+  // <div class="encabezado"><h1>…</h1></div>…), y hacer
+  // cont.insertBefore(_, h1.nextSibling) lanza NotFoundError porque el
+  // nodo de referencia no es hijo directo del contenedor (bug visto en
+  // somosvivemas.com). Misma técnica que usa pintarBadge del contador.
   const colocarPanel = () => {
-    const cont = document.getElementById('propiedad-contenido');
-    if (!cont || !panelEl) return;
-    const h1 = cont.querySelector('h1');
-    if (!h1) return;
-    if (panelEl.isConnected && panelEl.parentNode === cont) return;
-    const badge = cont.querySelector('.vm-badge-compartidas');
-    const ref = (badge && badge.parentNode === cont) ? badge.nextSibling : h1.nextSibling;
-    cont.insertBefore(panelEl, ref);
+    try {
+      const cont = document.getElementById('propiedad-contenido');
+      if (!cont || !panelEl) return;
+      const h1 = cont.querySelector('h1');
+      if (!h1 || !h1.parentNode) return;
+      const padre = h1.parentNode;
+      if (panelEl.isConnected && panelEl.parentNode === padre) return;
+      const badge = cont.querySelector('.vm-badge-compartidas');
+      const ref = (badge && badge.parentNode === padre) ? badge.nextSibling : h1.nextSibling;
+      padre.insertBefore(panelEl, ref);
+    } catch (e) {
+      // Última red de seguridad: el panel al final del contenedor,
+      // sin romper nunca la página.
+      try {
+        const cont = document.getElementById('propiedad-contenido');
+        if (cont && panelEl && !panelEl.isConnected) cont.appendChild(panelEl);
+      } catch (e2) { /* silencio total */ }
+    }
   };
 
   const arrancar = () => {
@@ -243,7 +259,7 @@
 
   // Manija de depuración/soporte
   window.__vmWidgetCompartir = {
-    version: '1.0',
+    version: '1.1',
     url: () => urlParaCompartir(),
     titulo: () => tituloParaCompartir(),
     visible: () => !!(panelEl && panelEl.isConnected)
