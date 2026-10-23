@@ -35,6 +35,8 @@ const MAPAS_CONFIG = {
 let coordsCP = null;      // { cp, lat, lng } recordadas del CP del paso 3
 let centradoToken = 0;    // evita que una búsqueda vieja sobreescriba a la nueva
 let cpToken = 0;          // igual para la búsqueda por código postal
+let busquedaDirToken = 0; // guardia anti-carrera para el botón 📍 Buscar
+let centroBuscado = null; // { lat, lng, zoom, etiqueta } último resultado de 📍 Buscar
 let googleCargando = null;
 
 const cargarGoogleMaps = () => new Promise((resolve, reject) => {
@@ -136,6 +138,17 @@ const ocultarHintMapa = () => {
   if (hint) hint.classList.remove('vm-visible');
 };
 
+// Aviso de privacidad dentro del paso 4 (bajo el mapa): la dirección exacta
+// nunca se muestra al público, solo una ubicación aproximada.
+const avisoPrivacidadMapa = () => {
+  const cont = document.getElementById('mapa-publicar');
+  if (!cont || document.getElementById('aviso-privacidad-mapa')) return;
+  cont.insertAdjacentHTML('afterend',
+    '<div id="aviso-privacidad-mapa" style="margin-top:8px;padding:10px 14px;background:#fffbeb;border-radius:8px;border-left:3px solid #f59e0b;font-size:12px;color:#92400e;line-height:1.5">' +
+    '🔒 <strong>Tu dirección exacta no será visible al público</strong> — solo se mostrará una ubicación aproximada en el mapa para proteger tu privacidad.</div>'
+  );
+};
+
 // Centra el mapa en cualquier motor (Google o libre)
 const centrarMapaEn = (lat, lng, zoom, etiqueta) => {
   if (mapaGoogle) {
@@ -152,6 +165,7 @@ const centrarMapaEn = (lat, lng, zoom, etiqueta) => {
 // Limpia marca/coordenadas/CP (al abrir "Nueva publicación" de cero)
 const limpiarMapaPublicar = () => {
   coordsCP = null;
+  centroBuscado = null;
   if (markerPublicar && mapaPublicar) { try { mapaPublicar.removeLayer(markerPublicar); } catch (e) {} }
   markerPublicar = null;
   if (markerGoogle) { try { markerGoogle.setMap(null); } catch (e) {} }
@@ -800,6 +814,7 @@ const mostrarDetalleKpi = (key, label) => {
 
 
 const iniciarMapaPublicar = () => {
+  avisoPrivacidadMapa();
   // ── Motor Google Maps (si hay API key en MAPAS_CONFIG) ──
   if (MAPAS_CONFIG.googleMapsKey) {
     if (mapaGoogle) { centrarMapaDesdePaso3(); return; }
@@ -965,7 +980,8 @@ const geocodificarCoordenadas = async (lat, lng) => {
 };
 
 // Centra el mapa según lo que el usuario ya eligió en el paso 3 (estado, CP,
-// colonia o ciudad). Prioridad: marca puesta > CP > colonia+ciudad > ciudad > estado.
+// colonia o ciudad). Prioridad: marca puesta > resultado de 📍 Buscar > CP >
+// colonia+ciudad > ciudad > estado.
 const centrarMapaDesdePaso3 = async () => {
   if (!mapaPublicar && !mapaGoogle) return;
   const token = ++centradoToken;
@@ -981,61 +997,89 @@ const centrarMapaDesdePaso3 = async () => {
     }
   }
 
+  // 2) Resultado de la última búsqueda con 📍 Buscar (la intención explícita manda)
+  if (centroBuscado) {
+    centrarMapaEn(centroBuscado.lat, centroBuscado.lng, centroBuscado.zoom, centroBuscado.etiqueta);
+    return;
+  }
+
   const cp = v('p-cp').replace(/\D/g, '').slice(0, 5);
   const colonia = v('p-colonia');
   const ciudad = v('p-ciudad');
   const estadoTxt = textoEstadoSeleccionado();
 
-  // 2) Coordenadas recordadas del CP que escribió en el paso 3
+  // 3) Coordenadas recordadas del CP que escribió en el paso 3
   if (cp && coordsCP && coordsCP.cp === cp) {
     centrarMapaEn(coordsCP.lat, coordsCP.lng, 15, 'CP ' + cp);
     return;
   }
 
-  // 3) Colonia + ciudad (+ estado): máxima precisión disponible
+  // 4) Colonia + ciudad (+ estado): máxima precisión disponible
   if (colonia && ciudad) {
     const r = await geoBuscar([colonia, ciudad, estadoTxt, 'México'].filter(Boolean).join(', '));
     if (token !== centradoToken) return;
     if (r) return centrarMapaEn(r.lat, r.lng, 15, colonia);
   }
 
-  // 4) Ciudad (+ estado)
+  // 5) Ciudad (+ estado)
   if (ciudad) {
     const r = await geoBuscar([ciudad, estadoTxt, 'México'].filter(Boolean).join(', '));
     if (token !== centradoToken) return;
     if (r) return centrarMapaEn(r.lat, r.lng, 13, ciudad);
   }
 
-  // 5) Solo estado → vista panorámica de todo el estado
+  // 6) Solo estado → vista panorámica de todo el estado
   if (estadoTxt) {
     const r = await geoBuscar(estadoTxt + ', México');
     if (token !== centradoToken) return;
     if (r) return centrarMapaEn(r.lat, r.lng, 7, estadoTxt);
   }
 
-  // 6) Nada seleccionado: vista nacional por defecto (como siempre)
+  // 7) Nada seleccionado: vista nacional por defecto (como siempre)
   centrarMapaEn(MAPAS_CONFIG.centroPorDefecto[0], MAPAS_CONFIG.centroPorDefecto[1], MAPAS_CONFIG.zoomPorDefecto, null);
 };
 
 const buscarDireccion = async () => {
-  const direccion = document.getElementById('p-direccion').value.trim();
+  const v = (id) => (document.getElementById(id)?.value || '').trim();
+  const direccion = v('p-direccion');
   const estadoTxt = textoEstadoSeleccionado();
-  const ciudad = document.getElementById('p-ciudad').value.trim();
-  const colonia = document.getElementById('p-colonia').value.trim();
-  if (!direccion && !ciudad) {
-    dsToast({ title: 'Falta la dirección', message: 'Escribe una dirección o ciudad para buscar.', type: 'error' });
+  const ciudad = v('p-ciudad');
+  const colonia = v('p-colonia');
+  if (!direccion && !colonia && !ciudad && !estadoTxt) {
+    dsToast({ title: 'Faltan datos', message: 'Escribe al menos la ciudad o una dirección para buscar.', type: 'error' });
     return;
   }
 
-  const query = [direccion, colonia, ciudad, estadoTxt, 'México'].filter(Boolean).join(', ');
-  const r = await geoBuscar(query);
-  if (!r) {
-    dsToast({ title: 'Sin resultados', message: 'No se encontró la dirección. Haz clic directamente en el mapa.', type: 'error' });
-    return;
+  // Búsqueda en cascada: primero con la calle (máxima precisión) y, si el
+  // geocoder no la encuentra, se reintenta con menos datos. Siempre nos acerca
+  // a algo (calle > colonia > ciudad > estado) para que el paso 4 sea fácil.
+  const MX = 'México';
+  const intentos = [];
+  if (direccion) {
+    intentos.push({ partes: [direccion, colonia, ciudad, estadoTxt, MX], zoom: 16, marcar: true, etiqueta: 'tu dirección' });
+    intentos.push({ partes: [direccion, ciudad, estadoTxt, MX], zoom: 15, marcar: true, etiqueta: 'tu calle' });
   }
-  centrarMapaEn(r.lat, r.lng, 16, null);
-  colocarMarker(r.lat, r.lng);
-  geocodificarCoordenadas(r.lat, r.lng);
+  if (colonia) intentos.push({ partes: [colonia, ciudad, estadoTxt, MX], zoom: 15, marcar: false, etiqueta: colonia });
+  if (ciudad) intentos.push({ partes: [ciudad, estadoTxt, MX], zoom: 13, marcar: false, etiqueta: ciudad });
+  if (estadoTxt) intentos.push({ partes: [estadoTxt, MX], zoom: 8, marcar: false, etiqueta: estadoTxt });
+
+  const token = ++busquedaDirToken;
+  for (const intento of intentos) {
+    const r = await geoBuscar(intento.partes.filter(Boolean).join(', '));
+    if (token !== busquedaDirToken) return; // el usuario lanzó otra búsqueda: esta ya no importa
+    if (r) {
+      centroBuscado = { lat: r.lat, lng: r.lng, zoom: intento.zoom, etiqueta: intento.etiqueta };
+      centrarMapaEn(r.lat, r.lng, intento.zoom, intento.etiqueta);
+      if (intento.marcar) {
+        colocarMarker(r.lat, r.lng);
+        geocodificarCoordenadas(r.lat, r.lng);
+      } else {
+        dsToast({ title: 'Ubicación aproximada', message: 'Centrado en ' + intento.etiqueta + '. En el paso 4 haz clic en el mapa para marcar el punto exacto.', type: 'info' });
+      }
+      return;
+    }
+  }
+  dsToast({ title: 'Sin resultados', message: 'No se encontró la dirección. Haz clic directamente en el mapa para marcar tu ubicación.', type: 'error' });
 };
 
 let fotosOrden = []; // array de objetos: { file, dataUrl }
