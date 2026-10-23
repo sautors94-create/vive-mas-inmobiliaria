@@ -58,6 +58,31 @@ const app = express();
 // "1" = confiar solo en el primer proxy (el de Hostinger), no en cualquiera.
 app.set('trust proxy', 1);
 
+// ==========================================
+// FIX RETORNO OAUTH DE META (v7) — Task 46
+// ──────────────────────────────────────────
+// Síntoma: al conectar Facebook desde el panel, el flujo terminaba en
+// http://localhost:5500/dashboard.html?meta=conectado → ERR_CONNECTION_REFUSED
+// (localhost:5500 es el Live Server de VS Code: solo existe en la PC de
+// desarrollo, no en el servidor de producción).
+// Causa: el callback de Meta (src/services/marketingAutomation/auth/
+// metaOAuth.routes.js) manda al navegador a una URL local hardcodeada.
+//
+// Solución SIN tocar ese archivo: este middleware reescribe EN CALIENTE
+// cualquier redirección que apunte a localhost/127.0.0.1 (res.redirect,
+// res.setHeader('Location'), res.writeHead) hacia el dominio público
+// (BASE_URL del .env, o https://somosvivemas.com por defecto). Solo actúa
+// cuando la petición NO es local: desde tu PC seguirá siendo válido volver
+// al Live Server.
+// ==========================================
+try {
+  const fixRedirecciones = require('./oauth-redirect-fix');
+  fixRedirecciones.instalarCorreccionRedirecciones(app, { logger: console });
+  console.log('[oauth-fix] Retornos a localhost se corregirán hacia: ' + fixRedirecciones.determinarBasePublica(process.env));
+} catch (e) {
+  console.warn('[oauth-fix] oauth-redirect-fix.js no encontrado en src/ — el retorno del OAuth de Meta seguirá yendo a localhost:', e.message);
+}
+
 // CRÍTICO: el webhook de Stripe debe registrarse ANTES de express.json()
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), webhookStripe);
 
@@ -296,22 +321,24 @@ app.use('/api/auth', authRoutes);
 app.use('/api/marcas', marcasRouter);
 
 // ==========================================
-// SALUD DEL PANEL ADMIN (v6) — MOTOR COMPLETO en src/salud-admin.js
+// SALUD DEL PANEL ADMIN (v7) — MOTOR COMPLETO en src/salud-admin.js
 // ──────────────────────────────────────────
 // Por qué el panel dejaba de mostrar las tarjetas (Cloudinary, Meta, Node,
-// GitHub, Stripe): la ruta básica de v5 está registrada ANTES del montaje
+// Stripe): la ruta básica de v5 está registrada ANTES del montaje
 // /api/admin (más abajo) y Express responde con la PRIMERA coincidencia →
 // tapaba el endpoint real de admin.routes.js. El panel recibía 200 con una
 // forma que no entendía → "Salud del sistema" vacía.
 //
-// Solución v6: la ruta AHORA ES el motor completo (módulo autocontenido
-// salud-admin.js): verifica de verdad Node, MongoDB, Cloudinary, Stripe,
-// Meta (Graph API) y GitHub, con límites de tiempo (4 s por servicio),
+// Solución v6/v7: la ruta AHORA ES el motor completo (módulo autocontenido
+// salud-admin.js): verifica de verdad Node, MongoDB, Cloudinary, Stripe y
+// Meta (Graph API, con el token del .env O el guardado en la BD por el
+// botón "Conectar con Facebook"), con límites de tiempo (4 s por servicio),
 // caché de 30 s y una forma SUPERCONJUNTO (servicios[], sistemas[],
 // checks{}, estadoServicios{} + TODOS los campos legados) para que el
 // panel la pinte sin cambios. Nunca responde 500 y jamás expone claves.
-// Si src/salud-admin.js no está, entra la ruta básica v5 de respaldo
-// (registrada aquí mismo SOLO en ese caso).
+// Cambios v7 a petición del usuario: GITHUB ELIMINADO del motor y del panel
+// ("no es necesario"). Si src/salud-admin.js no está, entra la ruta básica
+// v5 de respaldo (registrada aquí mismo SOLO en ese caso).
 // ==========================================
 let saludRegistrada = false;
 try {
@@ -319,7 +346,7 @@ try {
   registrarSaludAdmin(app, {
     mongoose,
     env: process.env,
-    version: '1.0.0',
+    version: '1.1.0', // v7: subir este número confirma en el panel que el nuevo app.js está desplegado
     entorno: NODE_ENV,
     logger: console,
   });
