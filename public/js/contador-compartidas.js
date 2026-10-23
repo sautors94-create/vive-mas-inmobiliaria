@@ -1,9 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════
-   contador-compartidas.js — Vive Más Inmobiliaria
-   Cuenta cuántas veces se comparte una propiedad y muestra el badge
-   "🔄 Compartida N veces" en la página de detalle (propiedad.html).
+   contador-compartidas.js v1.2 — Vive Más Inmobiliaria
+   Cuenta cuántas veces se comparte cada propiedad (silenciosamente).
    ───────────────────────────────────────────────────────────────────
-   Qué hace (sin tocar tu código existente):
+   • v1.2: el CONTEO ya NO se muestra al público (sin badge en la
+     página de la propiedad, sin GET al cargar). Esa información es
+     del publicador (KPI del dashboard) y del admin (columna del
+     panel). Aquí solo se registra cada clic.
    • Detecta los clics de compartir por delegación de eventos: enlaces
      de WhatsApp/Facebook/X/Telegram/LinkedIn/Reddit/Pinterest, SMS
      (sms:), correo (mailto:), botones con clases tipo "compartir/share",
@@ -13,12 +15,10 @@
      backend-compartidas.js en el servidor). Si el endpoint aún no
      existe, guarda el clic en una cola local (máx. 50) y lo reintenta
      automáticamente en las siguientes visitas — no se pierde nada.
-   • Pinta el badge con el conteo cuando el backend responde.
    • Funciona también en catálogo: si el enlace compartido apunta a
      propiedad.html?id=XXX, cuenta para ESA propiedad.
 
-   INSTALACIÓN: en propiedad.html (y opcionalmente catálogo.html),
-   después de social-widget.js:
+   INSTALACIÓN: en propiedad.html, después de widget-compartir.js:
      <script src="../js/contador-compartidas.js"></script>
    ═══════════════════════════════════════════════════════════════════ */
 (() => {
@@ -130,11 +130,7 @@
         credentials: 'same-origin',
         body: JSON.stringify({ red: red || 'otro' })
       });
-      if (res.ok) {
-        const d = await res.json().catch(() => ({}));
-        if (typeof d.compartidas === 'number' && id === obtenerIdPagina()) pintarBadge(d.compartidas);
-        return true;
-      }
+      if (res.ok) return true;
       throw new Error('HTTP ' + res.status);
     } catch (e) {
       if (!esReintento) {
@@ -203,64 +199,12 @@
     }
   } catch (e) {}
 
-  // ── badge "🔄 Compartida N veces" en propiedad.html ─────────────
-  let badgeEl = null;
-  const pintarBadge = (n) => {
-    if (typeof n !== 'number' || n < 0) return;
-    const cont = document.getElementById('propiedad-contenido');
-    if (!cont) return;
-    if (!badgeEl || !badgeEl.isConnected) {
-      badgeEl = document.createElement('div');
-      badgeEl.className = 'vm-badge-compartidas';
-      badgeEl.style.cssText = 'display:inline-flex;align-items:center;gap:6px;margin:10px 0;' +
-        'padding:7px 14px;background:#f0f7f2;border:1px solid #d7e8dc;border-radius:999px;' +
-        'font-size:13px;font-weight:600;color:#1a472a;width:fit-content;flex:0 0 auto;max-width:100%';
-      const h1 = cont.querySelector('h1');
-      if (h1 && h1.parentNode) h1.parentNode.insertBefore(badgeEl, h1.nextSibling);
-      else cont.appendChild(badgeEl);
-    }
-    badgeEl.style.display = 'inline-flex';
-    badgeEl.textContent = '🔄 Compartida ' + n + (n === 1 ? ' vez' : ' veces');
-  };
-
-  let badgeIntentado = false;
-  const cargarBadge = async () => {
-    if (badgeIntentado) return;
-    const id = obtenerIdPagina();
-    if (!id || !document.getElementById('propiedad-contenido')) return;
-    badgeIntentado = true;
-    try {
-      const res = await fetch('/api/propiedades/' + encodeURIComponent(id) + '/compartir', {
-        credentials: 'same-origin'
-      });
-      if (!res.ok) return; // módulo del backend aún no instalado → sin badge
-      const d = await res.json().catch(() => null);
-      if (d && typeof d.compartidas === 'number') pintarBadge(d.compartidas);
-    } catch (e) { /* silencio: la página no debe verse afectada */ }
-  };
-
-  // propiedad.js pinta el contenido de forma asíncrona: esperamos al h1
-  const iniciarBadge = () => {
-    if (!document.getElementById('propiedad-contenido')) return;
-    if (document.querySelector('#propiedad-contenido h1')) { cargarBadge(); return; }
-    const obs = new MutationObserver(() => {
-      if (document.querySelector('#propiedad-contenido h1')) { obs.disconnect(); cargarBadge(); }
-    });
-    obs.observe(document.getElementById('propiedad-contenido'), { childList: true, subtree: true });
-    setTimeout(() => obs.disconnect(), 20000);
-  };
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', iniciarBadge);
-  } else {
-    iniciarBadge();
-  }
-
   // Reintento de la cola local al cargar (por si el backend se instaló después)
   setTimeout(() => { vaciarCola(); }, 1500);
 
   // Manija de depuración/soporte
   window.__vmCompartidas = {
-    version: '1.1',
+    version: '1.2',
     cola: () => leerCola(),
     forzarVaciar: () => vaciarCola(),
     idPagina: () => obtenerIdPagina()

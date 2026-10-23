@@ -1,13 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════════
-   widget-compartir.js — Vive Más Inmobiliaria
-   Panel de compartir con TODAS las opciones para el visitante:
+   widget-compartir.js v1.2 — Vive Más Inmobiliaria
+   BOTÓN ÚNICO "Compartir" que despliega TODAS las opciones:
      WhatsApp · SMS · Correo · Telegram · Facebook · X (Twitter)
      LinkedIn · Reddit · Pinterest · Copiar enlace · Compartir (nativo)
    ───────────────────────────────────────────────────────────────────
-   • Se muestra solo (auto-insertado) en propiedad.html, debajo del
-     título de la propiedad. No necesita tocar nada más del HTML.
-   • Cada clic lo cuenta automáticamente contador-compartidas.js
-     (delega la detección: no duplica nada).
+   • En la vista pública SOLO se ve el botón "📤 Compartir"; al darle
+     clic se despliegan las opciones (se cierran con clic fuera o Esc).
+   • El CONTEO de compartidas NO se muestra al público: es información
+     del publicador (dashboard) y del admin (panel). El contador sigue
+     registrando cada clic normalmente.
    • El botón "Compartir…" solo aparece en celulares (navigator.share).
    • "Copiar enlace" usa el portapapeles moderno con respaldo
      compatible y muestra confirmación "✓ Enlace copiado".
@@ -53,8 +54,15 @@
     const st = document.createElement('style');
     st.id = 'vm-wc-estilos';
     st.textContent =
-      '.vm-wc-panel{margin:14px 0 18px;padding:14px 16px;background:#f8faf8;' +
-      'border:1px solid #d7e8dc;border-radius:14px;max-width:100%;box-sizing:border-box}' +
+      '.vm-wc-panel{margin:14px 0 18px;max-width:100%;box-sizing:border-box}' +
+      '.vm-wc-toggle{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;' +
+      'border:none;border-radius:999px;background:#1a472a;color:#fff;font-size:14px;' +
+      'font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(26,71,42,.25);' +
+      'transition:filter .12s ease,transform .12s ease}' +
+      '.vm-wc-toggle:hover{filter:brightness(1.12);transform:translateY(-1px)}' +
+      '.vm-wc-opciones{margin-top:10px;padding:14px 16px;background:#f8faf8;' +
+      'border:1px solid #d7e8dc;border-radius:14px;width:fit-content;max-width:100%}' +
+      '.vm-wc-opciones[hidden]{display:none}' +
       '.vm-wc-titulo{font-size:14px;font-weight:700;color:#1a472a;margin:0 0 10px;' +
       'display:flex;align-items:center;gap:6px}' +
       '.vm-wc-fila{display:flex;flex-wrap:wrap;gap:8px;align-items:center}' +
@@ -128,14 +136,54 @@
     panelEl.className = 'vm-wc-panel';
     panelEl.id = 'vm-wc-panel';
 
+    // BOTÓN ÚNICO visible en la página pública
+    const btnToggle = document.createElement('button');
+    btnToggle.type = 'button';
+    btnToggle.className = 'vm-wc-toggle';
+    btnToggle.title = 'Mostrar todas las opciones para compartir';
+    btnToggle.setAttribute('aria-expanded', 'false');
+    btnToggle.setAttribute('aria-controls', 'vm-wc-opciones');
+    const icoToggle = document.createElement('span');
+    icoToggle.className = 'vm-comp-ico';
+    icoToggle.textContent = '📤';
+    btnToggle.appendChild(icoToggle);
+    btnToggle.appendChild(document.createTextNode('Compartir'));
+    panelEl.appendChild(btnToggle);
+
+    // Opciones desplegables (ocultas hasta dar clic en Compartir)
+    const opciones = document.createElement('div');
+    opciones.className = 'vm-wc-opciones';
+    opciones.id = 'vm-wc-opciones';
+    opciones.hidden = true;
+    panelEl.appendChild(opciones);
+
+    const desplegar = (abrir) => {
+      opciones.hidden = !abrir;
+      btnToggle.setAttribute('aria-expanded', String(abrir));
+    };
+
+    btnToggle.addEventListener('click', () => {
+      desplegar(opciones.hidden); // alterna: si estaba cerrado, abre
+    });
+
+    // Cerrar con clic fuera del panel o con la tecla Escape
+    document.addEventListener('click', (ev) => {
+      if (opciones.hidden) return;
+      if (panelEl.contains(ev.target)) return;
+      desplegar(false);
+    });
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && !opciones.hidden) desplegar(false);
+    });
+
     const tit = document.createElement('div');
     tit.className = 'vm-wc-titulo';
     tit.textContent = '📤 Comparte esta propiedad';
-    panelEl.appendChild(tit);
+    opciones.appendChild(tit);
 
     const fila = document.createElement('div');
     fila.className = 'vm-wc-fila';
-    panelEl.appendChild(fila);
+    opciones.appendChild(fila);
 
     enlaces.forEach((def) => {
       const a = document.createElement('a');
@@ -259,7 +307,7 @@
 
   // Manija de depuración/soporte
   window.__vmWidgetCompartir = {
-    version: '1.1',
+    version: '1.2',
     url: () => urlParaCompartir(),
     titulo: () => tituloParaCompartir(),
     visible: () => !!(panelEl && panelEl.isConnected)
