@@ -296,42 +296,71 @@ app.use('/api/auth', authRoutes);
 app.use('/api/marcas', marcasRouter);
 
 // ==========================================
-// SALUD DEL PANEL ADMIN (v5) — registrada ANTES del montaje /api/admin para
-// que esta ruta responda SIEMPRE, aunque admin.routes.js falle o esté en otra
-// versión. Cura el "GET /api/admin/salud 500" del panel: no depende de ningún
-// controller externo, todo va en try/catch y degrada con gracia.
+// SALUD DEL PANEL ADMIN (v6) — MOTOR COMPLETO en src/salud-admin.js
+// ──────────────────────────────────────────
+// Por qué el panel dejaba de mostrar las tarjetas (Cloudinary, Meta, Node,
+// GitHub, Stripe): la ruta básica de v5 está registrada ANTES del montaje
+// /api/admin (más abajo) y Express responde con la PRIMERA coincidencia →
+// tapaba el endpoint real de admin.routes.js. El panel recibía 200 con una
+// forma que no entendía → "Salud del sistema" vacía.
+//
+// Solución v6: la ruta AHORA ES el motor completo (módulo autocontenido
+// salud-admin.js): verifica de verdad Node, MongoDB, Cloudinary, Stripe,
+// Meta (Graph API) y GitHub, con límites de tiempo (4 s por servicio),
+// caché de 30 s y una forma SUPERCONJUNTO (servicios[], sistemas[],
+// checks{}, estadoServicios{} + TODOS los campos legados) para que el
+// panel la pinte sin cambios. Nunca responde 500 y jamás expone claves.
+// Si src/salud-admin.js no está, entra la ruta básica v5 de respaldo
+// (registrada aquí mismo SOLO en ese caso).
 // ==========================================
-app.get('/api/admin/salud', async (req, res) => {
-  const estado = {
-    ok: true,
-    status: 'ok',
-    proyecto: 'Vive Mas Inmobiliaria',
+let saludRegistrada = false;
+try {
+  const { registrarSaludAdmin } = require('./salud-admin');
+  registrarSaludAdmin(app, {
+    mongoose,
+    env: process.env,
     version: '1.0.0',
     entorno: NODE_ENV,
-    db: ESTADOS_DB[mongoose.connection.readyState] || 'desconocida',
-    uptimeSegundos: Math.round(process.uptime()),
-    memoriaMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
-    timestamp: new Date().toISOString(),
-  };
-  try {
-    // Conteos informativos (opcionales: si un modelo no existe, no tumba la ruta)
-    const Brand = mongoose.models.Brand;
-    const BrandAccount = mongoose.models.BrandAccount;
-    if (Brand && mongoose.connection.readyState === 1) {
-      estado.marcas = {
-        total: await Brand.countDocuments({ estado: { $ne: 'eliminado' } }),
-        publicadas: await Brand.countDocuments({ estado: 'publicado' }),
-      };
+    logger: console,
+  });
+  saludRegistrada = true;
+} catch (e) {
+  console.warn('[salud] salud-admin.js no encontrado en src/ — Salud mostrará solo datos básicos:', e.message);
+}
+if (!saludRegistrada) {
+  // RESPALDO v5 (solo se usa si falta src/salud-admin.js)
+  app.get('/api/admin/salud', async (req, res) => {
+    const estado = {
+      ok: true,
+      status: 'ok',
+      proyecto: 'Vive Mas Inmobiliaria',
+      version: '1.0.0',
+      entorno: NODE_ENV,
+      db: ESTADOS_DB[mongoose.connection.readyState] || 'desconocida',
+      uptimeSegundos: Math.round(process.uptime()),
+      memoriaMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
+      timestamp: new Date().toISOString(),
+    };
+    try {
+      // Conteos informativos (opcionales: si un modelo no existe, no tumba la ruta)
+      const Brand = mongoose.models.Brand;
+      const BrandAccount = mongoose.models.BrandAccount;
+      if (Brand && mongoose.connection.readyState === 1) {
+        estado.marcas = {
+          total: await Brand.countDocuments({ estado: { $ne: 'eliminado' } }),
+          publicadas: await Brand.countDocuments({ estado: 'publicado' }),
+        };
+      }
+      if (BrandAccount && mongoose.connection.readyState === 1) {
+        estado.cuentasMarcas = await BrandAccount.estimatedDocumentCount();
+      }
+    } catch (e) {
+      // Los conteos son best-effort: la salud NUNCA debe 500 por ellos.
+      estado.advertencia = `conteos omitidos: ${e && e.message}`;
     }
-    if (BrandAccount && mongoose.connection.readyState === 1) {
-      estado.cuentasMarcas = await BrandAccount.estimatedDocumentCount();
-    }
-  } catch (e) {
-    // Los conteos son best-effort: la salud NUNCA debe 500 por ellos.
-    estado.advertencia = `conteos omitidos: ${e && e.message}`;
-  }
-  return res.json(estado);
-});
+    return res.json(estado);
+  });
+}
 
 // MÓDULO DE HERRAMIENTAS PÚBLICAS (calculadora de renta, etc.)
 app.use('/api/herramientas', require('./routes/herramientas.routes'));
