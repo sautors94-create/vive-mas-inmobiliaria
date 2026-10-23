@@ -12,23 +12,22 @@ let markerGoogle = null;
 //      "Maps JavaScript API" y "Geocoding API" activadas.
 //   2. Pégala abajo entre las comillas. Ejemplo:  googleMapsKey: 'AIza...'
 // Si se deja vacía, el panel usa automáticamente el motor libre (Leaflet, sin
-// costo): tiles modernos de CARTO + capa Satélite de Esri. CARTO anunció que
-// exigirá API key (carto.com/basemaps), así que si sus tiles empiezan a fallar
-// el mapa cambia SOLO al respaldo de Esri (gratis, sin key) — el paso 4 nunca
-// se queda sin mapa. Si Google falla (key inválida o sin internet), el sistema
-// regresa solo al motor libre. Con key activa, el buscador de CP usa Geocoding
-// de Google (cubre TODOS los CP de México y desaparece el error 404 de
-// zippopotam de la consola).
+// costo): mapa y satélite de Esri, gratuitos y SIN API key. CARTO empezó a
+// servir tiles con la marca de agua "API KEY REQUIRED" (responden HTTP 200 con
+// una imagen placeholder), por eso se retiró por completo. Si Google falla
+// (key inválida o sin internet), el sistema regresa solo al motor libre. Con
+// key activa, el buscador de CP usa Geocoding de Google (cubre TODOS los CP de
+// México y desaparece el error 404 de zippopotam de la consola).
 const MAPAS_CONFIG = {
   googleMapsKey: '',
   centroPorDefecto: [19.4326, -99.1332],
   zoomPorDefecto: 12,
-  // Tiles del motor libre. "principal" = CARTO Voyager (moderno); "respaldo" y
-  // "satelite" = Esri (gratuitos y SIN API key). Puedes cambiar las URLs aquí
-  // sin tocar el resto del código.
+  // Tiles del motor libre. "principal" y "satelite" = Esri (gratuitos, sin API
+  // key); "respaldo" = OpenStreetMap estándar. Puedes cambiar las URLs aquí sin
+  // tocar el resto del código.
   tilesLibres: {
-    principal: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    respaldo: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    principal: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    respaldo: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     satelite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
   }
 };
@@ -829,30 +828,31 @@ const iniciarMapaPublicar = () => {
       });
     return;
   }
-  // ── Motor libre (Leaflet: CARTO Voyager moderno + Satélite Esri, sin key) ──
-  // CARTO avisó que exigirá API key (carto.com/basemaps): si sus tiles fallan,
-  // el mapa cambia solo al respaldo de Esri (gratis, sin key). Nunca se rompe.
+  // ── Motor libre (Leaflet: mapa y satélite de Esri, gratis y sin API key) ──
+  // CARTO ya sirve tiles con la marca de agua "API KEY REQUIRED" (HTTP 200 con
+  // imagen placeholder, invisible para un fallback por tileerror): se retiró.
+  // Si Esri llegara a fallar, respaldo automático a OpenStreetMap estándar.
   if (mapaPublicar) { mapaPublicar.invalidateSize(); centrarMapaDesdePaso3(); return; }
   inyectarEstilosMapa();
   setTimeout(() => {
     mapaPublicar = L.map('mapa-publicar').setView(MAPAS_CONFIG.centroPorDefecto, MAPAS_CONFIG.zoomPorDefecto);
     const t = MAPAS_CONFIG.tilesLibres || {};
-    const capaPrincipal = L.tileLayer(t.principal || 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 20
-    });
-    // Respaldo y Satélite: servicios de Esri, gratuitos y SIN API key
-    const capaRespaldo = L.tileLayer(t.respaldo || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    const capaPrincipal = L.tileLayer(t.principal || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles &copy; Esri &mdash; Source: Esri y colaboradores',
+      maxZoom: 19
+    });
+    // Respaldo: OpenStreetMap estándar (gratuito, sin key)
+    const capaRespaldo = L.tileLayer(t.respaldo || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      subdomains: 'abc',
       maxZoom: 19
     });
     const capaSatelite = L.tileLayer(t.satelite || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
       maxZoom: 19
     });
-    // Con 4 tiles fallidos de CARTO (401/403 si un día exige key, o red caída)
-    // se activa el respaldo de Esri y se actualiza el selector — sin intervención.
+    // Con 4 tiles fallidos de Esri (red caída, servicio saturado) se activa el
+    // respaldo de OpenStreetMap y se actualiza el selector — sin intervención.
     let fallosTiles = 0, respaldoActivado = false, controlCapas = null;
     const crearControlCapas = (base) => {
       if (!L.control || !L.control.layers) return;
