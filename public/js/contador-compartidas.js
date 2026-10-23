@@ -5,10 +5,10 @@
    ───────────────────────────────────────────────────────────────────
    Qué hace (sin tocar tu código existente):
    • Detecta los clics de compartir por delegación de eventos: enlaces
-     de WhatsApp/Facebook/X/Telegram/LinkedIn, botones con clases tipo
-     "compartir/share", "Copiar enlace" y el menú nativo del celular
-     (navigator.share). Funciona con los botones que ya renderiza
-     social-widget.js o cualquier otro.
+     de WhatsApp/Facebook/X/Telegram/LinkedIn/Reddit/Pinterest, SMS
+     (sms:), correo (mailto:), botones con clases tipo "compartir/share",
+     "Copiar enlace" y el menú nativo del celular (navigator.share).
+     Funciona con widget-compartir.js o cualquier otro botón.
    • Envía POST /api/propiedades/:id/compartir (requiere el módulo
      backend-compartidas.js en el servidor). Si el endpoint aún no
      existe, guarda el clic en una cola local (máx. 50) y lo reintenta
@@ -78,7 +78,9 @@
     ['facebook.com/sharer', 'facebook'], ['fb.com/sharer', 'facebook'],
     ['twitter.com/intent', 'x'], ['x.com/intent', 'x'],
     ['t.me/share', 'telegram'], ['linkedin.com/share', 'linkedin'],
-    ['pinterest.com/pin', 'pinterest']
+    ['linkedin.com/sharing', 'linkedin'],
+    ['pinterest.com/pin', 'pinterest'], ['reddit.com/submit', 'reddit'],
+    ['mailto:', 'correo'], ['sms:', 'sms']
   ];
 
   const detectarRed = (el) => {
@@ -258,7 +260,7 @@
 
   // Manija de depuración/soporte
   window.__vmCompartidas = {
-    version: '1.0',
+    version: '1.1',
     cola: () => leerCola(),
     forzarVaciar: () => vaciarCola(),
     idPagina: () => obtenerIdPagina()
