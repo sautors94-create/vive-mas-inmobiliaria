@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   widget-compartir.js v1.2 — Vive Más Inmobiliaria
+   widget-compartir.js v1.3 — Vive Más Inmobiliaria
    BOTÓN ÚNICO "Compartir" que despliega TODAS las opciones:
      WhatsApp · SMS · Correo · Telegram · Facebook · X (Twitter)
      LinkedIn · Reddit · Pinterest · Copiar enlace · Compartir (nativo)
@@ -13,6 +13,15 @@
    • "Copiar enlace" usa el portapapeles moderno con respaldo
      compatible y muestra confirmación "✓ Enlace copiado".
 
+   NOVEDAD v1.3 — SIGUE EL TEMA DEL SITIO:
+   • El botón "📤 Compartir" toma el color de la variable CSS --primary
+     (la que pisa el selector de temas del admin con vm_tema); el verde
+     #1a472a queda SOLO como respaldo cuando no hay tema. La sombra y
+     el color de la letra se calculan solos (primario claro → letra
+     oscura) y se actualizan EN VIVO si el tema cambia sin recargar.
+   • Mismo mecanismo y mismas variables --vmr-* que redes-sociales.js
+     v2.0: si ambos scripts están, escriben valores idénticos (no chocan).
+
    INSTALACIÓN (ya aplicada en propiedad.html):
      <script src="../js/widget-compartir.js"></script>
      <script src="../js/contador-compartidas.js"></script>
@@ -22,6 +31,93 @@
   'use strict';
   if (window.__vmWidgetCompartirLoaded) return;
   window.__vmWidgetCompartirLoaded = true;
+
+  // ── tema del sitio: el botón sigue la variable --primary ──────────
+  const limpiar = (v) => String(v || '').trim().replace(/!important\s*$/i, '').trim();
+
+  const parsearColor = (txt) => {
+    const t = limpiar(txt).toLowerCase();
+    if (!t || t === 'transparent' || t === 'currentcolor' || t === 'inherit' ||
+        t === 'initial' || t === 'unset') return null;
+    let m = t.match(/^#([0-9a-f]{3})$/);
+    if (m) {
+      const h = m[1];
+      return { r: parseInt(h[0] + h[0], 16), g: parseInt(h[1] + h[1], 16), b: parseInt(h[2] + h[2], 16) };
+    }
+    m = t.match(/^#([0-9a-f]{6})$/);
+    if (m) {
+      const h = m[1];
+      return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
+    }
+    m = t.match(/^rgba?\(([^)]+)\)$/);
+    if (m) {
+      const p = m[1].split(/[,\/\s]+/).filter(Boolean).map(Number);
+      if (p.length >= 3 && p.slice(0, 3).every((n) => !isNaN(n))) return { r: p[0], g: p[1], b: p[2] };
+    }
+    return null;
+  };
+
+  const luminancia = (c) => {
+    const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b);
+  };
+
+  // Lee una variable CSS del :root: primero getComputedStyle (navegadores);
+  // como respaldo recorre las hojas de estilo (también funciona en tests).
+  const leerVar = (nombre) => {
+    try {
+      const v = limpiar(getComputedStyle(document.documentElement).getPropertyValue(nombre));
+      if (v) return v;
+    } catch (e) {}
+    try {
+      for (const hoja of document.styleSheets) {
+        let reglas;
+        try { reglas = hoja.cssRules; } catch (e) { continue; }
+        for (const regla of reglas) {
+          if (!regla || !regla.selectorText || !regla.style) continue;
+          const sel = String(regla.selectorText).toLowerCase();
+          if (sel === ':root' || sel === 'html' || sel === ':host' || sel === ':host, :root') {
+            const v = limpiar(regla.style.getPropertyValue(nombre));
+            if (v) return v;
+          }
+        }
+      }
+    } catch (e) {}
+    return '';
+  };
+
+  const sincronizarTema = () => {
+    try {
+      const c = parsearColor(leerVar('--primary'));
+      const raiz = document.documentElement.style;
+      if (c) {
+        raiz.setProperty('--vmr-sombra', 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',.35)');
+        raiz.setProperty('--vmr-texto', luminancia(c) > 0.55 ? '#1f2937' : '#ffffff');
+      } else {
+        raiz.removeProperty('--vmr-sombra');
+        raiz.removeProperty('--vmr-texto');
+      }
+    } catch (e) {}
+  };
+
+  const vigilarTema = () => {
+    try {
+      let timer = null;
+      const reprogramar = () => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(sincronizarTema, 150);
+      };
+      const obs = new MutationObserver(reprogramar);
+      obs.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
+      if (document.head) obs.observe(document.head, { childList: true, subtree: true, characterData: true });
+      window.addEventListener('pageshow', sincronizarTema);
+      window.addEventListener('storage', (ev) => {
+        if (!ev || !ev.key || ev.key === 'vm_tema') sincronizarTema();
+      });
+    } catch (e) {}
+  };
+  sincronizarTema();
+  vigilarTema();
 
   // ── URL de la propiedad para compartir ──────────────────────────
   // Prefiere og:url / canonical SOLO si traen el id de la propiedad;
@@ -56,14 +152,20 @@
     st.textContent =
       '.vm-wc-panel{margin:14px 0 18px;max-width:100%;box-sizing:border-box}' +
       '.vm-wc-toggle{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;' +
-      'border:none;border-radius:999px;background:#1a472a;color:#fff;font-size:14px;' +
-      'font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(26,71,42,.25);' +
+      'border:none;border-radius:999px;background:var(--primary,#1a472a);' +
+      'color:var(--vmr-texto,#fff);font-size:14px;' +
+      'font-weight:700;cursor:pointer;font-family:inherit;' +
+      'box-shadow:0 4px 12px var(--vmr-sombra,rgba(26,71,42,.25));' +
       'transition:filter .12s ease,transform .12s ease}' +
       '.vm-wc-toggle:hover{filter:brightness(1.12);transform:translateY(-1px)}' +
       '.vm-wc-opciones{margin-top:10px;padding:14px 16px;background:#f8faf8;' +
-      'border:1px solid #d7e8dc;border-radius:14px;width:fit-content;max-width:100%}' +
+      'background:color-mix(in srgb,var(--primary,#1a472a) 4%,#fff);' +
+      'border:1px solid #d7e8dc;' +
+      'border-color:color-mix(in srgb,var(--primary,#1a472a) 22%,#fff);' +
+      'border-radius:14px;width:fit-content;max-width:100%}' +
       '.vm-wc-opciones[hidden]{display:none}' +
-      '.vm-wc-titulo{font-size:14px;font-weight:700;color:#1a472a;margin:0 0 10px;' +
+      '.vm-wc-titulo{font-size:14px;font-weight:700;color:#1a472a;' +
+      'color:color-mix(in srgb,var(--primary,#1a472a) 85%,#000);margin:0 0 10px;' +
       'display:flex;align-items:center;gap:6px}' +
       '.vm-wc-fila{display:flex;flex-wrap:wrap;gap:8px;align-items:center}' +
       '.vm-comp{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:none;' +
@@ -78,8 +180,9 @@
       '.vm-c-facebook{background:#1877F2}.vm-c-x{background:#111111}' +
       '.vm-c-linkedin{background:#0A66C2}.vm-c-reddit{background:#FF4500}' +
       '.vm-c-pinterest{background:#E60023}.vm-c-copiar{background:#4b5563}' +
-      '.vm-c-nativo{background:#1a472a}' +
-      '.vm-c-copiar.vm-copiado{background:#1a472a}' +
+      '.vm-c-nativo{background:var(--primary,#1a472a);color:var(--vmr-texto,#fff)}' +
+      '.vm-c-nativo:hover{color:var(--vmr-texto,#fff)}' +
+      '.vm-c-copiar.vm-copiado{background:var(--primary,#1a472a);color:var(--vmr-texto,#fff)}' +
       '@media (max-width:480px){.vm-comp{padding:8px 11px;font-size:12px}}';
     document.head.appendChild(st);
   };
@@ -307,7 +410,8 @@
 
   // Manija de depuración/soporte
   window.__vmWidgetCompartir = {
-    version: '1.2',
+    version: '1.3',
+    refrescarTema: sincronizarTema,
     url: () => urlParaCompartir(),
     titulo: () => tituloParaCompartir(),
     visible: () => !!(panelEl && panelEl.isConnected)
