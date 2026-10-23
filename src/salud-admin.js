@@ -37,7 +37,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 'use strict';
 
-const VERSION_SALUD = 2;          // marcador interno de la forma de respuesta
+const VERSION_SALUD = 3;          // marcador interno de la forma de respuesta
 const CACHE_POR_DEFECTO_MS = 30000;
 const LIMITE_POR_DEFECTO_MS = 4000;
 const LIMITE_MONGO_MS = 2500;
@@ -69,6 +69,16 @@ const conLimite = (promesa, ms) => new Promise((resolve, reject) => {
 });
 
 const mensajeDe = (e) => truncar((e && (e.message || e.error || e)) || 'error desconocido');
+
+// Convierte segundos de uptime en texto humano para el panel ("⏰ Tiempo activo")
+const textoUptime = (seg) => {
+  const d = Math.floor(seg / 86400);
+  const h = Math.floor((seg % 86400) / 3600);
+  const m = Math.floor((seg % 3600) / 60);
+  if (d > 0) return d + ' d ' + h + ' h ' + m + ' min';
+  if (h > 0) return h + ' h ' + m + ' min';
+  return m + ' min';
+};
 
 // ── detección de configuración (solo NOMBRES de variables, jamás valores) ──
 const PRIMERO = (env, lista) => {
@@ -210,7 +220,7 @@ const verificarMeta = async (env, limiteMs) => {
   const cred = PRIMERO(env, ['META_PAGE_ACCESS_TOKEN', 'FACEBOOK_PAGE_ACCESS_TOKEN', 'FB_PAGE_TOKEN', 'FB_ACCESS_TOKEN', 'META_ACCESS_TOKEN', 'INSTAGRAM_ACCESS_TOKEN']);
   if (!cred) {
     return { ...base, estado: 'sin-configurar', ok: false, configurado: false, latenciaMs: null,
-      detalle: 'Sin token de Meta configurado (META_PAGE_ACCESS_TOKEN o similar)' };
+      detalle: 'Sin token en el servidor (META_PAGE_ACCESS_TOKEN o similar). Pulsa "Conectar con Facebook" o define la variable en el .env' };
   }
   if (typeof fetch !== 'function') {
     return { ...base, estado: 'con-avisos', configurado: true, latenciaMs: null, detalle: 'Este Node no soporta fetch (actualiza a Node 18+)' };
@@ -291,6 +301,7 @@ const armarFicha = (f) => {
     online: ok,
     status: f.estado,
     mensaje: f.detalle,
+    latencia: f.latenciaMs != null ? f.latenciaMs : null,   // ← el panel lee s.latencia
     responseTime: f.latenciaMs != null ? f.latenciaMs : null,
   };
 };
@@ -380,6 +391,7 @@ const calcularSalud = async (opciones = {}) => {
     entorno: opciones.entorno || process.env.NODE_ENV || 'development',
     db: ESTADOS_DB[rs] || 'desconocida',
     uptimeSegundos: Math.round(process.uptime()),
+    uptime: textoUptime(process.uptime()),
     memoriaMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
     timestamp: new Date().toISOString(),
 
@@ -414,6 +426,7 @@ const registrarSaludAdmin = (app, opciones = {}) => {
     entorno: process.env.NODE_ENV || 'development',
     db: 'desconocida',
     uptimeSegundos: Math.round(process.uptime()),
+    uptime: textoUptime(process.uptime()),
     memoriaMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
     timestamp: new Date().toISOString(),
     versionSalud: VERSION_SALUD,
