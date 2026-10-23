@@ -1,16 +1,25 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   salud-admin.js — Vive Más Inmobiliaria · v1.0 (Task 44)
+   salud-admin.js — Vive Más Inmobiliaria · v1.2 (Task 46)
    MOTOR COMPLETO de "Salud del sistema" para el panel admin.
    ─────────────────────────────────────────────────────────────────────
+   NOVEDAD v1.2 (Task 46)
+   - GITHUB ELIMINADO a petición del usuario ("no es necesario"): la tarjeta
+     desaparece del panel porque esta ruta ya no la manda.
+   - NUEVO: si no hay token de Meta en el .env, el motor lo BUSCA EN LA BASE
+     DE DATOS (donde lo guarda el botón "Conectar con Facebook" del panel).
+     Si el token del .env está vencido (401), prueba también el de la BD.
+     El token JAMÁS se incluye en la respuesta: solo se usa para verificar
+     contra Graph API.
+
    POR QUÉ EXISTE ESTE ARCHIVO
    El panel admin (Sección "Salud del sistema") dejaba de mostrar las
-   tarjetas de Cloudinary / Meta / Node / GitHub / Stripe cuando una
-   actualización del backend respondía esa ruta con una forma mínima
-   (solo versión y conteos). Este módulo convierte GET /api/admin/salud
-   en el endpoint DEFINITIVO: verifica de verdad cada servicio y responde
-   una forma SUPERCONJUNTO que el panel pinta sin cambios.
+   tarjetas de Cloudinary / Meta / Node / Stripe cuando una actualización
+   del backend respondía esa ruta con una forma mínima (solo versión y
+   conteos). Este módulo convierte GET /api/admin/salud en el endpoint
+   DEFINITIVO: verifica de verdad cada servicio y responde una forma
+   SUPERCONJUNTO que el panel pinta sin cambios.
 
-   CÓMO INSTALARLO (app.js v6 YA lo llama — no hay que tocar más nada)
+   CÓMO INSTALARLO (app.js v7 YA lo llama — no hay que tocar más nada)
    1) Copia este archivo a la carpeta src/ de tu backend, JUNTO a app.js.
    2) Reinicia el servidor (PM2 restart …). Listo.
 
@@ -19,8 +28,8 @@
    - MongoDB   : readyState + ping real a la BD (mide latencia).
    - Cloudinary: credenciales en .env + api.ping() del SDK.
    - Stripe    : STRIPE_SECRET_KEY + stripe.balance.retrieve().
-   - Meta      : token de página + GET graph.facebook.com/me.
-   - GitHub    : GITHUB_TOKEN + GET api.github.com/user.
+   - Meta      : token del .env O guardado en la BD + GET graph.facebook.com/me.
+   (GitHub retirado en v1.2 por decisión del usuario.)
 
    GARANTÍAS
    - NUNCA responde 500: todo va en try/catch con límites de tiempo
@@ -37,7 +46,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 'use strict';
 
-const VERSION_SALUD = 3;          // marcador interno de la forma de respuesta
+const VERSION_SALUD = 4;          // marcador interno de la forma de respuesta (v1.2: GitHub fuera + token de BD)
 const CACHE_POR_DEFECTO_MS = 30000;
 const LIMITE_POR_DEFECTO_MS = 4000;
 const LIMITE_MONGO_MS = 2500;
@@ -211,79 +220,139 @@ const verificarStripe = async (env, requireFn, limiteMs) => {
   }
 };
 
-const verificarMeta = async (env, limiteMs) => {
+// ── token de Meta guardado en la base de datos (best-effort, JAMÁS lanza) ──
+// Al conectar la cuenta desde el panel ("Conectar con Facebook"), el callback
+// del OAuth guarda el token en la BD. Si no hay variable en el .env, escaneamos
+// las colecciones probables buscando un campo con pinta de token de Meta.
+// Filtros anti-falsos-positivos: el campo debe llamarse algo con "token/acceso"
+// (o facebook/meta/instagram) Y el valor debe empezar por EA…/IG… (formato
+// real de Meta) con longitud ≥ 30. Los JWT (eyJ…), claves de Stripe (sk_…),
+// IDs de Mongo (hex en minúscula) y passwords NO pasan el filtro.
+// NUNCA devolvemos el token en la respuesta: solo se usa contra Graph API.
+const RE_TOKEN_VALOR_META = /^(EA|IG)[A-Za-z0-9_-]{10,}/;
+const RE_NOMBRE_CAMPO_TOKEN = /token|acceso|access/i;
+const RE_CLAVE_RED_SOCIAL = /facebook|meta|instagram|^fb|^ig/i;
+const RE_COLECCIONES_META = /brand|cuenta|social|meta|facebook|instagram|config|setting|token|integraci|marketing|usuario|user|perfil|crm|auth/i;
+
+const buscarTokenMetaEnDocumento = (doc, nivel) => {
+  if (!doc || typeof doc !== 'object' || nivel > 3) return null;
+  for (const clave of Object.keys(doc)) {
+    const valor = doc[clave];
+    if (typeof valor === 'string') {
+      if (valor.length >= 30 && RE_TOKEN_VALOR_META.test(valor) &&
+          (RE_NOMBRE_CAMPO_TOKEN.test(clave) || RE_CLAVE_RED_SOCIAL.test(clave))) {
+        return valor;
+      }
+    } else if (valor && typeof valor === 'object' && !Buffer.isBuffer(valor)) {
+      let hallado = null;
+      if (Array.isArray(valor)) {
+        for (const item of valor) {
+          hallado = buscarTokenMetaEnDocumento(item, nivel + 1);
+          if (hallado) return hallado;
+        }
+      } else {
+        hallado = buscarTokenMetaEnDocumento(valor, nivel + 1);
+        if (hallado) return hallado;
+      }
+    }
+  }
+  return null;
+};
+
+// Adapta las 3 formas que puede devolver el driver: CURSOR (MongoDB real:
+// listCollections()/find() devuelven cursor síncrono con .toArray()), PROMESA
+// (algunos wrappers/fakes) o ARRAY directo. Consumir la promesa con await es
+// lo que evita el unhandledRejection cuando el driver rechaza.
+const aResultado = async (x) => {
+  if (x && typeof x.toArray === 'function') return x.toArray();
+  return await x;
+};
+
+let escaneoEnVuelo = null; // dedup: si ya hay un escaneo corriendo, todos esperan el MISMO
+const tokenMetaDesdeBD = (mongoose) => {
+  if (escaneoEnVuelo) return escaneoEnVuelo;
+  escaneoEnVuelo = (async () => {
+    try {
+      const conn = mongoose && mongoose.connection;
+      if (!conn || conn.readyState !== 1 || !conn.db || typeof conn.db.listCollections !== 'function') return null;
+      const colecciones = await Promise.resolve(conn.db.listCollections()).then((l) => aResultado(l));
+      const candidatas = colecciones.map((c) => c && c.name).filter((n) => n && RE_COLECCIONES_META.test(n));
+      for (const nombre of candidatas) {
+        let docs = null;
+        try {
+          docs = await Promise.resolve(conn.db.collection(nombre).find({})).then((c) => {
+            const paginado = c && typeof c.limit === 'function' ? c.limit(50) : c;
+            return aResultado(paginado);
+          });
+        } catch (e) { continue; }
+        for (const doc of docs) {
+          const token = buscarTokenMetaEnDocumento(doc, 0);
+          if (token) return token;
+        }
+      }
+      return null;
+    } catch (e) {
+      return null; // el escaneo es opcional: jamás tumba la verificación de salud
+    }
+  })().finally(() => { escaneoEnVuelo = null; });
+  return escaneoEnVuelo;
+};
+
+const verificarMeta = async (env, limiteMs, obtenerMetaToken) => {
   const base = {
     key: 'meta', nombre: 'Meta (Facebook)', icono: '📣', categoria: 'redes',
     descripcion: 'Publicación automática en Facebook/Instagram',
   };
   const LIM = limiteMs || LIMITE_POR_DEFECTO_MS;
+  if (typeof fetch !== 'function') {
+    return { ...base, estado: 'con-avisos', configurado: true, latenciaMs: null, detalle: 'Este Node no soporta fetch (actualiza a Node 18+)' };
+  }
+
+  // ── 1) candidatos a token: primero el .env, luego el guardado en la BD ──
+  const candidatos = [];
   const cred = PRIMERO(env, ['META_PAGE_ACCESS_TOKEN', 'FACEBOOK_PAGE_ACCESS_TOKEN', 'FB_PAGE_TOKEN', 'FB_ACCESS_TOKEN', 'META_ACCESS_TOKEN', 'INSTAGRAM_ACCESS_TOKEN']);
-  if (!cred) {
+  if (cred) candidatos.push({ token: cred.valor, fuente: 'variable ' + cred.variable });
+  try {
+    if (typeof obtenerMetaToken === 'function') {
+      const crudo = await conLimite(Promise.resolve().then(() => obtenerMetaToken()), LIMITE_MONGO_MS);
+      const t = crudo && String(crudo).trim();
+      if (t && t.length >= 20 && (!cred || t !== cred.valor)) {
+        candidatos.push({ token: t, fuente: 'token guardado en la base de datos' });
+      }
+    }
+  } catch (e) { /* sin token en la BD (o tardó demasiado) → seguimos con lo que haya */ }
+
+  if (candidatos.length === 0) {
     return { ...base, estado: 'sin-configurar', ok: false, configurado: false, latenciaMs: null,
       detalle: 'Sin token en el servidor (META_PAGE_ACCESS_TOKEN o similar). Pulsa "Conectar con Facebook" o define la variable en el .env' };
   }
-  if (typeof fetch !== 'function') {
-    return { ...base, estado: 'con-avisos', configurado: true, latenciaMs: null, detalle: 'Este Node no soporta fetch (actualiza a Node 18+)' };
-  }
-  const ver = limpiar(env.META_GRAPH_VERSION) || 'v21.0';
-  try {
-    const t0 = Date.now();
-    const res = await conLimite(fetch('https://graph.facebook.com/' + ver + '/me?fields=id,name&access_token=' + encodeURIComponent(cred.valor)), LIM);
-    const lat = Date.now() - t0;
-    let datos = null;
-    try { datos = await res.json(); } catch (e) { /* cuerpo vacío */ }
-    if (res.ok && datos && datos.id) {
-      return { ...base, estado: 'operativo', configurado: true, latenciaMs: lat, detalle: 'Página verificada: ' + truncar(datos.name || datos.id, 60), variable: cred.variable };
-    }
-    if (res.status === 401 || res.status === 400) {
-      const extra = datos && datos.error && datos.error.message ? ': ' + truncar(datos.error.message, 90) : '';
-      return { ...base, estado: 'error', configurado: true, latenciaMs: lat, detalle: 'Token inválido o expirado' + extra, variable: cred.variable };
-    }
-    return { ...base, estado: 'error', configurado: true, latenciaMs: lat, detalle: 'Graph API respondió ' + res.status, variable: cred.variable };
-  } catch (e) {
-    return { ...base, estado: 'error', configurado: true, latenciaMs: null, detalle: mensajeDe(e), variable: cred.variable };
-  }
-};
 
-const verificarGithub = async (env, limiteMs) => {
-  const base = {
-    key: 'github', nombre: 'GitHub', icono: '🐙', categoria: 'devops',
-    descripcion: 'Repositorio y despliegue automático',
-  };
-  const LIM = limiteMs || LIMITE_POR_DEFECTO_MS;
-  const cred = PRIMERO(env, ['GITHUB_TOKEN', 'GH_TOKEN', 'GITHUB_PAT', 'GITHUB_ACCESS_TOKEN']);
-  if (!cred) {
-    return { ...base, estado: 'sin-configurar', ok: false, configurado: false, latenciaMs: null,
-      detalle: 'Sin GITHUB_TOKEN configurado' };
-  }
-  if (typeof fetch !== 'function') {
-    return { ...base, estado: 'con-avisos', configurado: true, latenciaMs: null, detalle: 'Este Node no soporta fetch (actualiza a Node 18+)' };
-  }
-  try {
-    const t0 = Date.now();
-    const res = await conLimite(fetch('https://api.github.com/user', {
-      headers: {
-        'User-Agent': 'vivemas-salud',
-        'Accept': 'application/vnd.github+json',
-        'Authorization': 'Bearer ' + cred.valor,
-      },
-    }), LIM);
-    const lat = Date.now() - t0;
-    let datos = null;
-    try { datos = await res.json(); } catch (e) { /* cuerpo vacío */ }
-    if (res.ok && datos && datos.login) {
-      return { ...base, estado: 'operativo', configurado: true, latenciaMs: lat, detalle: 'Autenticado como ' + truncar(datos.login, 60), variable: cred.variable };
+  // ── 2) verificar contra Graph API: gana el PRIMER token que responda bien ──
+  const ver = limpiar(env.META_GRAPH_VERSION) || 'v21.0';
+  let ultimo = null;
+  for (const c of candidatos) {
+    try {
+      const t0 = Date.now();
+      const res = await conLimite(fetch('https://graph.facebook.com/' + ver + '/me?fields=id,name&access_token=' + encodeURIComponent(c.token)), LIM);
+      const lat = Date.now() - t0;
+      let datos = null;
+      try { datos = await res.json(); } catch (e) { /* cuerpo vacío */ }
+      if (res.ok && datos && datos.id) {
+        return { ...base, estado: 'operativo', configurado: true, latenciaMs: lat,
+          detalle: 'Página verificada: ' + truncar(datos.name || datos.id, 60) + ' (token de ' + c.fuente + ')',
+          variable: cred ? cred.variable : undefined };
+      }
+      if (res.status === 401 || res.status === 400) {
+        const extra = datos && datos.error && datos.error.message ? ': ' + truncar(datos.error.message, 90) : '';
+        ultimo = { estado: 'error', latenciaMs: lat, detalle: 'Token inválido o expirado' + extra + ' (token de ' + c.fuente + ')' };
+        continue; // token vencido → probamos el siguiente candidato (p.ej. el de la BD)
+      }
+      return { ...base, estado: 'error', configurado: true, latenciaMs: lat, detalle: 'Graph API respondió ' + res.status, variable: cred ? cred.variable : undefined };
+    } catch (e) {
+      return { ...base, estado: 'error', configurado: true, latenciaMs: null, detalle: mensajeDe(e), variable: cred ? cred.variable : undefined };
     }
-    if (res.status === 401) {
-      return { ...base, estado: 'error', configurado: true, latenciaMs: lat, detalle: 'Token inválido o expirado', variable: cred.variable };
-    }
-    if (res.status === 403) {
-      return { ...base, estado: 'con-avisos', configurado: true, latenciaMs: lat, detalle: 'Límite de peticiones de GitHub alcanzado (intenta de nuevo en unos minutos)', variable: cred.variable };
-    }
-    return { ...base, estado: 'error', configurado: true, latenciaMs: lat, detalle: 'GitHub API respondió ' + res.status, variable: cred.variable };
-  } catch (e) {
-    return { ...base, estado: 'error', configurado: true, latenciaMs: null, detalle: mensajeDe(e), variable: cred.variable };
   }
+  return { ...base, estado: ultimo.estado, configurado: true, latenciaMs: ultimo.latenciaMs, detalle: ultimo.detalle, variable: cred ? cred.variable : undefined };
 };
 
 // ═════════════════════════ ARMADO DE LA RESPUESTA ═══════════════════════
@@ -330,12 +399,15 @@ const calcularSalud = async (opciones = {}) => {
     { key: 'cloudinary', nombre: 'Cloudinary', icono: '☁️', categoria: 'media', descripcion: 'Imágenes', estado: 'error', configurado: true, latenciaMs: null, detalle: errores[errores.length - 1] || 'fallo inesperado' };
   const stripe = await seguro('stripe', () => verificarStripe(env, requireFn, limiteMs)) ||
     { key: 'stripe', nombre: 'Stripe', icono: '💳', categoria: 'pagos', descripcion: 'Pagos', estado: 'error', configurado: true, latenciaMs: null, detalle: errores[errores.length - 1] || 'fallo inesperado' };
-  const meta = await seguro('meta', () => verificarMeta(env, limiteMs)) ||
+  // Token de Meta: por defecto se busca también en la BD (lo guarda el botón
+  // "Conectar con Facebook" del panel). Pasar obtenerMetaToken: null lo apaga.
+  const obtenerMetaToken = opciones.obtenerMetaToken !== undefined
+    ? opciones.obtenerMetaToken
+    : () => tokenMetaDesdeBD(mongoose);
+  const meta = await seguro('meta', () => verificarMeta(env, limiteMs, obtenerMetaToken)) ||
     { key: 'meta', nombre: 'Meta (Facebook)', icono: '📣', categoria: 'redes', descripcion: 'Redes sociales', estado: 'error', configurado: true, latenciaMs: null, detalle: errores[errores.length - 1] || 'fallo inesperado' };
-  const github = await seguro('github', () => verificarGithub(env, limiteMs)) ||
-    { key: 'github', nombre: 'GitHub', icono: '🐙', categoria: 'devops', descripcion: 'Despliegue', estado: 'error', configurado: true, latenciaMs: null, detalle: errores[errores.length - 1] || 'fallo inesperado' };
 
-  const fichas = [nodo, mongo, cloudinary, stripe, meta, github].map(armarFicha);
+  const fichas = [nodo, mongo, cloudinary, stripe, meta].map(armarFicha);
 
   // ——— conteos informativos legados (best-effort, jamás tumban la ruta) ———
   let extra = {};
