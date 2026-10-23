@@ -249,6 +249,29 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(mongoSanitize());
 app.use(xss());
 
+// ==========================================
+// CONTADOR DE COMPARTIDAS (backend-compartidas.js — módulo autocontenido)
+// Registrado AQUÍ (antes de los rate limiters y de los montajes
+// /api/propiedades y /api/admin) por 3 razones:
+//  1. POST /api/propiedades/:id/compartir NO debe consumir el cupo de
+//     publicaciones (postLimiter): el módulo trae SU PROPIO límite
+//     anti-spam de 30 registros/hora por IP.
+//  2. GET /api/admin/propiedades/compartidas debe responder SIEMPRE,
+//     aunque admin.routes tenga rutas genéricas tipo /propiedades/:id
+//     (mismo criterio que /api/admin/salud más abajo).
+//  3. El conteo vive en el campo `compartidas` del documento de la
+//     propiedad ($inc): sin migración ni colección nueva; el KPI del
+//     dashboard y el badge de propiedad.html lo leen solos.
+// Tolerante: si el archivo no está en src/, el servidor arranca igual
+// y el panel muestra "—" hasta que se suba.
+// ==========================================
+try {
+  const { registrarRutasCompartidas } = require('./backend-compartidas');
+  registrarRutasCompartidas(app, { authAdmin: [authMiddleware, requireRole('admin')] });
+} catch (e) {
+  console.warn('[compartidas] backend-compartidas.js no encontrado en src/ — rutas de compartidas desactivadas:', e.message);
+}
+
 // APLICAR RATE LIMITING SOLO DONDE ES NECESARIO
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/registro', authLimiter);
