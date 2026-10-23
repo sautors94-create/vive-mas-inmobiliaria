@@ -672,6 +672,10 @@ const actualizarBadgeMensajes = (total) => {
   badge.style.display = total > 0 ? 'inline-flex' : 'none';
 };
 
+// Datos recordados del último "Resumen ejecutivo" cargado: los clics en las
+// tarjetas KPI abren detalles/navegación sin volver a pedir nada a la API.
+let kpiDetalleData = { propiedades: null, leads: null, favoritos: null, ts: 0 };
+
 const cargarResumenUsuario = async () => {
   const planPill = document.getElementById('resume-plan-pill');
   const titleEl = document.getElementById('resume-insights-title');
@@ -698,18 +702,32 @@ const cargarResumenUsuario = async () => {
   }
 
   try {
-    const [misPropsRes, leadsRes] = await Promise.all([
+    const [misPropsRes, leadsRes, favRes] = await Promise.all([
       api.get('/propiedades/mis-propiedades'),
-      api.get('/auth/leads')
+      api.get('/auth/leads'),
+      api.get('/favoritos').catch(() => null) // tolerante: si falla, el KPI queda en 0
     ]);
 
     const propiedades = misPropsRes?.propiedades || [];
     const leads = leadsRes?.leads || [];
     const mensajesNoLeidos = leadsRes?.mensajesNoLeidos || 0;
+    const favoritosUsuario = (favRes && Array.isArray(favRes.favoritos)) ? favRes.favoritos : [];
 
     const aprobadas = propiedades.filter(p => p.status === 'aprobada').length;
     const enRevision = propiedades.filter(p => p.status === 'revision').length;
     const rechazadas = propiedades.filter(p => p.status === 'rechazada').length;
+
+    // Métricas reales LIGADAS con el workspace "Mis propiedades" (las tarjetas
+    // mpw-kpi-card): misma fuente y mismas fórmulas para que NUNCA se contradigan.
+    // Campos: p.vistas (vistas), p.leadsCount (leads por propiedad), status (estados).
+    // Si la API aún no manda algún campo, quedan en 0 — igual que el workspace.
+    const totalVistas = propiedades.reduce((s, p) => s + (p.vistas || p.views || 0), 0);
+    const totalLeadsProps = propiedades.reduce((s, p) => s + (p.leadsCount || 0), 0);
+    const totalCompartidas = propiedades.reduce((s, p) => s + (p.compartidas || p.shares || 0), 0);
+    const tasaConversion = totalVistas > 0 ? ((totalLeadsProps / totalVistas) * 100).toFixed(1) + '%' : '0.0%';
+
+    // Recordar datos para los detalles de los KPIs (los clics abren sin re-fetch)
+    kpiDetalleData = { propiedades: propiedades, leads: leads, favoritos: favoritosUsuario, ts: Date.now() };
 
     if (planPill) {
       planPill.style.display = 'inline-flex';
@@ -718,16 +736,18 @@ const cargarResumenUsuario = async () => {
 
     const kpisBase = [
       { key: 'activas', label: 'Publicaciones activas', numero: aprobadas, icon: 'home', emoji: '🏠' },
-      { key: 'leads', label: 'Leads recibidos', numero: leads.length, icon: 'message-square', emoji: '💬' },
-      { key: 'tasa', label: 'Tasa de conversión', numero: '0.0%', icon: 'bar-chart-2', emoji: '📊' },
+      // Leads LIGADO con el workspace (mpw-kpi "Leads (conversaciones)"): suma de
+      // p.leadsCount, NO leads.length de /auth/leads (esa otra fuente daba 0 vs 2)
+      { key: 'leads', label: 'Leads recibidos', numero: totalLeadsProps, icon: 'message-square', emoji: '💬' },
+      { key: 'tasa', label: 'Tasa de conversión', numero: tasaConversion, icon: 'bar-chart-2', emoji: '📊' },
       { key: 'revision', label: 'En revisión', numero: enRevision, icon: 'clock', emoji: '⏳' }
     ];
 
     const kpisExtra = [
       { key: 'rechazadas', label: 'Rechazadas', numero: rechazadas, icon: 'x-circle', emoji: '❌' },
-      { key: 'visualizaciones', label: 'Visualizaciones', numero: 0, icon: 'eye', emoji: '👁️' },
-      { key: 'favoritos', label: 'Favoritos', numero: 0, icon: 'heart', emoji: '❤️' },
-      { key: 'compartidas', label: 'Compartidas', numero: 0, icon: 'share-2', emoji: '🔄' }
+      { key: 'visualizaciones', label: 'Visualizaciones', numero: totalVistas, icon: 'eye', emoji: '👁️' },
+      { key: 'favoritos', label: 'Favoritos', numero: favoritosUsuario.length, icon: 'heart', emoji: '❤️' },
+      { key: 'compartidas', label: 'Compartidas', numero: totalCompartidas, icon: 'share-2', emoji: '🔄' }
     ];
 
     const todosKpis = [...kpisBase, ...kpisExtra];
@@ -806,11 +826,162 @@ const bloquearKpiBasico = () => {
   });
 };
 
-// Si es Premium/Plus, muestra el detalle en un modal
-const mostrarDetalleKpi = (key, label) => {
-  // Obtener datos guardados en el DOM temporalmente o hacer fetch específico
-  dsToast({ title: `Detalle de: ${label}`, message: `Aquí se desplegará la tabla detallada de ${label} (Próximamente se conectará con la BD de métricas).`, type: 'success' });
+// ==========================================
+// DETALLE DE LOS KPIs (clic en tarjetas del resumen)
+// ==========================================
+// Cada tarjeta lleva al panel correcto o abre un modal con datos reales:
+//   activas/revision/rechazadas → Mis Propiedades con el filtro ya aplicado
+//   leads → CRM (embudo) · favoritos → sección Favoritos
+//   tasa/visualizaciones/compartidas → modal con desglose por propiedad
+
+// Navega a Mis Propiedades con el filtro de estado ya aplicado (el workspace
+// re-filtra solo: renderMisPropsWorkspace llama aplicarFiltrosMisProps al final)
+const irAMisPropsConEstado = (estadoFiltro) => {
+  const sel = document.getElementById('mpw-filtro-estado');
+  if (sel) sel.value = estadoFiltro;
+  const q = document.getElementById('mpw-filtro-buscar');
+  if (q) q.value = '';
+  mostrarSeccion('mis-propiedades');
 };
+
+// Asegura el listado de propiedades para los modales (usa el resumen ya cargado
+// y solo va a la API si nunca se llegó a cargar)
+const kpiAsegurarPropiedades = async () => {
+  if (kpiDetalleData.propiedades) return kpiDetalleData.propiedades;
+  try {
+    const res = await api.get('/propiedades/mis-propiedades');
+    kpiDetalleData.propiedades = res?.propiedades || [];
+  } catch (e) {
+    kpiDetalleData.propiedades = [];
+  }
+  return kpiDetalleData.propiedades;
+};
+
+// Cierra el modal de detalle (global para el onclick del propio modal)
+const cerrarModalKpi = window.cerrarModalKpi = () => {
+  const m = document.getElementById('modal-kpi-detalle');
+  if (m) m.remove();
+};
+
+// Modal de detalle reutilizable (mismo estilo que el modal de planes)
+const abrirModalKpi = (titulo, subtitulo, cuerpoHTML, textoAccion, accionGlobal) => {
+  cerrarModalKpi();
+  const overlay = document.createElement('div');
+  overlay.id = 'modal-kpi-detalle';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:10500;font-family:Inter,"Segoe UI",sans-serif;padding:20px';
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:20px;padding:28px;max-width:640px;width:100%;max-height:86vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.28)" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+        <div>
+          <h3 style="font-size:19px;font-weight:800;color:#0f172a;margin:0 0 4px">${titulo}</h3>
+          <p style="font-size:13px;color:#64748b;margin:0">${subtitulo}</p>
+        </div>
+        <button onclick="cerrarModalKpi()" title="Cerrar" style="border:none;background:#f1f5f9;color:#475569;width:34px;height:34px;border-radius:10px;font-size:16px;cursor:pointer;flex-shrink:0;line-height:1">✕</button>
+      </div>
+      <div style="margin-top:16px">${cuerpoHTML}</div>
+      ${textoAccion ? `<button class="btn btn-primary" style="width:100%;margin-top:18px;padding:11px;font-size:14px" onclick="cerrarModalKpi(); ${accionGlobal}">${textoAccion}</button>` : ''}
+    </div>`;
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrarModalKpi(); });
+  document.body.appendChild(overlay);
+};
+
+// Mini-tarjetas de resumen dentro del modal
+const kpiMiniStats = (datos) => `
+  <div style="display:grid;grid-template-columns:repeat(${datos.length},1fr);gap:10px;margin-bottom:16px">
+    ${datos.map(d => `
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:#0f172a">${d.valor}</div>
+        <div style="font-size:11px;color:#64748b;font-weight:600;margin-top:2px">${d.etiqueta}</div>
+      </div>`).join('')}
+  </div>`;
+
+// Tabla estándar del modal
+const kpiTablaProps = (encabezados, filasHTML) => `
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr>${encabezados.map(h => `<th style="text-align:left;padding:8px 10px;background:#f8fafc;color:#475569;font-size:11px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #e2e8f0">${h}</th>`).join('')}</tr></thead>
+      <tbody>${filasHTML}</tbody>
+    </table>
+  </div>`;
+
+const kpiNombreProp = (p) => escapeHtmlLocal((p.titulo || 'Sin título').slice(0, 40)) + ((p.titulo || '').length > 40 ? '…' : '');
+const kpiBadgeEstado = (p) => `<span class="status-badge status-${p.status || 'aprobada'}">${p.status || '—'}</span>`;
+
+// 📊 Tasa de conversión: desglose vistas → leads por propiedad
+const abrirDetalleKpiTasa = async () => {
+  const props = await kpiAsegurarPropiedades();
+  const vistasDe = (p) => (p.vistas || p.views || 0);
+  const totalVistas = props.reduce((s, p) => s + vistasDe(p), 0);
+  const totalLeads = props.reduce((s, p) => s + (p.leadsCount || 0), 0);
+  const tasa = totalVistas > 0 ? ((totalLeads / totalVistas) * 100).toFixed(1) + '%' : '—';
+  const filas = props.map(p => {
+    const v = vistasDe(p), l = p.leadsCount || 0;
+    return `<tr><td style="padding:8px 10px;border-bottom:1px solid #f1f5f9">${kpiNombreProp(p)}</td><td style="padding:8px 10px;border-bottom:1px solid #f1f5f9">${kpiBadgeEstado(p)}</td><td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:center">${v}</td><td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:center">${l}</td><td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:center;font-weight:700">${v > 0 ? ((l / v) * 100).toFixed(1) + '%' : '—'}</td></tr>`;
+  }).join('');
+  const cuerpo = props.length === 0
+    ? `<div style="text-align:center;padding:24px;color:#64748b"><div style="font-size:34px;margin-bottom:8px">📊</div><p style="font-size:14px;margin:0">Publica tu primera propiedad para empezar a medir tu conversión.</p></div>`
+    : kpiMiniStats([{ valor: totalVistas, etiqueta: 'Visualizaciones' }, { valor: totalLeads, etiqueta: 'Leads' }, { valor: tasa, etiqueta: 'Conversión' }]) +
+      `<p style="font-size:12px;color:#64748b;margin:0 0 10px">Conversión = leads recibidos ÷ visualizaciones × 100. Gestionar tus leads con el embudo del CRM es la mejor forma de subirla.</p>` +
+      kpiTablaProps(['Propiedad', 'Estado', 'Vistas', 'Leads', 'Conversión'], filas);
+  abrirModalKpi('📊 Tasa de conversión', 'Cuántas de tus visitas se convierten en clientes potenciales', cuerpo, 'Ir al CRM', "mostrarSeccion('crm')");
+};
+
+// 👁️ Visualizaciones: vistas por propiedad
+const abrirDetalleKpiVistas = async () => {
+  const props = await kpiAsegurarPropiedades();
+  const vistasDe = (p) => (p.vistas || p.views || 0);
+  const total = props.reduce((s, p) => s + vistasDe(p), 0);
+  const ordenadas = [...props].sort((a, b) => vistasDe(b) - vistasDe(a));
+  const filas = ordenadas.map(p => `<tr><td style="padding:8px 10px;border-bottom:1px solid #f1f5f9">${kpiNombreProp(p)}</td><td style="padding:8px 10px;border-bottom:1px solid #f1f5f9">${kpiBadgeEstado(p)}</td><td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:center;font-weight:700">${vistasDe(p)}</td></tr>`).join('');
+  const cuerpo = props.length === 0
+    ? `<div style="text-align:center;padding:24px;color:#64748b"><div style="font-size:34px;margin-bottom:8px">👁️</div><p style="font-size:14px;margin:0">Aún no tienes publicaciones. Cuando publiques, aquí verás cuántas veces se vio cada una.</p></div>`
+    : kpiMiniStats([{ valor: total, etiqueta: 'Vistas totales' }, { valor: props.length, etiqueta: 'Publicaciones' }, { valor: props.length ? (total / props.length).toFixed(1) : '0', etiqueta: 'Promedio por publicación' }]) +
+      kpiTablaProps(['Propiedad', 'Estado', 'Vistas'], filas);
+  abrirModalKpi('👁️ Visualizaciones', 'Cuántas veces se vieron tus propiedades', cuerpo, 'Gestionar publicaciones', "mostrarSeccion('mis-propiedades')");
+};
+
+// 🔄 Compartidas: desglose honesto (el conteo aparece en cuanto el backend lo mande)
+const abrirDetalleKpiCompartidas = async () => {
+  const props = await kpiAsegurarPropiedades();
+  const compsDe = (p) => (p.compartidas || p.shares || 0);
+  const total = props.reduce((s, p) => s + compsDe(p), 0);
+  let cuerpo;
+  if (props.length === 0) {
+    cuerpo = `<div style="text-align:center;padding:24px;color:#64748b"><div style="font-size:34px;margin-bottom:8px">🔄</div><p style="font-size:14px;margin:0">Aún no tienes publicaciones. Cuando publiques, aquí verás cuántas veces se compartió cada una.</p></div>`;
+  } else if (total === 0) {
+    cuerpo = `<div style="text-align:center;padding:24px;color:#64748b"><div style="font-size:34px;margin-bottom:8px">🔄</div><p style="font-size:14px;margin:0 0 6px;font-weight:600;color:#334155">Aún no hay compartidos registrados</p><p style="font-size:13px;margin:0">Cuando alguien comparta una de tus propiedades desde el catálogo, el conteo aparecerá aquí por propiedad. Mientras tanto, puedes impulsar tus publicaciones compartiéndolas tú mismo en tus redes.</p></div>`;
+  } else {
+    const filas = [...props].sort((a, b) => compsDe(b) - compsDe(a)).map(p => `<tr><td style="padding:8px 10px;border-bottom:1px solid #f1f5f9">${kpiNombreProp(p)}</td><td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:center;font-weight:700">${compsDe(p)}</td></tr>`).join('');
+    cuerpo = kpiMiniStats([{ valor: total, etiqueta: 'Veces compartida' }, { valor: props.length, etiqueta: 'Publicaciones' }]) + kpiTablaProps(['Propiedad', 'Compartidas'], filas);
+  }
+  abrirModalKpi('🔄 Compartidas', 'Cuántas veces compartieron tus propiedades', cuerpo, 'Ver mis publicaciones', "mostrarSeccion('mis-propiedades')");
+};
+
+// Router de los clics en las tarjetas del resumen (key = key del KPI)
+const mostrarDetalleKpi = (key, label) => {
+  const rutas = {
+    activas: () => irAMisPropsConEstado('aprobada'),
+    revision: () => irAMisPropsConEstado('revision'),
+    rechazadas: () => irAMisPropsConEstado('rechazada'),
+    leads: () => mostrarSeccion('crm'),
+    favoritos: () => mostrarSeccion('favoritos'),
+    tasa: () => abrirDetalleKpiTasa(),
+    visualizaciones: () => abrirDetalleKpiVistas(),
+    compartidas: () => abrirDetalleKpiCompartidas()
+  };
+  try {
+    (rutas[key] || (() => irAMisPropsConEstado('')))();
+  } catch (e) {
+    dsToast({ title: 'No se pudo abrir el detalle', message: 'Intenta de nuevo en unos segundos.', type: 'error' });
+  }
+};
+window.mostrarDetalleKpi = mostrarDetalleKpi;
+
+// La tecla Esc también cierra el modal de detalle (listener único)
+if (typeof document !== 'undefined' && !window.__vmKpiEscInstalado) {
+  window.__vmKpiEscInstalado = true;
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarModalKpi(); });
+}
 
 
 const iniciarMapaPublicar = () => {
