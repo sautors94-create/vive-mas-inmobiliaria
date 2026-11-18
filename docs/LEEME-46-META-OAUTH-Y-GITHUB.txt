@@ -1,0 +1,68 @@
+════════════════════════════════════════════════════════════════════════
+ LEEME · TASK 46 · Retorno OAuth de Meta + GitHub fuera del panel
+════════════════════════════════════════════════════════════════════════
+
+QUÉ SE ARREGLA
+  1) "Conectar con Facebook" terminaba en
+     http://localhost:5500/dashboard.html?meta=conectado
+     → "No se puede acceder a este sitio · localhost rechazó la conexión".
+     Causa: el callback de Meta manda el navegador a una URL local
+     (localhost:5500 es el Live Server de VS Code: solo existe en tu PC,
+     nunca en el servidor de producción). El login en Facebook SÍ terminó
+     bien; lo que falla es solo el retorno.
+  2) GitHub desaparece del panel de Salud (no lo usan).
+
+ARCHIVOS A SUBIR (3) — todos a la carpeta src/ del backend
+  NUEVO   src/oauth-redirect-fix.js   ← el que corrige el retorno localhost
+  CAMBIA  src/salud-admin.js          ← v1.2: GitHub fuera + token de Meta desde la BD
+  CAMBIA  src/app.js                  ← v7 : activa la corrección (require + middleware)
+
+PASOS DE DESPLIEGUE
+  1) Sube los 3 archivos. oauth-redirect-fix.js debe quedar JUNTO a app.js.
+  2) (Opcional pero recomendado) En el .env del servidor añade:
+         BASE_URL=https://somosvivemas.com
+     Si no existe, se usa https://somosvivemas.com por defecto. Si algún día
+     cambias de dominio, solo actualizas esa variable.
+  3) Reinicia el servicio:  pm2 restart vivemas   (o el nombre de tu proceso)
+  4) Verifica: al arrancar debe salir en el log:
+         [oauth-fix] Retornos a localhost se corregirán hacia: https://somosvivemas.com
+
+QUÉ ESPERAR AHORA
+  - Al conectar Facebook, el navegador aterriza en
+        https://somosvivemas.com/dashboard.html?meta=conectado#_=_
+    El "#_=_" lo añade SIEMPRE Facebook; es inofensivo, ignóralo.
+  - En el log de PM2 verás UNA línea (solo cuando pase):
+        [oauth-fix] Retorno a localhost corregido en GET /api/auth/meta/... :
+        http://localhost:5500/... → https://somosvivemas.com/...
+  - La tarjeta de GitHub ya no aparece en "Salud del sistema" (quedan 5:
+    Node, MongoDB, Cloudinary, Stripe, Meta).
+  - La tarjeta de Meta debería pasar a VERDE si el token quedó guardado en
+    la base de datos al conectar: el motor de salud ahora lo busca en la BD
+    (además del .env). Si el token del .env está vencido, prueba el de la BD
+    como respaldo. Puede tardar hasta 30 s (caché) en refrescar.
+
+VERIFICACIÓN RÁPIDA (opcional)
+  curl -s https://somosvivemas.com/api/admin/salud | head -c 400
+  → debe decir "versionSalud":4  y "version":"1.1.0"
+  → NO debe existir ninguna clave "github"
+
+FIX LIMPIO (OPCIONAL, para otra ronda)
+  El origen real del localhost:5500 está en el res.redirect final de
+  src/services/marketingAutomation/auth/metaOAuth.routes.js. La corrección
+  de hoy lo neutraliza desde fuera (sirve para CUALQUIER ruta que redirija
+  a localhost), pero si me pegas ese archivo te lo devuelvo corregido de
+  raíz y sin la redirección muerta.
+
+SI ALGO FALLARA
+  - Meta sigue "Sin token" después de conectar → necesito ver DÓNDE guarda
+    el token el callback: pásame src/services/marketingAutomation/auth/
+    metaOAuth.routes.js y apunto el motor de salud exactamente ahí.
+  - La tarjeta de GitHub siguiera apareciendo → es que está escrita a mano
+    en el HTML del panel; pásame ese HTML y la quito.
+
+NOTA IMPORTANTE
+  Esta corrección solo actúa cuando la petición NO llega por localhost:
+  si algún día pruebas el backend en tu PC, el retorno al Live Server
+  sigue funcionando como siempre. En producción (Hostinger) toda
+  redirección a localhost se manda al dominio público.
+════════════════════════════════════════════════════════════════════════

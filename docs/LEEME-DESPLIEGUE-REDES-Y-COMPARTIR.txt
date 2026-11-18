@@ -1,0 +1,128 @@
+════════════════════════════════════════════════════════════════════
+ PAQUETE FINAL — REDES SOCIALES + COMPARTIR CON CONTEO
+ Vive Más Inmobiliaria · somosvivemas.com
+════════════════════════════════════════════════════════════════════
+
+Aclaración importante: social-widget.js NO hacía la función de
+compartir — solo mostraba los perfiles de la empresa. Este paquete
+trae AMBAS cosas por separado y completas.
+
+────────────────────────────────────────────────────────────────────
+ 1) MAPA DE ARCHIVOS — qué va y a dónde
+────────────────────────────────────────────────────────────────────
+
+CARPETA hosting/  →  tu carpeta pública del sitio
+────────────────────────────────────────────────────────────────────
+  propiedad.html
+    → Va donde ya tienes tu propiedad.html actual.
+      Ya trae conectados los 3 scripts nuevos (nada más que editar).
+
+  js/redes-sociales.js          ★ NUEVO
+    → Panel flotante "💚 Síguenos" con Facebook, Instagram y LinkedIn
+      de la empresa. SUSTITUYE a social-widget.js (ya no se necesita).
+      Funciona en cualquier página si agregas su <script>.
+
+  js/widget-compartir.js        ★ NUEVO
+    → Panel "📤 Comparte esta propiedad" con TODAS las opciones:
+      WhatsApp, SMS, Correo, Telegram, Facebook, X, LinkedIn, Reddit,
+      Pinterest, Copiar enlace y menú nativo del celular.
+
+  js/contador-compartidas.js    (actualizado v1.1)
+    → Cuenta cada clic de compartir y muestra el badge
+      "🔄 Compartida N veces" junto al título de la propiedad.
+
+  js/admin-compartidas.js       (sin cambios)
+    → Columna "🔄 Compartidas" en la tabla de propiedades del panel
+      admin, con el total real de cada propiedad.
+
+CARPETA servidor/  →  la carpeta src/ de tu backend (Node)
+────────────────────────────────────────────────────────────────────
+  app.js                        (ya cableado con las rutas)
+    → Tu app.js con las rutas de compartidas integradas (línea ~269).
+      REEMPLAZA tu src/app.js actual.
+
+  backend-compartidas.js        ★ NUEVO
+    → Va JUNTO a app.js dentro de src/. Es el que suma, guarda y
+      responde los conteos. Sin él: 404 en /api/propiedades/:id/compartir.
+
+NO SE NECESITA NADA MÁS:
+  · server.js  → sin cambios (no lo toques)
+  · dashboard.js → ya lo tienes desplegado y está correcto (no tocar)
+  · No hay migraciones de base de datos (el conteo se guarda dentro
+    de cada propiedad, campo "compartidas").
+
+────────────────────────────────────────────────────────────────────
+ 2) PASOS DE DESPLIEGUE (en orden)
+────────────────────────────────────────────────────────────────────
+
+  PASO 1 — Hosting (archivos públicos):
+    a) Sube propiedad.html a donde está el actual.
+    b) Sube los 4 archivos .js a tu carpeta js/
+       (la misma donde están api.js, auth.js, etc.).
+
+  PASO 2 — Panel admin (si no lo hiciste ya):
+    En la página HTML del panel admin donde está la tabla de
+    propiedades (la tabla que tiene id="prop-mod-tbody"), agrega
+    ANTES de </body>:
+      <script src="../js/admin-compartidas.js"></script>
+    (ajusta la ruta relativa igual que los demás scripts de esa página)
+
+  PASO 3 — Servidor (backend):
+    a) Sube app.js y backend-compartidas.js a la carpeta src/
+       (backend-compartidas.js debe quedar JUNTO a app.js).
+    b) Reinicia el proceso:
+       pm2 restart vivemas     (o el nombre de tu proceso)
+
+  PASO 4 — Prueba rápida (2 minutos):
+    a) Abre una propiedad en el sitio → debe verse el panel
+       "📤 Comparte esta propiedad" debajo del título.
+    b) A los 4 segundos aparece el panel "💚 Síguenos" (esquina
+       inferior izquierda).
+    c) Clic en WhatsApp → se abre WhatsApp y el badge sube a
+       "🔄 Compartida 1 vez" al instante.
+    d) En el panel admin, la columna "🔄 Compartidas" de esa
+       propiedad muestra 1 (recarga la página del panel).
+    e) En el dashboard, el KPI "🔄 Compartidas" del Resumen ya
+       refleja el conteo.
+
+────────────────────────────────────────────────────────────────────
+ 3) QUÉ PASA SI... (tranquilidad)
+────────────────────────────────────────────────────────────────────
+
+  · ¿Despliegas el frontend PERO no el backend?
+    Los botones funcionan y se abren las apps, y cada clic queda
+    GUARDADO en el navegador del visitante (máx. 50). Cuando subas
+    el backend, esos clics se envían solos — no se pierde NINGUNO.
+    El badge y el KPI se verán en 0 hasta entonces.
+
+  · ¿El 404 de /compartir en la consola?
+    Es exactamente el caso anterior: desaparece al completar el
+    PASO 3. No rompe nada mientras tanto.
+
+  · ¿Ya no quiero el panel "Síguenos" en alguna página?
+    Solo no incluyas <script src="../js/redes-sociales.js"></script>
+    en esa página. Es totalmente independiente.
+
+  · ¿Quiero el panel "Síguenos" en index.html o catálogo.html?
+    Agrega antes de </body>:
+      <script src="js/redes-sociales.js"></script>
+    (ajusta la ruta relativa de esa página)
+
+────────────────────────────────────────────────────────────────────
+ 4) CÓMO FUNCIONA POR DENTRO (resumen técnico)
+────────────────────────────────────────────────────────────────────
+
+  Visitante comparte → widget-compartir.js generó el enlace →
+  contador-compartidas.js detecta el clic (delegación de eventos,
+  redes: whatsapp/sms/correo/telegram/facebook/x/linkedin/reddit/
+  pinterest/enlace/nativo) → POST /api/propiedades/:id/compartir →
+  backend-compartidas.js suma 1 al campo "compartidas" de la
+  propiedad (anti-spam: 30 por IP por hora) → badge, columna del
+  panel admin y KPI del dashboard se encienden solos.
+
+  Los enlaces de los PERFILES de la empresa (Síguenos) NO cuentan
+  como compartidas — son distintos de los enlaces de compartir.
+
+  Versión del paquete: contarás con contador v1.1.
+  Archivos verificados con 204 tests automáticos en total.
+════════════════════════════════════════════════════════════════════

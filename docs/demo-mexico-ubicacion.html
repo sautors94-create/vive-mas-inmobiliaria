@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo · mexico-ubicacion.js — Publicar propiedad</title>
+<style>
+  /* Estilos SOLO para esta demo: el widget no inyecta estilos propios. */
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f4f6f8; margin: 0; padding: 24px; color: #1c2733; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.sub { color: #5a6b7b; margin: 0 0 20px; font-size: 14px; }
+  form { max-width: 640px; background: #fff; border-radius: 12px; padding: 22px; box-shadow: 0 2px 10px rgba(20,40,60,.08); }
+  .campo { margin-bottom: 14px; display: flex; flex-direction: column; gap: 5px; }
+  .campo label { font-size: 13px; font-weight: 600; color: #34455a; }
+  .campo select, .campo input { padding: 9px 10px; border: 1px solid #c8d3dd; border-radius: 8px; font-size: 14px; background: #fff; }
+  .nota { font-size: 12px; color: #7a8a99; }
+  button { margin-top: 6px; background: #0e7c66; color: #fff; border: 0; padding: 11px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  button:hover { background: #0b6353; }
+  #payload { margin-top: 16px; background: #0f1720; color: #d7e3ee; border-radius: 10px; padding: 14px; font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; white-space: pre-wrap; word-break: break-word; display: none; }
+  hr { border: 0; border-top: 1px dashed #d7dee5; margin: 18px 0; }
+</style>
+</head>
+<body>
+<h1>Demo — Publicar propiedad con mexico-ubicacion.js v1.0</h1>
+<p class="sub">Este formulario SIMULA un panel de publicación viejo. Abre la consola (F12) para ver los diagnósticos del widget. Elige un <b>Estado</b> y verás <b>todos los municipios</b> de esa entidad.</p>
+
+<form id="form-propiedad" novalidate>
+  <!-- CASO 1: select VACÍO (el bug clásico del dropdown sin opciones) -->
+  <div class="campo">
+    <label for="ciudad">Ciudad / Municipio <span class="nota">(select VACÍO — el bug de siempre; el widget lo llena al elegir estado)</span></label>
+    <select id="ciudad" name="ciudad" required>
+      <option value="">Selecciona una ciudad…</option>
+    </select>
+  </div>
+
+  <!-- CASO 2: input de texto libre con sugerencias (datalist) -->
+  <div class="campo">
+    <label for="ubicacion.ciudad">Ubicación (ciudad) <span class="nota">(input de texto: el widget le añade sugerencias de TODOS los municipios)</span></label>
+    <input id="ubicacion.ciudad" name="ubicacion.ciudad" type="text" placeholder="Empieza a escribir un municipio…">
+  </div>
+
+  <!-- CASO 3: select con opciones PROPIAS (borrador guardado) → se preservan -->
+  <div class="campo">
+    <label for="direccion.ciudad">Ciudad del borrador <span class="nota">(select con opciones propias: quedan como "Otras opciones" al elegir estado)</span></label>
+    <select id="direccion.ciudad" name="direccion.ciudad">
+      <option value="">Selecciona…</option>
+      <option value="mi-ciudad-guardada">Mi ciudad guardada</option>
+    </select>
+  </div>
+
+  <!-- CASO 4: un "estado" que NO es geográfico (estado del inmueble) → NADIE lo toca -->
+  <div class="campo">
+    <label for="estado">Estado del inmueble <span class="nota">(select "estado" que NO es geográfico: el widget lo ignora por completo)</span></label>
+    <select id="estado" name="estado">
+      <option value="nuevo">Nuevo</option>
+      <option value="usado">Usado</option>
+      <option value="remodelado">Remodelado</option>
+    </select>
+  </div>
+
+  <div class="campo">
+    <label for="titulo">Título</label>
+    <input id="titulo" name="titulo" type="text" placeholder="Departamento luminoso en…">
+  </div>
+
+  <button type="submit">Publicar propiedad</button>
+  <div id="payload"></div>
+</form>
+
+<hr>
+<p class="nota">
+  Prueba también en consola:
+  <code>MexicoUbicacion.listarCampos()</code> ·
+  <code>MexicoUbicacion.desmontar('#ciudad')</code> (restaura el campo original) ·
+  <code>MexicoUbicacion.estados</code> · <code>MexicoUbicacion.totalMunicipios</code>
+</p>
+
+<!-- ============ INTEGRACIÓN REAL = UNA SOLA LÍNEA ============ -->
+<!-- En tu página real de "Publicar propiedad", añade esta línea antes de </body>: -->
+<script src="./mexico-ubicacion.js" defer></script>
+<!-- Configuración opcional (ANTES del script de arriba):
+<script>window.MEXICO_UBICACION = { campoEstado: 'estadoPropiedad' };</script>
+-->
+</body>
+</html>

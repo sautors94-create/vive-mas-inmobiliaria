@@ -1,0 +1,173 @@
+════════════════════════════════════════════════════════════════════
+ FIX 44 — "SALUD DEL SISTEMA" DEL PANEL ADMIN VUELVE A LA VIDA
+ somosvivemas.com · 23-oct · 2 archivos a subir (backend)
+════════════════════════════════════════════════════════════════════
+
+⚡ ACTUALIZACIÓN v1.1 (23-oct, después de ver el código del panel)
+------------------------------------------------------------------
+Con el código del panel en la mano se afinaron 3 detalles para que el
+panel muestre TODO:
+  - Las tarjetas ahora exponen "latencia" → se ve "⏱ XXms" en cada una.
+  - La respuesta ahora trae "uptime" en TEXTO ("2 d 3 h 5 min") → se ve
+    la línea "⏰ Tiempo activo" al final del panel.
+  - Mensaje de Meta más accionable cuando falta el token.
+Para aplicar: sube SOLO src/salud-admin.js (v1.1) otra vez. Verifícalo
+abriendo /api/admin/salud → debe decir "versionSalud": 3.
+
+📌 CÓMO CONECTAR META (la tarjeta que dice "Caído · Sin token")
+------------------------------------------------------------------
+IMPORTANTE: abre el panel admin desde el sitio de producción
+(https://somosvivemas.com/…panel…), NO desde Live Server
+(localhost:5500). El error "localhost rechazó la conexión
+(ERR_CONNECTION_REFUSED)" NO es del sitio: es tu servidor local de
+VS Code, que no estaba corriendo cuando Facebook te devolvió a
+http://localhost:5500/dashboard.html?meta=conectado.
+
+Pasos correctos:
+  1. Cierra Live Server; abre el panel en https://somosvivemas.com.
+  2. Salud del sistema → tarjeta Meta → "Conectar con Facebook".
+  3. Autoriza en Facebook. El callback regresa al panel con
+     ?meta=conectado → verás "¡Cuenta de Facebook conectada!".
+  4. Pulsa "Verificar ahora" → Meta debe pasar a Operativo.
+Si al conectar desde el sitio de producción el navegador te volviera a
+mandar a localhost:5500, entonces tu backend tiene la URL de retorno
+escrita a mano: pégame src/services/marketingAutomation/auth/
+metaOAuth.routes.js (y cualquier archivo donde se arme la URL de
+dashboard) y la corrijo con precisión en la misma ronda.
+
+📌 CÓMO CONECTAR GITHUB (la otra tarjeta "Caído · Sin token")
+------------------------------------------------------------------
+GitHub no tiene botón de conexión: se configura con un token en el
+.env del SERVIDOR (Hostinger):
+  1. GitHub → Settings → Developer settings → Personal access tokens
+     → Tokens (classic) → Generate new token (classic).
+     Sin marcar ningún scope (el chequeo solo identifica la cuenta);
+     caducidad a tu gusto.
+  2. Copia el token (ghp_…) y en el .env de tu servidor añade:
+        GITHUB_TOKEN=ghp_tu_token_aqui
+  3. pm2 restart … (o redeploy) → "Verificar ahora" en el panel.
+  4. La tarjeta debe decir "Operativo · Autenticado como tu-usuario".
+
+════════════════════════════════════════════════════════════════════
+
+EL SÍNTOMA
+----------
+El apartado "Salud del sistema" del panel admin ya no muestra NADA:
+antes veías el estado de Cloudinary, Meta, Node, GitHub, Stripe y el
+resto de los sistemas de la web; ahora solo aparece la cabecera
+(título, versión 1.0.0 y el botón "Verificar ahora") sin tarjetas.
+
+LA CAUSA RAÍZ (encontrada y confirmada)
+---------------------------------------
+En la actualización del 18-oct (app.js v5) metimos una ruta de salud
+DEFENSIVA dentro de app.js, registrada ANTES del montaje /api/admin
+para curar un 500 que había en ese entonces:
+
+    app.get('/api/admin/salud', ...)      ← v5, básica (versión + conteos)
+    ...
+    app.use('/api/admin', adminRoutes)    ← tu endpoint REAL de salud
+
+Express responde con la PRIMERA coincidencia registrada. Resultado: la
+ruta básica v5 TAPA el endpoint real de tu admin.routes.js. El panel
+sí recibe un 200 (por eso la cabecera pinta la versión 1.0.0), pero la
+respuesta no trae los servicios → las tarjetas quedan vacías.
+
+LA SOLUCIÓN (v6)
+----------------
+En vez de "quitare la defensiva", la convertimos en el motor DEFINITIVO
+de salud: ahora la ruta /api/admin/salud VERIFICA DE VERDAD cada
+servicio y responde la información completa que el panel necesita.
+
+  NUEVO archivo:  src/salud-admin.js   ← el motor (autocontenido)
+  ACTUALIZADO:    src/app.js           ← llama al motor (con respaldo)
+
+Qué verifica cada tarjeta (con llamada real, latencia y límite de 4 s):
+
+  ⚙️ Node.js    versión, tiempo activo, memoria del proceso
+  🗄️ MongoDB    conexión + ping real a la BD (latencia en ms)
+  ☁️ Cloudinary credenciales del .env + api.ping() del SDK
+  💳 Stripe     STRIPE_SECRET_KEY + consulta de balance
+  📣 Meta       token de página + GET graph.facebook.com/me
+  🐙 GitHub     GITHUB_TOKEN + GET api.github.com/user
+
+Estados posibles por servicio: operativo · con-avisos · error ·
+sin-configurar. El estado global: operativo / degradado (1 error) /
+critico (2+ errores o BD caída).
+
+Garantías de seguridad:
+  - NUNCA responde 500 (todo en try/catch + respuesta de emergencia).
+  - NO expone claves ni tokens: solo estados, latencias y mensajes
+    de error truncados.
+  - Caché de 30 s en memoria: abrir el panel no martilla las APIs
+    externas. El botón "Verificar ahora" (o ?fresh=1) fuerza una
+    re-verificación al instante.
+  - Si 2 peticiones llegan a la vez, comparten UNA sola verificación.
+  - Servicios sin configurar en el .env se muestran como
+    "sin-configurar" (no como caídos): nada de alarmas falsas.
+  - La respuesta trae la forma en VARIOS formatos (servicios[],
+    sistemas[], checks{}, estadoServicios{} + todos los campos de
+    antes) para que tu panel la pinte sin cambios.
+  - Tu admin.routes.js puede quedarse como está: si tiene su propia
+    ruta /salud, esta le gana por orden y le sirve de respaldo.
+
+ARCHIVOS A SUBIR (2) — rutas exactas en el repo
+-----------------------------------------------
+  | Archivo local     | Destino en el repo | Acción        |
+  |-------------------|--------------------|---------------|
+  | salud-admin.js    | src/salud-admin.js | NUEVO         |
+  | app.js            | src/app.js         | SOBREESCRIBIR |
+
+app.js v6 mantiene TODO lo anterior (compartidas, CORS v5, CSP v5.1,
+herramientas, leads, etc.) — el único cambio es el bloque de salud.
+
+PASOS
+-----
+1. Sube los 2 archivos (o commit + push — tu GitHub despliega solo).
+2. Espera el redeploy de Hostinger.
+3. Reinicia si tu PM2 no reinicia solo (pm2 restart ...).
+4. Ctrl+F5 en el panel admin → "Salud del sistema".
+
+CÓMO VERIFICAR QUE CARGÓ LA VERSIÓN NUEVA
+-----------------------------------------
+Abre en el navegador:  https://somosvivemas.com/api/admin/salud
+Debe verse un JSON con "versionSalud": 2 y un arreglo "servicios" con
+las 6 tarjetas (node, mongodb, cloudinary, stripe, meta, github), cada
+una con su estado y latencia. En los logs de PM2 aparecerá:
+
+  [salud] verificación completa en XXX ms — OPERATIVO (5 operativos, …)
+
+QUÉ ESPERAR EN EL PANEL
+-----------------------
+- Tarjetas de todos los servicios con su estado REAL y latencia.
+- "Verificar ahora" re-verifica al instante (sin esperar la caché).
+- Si algo está caído, la tarjeta lo dice y el detalle explica por qué
+  (p. ej. "Token inválido o expirado" en Meta = renovar el token).
+- Si un servicio no lo usan todavía, aparece "sin-configurar" con la
+  variable que falta (no es un error).
+
+PRUEBAS LOCALES (54/54 en verde)
+--------------------------------
+Banco con Express real y HTTP real, con mongoose/env/paquetes/red
+falsificados por inyección:
+  - Forma superconjunto completa (servicios/sistemas/checks/aliases).
+  - Caché 30 s + bypass ?fresh=1 + dedup de verificaciones concurrentes.
+  - Errores reales: ping que falla, clave inválida de Stripe, token
+    Meta 401, rate-limit GitHub 403, BD desconectada → estados
+    legibles y estado global critico/degradado.
+  - Sin credenciales → sin-configurar sin alarmas falsas.
+  - Paquete ausente o raro → con-avisos descriptivo.
+  - Servicio colgado → corta a los 250 ms configurables (la ruta
+    completa respondió en 257 ms).
+  - mongoose envenenado y conteos que explotan → nunca 500.
+  - Cero fugas de secretos en la respuesta (verificado).
+
+SI ALGO SIGUIERA FALLANDO (pásame el archivo y lo afino en la ronda)
+--------------------------------------------------------------------
+- Si alguna tarjeta no enciende: pégame el HTML del panel admin (el
+  archivo del panel, no propiedad.html) y ajusto la forma EXACTA que
+  espera leer — aunque la respuesta trae tantos alias que lo más
+  probable es que pinte de una.
+- Si quieres que la ruta pida sesión de admin (hoy es pública como en
+  v5, solo expone estados, no datos), dime y la protejo con tu
+  authMiddleware en la siguiente ronda.
+════════════════════════════════════════════════════════════════════

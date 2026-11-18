@@ -1,0 +1,93 @@
+════════════════════════════════════════════════════════════════════
+ LEEME — Widget de redes sociales v2.0 en TODO el sitio
+ Vive Más Inmobiliaria · somosvivemas.com
+════════════════════════════════════════════════════════════════════
+
+LO QUE PEDISTE Y LO QUE SE ENTREGÓ
+──────────────────────────────────
+1) El botón "💚 Síguenos" (con el panel de Facebook, Instagram y
+   LinkedIn) ahora funciona en TODO EL SITIO, no solo en propiedad.html.
+2) Se puede QUITAR POR COMPLETO: el botón trae una mini ✕ en su
+   esquina superior derecha.
+3) El botón ahora SIGUE EL TEMA QUE CAMBIA EL ADMIN (ya no se queda
+   con el color viejo).
+
+ARCHIVOS DE ESTE PAQUETE (2 JS, ninguno más)
+────────────────────────────────────────────
+· social-widget.js   → MISMO código que redes-sociales.js pero con el
+                       nombre del archivo viejo. Es la clave del paso 1.
+· redes-sociales.js  → la versión 2.0 para propiedad.html (reemplaza
+                       la 1.0 que ya tienes subida).
+
+CÓMO DESPLEGAR (2 pasos, no se edita ningún HTML)
+─────────────────────────────────────────────────
+PASO 1 (el importante): sube "social-widget.js" a la carpeta js/ de tu
+   hosting REEMPLAZANDO el social-widget.js antiguo que ya tienes.
+   → Todas las páginas que hoy muestran el widget viejo (Inicio,
+     Catálogo, Herramientas, Servicios, Nosotros, Directorio…)
+     mostrarán el widget nuevo automáticamente, porque ya cargan
+     ese archivo. El widget viejo desaparece.
+
+PASO 2: sube "redes-sociales.js" reemplazando el anterior (la versión
+   1.0 que está en js/). propiedad.html ya tiene su etiqueta, no hay
+   que tocarla.
+
+NOTA DE CACHÉ: si al refrescar sigues viendo el widget viejo, haz
+Ctrl+F5 (o borra caché). Si tus páginas cargan el script con versión
+tipo social-widget.js?v=1, súbele el número (v=2) en el HTML… aunque
+normalmente no hace falta.
+
+QUÉ CAMBIA EXACTAMENTE
+──────────────────────
+· Botón "💚 Síguenos" en todas las páginas (abajo a la izquierda,
+  donde no estorba al chatbot).
+· MINI ✕ en la esquina del botón: al pulsarla el widget desaparece
+  COMPLETO (botón + panel) durante esa sesión. Si el visitante
+  recarga la página, vuelve. Así quien no lo quiere, lo quita.
+· El "✕ Cerrar" de dentro del panel sigue igual que siempre:
+  solo cierra el panel, el botón se queda.
+· COLOR SEGÚN EL TEMA: el botón toma el color de la variable --primary
+  (la misma que pisa tu selector de temas). Si no hay tema puesto,
+  se ve el verde de siempre: el diseño por defecto NO cambia.
+  Si el admin cambia el tema, el botón cambia con el sitio — incluso
+  si el tema cambia sin recargar la página (se actualiza en vivo).
+  La sombra y el color de la letra se calculan solos para que siempre
+  se lea bien (primario claro → letra oscura, primario oscuro → letra
+  blanca).
+· La autoapertura suave a los 4 segundos sigue activa UNA vez por
+  sesión (en todo el sitio), y no reaparece si el visitante la quitó.
+
+COSAS QUE NO CAMBIAN (para tu tranquilidad)
+───────────────────────────────────────────
+· Los enlaces son los PERFILES de la empresa (Facebook /1188953474308974,
+  Instagram @somos_vivemasinmobiliaria, LinkedIn /company/somosvivemas).
+  NO son enlaces de compartir: el contador de compartidas NO los cuenta.
+· No se toca ningún archivo del backend, ni server.js, ni dashboard.js,
+  ni widget-compartir.js, ni contador-compartidas.js.
+· Si una página tuviera los dos scripts (social-widget.js y
+  redes-sociales.js), el segundo se detecta solo y NO se duplica nada.
+
+SI ALGUNA PÁGINA NO MUESTRA EL WIDGET
+─────────────────────────────────────
+Significa que esa página no carga social-widget.js. Ahí sí, agrégale
+antes de </body>:
+    <script src="js/redes-sociales.js"></script>
+(ajusta la ruta si la página está en una subcarpeta, p. ej. ../js/…).
+
+PRUEBA RÁPIDA DE 5 PUNTOS (después de subir)
+────────────────────────────────────────────
+1. Abre Inicio (u otra página que no sea propiedad): debe verse el
+   botón "💚 Síguenos" abajo a la izquierda y YA NO el widget viejo.
+2. Clic en el botón → panel con Facebook, Instagram y LinkedIn.
+3. Clic en la mini ✕ del botón → desaparece todo; recarga → vuelve.
+4. Clic en "✕ Cerrar" del panel → cierra el panel, el botón se queda.
+5. Cambia el tema desde el panel de admin y refresca la página
+   pública → el botón adopta el color del tema nuevo.
+
+SOPORTE
+───────
+· Consola del navegador (F12) en cualquier página:
+  window.__vmRedesSociales.version → "2.0"
+  .abrir() / .cerrar() / .quitar() / .refrescarTema()
+· Si tu tema usara una variable con OTRO nombre (no --primary),
+  dime el nombre exacto y lo conecto en 1 minuto.
