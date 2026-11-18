@@ -39,7 +39,7 @@
   <script src="../js/marcas-api.js"></script>
   <script>
   (() => {
-    console.log('[marca-panel] v2.6 (México completo en cascada: 32 estados · 2,478 municipios · guardado sin bloqueos)');
+    console.log('[marca-panel] v2.7 (México completo en cascada · slugFrontal restaurado: fix ReferenceError al arrancar)');
     const app = document.getElementById('app');
     let M = null;               // marca (panel)
     let CUENTA = null;          // cuenta de acceso
@@ -51,6 +51,25 @@
     let SLUGS_BD = new Set();   // v2.6: slugs que la BD ya conoce (entradas del catálogo API con _id)
     let borrador = {};          // estado temporal de la pestaña (listas, ciudades nuevas…)
     let promoEditando = null;
+
+    // v2.7 RESTAURADO: slugFrontal desapareció del archivo en un parche
+    // anterior (se USABA en 7 sitios desde v2.4 pero nadie la DEFINÍA) →
+    // ReferenceError en la línea de CATALOGO_BASE al arrancar → el panel
+    // se quedaba cargando sin pintar nada. Réplica EXACTA del slugify del
+    // backend (src/marcas/utils/slugify.js): los slugs que genera aquí
+    // DEBEN coincidir con los de la BD para que fusionarCatalogo() dedupe
+    // bien y SLUGS_BD.has(slug) enrute nuevas/existentes correctamente.
+    function slugFrontal(texto) {
+      return String(texto == null ? '' : texto)
+        .toLowerCase()
+        .trim()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')   // acentos: Mérida → merida
+        .replace(/[^a-z0-9\s-]/g, '')      // símbolos fuera (ñ ya quedó en n por NFD)
+        .replace(/[\s_]+/g, '-')           // espacios/guiones bajos → guión
+        .replace(/-+/g, '-')               // colapsa repetidos
+        .replace(/^-+|-+$/g, '');          // recorta bordes
+    }
 
     const $ = (s, r = document) => r.querySelector(s);
     const $$ = (s, r = document) => [...r.querySelectorAll(s)];
